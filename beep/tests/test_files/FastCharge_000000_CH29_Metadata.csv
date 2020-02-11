@@ -1,0 +1,2 @@
+,test_id,device_id,iv_ch_id,first_start_datetime,resumed_times,last_resume_datetime,last_end_datetime,schedule_file_name,databases,item_id,grade_id,has_aux,has_special,schedule_version,log_aux_data_flag,log_special_data_flag,rowstate,canconfig_filename,m_ncanconfigmd5,value,value2
+0,296,60369369,28,1512445026,0,0,1512514129,2017-12-04_tests\20170630-4_65C_69per_6C.sdu,"ArbinResult_43,ArbinResult_44,ArbinResult_45,",EL151000429559,0,3,0,Schedule Version 7.00.08,1,0,0,,,0.0,0.0

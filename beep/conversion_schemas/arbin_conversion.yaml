@@ -1,0 +1,38 @@
+file_pattern: ".*\\.csv"
+metadata_fields:
+  test_id: test_id
+  device_id: device_id
+  iv_ch_id: channel_id
+  first_start_datetime: start_datetime
+  schedule_file_name: protocol
+  item_id: barcode
+  resumed_times: _resumed_times
+  last_end_datetime: _last_end_datetime
+  databases: _databases
+  grade_id: _grade_id
+  has_aux: _has_aux
+  has_special: _has_special
+  schedule_version: _schedule_version
+  log_aux_data_flag: _log_aux_data_flag
+  log_special_data_flag: _log_special_data_flag
+  rowstate: _rowstate
+  canconfig_filename: _canconfig_filename
+  m_ncanconfigmd5: _m_ncanconfigmd5
+  value: _value
+  value2: _value2
+data_columns:
+  data_point: _data_point
+  test_time: test_time
+  datetime: date_time
+  step_time: step_time
+  step_index: step_index
+  cycle_index: cycle_index
+  current: current
+  voltage: voltage
+  charge_capacity: charge_capacity
+  discharge_capacity: discharge_capacity
+  charge_energy: charge_energy
+  discharge_energy: discharge_energy
+  dv/dt: _dv/dt
+  internal_resistance: internal_resistance
+  Temperature: temperature

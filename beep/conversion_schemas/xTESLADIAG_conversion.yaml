@@ -1,0 +1,8 @@
+file_pattern: ".*xTESLADIAG.*\\.csv"
+cell_specification:
+  nominal_capacity: 4.7
+  full_fast_charge: 0.8
+  v_range: [3.0, 4.25]
+  resolution: 1000
+  min_n_steps_diagnostic: 3
+

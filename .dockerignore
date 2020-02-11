@@ -1,0 +1,9 @@
+s3_cache
+*.egg-info
+.git*
+Jenkinsfile
+README.md
+MATLAB
+notebooks
+scripts
+Dockerfile

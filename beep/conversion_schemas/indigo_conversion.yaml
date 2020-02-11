@@ -1,0 +1,19 @@
+file_pattern: ".*\\.h5"
+metadata_fields:
+  indigo_cell_id: indigo_cell_id
+  filename: filename
+  _today_datetime: _today_datetime
+  start_datetime: start_datetime
+data_columns:
+  test_time: test_time
+  date_time_iso: date_time_iso
+  half_cycle_count: step_index
+  cycle_count: cycle_index
+  cell_current_a: current
+  cell_voltage_v: voltage
+  charge_capacity: charge_capacity
+  discharge_capacity: discharge_capacity
+  charge_energy: charge_energy
+  discharge_energy: discharge_energy
+  internal_resistance: internal_resistance
+  cell_temperature_c: temperature

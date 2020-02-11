@@ -1,0 +1,2 @@
+,test_id,device_id,iv_ch_id,first_start_datetime,resumed_times,last_resume_datetime,last_end_datetime,schedule_file_name,databases,item_id,grade_id,has_aux,has_special,schedule_version,log_aux_data_flag,log_special_data_flag,rowstate,canconfig_filename,m_ncanconfigmd5,smbconfig_filename,smbconfigmd5,value,value2
+0,33,03603603,0,1535503037,0,0,1535863624,OED\20180828-5pt6_6_4pt8_3pt574.sdu,"ArbinResult_27,ArbinResult_28,",EL150800746390,0,3,0,Schedule Version 7.00.13,1,0,0,,,,,0.0,0.0

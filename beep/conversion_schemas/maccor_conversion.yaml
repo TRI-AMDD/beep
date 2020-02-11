@@ -1,0 +1,49 @@
+file_pattern: ".*\\d{5,6}.*\\d{3}"
+charge_state_code: 'C'
+discharge_state_code: 'D'
+end_step_code_min: 128
+end_step_code_max: 255
+include_eis: False
+metadata_fields:
+  today's date: _today_datetime # dunno why today is so different than start
+  date of test: start_datetime
+  filename: filename
+  procedure: protocol
+  comment/barcode: barcode
+data_columns:
+  rec#: data_point
+  cyc#: cycle_index
+  step: step_index
+  test (sec): test_time
+  step (sec): step_time
+  # amp-hr and watt-hr are a bit ambiguous
+  amp-hr: _capacity
+  watt-hr: _energy
+  amps: current
+  volts: voltage
+  state: _state
+  es: _ending_status
+  dpt time: date_time
+  acimp/ohms: ac_impedence
+  dcir/ohms: internal_resistance
+  wf chg cap: _wf_chg_cap #charge_capacity
+  wf dis cap: _wf_dis_cap #discharge_capacity
+  wf chg e: _wf_chg_e #charge_energy
+  wf dis e: _wf_dis_e #discharge_energy
+  # not sure what these are
+  range: _range
+  var1: _var1
+  var2: _var2
+  var3: _var3
+  var4: _var4
+  var5: _var5
+  var6: _var6
+  var7: _var7
+  var8: _var8
+  var9: _var9
+  var10: _var10
+  var11: _var11
+  var12: _var12
+  var13: _var13
+  var14: _var14
+  var15: _var15

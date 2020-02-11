@@ -1,0 +1,2 @@
+diagnostic_type,diagnostic_charge_cutoff_voltage,diagnostic_discharge_cutoff_voltage,diagnostic_cutoff_current,HPPC_baseline_constant_current,HPPC_pulse_cutoff_voltage,HPPC_pulse_current_1,HPPC_pulse_current_2,HPPC_pulse_duration_1,HPPC_pulse_rest_time,HPPC_pulse_duration_2,HPPC_interval,HPPC_rest_time,RPT_charge_constant_current,RPT_discharge_constant_current_1,RPT_discharge_constant_current_2,RPT_discharge_constant_current_3,reset_cycle_current,reset_cycle_cutoff_current
+HPPC+RPT,4.2,2.7,0.05,0.333,4.39,1,0.75,30,40,10,10,60,0.2,0.2,1,2,0.1429,0.0286

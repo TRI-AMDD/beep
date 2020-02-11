@@ -1,0 +1,15 @@
+# This is a placeholder for maccor schema for future development.
+rec#:
+  schema:
+    type: integer
+  type: list
+state:
+  schema:
+    type: string
+  type: list
+volts:
+  schema:
+    max: 1.8
+    min: 0.0
+    type: float
+  type: list

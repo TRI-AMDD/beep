@@ -1,0 +1,14 @@
+# This is a placeholder for maccor eis schema for future development.
+freq(hz):
+  schema:
+    type: float
+    min: 0.0
+  type: list
+polar(v):
+  schema:
+    type: float
+  type: list
+z''(b):
+  schema:
+    type: float
+  type: list
