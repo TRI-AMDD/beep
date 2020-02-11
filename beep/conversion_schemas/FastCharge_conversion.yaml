@@ -1,0 +1,7 @@
+file_pattern: ".*FastCharge.*\\.csv"
+cell_specification:
+  nominal_capacity: 1.1
+  full_fast_charge: 0.8
+  v_range: [2.8, 3.5]
+  resolution: 1000
+

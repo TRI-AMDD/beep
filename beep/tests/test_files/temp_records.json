@@ -1,0 +1,1 @@
+{"2017-05-09_test-TC-contact_CH33.csv": {"validated": false, "method": "validate_arbin_dataframe", "time": "\"2019-04-05 12:50:13.864625\"", "errors": {"cycle_index": [{"0": ["must be of number type"]}]}}, "2017-12-04_4_65C-69per_6C_CH29.csv": {"validated": true, "method": "validate_arbin_dataframe", "time": "\"2019-04-05 12:50:34.898673\"", "errors": {}}}

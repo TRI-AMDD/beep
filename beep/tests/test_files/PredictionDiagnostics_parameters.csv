@@ -1,0 +1,3 @@
+project_name,seq_num,template,charge_constant_current_1,charge_percent_limit_1,charge_constant_current_2,charge_cutoff_voltage,charge_constant_voltage_time,charge_rest_time,discharge_constant_current,discharge_cutoff_voltage,discharge_rest_time,cell_temperature_nominal,cell_type,capacity_nominal,diagnostic_type,diagnostic_parameter_set,diagnostic_start_cycle,diagnostic_interval
+PredictionDiagnostics,0,diagnosticV2.000,2,30,1,4.1,60,5,1,2.7,15,25,Tesla_Model3_21700,1.0,HPPC+RPT,Tesla21700,30,100
+PredictionDiagnostics,196,diagnosticV3.000,1.0,30,1.0,4.1,30,5,1.0,2.7,15,25,Tesla_Model3_21700,1.0,HPPC+RPT,Tesla21700,30,100

@@ -1,0 +1,40 @@
+# This is a placeholder for maccor schema for future development.
+rec#:
+  schema:
+    type: integer
+  type: list
+cyc#:
+  schema:
+    type: integer
+  type: list
+state:
+  schema:
+    type: string
+  type: list
+volts:
+  schema:
+    max: 4.45
+    min: 1.2
+    type: float
+  type: list
+amps:
+  schema:
+    max: 15.0
+    min: -15.0
+    min_is_below: 0.0
+    type: float
+  type: list
+test (sec):
+  schema:
+    min: 0.0
+    type: float
+  type: list
+step (sec):
+  schema:
+    min: 0.0
+    type: float
+  type: list
+dpt time:
+  schema:
+    type: string
+  type: list

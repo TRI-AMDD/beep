@@ -1,0 +1,2 @@
+,Test_ID,Device_ID,IV_Ch_ID,First_Start_DateTime,Resumed_Times,Last_Resume_DateTime,Last_End_DateTime,Schedule_File_Name,Databases,Item_ID,Grade_ID,Has_Aux,Has_Special,Schedule_Version,Log_Aux_Data_Flag,Log_Special_Data_Flag,RowState,CanConfig_FileName,m_nCanConfigMD5,Value,Value2
+0,144,60369369,32,1494377253,0,0,1494378294,20170509-6C_1C_36CV.sdu,"ArbinResult_6,",EL150800460659,0,1,0,Schedule Version 7.00.08,1,0,0,,,0.0,0.0
