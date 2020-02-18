@@ -16,7 +16,7 @@ pip install -e .
 You can use nose or pytests for running unittests (use `pip install nose` to install nose if not installed)
 
 ```bash
-nosetests beep_ep
+nosetests beep
 ```
 
 Note that the editable install (as prescribed above), is necessary
@@ -29,7 +29,7 @@ with currently available BEEP functionality.  Each beep script takes a JSON stri
 as input in order to provide flexibility and more facile automation.  They are documented
 below:
 
-### rename
+### collate
 The `collate` script takes no input, and operates by assuming the BEEP_EP_ROOT (default `/`)
 has subdirectories `/data-share/raw_cycler_files` and `data-share/renamed_cycler_files/FastCharge`.
 
@@ -78,7 +78,7 @@ $ collate
 }
 ```
 
-### validate_csvs
+### validate
 The validation script, `validate`, runs the validation procedure contained
 in beep_ep.validate on renamed files according to the output of `rename` above.
 It also updates a general json validation record in `/data-share/validation/validation.json`.
@@ -129,7 +129,7 @@ $ validate csvs '{
 }
 ```
 
-### structure_data
+### structure
 
 The `structure` script will run the data structuring on specified filenames corresponding
 to validated raw cycler files.  It places the structured datafiles in `/data-share/structure`.
@@ -163,7 +163,7 @@ $ structure '{
 }
 ```
 
-### generate_features
+### featurize
 The `featurize` script will generate features according to the methods
 contained in beep_ep.generate_features.  It places output files corresponding to 
 features in `/data-share/features/`.
