@@ -7,8 +7,8 @@ D3Batt Scripts for data validation, processing, machine learning and early predi
 Clone the repo via git and use pip (or `python setup.py develop`) for an editable install:
 
 ```bash
-git clone git@github.awsinternal.tri.global:materials/BEEP-EP.git
-cd BEEP-EP
+git clone git@github.com:ToyotaResearchInstitute/BEEP.git
+cd BEEP
 pip install -e .
 ```
 
@@ -30,7 +30,7 @@ as input in order to provide flexibility and more facile automation.  They are d
 below:
 
 ### rename
-The `rename` script takes no input, and operates by assuming the BEEP_EP_ROOT (default `/`)
+The `collate` script takes no input, and operates by assuming the BEEP_EP_ROOT (default `/`)
 has subdirectories `/data-share/raw_cycler_files` and `data-share/renamed_cycler_files/FastCharge`.
 
 The script moves files from the `/data-share/raw_cycler_files` directory, parses the metadata,
@@ -49,7 +49,7 @@ The script output is a json string that contains the following fields:
 
 Example:
 ```bash
-$ rename
+$ collate
 ```
 ```json
 {
@@ -79,8 +79,8 @@ $ rename
 ```
 
 ### validate_csvs
-The validation script, `validate_csvs`, runs the validation procedure contained
-in beep_ep.validate_csvs on renamed files according to the output of `rename` above.
+The validation script, `validate`, runs the validation procedure contained
+in beep_ep.validate on renamed files according to the output of `rename` above.
 It also updates a general json validation record in `/data-share/validation/validation.json`.
 
 The input json must contain the following fields
@@ -131,7 +131,7 @@ $ validate csvs '{
 
 ### structure_data
 
-The `structure_data` script will run the data structuring on specified filenames corresponding
+The `structure` script will run the data structuring on specified filenames corresponding
 to validated raw cycler files.  It places the structured datafiles in `/data-share/structure`.
 
 The input json must contain the following fields:
@@ -147,7 +147,7 @@ The output json contains the following fields:
 
 Example:
 ```bash
-$ structure_data '{
+$ structure '{
     "mode": "run",
     "run_list": [1, 20, 34],
     "validity": ["invalid", "invalid", "valid"], 
@@ -164,7 +164,7 @@ $ structure_data '{
 ```
 
 ### generate_features
-The `generate_features` script will generate features according to the methods
+The `featurize` script will generate features according to the methods
 contained in beep_ep.generate_features.  It places output files corresponding to 
 features in `/data-share/features/`.
 
