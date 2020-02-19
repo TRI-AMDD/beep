@@ -48,13 +48,13 @@ data_columns:
   var14: _var14
   var15: _var15
 data_types:
-  rec#: 'uint32'
-  cyc#: 'uint16'
-  step: 'uint16'
+  rec#: 'int32'
+  cyc#: 'int32'
+  step: 'int16'
   test (sec): 'float32'
   step (sec): 'float32'
-  amp-hr: 'float32'
-  watt-hr: 'float32'
+  amp-hr: 'float64'
+  watt-hr: 'float64'
   amps: 'float32'
   volts: 'float32'
   state: 'category'
