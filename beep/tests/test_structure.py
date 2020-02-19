@@ -245,7 +245,7 @@ class RawCyclerRunTest(unittest.TestCase):
                                                           field_name='date_time_iso',
                                                           n_interp_diagnostic=500)
         self.assertGreaterEqual(len(diagnostic_cycles_interpolated.cycle_index.unique()), 2)
-        self.assertEqual(diagnostic_cycles_interpolated.discharge_capacity[4], 2.635393836921498)
+        self.assertEqual(diagnostic_cycles_interpolated.discharge_capacity[4], 2.635393951661682)
 
     def test_get_diagnostic_summary(self):
         cycler_run = RawCyclerRun.from_file(self.maccor_file_w_diagnostics)
