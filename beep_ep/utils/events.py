@@ -12,7 +12,7 @@ import watchtower
 import numpy as np
 import boto3
 import pytz
-from beep import TEST_FILE_DIR
+from beep_ep import TEST_FILE_DIR
 
 
 class Logger:

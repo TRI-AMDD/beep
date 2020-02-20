@@ -22,7 +22,7 @@ import boto3
 import collections
 import ast
 from docopt import docopt
-from beep.utils import KinesisEvents
+from beep_ep.utils import KinesisEvents
 
 S3_BUCKET = "beep_ep-input-data"
 

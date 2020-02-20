@@ -48,7 +48,7 @@ import numpy as np
 import pandas as pd
 from docopt import docopt
 from cerberus import Validator
-from beep import tqdm
+from beep_ep import tqdm
 from monty.serialization import loadfn, dumpfn
 
 from beep_ep import VALIDATION_SCHEMA_DIR

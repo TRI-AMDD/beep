@@ -18,10 +18,10 @@ import boto3
 
 from memory_profiler import profile
 from monty.tempfile import ScratchDir
-from beep.structure import RawCyclerRun, ProcessedCyclerRun
-from beep.run_model import DegradationModel
-from beep.featurize import DegradationPredictor
-from beep import S3_CACHE, tqdm
+from beep_ep.structure import RawCyclerRun, ProcessedCyclerRun
+from beep_ep.run_model import DegradationModel
+from beep_ep.featurize import DegradationPredictor
+from beep_ep import S3_CACHE, tqdm
 
 MEMORY_PROFILE_S3_OBJS = ["D3Batt_Data_publication/2017-05-12_5_4C-60per_3_6C_CH23.csv",
                           "D3Batt_Data_publication/2017-05-12_5_4C-60per_3_6C_CH23_Metadata.csv"]

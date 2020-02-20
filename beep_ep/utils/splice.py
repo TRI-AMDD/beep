@@ -16,8 +16,8 @@ Options:
 
 """
 import pandas as pd
-from beep import StringIO
-from beep import TEST_FILE_DIR
+from beep_ep import StringIO
+from beep_ep import TEST_FILE_DIR
 import os
 
 
