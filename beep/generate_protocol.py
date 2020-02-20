@@ -50,8 +50,8 @@ import pandas as pd
 import xmltodict
 from docopt import docopt
 from monty.serialization import loadfn
-from beep_ep import logger, __version__, PROCEDURE_TEMPLATE_DIR
-from beep_ep.utils import KinesisEvents
+from beep import logger, __version__, PROCEDURE_TEMPLATE_DIR
+from beep.utils import KinesisEvents
 s = {'service': 'ProtocolGenerator'}
 
 

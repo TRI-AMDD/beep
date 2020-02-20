@@ -48,7 +48,7 @@ import warnings
 
 import pandas as pd
 from monty.serialization import dumpfn
-from beep_ep import tqdm
+from beep import tqdm
 from docopt import docopt
 
 
@@ -226,7 +226,7 @@ def process_files_json():
     Returns:
         (str): json string corresponding to the locations of the renamed files.
     """
-    # chdir into beep_ep root
+    # chdir into beep root
     pwd = os.getcwd()
     os.chdir(os.environ.get("BEEP_EP_ROOT", "/"))
 

@@ -9,8 +9,8 @@ import numpy as np
 import boto3
 from dateutil.tz import tzutc
 from botocore.exceptions import NoRegionError, NoCredentialsError
-from beep_ep.utils import KinesisEvents, Logger
-from beep_ep import TEST_FILE_DIR, ENVIRONMENT, __version__
+from beep.utils import KinesisEvents, Logger
+from beep import TEST_FILE_DIR, ENVIRONMENT, __version__
 
 
 class KinesisEventsTest(unittest.TestCase):
@@ -77,7 +77,7 @@ class KinesisEventsTest(unittest.TestCase):
     @unittest.skipIf(beep_kinesis_connection_broken, "Unable to connect to Kinesis")
     def test_kinesis_put_upload_retrigger_event(self):
         events = KinesisEvents(service='Testing', mode='test')
-        s3_bucket = "beep_ep-input-data"
+        s3_bucket = "beep-input-data"
         obj = {
             'Key': 'd3Batt/raw/arbin/FastCharge_000002_CH2_Metadata.csv',
             'LastModified': datetime.datetime(2019, 4, 4, 23, 19, 20, tzinfo=tzutc()),

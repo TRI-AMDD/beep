@@ -7,8 +7,8 @@ import json
 import numpy as np
 import pandas as pd
 from glob import glob
-from beep_ep import TEST_FILE_DIR
-from beep_ep.run_model import DegradationModel, process_file_list_from_json, get_project_name_from_list
+from beep import TEST_FILE_DIR
+from beep.run_model import DegradationModel, process_file_list_from_json, get_project_name_from_list
 from monty.serialization import dumpfn, loadfn
 
 import boto3

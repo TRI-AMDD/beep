@@ -6,8 +6,8 @@ import unittest
 import json
 import boto3
 import datetime
-from beep_ep import TEST_FILE_DIR, PROCEDURE_TEMPLATE_DIR
-from beep_ep.generate_protocol import ProcedureFile, \
+from beep import TEST_FILE_DIR, PROCEDURE_TEMPLATE_DIR
+from beep.generate_protocol import ProcedureFile, \
     generate_protocol_files_from_csv
 from monty.tempfile import ScratchDir
 from monty.serialization import dumpfn, loadfn

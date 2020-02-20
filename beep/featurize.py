@@ -12,7 +12,7 @@ Options:
 
 
 The `featurize` script will generate features according to the methods
-contained in beep_ep.featurize.  It places output files corresponding to
+contained in beep.featurize.  It places output files corresponding to
 features in `/data-share/features/`.
 
 The input json must contain the following fields
@@ -40,9 +40,9 @@ from docopt import docopt
 from monty.json import MSONable
 from monty.serialization import loadfn, dumpfn
 from scipy.stats import skew, kurtosis
-from beep_ep.collate import scrub_underscore_suffix, add_suffix_to_filename
-from beep_ep.utils import KinesisEvents
-from beep_ep import logger, __version__
+from beep.collate import scrub_underscore_suffix, add_suffix_to_filename
+from beep.utils import KinesisEvents
+from beep import logger, __version__
 
 s = {'service': 'DataAnalyzer'}
 
@@ -115,7 +115,7 @@ class DegradationPredictor(MSONable):
         Generate features listed in early prediction manuscript
 
         Args:
-            processed_cycler_run (beep_ep.structure.ProcessedCyclerRun): information about cycler run
+            processed_cycler_run (beep.structure.ProcessedCyclerRun): information about cycler run
             init_pred_cycle (int): index of initial cycle index used for predictions
             mid_pred_cycle (int): index of intermediate cycle index used for predictions
             final_pred_cycle (int): index of highest cycle index used for predictions
@@ -126,7 +126,7 @@ class DegradationPredictor(MSONable):
             diagnostic_features (bool): whether or not to compute diagnostic features
 
         Returns:
-            beep_ep.featurize.DegradationPredictor: DegradationPredictor corresponding to the ProcessedCyclerRun file.
+            beep.featurize.DegradationPredictor: DegradationPredictor corresponding to the ProcessedCyclerRun file.
         """
         assert mid_pred_cycle > 10, 'Insufficient cycles for analysis'
         assert final_pred_cycle > mid_pred_cycle, 'Must have final_pred_cycle > mid_pred_cycle'
@@ -285,7 +285,7 @@ def init_diagnostic_features(processed_cycler_run, diagnostic_param_dict=None):
     Generate features from diagnostic steps only. Placeholder method for now.
 
     Args:
-        processed_cycler_run (beep_ep.structure.ProcessedCyclerRun): information about cycler run.
+        processed_cycler_run (beep.structure.ProcessedCyclerRun): information about cycler run.
         diagnostic_param_dict (dict): placeholder dict to specify constraints for diagnostic features.
 
     Returns:

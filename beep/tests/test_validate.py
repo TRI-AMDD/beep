@@ -11,9 +11,9 @@ import boto3
 
 from botocore.exceptions import NoRegionError, NoCredentialsError
 from monty.tempfile import ScratchDir
-from beep_ep.validate import ValidatorBeep, validate_file_list_from_json, \
+from beep.validate import ValidatorBeep, validate_file_list_from_json, \
     SimpleValidator
-from beep_ep import TEST_FILE_DIR, S3_CACHE, VALIDATION_SCHEMA_DIR
+from beep import TEST_FILE_DIR, S3_CACHE, VALIDATION_SCHEMA_DIR
 
 
 @unittest.skip

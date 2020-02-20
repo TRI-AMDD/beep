@@ -13,7 +13,7 @@ from tempfile import mkdtemp
 from monty.serialization import loadfn
 from botocore.exceptions import NoRegionError, NoCredentialsError
 
-from beep_ep import collate, validate, structure, featurize,\
+from beep import collate, validate, structure, featurize,\
     run_model, TEST_FILE_DIR
 
 

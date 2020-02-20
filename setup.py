@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-setup(name="beep_ep",
+setup(name="beep",
       packages=find_packages(),
       install_requires=["numpy>1.16.0",
                         "monty>=2.0.6",
@@ -30,11 +30,11 @@ setup(name="beep_ep",
       },
       entry_points={
           "console_scripts": [
-              "collate = beep_ep.collate:main",
-              "validate = beep_ep.validate:main",
-              "structure = beep_ep.structure:main",
-              "featurize = beep_ep.featurize:main",
-              "run_model = beep_ep.run_model:main",
-              "generate_protocol = beep_ep.generate_protocol:main"
+              "collate = beep.collate:main",
+              "validate = beep.validate:main",
+              "structure = beep.structure:main",
+              "featurize = beep.featurize:main",
+              "run_model = beep.run_model:main",
+              "generate_protocol = beep.generate_protocol:main"
           ]
       })

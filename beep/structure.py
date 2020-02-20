@@ -49,14 +49,14 @@ from monty.json import MSONable
 from docopt import docopt
 from monty.serialization import loadfn, dumpfn
 from glob import glob
-from beep_ep import tqdm
+from beep import tqdm
 
-from beep_ep import StringIO, MODULE_DIR
-from beep_ep.validate import ValidatorBeep, BeepValidationError
-from beep_ep.collate import add_suffix_to_filename
-from beep_ep.conversion_schemas import ARBIN_CONFIG, MACCOR_CONFIG, FastCharge_CONFIG, xTesladiag_CONFIG, INDIGO_CONFIG
-from beep_ep.utils import KinesisEvents
-from beep_ep import logger, __version__
+from beep import StringIO, MODULE_DIR
+from beep.validate import ValidatorBeep, BeepValidationError
+from beep.collate import add_suffix_to_filename
+from beep.conversion_schemas import ARBIN_CONFIG, MACCOR_CONFIG, FastCharge_CONFIG, xTesladiag_CONFIG, INDIGO_CONFIG
+from beep.utils import KinesisEvents
+from beep import logger, __version__
 
 s = {'service': 'DataStructurer'}
 
@@ -69,7 +69,7 @@ class RawCyclerRun(MSONable):
     Attributes:
         data (pandas.DataFrame): DataFrame corresponding to cycler run data.
         metadata (dict): Dict corresponding to cycler run metadata.
-        eis (beep_ep.structure.EISpectrum): electrochemical impedence spectrum object. Defaults to None.
+        eis (beep.structure.EISpectrum): electrochemical impedence spectrum object. Defaults to None.
         validate (bool): whether or not to validate DataFrame upon instantiation. Defaults to None.
     """
     # These define float and int columns for numeric binary save files
@@ -84,7 +84,7 @@ class RawCyclerRun(MSONable):
         Args:
             data (pandas.DataFrame): DataFrame corresponding to cycler run data
             metadata (dict): Dict corresponding to cycler run metadata
-            eis (beep_ep.structure.EISpectrum): electrochemical impedence spectrum object. Defaults to None
+            eis (beep.structure.EISpectrum): electrochemical impedence spectrum object. Defaults to None
             validate (bool): whether or not to validate DataFrame upon
                 instantiation. Defaults to None.
         """
@@ -110,7 +110,7 @@ class RawCyclerRun(MSONable):
             validate (bool): whether or not to validate file.
 
         Returns:
-            beep_ep.structure.RawCyclerRun: RawCyclerRun corresponding to parsed file(s).
+            beep.structure.RawCyclerRun: RawCyclerRun corresponding to parsed file(s).
 
         """
         if re.match(ARBIN_CONFIG['file_pattern'], path):
@@ -219,7 +219,7 @@ class RawCyclerRun(MSONable):
         Method for dictionary/json deserialization hook in MSONable
 
         Returns:
-            beep_ep.structure.RawCyclerRun:
+            beep.structure.RawCyclerRun:
         """
         data = pd.DataFrame(d['data'])
         data = data.sort_index()
@@ -476,7 +476,7 @@ class RawCyclerRun(MSONable):
             validate (bool): True if data is to be validated.
 
         Returns:
-            beep_ep.structure.RawCyclerRun
+            beep.structure.RawCyclerRun
         """
         metadata_path = path.replace(".csv", "_Metadata.csv")
         data = pd.read_csv(path)
@@ -505,7 +505,7 @@ class RawCyclerRun(MSONable):
             validate (bool): True if data is to be validated.
 
         Returns:
-            beep_ep.structure.RawCyclerRun
+            beep.structure.RawCyclerRun
         """
 
         data = pd.read_hdf(path, 'time_series_data')
@@ -673,7 +673,7 @@ class RawCyclerRun(MSONable):
         Method for converting to ProcessedCyclerRun
 
         Returns:
-            beep_ep.structure.ProcessedCyclerRun: ProcessedCyclerRun that corresponds to processed RawCyclerRun
+            beep.structure.ProcessedCyclerRun: ProcessedCyclerRun that corresponds to processed RawCyclerRun
 
         """
         v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \
@@ -707,7 +707,7 @@ class RawCyclerRun(MSONable):
             name (str): str prefix for numeric and metadata files
 
         Returns:
-            beep_ep_structure.RawCyclerRun loaded from binary files
+            beep_structure.RawCyclerRun loaded from binary files
 
         """
         loaded = np.load("{}.npz".format(name))
@@ -774,7 +774,7 @@ class ProcessedCyclerRun(MSONable):
         Method to invoke ProcessedCyclerRun from RawCyclerRun object
 
         Args:
-            raw_cycler_run (beep_ep.structure.RawCyclerRun): RawCyclerRun object to create
+            raw_cycler_run (beep.structure.RawCyclerRun): RawCyclerRun object to create
                 ProcessedCyclerRun from.
             v_range ([int, int]): range of voltages for cycle interpolation.
             resolution (int): resolution for cycle interpolation.
@@ -814,7 +814,7 @@ class ProcessedCyclerRun(MSONable):
             validate (bool): whether or not to validate file
 
         Returns:
-            beep_ep.structure.ProcessedCyclerRun: ProcessedCyclerRun corresponding
+            beep.structure.ProcessedCyclerRun: ProcessedCyclerRun corresponding
                 to the read and processed data from the filename
 
         """
@@ -940,7 +940,7 @@ class ProcessedCyclerRun(MSONable):
             d (dict): dictionary represenation.
 
         Returns:
-            beep_ep.structure.ProcessedCyclerRun: deserialized ProcessedCyclerRun.
+            beep.structure.ProcessedCyclerRun: deserialized ProcessedCyclerRun.
         """
         """MSONable deserialization method"""
         d['cycles_interpolated'] = pd.DataFrame(d['cycles_interpolated'])
@@ -979,7 +979,7 @@ class ProcessedCyclerRun(MSONable):
             name (str): filename for numpy binary to be loaded.
 
         Returns:
-            beep_ep.structure.ProcessedCyclerRun: loaded from numpy binary
+            beep.structure.ProcessedCyclerRun: loaded from numpy binary
 
         """
         if not name.endswith(".npz"):
@@ -1021,7 +1021,7 @@ class EISpectrum(MSONable):
             filename(str): path to data file.
 
         Returns:
-            beep_ep.structure.EISpectrum: EISpectrum object representation of
+            beep.structure.EISpectrum: EISpectrum object representation of
                 data.
         """
         raise NotImplementedError("from_csv not implemented for EISpectrum")
@@ -1035,7 +1035,7 @@ class EISpectrum(MSONable):
             filename (str): file path to data.
 
         Returns:
-            beep_ep.strucure.EISpectrum: EISpectrum object representation of
+            beep.strucure.EISpectrum: EISpectrum object representation of
                 data.
         """
         with open(filename) as f:

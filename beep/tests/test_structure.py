@@ -11,8 +11,8 @@ import numpy as np
 import pandas as pd
 from botocore.exceptions import NoRegionError, NoCredentialsError
 
-from beep_ep import TEST_FILE_DIR, MODULE_DIR
-from beep_ep.structure import RawCyclerRun, ProcessedCyclerRun, add_suffix_to_filename, \
+from beep import TEST_FILE_DIR, MODULE_DIR
+from beep.structure import RawCyclerRun, ProcessedCyclerRun, add_suffix_to_filename, \
     process_file_list_from_json, EISpectrum, get_project_sequence, get_protocol_parameters, get_diagnostic_parameters
 from monty.serialization import loadfn, dumpfn
 from monty.tempfile import ScratchDir

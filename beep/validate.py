@@ -11,7 +11,7 @@ Options:
     --version       Show version
 
 The validation script, `validate`, runs the validation procedure contained
-in beep_ep.validate on renamed files according to the output of `collate`.
+in beep.validate on renamed files according to the output of `collate`.
 It also updates a general json validation record in `/data-share/validation/validation.json`.
 
 The input json must contain the following fields
@@ -48,13 +48,13 @@ import numpy as np
 import pandas as pd
 from docopt import docopt
 from cerberus import Validator
-from beep_ep import tqdm
+from beep import tqdm
 from monty.serialization import loadfn, dumpfn
 
-from beep_ep import VALIDATION_SCHEMA_DIR
-from beep_ep.conversion_schemas import ARBIN_CONFIG, MACCOR_CONFIG
-from beep_ep.utils import KinesisEvents
-from beep_ep import logger, __version__
+from beep import VALIDATION_SCHEMA_DIR
+from beep.conversion_schemas import ARBIN_CONFIG, MACCOR_CONFIG
+from beep.utils import KinesisEvents
+from beep import logger, __version__
 
 DEFAULT_ARBIN_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-arbin-lfp.yaml")
 DEFAULT_MACCOR_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-maccor-lfp.yaml")

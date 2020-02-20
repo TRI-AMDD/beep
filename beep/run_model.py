@@ -37,14 +37,14 @@ import datetime
 from docopt import docopt
 from monty.json import MSONable
 from monty.serialization import loadfn, dumpfn
-from beep_ep.collate import scrub_underscore_suffix, add_suffix_to_filename
+from beep.collate import scrub_underscore_suffix, add_suffix_to_filename
 from sklearn.linear_model import Lasso, LassoCV, RidgeCV, Ridge, ElasticNetCV, \
     ElasticNet, MultiTaskElasticNet, MultiTaskElasticNetCV
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
-from beep_ep.utils import KinesisEvents
-from beep_ep import TEST_FILE_DIR
-from beep_ep import logger, __version__
+from beep.utils import KinesisEvents
+from beep import TEST_FILE_DIR
+from beep import logger, __version__
 
 s = {'service': 'DataAnalyzer'}
 # Projects that have cycling profiles compatible with the FastCharge model should be included in the list below
@@ -177,7 +177,7 @@ class DegradationModel(MSONable):
             d (dict):
 
         Returns:
-            beep_ep.run_model.DegradationModel:
+            beep.run_model.DegradationModel:
         """
         return cls(**d)
 
@@ -245,7 +245,7 @@ class DegradationModel(MSONable):
     def predict(self, features):
         """
         Args:
-            features (beep_ep.featurize.DegradationPredictor): features in
+            features (beep.featurize.DegradationPredictor): features in
                 DegradationPredictor format.
 
         Returns:

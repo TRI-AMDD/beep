@@ -20,7 +20,7 @@ COPY . /home/beep_ep/
 ARG BEEP_EP_VERSION_TAG="docker-built"
 ENV BEEP_EP_VERSION_TAG=$BEEP_EP_VERSION_TAG
 
-# Install beep_ep
+# Install beep
 RUN source /opt/conda/bin/activate beep && \
     pip install -e .[tests] && \
     chmod +x dockertest.sh

@@ -9,9 +9,9 @@ import boto3
 import numpy as np
 from botocore.exceptions import NoRegionError, NoCredentialsError
 
-from beep_ep import TEST_FILE_DIR
-from beep_ep.structure import RawCyclerRun, ProcessedCyclerRun
-from beep_ep.featurize import DegradationPredictor, process_file_list_from_json
+from beep import TEST_FILE_DIR
+from beep.structure import RawCyclerRun, ProcessedCyclerRun
+from beep.featurize import DegradationPredictor, process_file_list_from_json
 from monty.serialization import dumpfn, loadfn
 
 processed_cycler_file = "2017-06-30_2C-10per_6C_CH10_structure.json"
