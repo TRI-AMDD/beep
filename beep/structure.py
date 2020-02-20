@@ -589,6 +589,7 @@ class RawCyclerRun(MSONable):
         # Parse data
         data = pd.read_csv(filename, delimiter="\t", skiprows=1)
         data = data.rename(str.lower, axis='columns')
+        data = data.astype(MACCOR_CONFIG['data_types'])
         data = data.rename(MACCOR_CONFIG['data_columns'], axis='columns')
         data['charge_capacity'] = cls.get_maccor_quantity_sum(data, 'capacity', 'charge')
         data['discharge_capacity'] = cls.get_maccor_quantity_sum(data, 'capacity', 'discharge')
