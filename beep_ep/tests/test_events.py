@@ -9,8 +9,8 @@ import numpy as np
 import boto3
 from dateutil.tz import tzutc
 from botocore.exceptions import NoRegionError, NoCredentialsError
-from beep.utils import KinesisEvents, Logger
-from beep import TEST_FILE_DIR, ENVIRONMENT, __version__
+from beep_ep.utils import KinesisEvents, Logger
+from beep_ep import TEST_FILE_DIR, ENVIRONMENT, __version__
 
 
 class KinesisEventsTest(unittest.TestCase):

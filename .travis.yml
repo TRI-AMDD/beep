@@ -1,0 +1,10 @@
+language: python
+python:
+  - "3.6"
+env:
+  - BEEP_EP_ENV=dev
+install:
+  pip install -e .[tests]
+script:
+  nosetests .
+

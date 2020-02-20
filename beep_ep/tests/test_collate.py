@@ -6,8 +6,8 @@ import os
 from monty.serialization import loadfn
 from monty.tempfile import ScratchDir
 from pathlib import Path
-from beep.collate import get_parameters_fastcharge, get_parameters_oed, process_files_json
-from beep import TEST_FILE_DIR
+from beep_ep.collate import get_parameters_fastcharge, get_parameters_oed, process_files_json
+from beep_ep import TEST_FILE_DIR
 
 
 class CollateTest(unittest.TestCase):

@@ -4,8 +4,8 @@
 import os
 import unittest
 import numpy as np
-from beep import TEST_FILE_DIR
-from beep.utils import MaccorSplice
+from beep_ep import TEST_FILE_DIR
+from beep_ep.utils import MaccorSplice
 
 
 class SpliceTest(unittest.TestCase):
