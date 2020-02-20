@@ -37,7 +37,7 @@ import datetime
 from docopt import docopt
 from monty.json import MSONable
 from monty.serialization import loadfn, dumpfn
-from beep.collate import scrub_underscore_suffix, add_suffix_to_filename
+from beep_ep.collate import scrub_underscore_suffix, add_suffix_to_filename
 from sklearn.linear_model import Lasso, LassoCV, RidgeCV, Ridge, ElasticNetCV, \
     ElasticNet, MultiTaskElasticNet, MultiTaskElasticNetCV
 from sklearn.metrics import mean_squared_error
