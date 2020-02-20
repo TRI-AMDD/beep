@@ -5,7 +5,7 @@ import unittest
 import numpy as np
 from beep_ep import TEST_FILE_DIR
 from sklearn.decomposition import PCA
-from beep.principal_components import PrincipalComponents, pivot_data
+from beep_ep.principal_components import PrincipalComponents, pivot_data
 
 class PrincipalComponentsTest(unittest.TestCase):
     def setUp(self):

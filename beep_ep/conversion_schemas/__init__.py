@@ -2,7 +2,7 @@
 
 import os
 
-from beep import CONVERSION_SCHEMA_DIR
+from beep_ep import CONVERSION_SCHEMA_DIR
 from monty.serialization import loadfn
 
 
