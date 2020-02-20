@@ -12,11 +12,11 @@ export TQDM_OFF=1
 
 # Run nosetests
 nosetests --with-xunit --all-modules --traverse-namespace \
-    --with-coverage --cover-package=beep --cover-inclusive
+    --with-coverage --cover-package=beep_ep --cover-inclusive
 
 # Generate coverage
-python -m coverage xml --include=beep*
+python -m coverage xml --include=beep_ep*
 
 # Do linting
-pylint -f parseable -d I0011,R0801 beep | tee pylint.out
+pylint -f parseable -d I0011,R0801 beep_ep | tee pylint.out
 

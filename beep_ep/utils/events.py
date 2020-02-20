@@ -63,7 +63,7 @@ class KinesisEvents:
         self.mode = mode
 
         if self.mode == 'run':
-            self.stream = 'beep-events'
+            self.stream = 'beep_ep-events'
             self.kinesis = boto3.client('kinesis', region_name='us-west-2')
 
         if self.mode == 'test':
@@ -148,7 +148,7 @@ class KinesisEvents:
             print(error)
             return error
 
-        # Create the dict that contains the standard format for all services in beep
+        # Create the dict that contains the standard format for all services in beep_ep
         record = {
             "timestamp": datetime.datetime.now(pytz.utc).isoformat(),  # Example: '2019-02-27T17:37:40.626564+00:00'
             "service": self.service,  # Example 'DataSyncer'

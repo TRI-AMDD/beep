@@ -77,7 +77,7 @@ class KinesisEventsTest(unittest.TestCase):
     @unittest.skipIf(beep_kinesis_connection_broken, "Unable to connect to Kinesis")
     def test_kinesis_put_upload_retrigger_event(self):
         events = KinesisEvents(service='Testing', mode='test')
-        s3_bucket = "beep-input-data"
+        s3_bucket = "beep_ep-input-data"
         obj = {
             'Key': 'd3Batt/raw/arbin/FastCharge_000002_CH2_Metadata.csv',
             'LastModified': datetime.datetime(2019, 4, 4, 23, 19, 20, tzinfo=tzutc()),

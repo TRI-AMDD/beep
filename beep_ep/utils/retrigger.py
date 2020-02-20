@@ -24,7 +24,7 @@ import ast
 from docopt import docopt
 from beep.utils import KinesisEvents
 
-S3_BUCKET = "beep-input-data"
+S3_BUCKET = "beep_ep-input-data"
 
 
 class DotDict(collections.OrderedDict):

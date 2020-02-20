@@ -49,14 +49,14 @@ from monty.json import MSONable
 from docopt import docopt
 from monty.serialization import loadfn, dumpfn
 from glob import glob
-from beep import tqdm
+from beep_ep import tqdm
 
-from beep import StringIO, MODULE_DIR
-from beep.validate import ValidatorBeep, BeepValidationError
-from beep.collate import add_suffix_to_filename
-from beep.conversion_schemas import ARBIN_CONFIG, MACCOR_CONFIG, FastCharge_CONFIG, xTesladiag_CONFIG, INDIGO_CONFIG
-from beep.utils import KinesisEvents
-from beep import logger, __version__
+from beep_ep import StringIO, MODULE_DIR
+from beep_ep.validate import ValidatorBeep, BeepValidationError
+from beep_ep.collate import add_suffix_to_filename
+from beep_ep.conversion_schemas import ARBIN_CONFIG, MACCOR_CONFIG, FastCharge_CONFIG, xTesladiag_CONFIG, INDIGO_CONFIG
+from beep_ep.utils import KinesisEvents
+from beep_ep import logger, __version__
 
 s = {'service': 'DataStructurer'}
 
@@ -476,7 +476,7 @@ class RawCyclerRun(MSONable):
             validate (bool): True if data is to be validated.
 
         Returns:
-            beep.structure.RawCyclerRun
+            beep_ep.structure.RawCyclerRun
         """
         metadata_path = path.replace(".csv", "_Metadata.csv")
         data = pd.read_csv(path)
@@ -505,7 +505,7 @@ class RawCyclerRun(MSONable):
             validate (bool): True if data is to be validated.
 
         Returns:
-            beep.structure.RawCyclerRun
+            beep_ep.structure.RawCyclerRun
         """
 
         data = pd.read_hdf(path, 'time_series_data')
@@ -1035,7 +1035,7 @@ class EISpectrum(MSONable):
             filename (str): file path to data.
 
         Returns:
-            beep.strucure.EISpectrum: EISpectrum object representation of
+            beep_ep.strucure.EISpectrum: EISpectrum object representation of
                 data.
         """
         with open(filename) as f:

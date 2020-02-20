@@ -42,9 +42,9 @@ from sklearn.linear_model import Lasso, LassoCV, RidgeCV, Ridge, ElasticNetCV, \
     ElasticNet, MultiTaskElasticNet, MultiTaskElasticNetCV
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
-from beep.utils import KinesisEvents
-from beep import TEST_FILE_DIR
-from beep import logger, __version__
+from beep_ep.utils import KinesisEvents
+from beep_ep import TEST_FILE_DIR
+from beep_ep import logger, __version__
 
 s = {'service': 'DataAnalyzer'}
 # Projects that have cycling profiles compatible with the FastCharge model should be included in the list below

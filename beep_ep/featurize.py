@@ -12,7 +12,7 @@ Options:
 
 
 The `featurize` script will generate features according to the methods
-contained in beep.featurize.  It places output files corresponding to
+contained in beep_ep.featurize.  It places output files corresponding to
 features in `/data-share/features/`.
 
 The input json must contain the following fields
@@ -40,9 +40,9 @@ from docopt import docopt
 from monty.json import MSONable
 from monty.serialization import loadfn, dumpfn
 from scipy.stats import skew, kurtosis
-from beep.collate import scrub_underscore_suffix, add_suffix_to_filename
-from beep.utils import KinesisEvents
-from beep import logger, __version__
+from beep_ep.collate import scrub_underscore_suffix, add_suffix_to_filename
+from beep_ep.utils import KinesisEvents
+from beep_ep import logger, __version__
 
 s = {'service': 'DataAnalyzer'}
 

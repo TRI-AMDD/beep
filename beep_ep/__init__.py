@@ -1,7 +1,7 @@
 #  Copyright (c) 2019 Toyota Research Institute
 """
-Top-level module for beep.  Put anything that should
-be available in the beep namespace here.
+Top-level module for beep_ep.  Put anything that should
+be available in the beep_ep namespace here.
 """
 import os
 import logging
@@ -56,7 +56,7 @@ np.set_printoptions(precision=3)
 container = config[ENVIRONMENT]['logging']['container']
 
 # initialize logger and clear previous handlers and filters, if exist
-logger = logging.getLogger(ENVIRONMENT + "/beep")
+logger = logging.getLogger(ENVIRONMENT + "/beep_ep")
 logger.handlers = []
 logger.filters = []
 
@@ -69,7 +69,7 @@ formatter = logging.Formatter(fmt_str)
 # output and format
 if 'CloudWatch' in config[ENVIRONMENT]['logging']['streams']:
     if ENVIRONMENT == "stage":
-        hdlr = watchtower.CloudWatchLogHandler(log_group='/stage/beep/services')
+        hdlr = watchtower.CloudWatchLogHandler(log_group='/stage/beep_ep/services')
     else:
         hdlr = watchtower.CloudWatchLogHandler(log_group='Worker')
     hdlr.setFormatter(formatter)
