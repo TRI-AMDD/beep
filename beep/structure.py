@@ -387,7 +387,16 @@ class RawCyclerRun(MSONable):
         assert len(diag_cycles_at) == len(diag_cycle_type)
 
         diag_data = self.data[self.data['cycle_index'].isin(diag_cycles_at)]
-        group = diag_data.groupby(["cycle_index", "step_index"])
+
+        #Counter to ensure non-contiguous repeats of step_index within same cycle_index are grouped separately
+        diag_data['step_index_counter'] = 0
+
+        for cycle_index in diag_cycles_at:
+            indices = diag_data.loc[diag_data.cycle_index == cycle_index].index
+            step_index_list = diag_data.step_index.loc[indices]
+            diag_data['step_index_counter'].loc[indices] = step_index_list.ne(step_index_list.shift()).cumsum()
+
+        group = diag_data.groupby(["cycle_index", "step_index", "step_index_counter"])
         incl_columns = ["current", "charge_capacity", "discharge_capacity",
                         "charge_energy", "discharge_energy", "internal_resistance",
                         "temperature", "date_time_iso"]
@@ -398,12 +407,13 @@ class RawCyclerRun(MSONable):
             diag_dict[cycle] = list(steps)
 
         all_dfs = []
-        for (cycle_index, step_index), df in tqdm(group):
+        for (cycle_index, step_index, step_index_counter), df in tqdm(group):
             new_df = get_interpolated_data(df, field_name="voltage", field_range=v_range,
                                            columns=incl_columns, resolution=n_interp_diagnostic)
             new_df['cycle_index'] = cycle_index
             new_df['cycle_type'] = diag_cycle_type[diag_cycles_at.index(cycle_index)]
             new_df['step_index'] = step_index
+            new_df['step_index_counter'] = step_index_counter
             new_df['step_type'] = diag_dict[cycle_index].index(step_index)
             new_df['discharge_dQdV'] = new_df.discharge_capacity.diff() / new_df.voltage.diff()
             new_df['charge_dQdV'] = new_df.charge_capacity.diff() / new_df.voltage.diff()
