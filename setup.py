@@ -1,6 +1,8 @@
 from setuptools import setup, find_packages
 
 setup(name="beep",
+      url="https://github.com/ToyotaResearchInstitute/beep",
+      version="02.21.2020",
       packages=find_packages(),
       install_requires=["numpy>1.16.0",
                         "monty>=2.0.6",
@@ -37,4 +39,24 @@ setup(name="beep",
               "run_model = beep.run_model:main",
               "generate_protocol = beep.generate_protocol:main"
           ]
-      })
+      },
+      classifiers=[
+          "Programming Language :: Python :: 3",
+          "License :: OSI Approved :: Apache Software License"
+          "Operating System :: OS Independent",
+      ],
+      package_data={
+          "beep.conversion_schemas": ["*.yaml", "*.md"],
+          "beep.procedure_templates": ["*"],
+          "beep.validation_schemas": ["*.yaml"],
+      },
+      author="AMDD - Toyota Research Institute",
+      author_email="patrick.herring@tri.global",
+      maintainer="Patrick Herring",
+      maintainer_email="patrick.herring@tri.global",
+      license="Apache",
+      keywords=[
+          "materials", "battery", "chemistry", "science",
+          "electrochemistry", "energy", "AI", "artificial intelligence"
+      ],
+      )
