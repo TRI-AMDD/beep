@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(name="beep",
       url="https://github.com/ToyotaResearchInstitute/beep",
-      version="02.21.2020",
+      version="2020.2.21",
       packages=find_packages(),
       install_requires=["numpy==1.18.1",
                         "monty==3.0.2",
