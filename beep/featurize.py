@@ -115,7 +115,7 @@ class DegradationPredictor(MSONable):
         Generate features listed in early prediction manuscript
 
         Args:
-            processed_cycler_run (beep_ep.structure.ProcessedCyclerRun): information about cycler run
+            processed_cycler_run (beep.structure.ProcessedCyclerRun): information about cycler run
             init_pred_cycle (int): index of initial cycle index used for predictions
             mid_pred_cycle (int): index of intermediate cycle index used for predictions
             final_pred_cycle (int): index of highest cycle index used for predictions
@@ -126,7 +126,7 @@ class DegradationPredictor(MSONable):
             diagnostic_features (bool): whether or not to compute diagnostic features
 
         Returns:
-            beep_ep.featurize.DegradationPredictor: DegradationPredictor corresponding to the ProcessedCyclerRun file.
+            beep.featurize.DegradationPredictor: DegradationPredictor corresponding to the ProcessedCyclerRun file.
         """
         assert mid_pred_cycle > 10, 'Insufficient cycles for analysis'
         assert final_pred_cycle > mid_pred_cycle, 'Must have final_pred_cycle > mid_pred_cycle'
@@ -285,7 +285,7 @@ def init_diagnostic_features(processed_cycler_run, diagnostic_param_dict=None):
     Generate features from diagnostic steps only. Placeholder method for now.
 
     Args:
-        processed_cycler_run (beep_ep.structure.ProcessedCyclerRun): information about cycler run.
+        processed_cycler_run (beep.structure.ProcessedCyclerRun): information about cycler run.
         diagnostic_param_dict (dict): placeholder dict to specify constraints for diagnostic features.
 
     Returns:
@@ -363,7 +363,7 @@ def process_file_list_from_json(file_list_json, processed_dir='data-share/featur
     events = KinesisEvents(service='DataAnalyzer', mode=file_list_data['mode'])
 
     # Add root path to processed_dir
-    processed_dir = os.path.join(os.environ.get("BEEP_EP_ROOT", "/"),
+    processed_dir = os.path.join(os.environ.get("BEEP_ROOT", "/"),
                                  processed_dir)
     file_list = file_list_data['file_list']
     run_ids = file_list_data['run_list']

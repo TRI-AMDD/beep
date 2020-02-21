@@ -9,7 +9,7 @@ Options:
     -h --help       Show this screen
     --version       Show version
 
-The `collate` script takes no input, and operates by assuming the BEEP_EP_ROOT (default `/`)
+The `collate` script takes no input, and operates by assuming the BEEP_ROOT (default `/`)
 has subdirectories `/data-share/raw_cycler_files` and `data-share/renamed_cycler_files/FastCharge`.
 
 The script moves files from the `/data-share/raw_cycler_files` directory, parses the metadata,
@@ -218,7 +218,7 @@ def init_map(project_name, destination_directory):
 
 def process_files_json():
     """
-    Inspects the BEEP_EP_ROOT directory and renames
+    Inspects the BEEP_ROOT directory and renames
     files according to the prescribed system of protocol/date/run ID
     associated with the file metadata.  Since this script operates
     only on filesystem assumptions, no input is required.
@@ -228,7 +228,7 @@ def process_files_json():
     """
     # chdir into beep root
     pwd = os.getcwd()
-    os.chdir(os.environ.get("BEEP_EP_ROOT", "/"))
+    os.chdir(os.environ.get("BEEP_ROOT", "/"))
 
     meta_list = list(filter(lambda x: '_Metadata.csv' in x, os.listdir(SRC_DIR)))
     file_list = list(filter(lambda x: '.csv' in x if x not in meta_list else None, os.listdir(SRC_DIR)))

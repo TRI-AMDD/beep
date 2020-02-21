@@ -43,7 +43,7 @@ class CollateTest(unittest.TestCase):
             params = get_parameters_fastcharge(filename, source_directory)
 
         with ScratchDir('.'):
-            os.environ["BEEP_EP_ROOT"] = os.getcwd()
+            os.environ["BEEP_ROOT"] = os.getcwd()
             os.mkdir("data-share")
             os.mkdir(os.path.join("data-share", "raw_cycler_files"))
             os.mkdir(os.path.join("data-share", "renamed_cycler_files"))

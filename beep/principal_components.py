@@ -51,7 +51,7 @@ class PrincipalComponents(MSONable):
             cycles_to_pca (int): how many cycles per file to use for pca decomposition.
 
         Returns:
-            beep_ep.principal_components.PrincipalComponents:
+            beep.principal_components.PrincipalComponents:
         """
         return cls(pivot_data(file_list_json, qty_to_pca, pivot_column, cycles_to_pca), name)
 

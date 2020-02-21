@@ -33,8 +33,8 @@ class EndToEndTest(unittest.TestCase):
         os.chdir(scratch_dir)
         self.scratch_dir = scratch_dir
 
-        # Set BEEP_EP_ROOT directory to scratch_dir
-        os.environ['BEEP_EP_ROOT'] = scratch_dir
+        # Set BEEP_ROOT directory to scratch_dir
+        os.environ['BEEP_ROOT'] = scratch_dir
 
         # Create data-share and subfolders
         os.mkdir("data-share")

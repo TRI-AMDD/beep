@@ -70,7 +70,7 @@ class TestFeaturizer(unittest.TestCase):
 
     @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_diagnostic_feature_generation(self):
-        os.environ['BEEP_EP_ROOT'] = TEST_FILE_DIR
+        os.environ['BEEP_ROOT'] = TEST_FILE_DIR
         maccor_file_w_parameters = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000136_00002D.037")
         raw_run = RawCyclerRun.from_file(maccor_file_w_parameters)
         v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \

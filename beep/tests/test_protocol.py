@@ -178,8 +178,8 @@ class GenerateProcedureTest(unittest.TestCase):
 
         # Test script functionality
         with ScratchDir('.') as scratch_dir:
-            # Set BEEP_EP_ROOT directory to scratch_dir
-            os.environ['BEEP_EP_ROOT'] = os.getcwd()
+            # Set BEEP_ROOT directory to scratch_dir
+            os.environ['BEEP_ROOT'] = os.getcwd()
             makedirs_p("data-share/protocols/procedures")
             makedirs_p("data-share/protocols/names")
             # Test the script

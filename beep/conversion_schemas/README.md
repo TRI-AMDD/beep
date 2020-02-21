@@ -3,7 +3,7 @@
 This folder is intended to contain rough documentation of data columns and
 metadata fields of different instruments, along with some data used for the
 conversion of the columns/metadata fields to a common set in the invocation of
-of the beep_ep.structure.RawCyclerRun object.  Schema may be represented in json or yaml.
+of the beep.structure.RawCyclerRun object.  Schema may be represented in json or yaml.
 
 In each schema, the following may be specified:
 

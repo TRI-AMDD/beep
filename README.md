@@ -30,7 +30,7 @@ as input in order to provide flexibility and more facile automation.  They are d
 below:
 
 ### collate
-The `collate` script takes no input, and operates by assuming the BEEP_EP_ROOT (default `/`)
+The `collate` script takes no input, and operates by assuming the BEEP_ROOT (default `/`)
 has subdirectories `/data-share/raw_cycler_files` and `data-share/renamed_cycler_files/FastCharge`.
 
 The script moves files from the `/data-share/raw_cycler_files` directory, parses the metadata,
@@ -80,7 +80,7 @@ $ collate
 
 ### validate
 The validation script, `validate`, runs the validation procedure contained
-in beep_ep.validate on renamed files according to the output of `rename` above.
+in beep.validate on renamed files according to the output of `rename` above.
 It also updates a general json validation record in `/data-share/validation/validation.json`.
 
 The input json must contain the following fields
@@ -165,7 +165,7 @@ $ structure '{
 
 ### featurize
 The `featurize` script will generate features according to the methods
-contained in beep_ep.generate_features.  It places output files corresponding to 
+contained in beep.generate_features.  It places output files corresponding to 
 features in `/data-share/features/`.
 
 The input json must contain the following fields

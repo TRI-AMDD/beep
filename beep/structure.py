@@ -69,7 +69,7 @@ class RawCyclerRun(MSONable):
     Attributes:
         data (pandas.DataFrame): DataFrame corresponding to cycler run data.
         metadata (dict): Dict corresponding to cycler run metadata.
-        eis (beep_ep.structure.EISpectrum): electrochemical impedence spectrum object. Defaults to None.
+        eis (beep.structure.EISpectrum): electrochemical impedence spectrum object. Defaults to None.
         validate (bool): whether or not to validate DataFrame upon instantiation. Defaults to None.
     """
     # These define float and int columns for numeric binary save files
@@ -84,7 +84,7 @@ class RawCyclerRun(MSONable):
         Args:
             data (pandas.DataFrame): DataFrame corresponding to cycler run data
             metadata (dict): Dict corresponding to cycler run metadata
-            eis (beep_ep.structure.EISpectrum): electrochemical impedence spectrum object. Defaults to None
+            eis (beep.structure.EISpectrum): electrochemical impedence spectrum object. Defaults to None
             validate (bool): whether or not to validate DataFrame upon
                 instantiation. Defaults to None.
         """
@@ -110,7 +110,7 @@ class RawCyclerRun(MSONable):
             validate (bool): whether or not to validate file.
 
         Returns:
-            beep_ep.structure.RawCyclerRun: RawCyclerRun corresponding to parsed file(s).
+            beep.structure.RawCyclerRun: RawCyclerRun corresponding to parsed file(s).
 
         """
         if re.match(ARBIN_CONFIG['file_pattern'], path):
@@ -219,7 +219,7 @@ class RawCyclerRun(MSONable):
         Method for dictionary/json deserialization hook in MSONable
 
         Returns:
-            beep_ep.structure.RawCyclerRun:
+            beep.structure.RawCyclerRun:
         """
         data = pd.DataFrame(d['data'])
         data = data.sort_index()
@@ -673,7 +673,7 @@ class RawCyclerRun(MSONable):
         Method for converting to ProcessedCyclerRun
 
         Returns:
-            beep_ep.structure.ProcessedCyclerRun: ProcessedCyclerRun that corresponds to processed RawCyclerRun
+            beep.structure.ProcessedCyclerRun: ProcessedCyclerRun that corresponds to processed RawCyclerRun
 
         """
         v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \
@@ -707,7 +707,7 @@ class RawCyclerRun(MSONable):
             name (str): str prefix for numeric and metadata files
 
         Returns:
-            beep_ep_structure.RawCyclerRun loaded from binary files
+            beep_structure.RawCyclerRun loaded from binary files
 
         """
         loaded = np.load("{}.npz".format(name))
@@ -774,7 +774,7 @@ class ProcessedCyclerRun(MSONable):
         Method to invoke ProcessedCyclerRun from RawCyclerRun object
 
         Args:
-            raw_cycler_run (beep_ep.structure.RawCyclerRun): RawCyclerRun object to create
+            raw_cycler_run (beep.structure.RawCyclerRun): RawCyclerRun object to create
                 ProcessedCyclerRun from.
             v_range ([int, int]): range of voltages for cycle interpolation.
             resolution (int): resolution for cycle interpolation.
@@ -814,7 +814,7 @@ class ProcessedCyclerRun(MSONable):
             validate (bool): whether or not to validate file
 
         Returns:
-            beep_ep.structure.ProcessedCyclerRun: ProcessedCyclerRun corresponding
+            beep.structure.ProcessedCyclerRun: ProcessedCyclerRun corresponding
                 to the read and processed data from the filename
 
         """
@@ -940,7 +940,7 @@ class ProcessedCyclerRun(MSONable):
             d (dict): dictionary represenation.
 
         Returns:
-            beep_ep.structure.ProcessedCyclerRun: deserialized ProcessedCyclerRun.
+            beep.structure.ProcessedCyclerRun: deserialized ProcessedCyclerRun.
         """
         """MSONable deserialization method"""
         d['cycles_interpolated'] = pd.DataFrame(d['cycles_interpolated'])
@@ -979,7 +979,7 @@ class ProcessedCyclerRun(MSONable):
             name (str): filename for numpy binary to be loaded.
 
         Returns:
-            beep_ep.structure.ProcessedCyclerRun: loaded from numpy binary
+            beep.structure.ProcessedCyclerRun: loaded from numpy binary
 
         """
         if not name.endswith(".npz"):
@@ -1021,7 +1021,7 @@ class EISpectrum(MSONable):
             filename(str): path to data file.
 
         Returns:
-            beep_ep.structure.EISpectrum: EISpectrum object representation of
+            beep.structure.EISpectrum: EISpectrum object representation of
                 data.
         """
         raise NotImplementedError("from_csv not implemented for EISpectrum")
@@ -1205,7 +1205,7 @@ def get_protocol_parameters(filepath, parameters_path='data-share/raw/parameters
     """
     project_name_list = get_project_sequence(filepath)
     project_name = project_name_list[0]
-    path = os.path.join(os.environ.get("BEEP_EP_ROOT", "/"), parameters_path)
+    path = os.path.join(os.environ.get("BEEP_ROOT", "/"), parameters_path)
     project_parameter_files = glob(os.path.join(path, project_name + '*'))
     assert len(project_parameter_files) <= 1, 'Found too many parameter files for: ' + project_name
 
@@ -1357,7 +1357,7 @@ def process_file_list_from_json(file_list_json, processed_dir='data-share/struct
     events = KinesisEvents(service='DataStructurer', mode=file_list_data['mode'])
 
     # Prepend optional root to output directory
-    processed_dir = os.path.join(os.environ.get("BEEP_EP_ROOT", "/"),
+    processed_dir = os.path.join(os.environ.get("BEEP_ROOT", "/"),
                                  processed_dir)
 
     file_list = file_list_data['file_list']
