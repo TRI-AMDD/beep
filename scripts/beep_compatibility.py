@@ -44,5 +44,4 @@ def update_directory(directory):
 
 if __name__ == "__main__":
     args = docopt(__doc__)
-    import nose; nose.tools.set_trace()
     update_directory(args['DIRECTORY'])
