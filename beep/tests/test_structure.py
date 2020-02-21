@@ -154,7 +154,7 @@ class RawCyclerRunTest(unittest.TestCase):
 
     @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_to_processed_cycler_run(self):
-        os.environ['BEEP_EP_ROOT'] = TEST_FILE_DIR
+        os.environ['BEEP_ROOT'] = TEST_FILE_DIR
 
         cycler_run = RawCyclerRun.from_file(self.maccor_file_w_parameters)
 
@@ -169,7 +169,7 @@ class RawCyclerRunTest(unittest.TestCase):
 
     @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_to_diagnostic_summary_cycler_run(self):
-        os.environ['BEEP_EP_ROOT'] = TEST_FILE_DIR
+        os.environ['BEEP_ROOT'] = TEST_FILE_DIR
 
         cycler_run = RawCyclerRun.from_file(self.maccor_file_w_parameters)
 
@@ -192,7 +192,7 @@ class RawCyclerRunTest(unittest.TestCase):
 
     @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_to_diagnostic_interpolation_cycler_run(self):
-        os.environ['BEEP_EP_ROOT'] = TEST_FILE_DIR
+        os.environ['BEEP_ROOT'] = TEST_FILE_DIR
         cycler_run = RawCyclerRun.from_file(self.maccor_file_w_parameters)
 
         v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \
@@ -330,7 +330,7 @@ class CliTest(unittest.TestCase):
         self.assertEqual(project_name, "PredictionDiagnostics")
 
     def test_get_protocol_parameters(self):
-        os.environ['BEEP_EP_ROOT'] = TEST_FILE_DIR
+        os.environ['BEEP_ROOT'] = TEST_FILE_DIR
         filepath = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010")
         test_path = os.path.join('data-share', 'raw', 'parameters')
         parameters, _ = get_protocol_parameters(filepath, parameters_path=test_path)
@@ -344,7 +344,7 @@ class CliTest(unittest.TestCase):
         self.assertEqual(project_missing, None)
 
     def test_get_diagnostic_parameters(self):
-        os.environ['BEEP_EP_ROOT'] = TEST_FILE_DIR
+        os.environ['BEEP_ROOT'] = TEST_FILE_DIR
         diagnostic_available = {'type': 'HPPC+RPT',
                                 'cycle_type': ['reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C'],
                                 'length': 5,
@@ -358,7 +358,7 @@ class CliTest(unittest.TestCase):
     def test_simple_conversion(self):
         with ScratchDir('.'):
             # Set root env
-            os.environ['BEEP_EP_ROOT'] = os.getcwd()
+            os.environ['BEEP_ROOT'] = os.getcwd()
 
             # Make necessary directories
             os.mkdir("data-share")
@@ -458,7 +458,7 @@ class ProcessedCyclerRunTest(unittest.TestCase):
     def test_json_processing(self):
 
         with ScratchDir('.'):
-            os.environ['BEEP_EP_ROOT'] = os.getcwd()
+            os.environ['BEEP_ROOT'] = os.getcwd()
             os.mkdir("data-share")
             os.mkdir(os.path.join("data-share", "structure"))
 
@@ -486,7 +486,7 @@ class ProcessedCyclerRunTest(unittest.TestCase):
 
         # Test same functionality with json file
         with ScratchDir('.'):
-            os.environ['BEEP_EP_ROOT'] = os.getcwd()
+            os.environ['BEEP_ROOT'] = os.getcwd()
             os.mkdir("data-share")
             os.mkdir(os.path.join("data-share", "structure"))
 

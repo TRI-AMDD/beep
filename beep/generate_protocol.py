@@ -1043,7 +1043,7 @@ def process_csv_file_list_from_json(file_list_json, processed_dir='data-share/pr
 
     file_list = file_list_data['file_list']
     all_output_files = []
-    protocol_dir = os.path.join(os.environ.get("BEEP_EP_ROOT", "/"),
+    protocol_dir = os.path.join(os.environ.get("BEEP_ROOT", "/"),
                               processed_dir)
     for filename in file_list:
         output_files, result, message = generate_protocol_files_from_csv(

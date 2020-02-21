@@ -503,8 +503,8 @@ def process_file_list_from_json(file_list_json, model_dir="/data-share/models/",
     # Setup Events
     events = KinesisEvents(service='DataAnalyzer', mode=file_list_data['mode'])
 
-    # Add BEEP_EP_ROOT to processed_dir
-    processed_dir = os.path.join(os.environ.get("BEEP_EP_ROOT", "/"),
+    # Add BEEP_ROOT to processed_dir
+    processed_dir = os.path.join(os.environ.get("BEEP_ROOT", "/"),
                                  processed_dir)
     file_list = file_list_data['file_list']
     run_ids = file_list_data['run_list']
