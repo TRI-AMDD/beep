@@ -74,7 +74,7 @@ def release_github(ctx):
 
     :param ctx:
     """
-    with open("CHANGES.rst") as f:
+    with open("CHANGES.md") as f:
         contents = f.read()
     toks = re.split(r"\-+", contents)
     desc = toks[1].strip()
@@ -105,15 +105,15 @@ def update_changelog(ctx):
     output = subprocess.check_output(["git", "log", "--pretty=format:%s",
                                       "v%s..HEAD" % CURRENT_VER])
     lines = ["* " + l for l in output.decode("utf-8").strip().split("\n")]
-    with open("CHANGES.rst") as f:
+    with open("CHANGES.md") as f:
         contents = f.read()
     l = "=========="
     toks = contents.split(l)
     head = "\n\nv%s\n" % NEW_VER + "-" * (len(NEW_VER) + 1) + "\n"
     toks.insert(-1, head + "\n".join(lines))
-    with open("CHANGES.rst", "w") as f:
+    with open("CHANGES.md", "w") as f:
         f.write(toks[0] + l + "".join(toks[1:]))
-    ctx.run("open CHANGES.rst")
+    ctx.run("open CHANGES.md")
 
 
 @task
