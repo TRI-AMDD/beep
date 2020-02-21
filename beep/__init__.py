@@ -22,14 +22,14 @@ except (ImportError, ModuleNotFoundError):
 # with a commit hash from the repo, which is supplied via
 # an environment variable by the integration build procedure
 __version__ = "2019.09.19"
-VERSION_TAG = os.environ.get("BEEP_EP_VERSION_TAG")
+VERSION_TAG = os.environ.get("BEEP_VERSION_TAG")
 if VERSION_TAG is not None:
     __version__ = '-'.join([__version__, VERSION_TAG])
 
 # Custom tqdm with optional turnoff from env
 tqdm = partial(_tqdm, disable=bool(os.environ.get("TQDM_OFF")))
 
-ENV_VAR = 'BEEP_EP_ENV'
+ENV_VAR = 'BEEP_ENV'
 
 # environment
 ENVIRONMENT = os.getenv(ENV_VAR)
