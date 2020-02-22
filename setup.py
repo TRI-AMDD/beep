@@ -1,5 +1,18 @@
 from setuptools import setup, find_packages
 
+DESCRIPTION = """
+Beep is software designed to support Battery Estimation and Early Prediction
+of cycle life corresponding to the research of the 
+[d3batt program](https://d3batt.mit.edu/)
+and the 
+[Toyota Research Institute](http://www.tri.global/accelerated-materials-design-and-discovery/).
+
+
+Beep enables parsing and handing of electrochemical battery cycling data
+via data objects reflecting cycling run data, experimental protocol,
+featurization
+"""
+
 setup(name="beep",
       url="https://github.com/ToyotaResearchInstitute/beep",
       version="2020.2.22",
