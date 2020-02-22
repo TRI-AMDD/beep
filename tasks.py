@@ -113,7 +113,7 @@ def update_changelog(ctx):
     toks.insert(-1, head + "\n".join(lines))
     with open("CHANGES.md", "w") as f:
         f.write(toks[0] + l + "".join(toks[1:]))
-    ctx.run("vi CHANGES.md")
+    ctx.run("open CHANGES.md")
 
 
 @task
