@@ -126,8 +126,8 @@ def release(ctx, notest=False):
     """
     ctx.run("rm -r dist build beep.egg-info", warn=True)
     set_ver(ctx)
-    if not notest:
-        ctx.run("pytest beep")
+    # if not notest:
+    #     ctx.run("pytest beep")
     publish(ctx)
     merge_stable(ctx)
     release_github(ctx)
