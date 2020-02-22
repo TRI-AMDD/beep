@@ -34,7 +34,7 @@ def set_ver(ctx):
     lines = []
     with open("beep/__init__.py", "rt") as f:
         for l in f:
-            if "__version__" in l:
+            if l.startswith("__version__"):
                 lines.append('__version__ = "%s"' % NEW_VER)
             else:
                 lines.append(l.rstrip())

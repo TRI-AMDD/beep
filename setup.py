@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-setup(name="beep-ep",
+setup(name="beep",
       url="https://github.com/ToyotaResearchInstitute/beep",
       version="2020.2.21",
       packages=find_packages(),
