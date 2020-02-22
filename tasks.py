@@ -117,15 +117,17 @@ def update_changelog(ctx):
 
 
 @task
-def release(ctx, notest=False):
+def release(ctx, notest=False, nover=False):
     """
     Run full sequence for releasing beep.
 
     :param ctx:
     :param notest: Whether to skip tests.
+    :param notest: Whether to skip autoversion (e. g. if tagging version).
     """
     ctx.run("rm -r dist build beep.egg-info", warn=True)
-    set_ver(ctx)
+    if not nover:
+        set_ver(ctx)
     if not notest:
         ctx.run("pytest beep")
     publish(ctx)
