@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-setup(name="beep",
+setup(name="beep-ep",
       url="https://github.com/ToyotaResearchInstitute/beep",
       version="2020.2.21",
       packages=find_packages(),
@@ -47,9 +47,10 @@ setup(name="beep",
       ],
       package_data={
           "beep.conversion_schemas": ["*.yaml", "*.md"],
-          "beep.procedure_templates": ["*"],
+          "beep.procedure_templates": ["*.000", "*.csv", "*.json"],
           "beep.validation_schemas": ["*.yaml"],
       },
+      include_package_data=True,
       author="AMDD - Toyota Research Institute",
       author_email="patrick.herring@tri.global",
       maintainer="Patrick Herring",
