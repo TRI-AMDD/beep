@@ -271,10 +271,9 @@ class RawCyclerRun(MSONable):
         merged = charge_start_time.merge(charge_finish_time, on='cycle_index', how='left')
 
         # Charge duration stored in seconds
-        summary["charge_duration"] = np.round(np.subtract(pd.to_datetime(merged.date_time_iso_y, utc=True,
-                                                                         errors='coerce'),
-                                                          pd.to_datetime(merged.date_time_iso_x, errors='coerce'),
-                                                          )/np.timedelta64(1, 's'), 2)
+        time_diff = np.subtract(pd.to_datetime(merged.date_time_iso_y, utc=True, errors='coerce'),
+                                pd.to_datetime(merged.date_time_iso_x, errors='coerce'))
+        summary["charge_duration"] = np.round(time_diff/np.timedelta64(1, 's'), 2)
 
         # Compute time since start of cycle in minutes. This comes handy
         # for featurizing time-temperature integral
@@ -313,6 +312,7 @@ class RawCyclerRun(MSONable):
             nominal_capacity (float): nominal capacity for summary stats.
             c_rate_bounds (list): list of upper and lower bound for the c-rate to recognize the diagnostic.
             min_n_steps_diagnostic (int): number of steps in diagnostic cycle must exceed this threshold.
+
         Returns:
             pandas.DataFrame: summary statistics by cycle.
 
@@ -373,7 +373,7 @@ class RawCyclerRun(MSONable):
             (DataFrame) of interpolated diagnostic steps by step and cycle
 
         """
-        #Get the project name and the parameter file for the diagnostic
+        # Get the project name and the parameter file for the diagnostic
         project_name_list = get_project_sequence(self.filename)
         diag_path = os.path.join(MODULE_DIR, 'procedure_templates')
         v_range = get_diagnostic_parameters(diagnostic_available, diag_path, project_name_list[0])
@@ -383,18 +383,21 @@ class RawCyclerRun(MSONable):
         starts_at = [i for i in diagnostic_available['diagnostic_starts_at'] if i < max_cycle]
         diag_cycles_at = list(itertools.chain.from_iterable(
             [list(range(i, i + diagnostic_available['length'])) for i in starts_at]))
-        diag_cycle_type = list(itertools.chain.from_iterable([diagnostic_available['cycle_type'] for i in starts_at]))
+        diag_cycle_type = list(itertools.chain.from_iterable(
+            [diagnostic_available['cycle_type'] for i in starts_at]))
         assert len(diag_cycles_at) == len(diag_cycle_type)
 
         diag_data = self.data[self.data['cycle_index'].isin(diag_cycles_at)]
 
-        #Counter to ensure non-contiguous repeats of step_index within same cycle_index are grouped separately
+        # Counter to ensure non-contiguous repeats of step_index
+        # within same cycle_index are grouped separately
         diag_data['step_index_counter'] = 0
 
         for cycle_index in diag_cycles_at:
             indices = diag_data.loc[diag_data.cycle_index == cycle_index].index
             step_index_list = diag_data.step_index.loc[indices]
-            diag_data['step_index_counter'].loc[indices] = step_index_list.ne(step_index_list.shift()).cumsum()
+            diag_data['step_index_counter'].loc[indices] = \
+                step_index_list.ne(step_index_list.shift()).cumsum()
 
         group = diag_data.groupby(["cycle_index", "step_index", "step_index_counter"])
         incl_columns = ["current", "charge_capacity", "discharge_capacity",
@@ -425,7 +428,9 @@ class RawCyclerRun(MSONable):
         result.cycle_index = result.cycle_index.round()
         return result
 
-    def is_diagnostic_cycle(self, group, stat_variable, nominal_capacity, c_rate_bounds, min_n_steps_diagnostic):
+    def is_diagnostic_cycle(self, group, stat_variable,
+                            nominal_capacity, c_rate_bounds,
+                            min_n_steps_diagnostic):
         """
         Helper function for get_diagnostic_summary
 
@@ -447,7 +452,8 @@ class RawCyclerRun(MSONable):
             value = np.NaN
         return value
 
-    def is_diagnostic_step(self, group, stat_variable, nominal_capacity, c_rate_bounds):
+    def is_diagnostic_step(self, group, stat_variable,
+                           nominal_capacity, c_rate_bounds):
         """
         Helper function for get_diagnostic_summary
 
@@ -467,7 +473,8 @@ class RawCyclerRun(MSONable):
         else:
             step_monotonic_variable = 'date_time_iso'
 
-        if (min(c_rate_bounds) * nominal_capacity < group.current.median() < max(c_rate_bounds) * nominal_capacity and
+        if (min(c_rate_bounds) * nominal_capacity < group.current.median()
+                < max(c_rate_bounds) * nominal_capacity and
                 group[step_monotonic_variable].is_monotonic is True and
                 group[step_monotonic_variable].is_unique is True):
 
@@ -529,7 +536,7 @@ class RawCyclerRun(MSONable):
         metadata['_today_datetime'] = datetime.now().strftime('%Y-%m-%d %H:%M:%s')
 
         # transformations
-        data = data.reset_index().reset_index()         # twice in case old index is stored in file
+        data = data.reset_index().reset_index()  # twice in case old index is stored in file
         data = data.drop(columns=['index'])
         data = data.rename(columns={'level_0': 'data_point'})
         data.loc[data.half_cycle_count % 2 == 1, 'charge_capacity'] = abs(data.cell_coulomb_count_c) / 3600
@@ -643,6 +650,7 @@ class RawCyclerRun(MSONable):
             resolution (int): resolution for interpolation
             nominal_capacity (float): nominal capacity for summary stats
             full_fast_charge (float): full fast charge for summary stats
+
         Returns:
             v_range ([float, float]): voltage range for interpolation
             resolution (int): resolution for interpolation
@@ -800,7 +808,8 @@ class ProcessedCyclerRun(MSONable):
             diagnostic_summary = None
             diagnostic_interpolated = None
 
-        cycles_interpolated = raw_cycler_run.get_interpolated_discharge_cycles(v_range=v_range, resolution=resolution)
+        cycles_interpolated = raw_cycler_run.get_interpolated_discharge_cycles(
+            v_range=v_range, resolution=resolution)
         return cls(raw_cycler_run.metadata.get("barcode"),
                    raw_cycler_run.metadata.get("protocol"),
                    raw_cycler_run.metadata.get("channel_id"),
