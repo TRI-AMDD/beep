@@ -662,6 +662,7 @@ class RawCyclerRun(MSONable):
         """
         run_parameter, all_parameters = get_protocol_parameters(self.filename)
         # Logic for interpolation variables and diagnostic cycles
+        diagnostic_available = False
         if run_parameter is not None:
             if {'capacity_nominal'}.issubset(run_parameter.columns.tolist()):
                 nominal_capacity = run_parameter['capacity_nominal'].iloc[0]
@@ -681,12 +682,10 @@ class RawCyclerRun(MSONable):
                                             "cycle_type": hppc_rpt,
                                             "length": hppc_rpt_len,
                                             "diagnostic_starts_at": diagnostic_starts_at}
-        else:
-            diagnostic_available = False
 
         return v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available
 
-    def to_processed_cycler_run(self, v_range=None, resolution=1000):
+    def to_processed_cycler_run(self):
         """
         Method for converting to ProcessedCyclerRun
 
