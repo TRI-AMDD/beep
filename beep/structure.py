@@ -297,33 +297,6 @@ class RawCyclerRun(MSONable):
         else:
             return summary.iloc[:-1]
 
-    def get_diagnostic_summary(self, summary, stat_name=None, stat_variable=None,
-                               nominal_capacity=None,
-                               c_rate_bounds=None,
-                               min_n_steps_diagnostic=None
-                               ):
-        """
-        Gets summary statistics for data according to args
-
-        Args:
-            summary (dataframe): dataframe containing columns of summary statistics by cycle (row).
-            stat_name (string): Column name for the statistic to be added.
-            stat_variable (string): Column name to use for the computation of the summary statistic.
-            nominal_capacity (float): nominal capacity for summary stats.
-            c_rate_bounds (list): list of upper and lower bound for the c-rate to recognize the diagnostic.
-            min_n_steps_diagnostic (int): number of steps in diagnostic cycle must exceed this threshold.
-
-        Returns:
-            pandas.DataFrame: summary statistics by cycle.
-
-        """
-        summary[stat_name] = self.data.groupby('cycle_index'). \
-            apply(lambda g: self.is_diagnostic_cycle(g, stat_variable,
-                                                     nominal_capacity,
-                                                     c_rate_bounds,
-                                                     min_n_steps_diagnostic))
-        return summary
-
     def diagnostic_summary(self, diagnostic_available):
         """
         Gets summary statistics for data according to location of diagnostic cycles in the data
