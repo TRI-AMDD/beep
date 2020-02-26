@@ -14,7 +14,7 @@ from monty.serialization import loadfn
 from botocore.exceptions import NoRegionError, NoCredentialsError
 
 from beep import collate, validate, structure, featurize,\
-    run_model, TEST_FILE_DIR
+    run_model, TEST_FILE_DIR, MODEL_DIR
 
 
 class EndToEndTest(unittest.TestCase):
@@ -104,7 +104,7 @@ class EndToEndTest(unittest.TestCase):
 
         # Prediction
         predictions = run_model.process_file_list_from_json(
-            featurized, model_dir=TEST_FILE_DIR)
+            featurized, model_dir=MODEL_DIR)
 
         # Validate output files
         self._check_result_file_validity()
