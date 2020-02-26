@@ -311,13 +311,18 @@ class RawCyclerRunTest(unittest.TestCase):
                                 'length': 1,
                                 'diagnostic_starts_at': [1]
                                 }
-        diagnostic_cycles_interpolated = \
+        d_interp = \
             cycler_run.get_interpolated_diagnostic_cycles(
                 diagnostic_available, resolution=500)
         self.assertGreaterEqual(
-            len(diagnostic_cycles_interpolated.cycle_index.unique()), 1)
-        self.assertEqual(
-            diagnostic_cycles_interpolated.discharge_capacity[4], 2.635393836921498)
+            len(d_interp.cycle_index.unique()), 1)
+
+        # Ensure step indices are partitioned and processed separately
+        self.assertEqual(len(d_interp.step_index.unique()), 9)
+        first_step = d_interp[(d_interp.step_index == 7) & (d_interp.step_index_counter == 1)]
+        second_step = d_interp[(d_interp.step_index == 7) & (d_interp.step_index_counter == 4)]
+        self.assertEqual(len(first_step), 500)
+        self.assertEqual(len(second_step), 500)
 
 
 class CliTest(unittest.TestCase):
