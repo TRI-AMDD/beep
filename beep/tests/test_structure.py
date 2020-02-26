@@ -247,36 +247,6 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertGreaterEqual(len(diagnostic_cycles_interpolated.cycle_index.unique()), 2)
         self.assertEqual(diagnostic_cycles_interpolated.discharge_capacity[4], 2.635393836921498)
 
-    def test_get_diagnostic_summary(self):
-        cycler_run = RawCyclerRun.from_file(self.maccor_file_w_diagnostics)
-        stat_name = '2C_median_voltage_diag'
-        c_rate_bounds = [-2.1, -1.9]
-        min_n_steps_diagnostic = 3
-        nominal_capacity = 4.7
-        stat_variable = 'voltage'
-        summary = cycler_run.data.groupby("cycle_index").agg({
-            "discharge_capacity": "max",
-            "charge_capacity": "max",
-            "internal_resistance": "last",
-            "temperature": ["max", "mean", "min"],
-            "date_time_iso": "first"})
-
-        summary.columns = ['discharge_capacity', 'charge_capacity', 'dc_internal_resistance',
-                           'temperature_maximum',
-                           'temperature_average', 'temperature_minimum',
-                           'date_time_iso']
-        summary = cycler_run.get_diagnostic_summary(summary,
-                                                    nominal_capacity=nominal_capacity,
-                                                    stat_name=stat_name,
-                                                    c_rate_bounds=c_rate_bounds,
-                                                    min_n_steps_diagnostic=min_n_steps_diagnostic,
-                                                    stat_variable=stat_variable
-                                                    )
-        print(summary['2C_median_voltage_diag'].to_numpy())
-        test_array = np.array([np.nan, 3.461738, np.nan, 3.448692, np.nan, 3.422656, np.nan,
-                               3.412432, np.nan, 3.403887, np.nan, 3.405776, np.nan])
-        np.testing.assert_allclose(summary['2C_median_voltage_diag'].to_numpy(), test_array, rtol=1e-03)
-
     def test_get_summary(self):
         cycler_run = RawCyclerRun.from_file(self.maccor_file_w_diagnostics)
         summary = cycler_run.get_summary(nominal_capacity=4.7, full_fast_charge=0.8)
@@ -302,7 +272,6 @@ class RawCyclerRunTest(unittest.TestCase):
                          set({"indigo_cell_id", "_today_datetime", "start_datetime","filename"}))
 
         # general
-        raw_cycler_run = None
         raw_cycler_run = RawCyclerRun.from_file(self.indigo_file)
         self.assertTrue({"data_point", "cycle_index", "step_index", "voltage", "temperature",
                          "current", "charge_capacity", "discharge_capacity"} < set(raw_cycler_run.data.columns))

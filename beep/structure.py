@@ -57,7 +57,8 @@ from beep import tqdm
 from beep import StringIO, MODULE_DIR
 from beep.validate import ValidatorBeep, BeepValidationError
 from beep.collate import add_suffix_to_filename
-from beep.conversion_schemas import ARBIN_CONFIG, MACCOR_CONFIG, FastCharge_CONFIG, xTesladiag_CONFIG, INDIGO_CONFIG
+from beep.conversion_schemas import ARBIN_CONFIG, MACCOR_CONFIG, \
+    FastCharge_CONFIG, xTesladiag_CONFIG, INDIGO_CONFIG
 from beep.utils import KinesisEvents
 from beep import logger, __version__
 
@@ -72,8 +73,10 @@ class RawCyclerRun(MSONable):
     Attributes:
         data (pandas.DataFrame): DataFrame corresponding to cycler run data.
         metadata (dict): Dict corresponding to cycler run metadata.
-        eis (beep.structure.EISpectrum): electrochemical impedence spectrum object. Defaults to None.
-        validate (bool): whether or not to validate DataFrame upon instantiation. Defaults to None.
+        eis (beep.structure.EISpectrum): electrochemical impedence
+            spectrum object. Defaults to None.
+        validate (bool): whether or not to validate DataFrame upon
+            instantiation. Defaults to None.
     """
     # These define float and int columns for numeric binary save files
     FLOAT_COLUMNS = ["test_time", "current", "voltage", "charge_capacity",
@@ -196,9 +199,12 @@ class RawCyclerRun(MSONable):
         Args:
             nominal_capacity (float): nominal capacity for summary stats
             full_fast_charge (float): full fast charge for summary stats
-            cycle_complete_discharge_ratio (float): expected ratio discharge/charge at the end of any complete cycle
-            cycle_complete_vmin (float): expected voltage minimum achieved in any complete cycle
-            cycle_complete_vmax (float): expected voltage maximum achieved in any complete cycle
+            cycle_complete_discharge_ratio (float): expected ratio
+                discharge/charge at the end of any complete cycle
+            cycle_complete_vmin (float): expected voltage minimum achieved
+                in any complete cycle
+            cycle_complete_vmax (float): expected voltage maximum achieved
+                in any complete cycle
 
         Returns:
             pandas.DataFrame: summary statistics by cycle.
@@ -297,7 +303,7 @@ class RawCyclerRun(MSONable):
         diag_summary['coulombic_efficiency'] = diag_summary['discharge_capacity'] \
                                                / diag_summary['charge_capacity']
         diag_summary['diagnostic_type'] = list(itertools.chain.from_iterable(
-            [diagnostic_available['cycle_type'] for i in starts_at]))
+            [diagnostic_available['cycle_type'] for _ in starts_at]))
 
         return diag_summary
 
@@ -325,13 +331,18 @@ class RawCyclerRun(MSONable):
 
         # Determine the cycles and types of the diagnostic cycles
         max_cycle = self.data.cycle_index.max()
+        # TODO: is it okay to have a diagnostic cycle as the "final" cycle?
         starts_at = [i for i in diagnostic_available['diagnostic_starts_at']
-                     if i < max_cycle]
+                     if i <= max_cycle]
         diag_cycles_at = list(itertools.chain.from_iterable(
-            [list(range(i, i + diagnostic_available['length'])) for i in starts_at]))
-        diag_cycle_type = list(itertools.chain.from_iterable(
-            [diagnostic_available['cycle_type'] for _ in starts_at]))
-        assert len(diag_cycles_at) == len(diag_cycle_type)
+            [range(i, i + diagnostic_available['length']) for i in starts_at]))
+        import nose; nose.tools.set_trace()
+        # Duplicate cycle type list end to end for each starting index
+        diag_cycle_type = diagnostic_available['cycle_type'] * len(starts_at)
+        if not len(diag_cycles_at) == len(diag_cycle_type):
+            errmsg = "Diagnostic cycles, {}, and diagnostic cycle types, "\
+                     "{}, are unequal lengths".format(diag_cycles_at, diag_cycle_type)
+            raise ValueError(errmsg)
 
         diag_data = self.data[self.data['cycle_index'].isin(diag_cycles_at)]
 
@@ -582,7 +593,8 @@ class RawCyclerRun(MSONable):
         Method for converting to ProcessedCyclerRun
 
         Returns:
-            beep.structure.ProcessedCyclerRun: ProcessedCyclerRun that corresponds to processed RawCyclerRun
+            beep.structure.ProcessedCyclerRun: ProcessedCyclerRun
+                that corresponds to processed RawCyclerRun
 
         """
         v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \
@@ -639,7 +651,8 @@ class ProcessedCyclerRun(MSONable):
         protocol (str): protocol for the experiment.
         channel_id (int): id for the channel for the experiment.
         summary (pandas.DataFrame): data of summary data for each cycle.
-        cycles_interpolated (pandas.DataFrame): interpolated data for discharge over 2.8-3.5.
+        cycles_interpolated (pandas.DataFrame): interpolated data for
+            discharge over 2.8-3.5.
     """
     def __init__(self, barcode, protocol, channel_id, summary,
                  cycles_interpolated, diagnostic_summary=None,
@@ -1099,6 +1112,16 @@ def parse_maccor_metadata(metadata_string):
 
 
 def get_project_sequence(path):
+    """
+    Returns project sequence for a given path
+
+    Args:
+        path (str): full project file path
+
+    Returns:
+        ([str]): list of project parts
+
+    """
     root, file = os.path.split(path)
     file_parts = file.split('_')
     return file_parts
