@@ -748,14 +748,10 @@ class ProcessedCyclerRun(MSONable):
         # Arbin files are via standard pipeline
         if re.match(FastCharge_CONFIG['file_pattern'], filename):
             raw = RawCyclerRun.from_arbin_file(filename, validate)
-            return raw.to_processed_cycler_run(
-                v_range=FastCharge_CONFIG['cell_specification']['v_range'],
-                resolution=FastCharge_CONFIG['cell_specification']['resolution'])
+            return raw.to_processed_cycler_run()
         elif re.match(xTesladiag_CONFIG['file_pattern'], filename):
             raw = RawCyclerRun.from_maccor_file(filename, validate)
-            return raw.to_processed_cycler_run(
-                v_range=xTesladiag_CONFIG['cell_specification']['v_range'],
-                resolution=xTesladiag_CONFIG['cell_specification']['resolution'])
+            return raw.to_processed_cycler_run()
 
         else:
             raise ValueError("File pattern or contents of {} not recognized".format(
