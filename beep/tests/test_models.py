@@ -13,8 +13,10 @@ from monty.serialization import dumpfn, loadfn
 
 import boto3
 from botocore.exceptions import NoRegionError, NoCredentialsError
-single_task_features_path = os.path.join(TEST_FILE_DIR,"feature_jsons_for_training_model/single_task")
-multi_task_features_path = os.path.join(TEST_FILE_DIR,"feature_jsons_for_training_model/multi_task")
+single_task_features_path = os.path.join(
+    TEST_FILE_DIR, "feature_jsons_for_training_model", "single_task")
+multi_task_features_path = os.path.join(
+    TEST_FILE_DIR, "feature_jsons_for_training_model", "multi_task")
 
 
 class TestRunModel(unittest.TestCase):
