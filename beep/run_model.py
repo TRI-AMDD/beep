@@ -43,8 +43,7 @@ from sklearn.linear_model import Lasso, LassoCV, RidgeCV, Ridge, ElasticNetCV, \
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
 from beep.utils import KinesisEvents
-from beep import TEST_FILE_DIR
-from beep import logger, __version__
+from beep import MODEL_DIR, logger, __version__
 
 s = {'service': 'DataAnalyzer'}
 # Projects that have cycling profiles compatible with the FastCharge model should be included in the list below
@@ -602,9 +601,9 @@ def main():
         input_json = args['INPUT_JSON']
         # TODO: resolve test file dir
         if args['--fit']:
-            print(process_file_list_from_json(input_json, predict_only=False, model_dir=TEST_FILE_DIR), end="")
+            print(process_file_list_from_json(input_json, predict_only=False, model_dir=MODEL_DIR), end="")
         else:
-            print(process_file_list_from_json(input_json, model_dir=TEST_FILE_DIR), end="")
+            print(process_file_list_from_json(input_json, model_dir=MODEL_DIR), end="")
 
     except Exception as e:
         logger.error(str(e), extra=s)
