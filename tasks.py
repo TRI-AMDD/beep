@@ -1,7 +1,8 @@
 """
-Pyinvoke tasks.py file for automating releases and admin stuff.
+Pyinvoke tasks.py file for automating releases
 
-Author: Shyue Ping Ong
+This is a refactor of S. P. Ong's pymatgen administration
+tasks.py, see https://github.com/materialsproject/pymatgen
 """
 
 from invoke import task

@@ -1,21 +1,27 @@
 from setuptools import setup, find_packages
 
-DESCRIPTION = """
+
+# DESCRIPTION must be one line
+DESCRIPTION = "beep is a python package supporting Battery Estimation and Early Prediction of battery cycle life."
+LONG_DESCRIPTION = """
 Beep is software designed to support Battery Estimation and Early Prediction
 of cycle life corresponding to the research of the
-[d3batt program](https://d3batt.mit.edu/)
-and the
+[d3batt program](https://d3batt.mit.edu/) and the 
 [Toyota Research Institute](http://www.tri.global/accelerated-materials-design-and-discovery/).
 
 
 Beep enables parsing and handing of electrochemical battery cycling data
-via data objects reflecting cycling run data, experimental protocol,
-featurization
+via data objects reflecting cycling run data, experimental protocols,
+featurization, and modeling of cycle life.  Currently beep supports 
+arbin and maccor cyclers.
 """
 
 setup(name="beep",
       url="https://github.com/ToyotaResearchInstitute/beep",
-      version="2020.2.23",
+      version="2020.2.23.post1",
+      description=DESCRIPTION,
+      long_description=LONG_DESCRIPTION,
+      long_description_content_type='text/markdown',
       packages=find_packages(),
       install_requires=["numpy==1.18.1",
                         "monty==3.0.2",
