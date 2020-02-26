@@ -238,15 +238,6 @@ class RawCyclerRunTest(unittest.TestCase):
                 assert np.abs(off_by) <= (np.abs(closest_interp2_match.iloc[0][column_check]) *
                                           acceptable_error + acceptable_error_offest)
 
-    def test_get_interpolated_diagnostic_cycles_maccor(self):
-        cycler_run = RawCyclerRun.from_file(self.maccor_file_w_diagnostics)
-        diagnostic_cycles_interpolated = \
-            cycler_run.get_interpolated_diagnostic_cycles(min_n_steps_diagnostic=3,
-                                                          field_name='date_time_iso',
-                                                          resolution=500)
-        self.assertGreaterEqual(len(diagnostic_cycles_interpolated.cycle_index.unique()), 2)
-        self.assertEqual(diagnostic_cycles_interpolated.discharge_capacity[4], 2.635393836921498)
-
     def test_get_summary(self):
         cycler_run = RawCyclerRun.from_file(self.maccor_file_w_diagnostics)
         summary = cycler_run.get_summary(nominal_capacity=4.7, full_fast_charge=0.8)
@@ -279,19 +270,6 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertEqual(set(raw_cycler_run.metadata.keys()),
                          set({"indigo_cell_id", "_today_datetime", "start_datetime","filename"}))
 
-
-class CliTest(unittest.TestCase):
-    def setUp(self):
-        # Setup events for testing
-        try:
-            kinesis = boto3.client('kinesis')
-            response = kinesis.list_streams()
-            self.events_mode = "test"
-        except NoRegionError or NoCredentialsError as e:
-            self.events_mode = "events_off"
-
-        self.arbin_file = os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29.csv")
-
     def test_get_project_name(self):
         project_name_parts = get_project_sequence(os.path.join(TEST_FILE_DIR,
                                                                "PredictionDiagnostics_000109_tztest.010"))
@@ -321,8 +299,37 @@ class CliTest(unittest.TestCase):
                                 }
         diagnostic_parameter_path = os.path.join(MODULE_DIR, 'procedure_templates')
         project_name = 'PreDiag'
-        v_range = get_diagnostic_parameters(diagnostic_available, diagnostic_parameter_path, project_name)
+        v_range = get_diagnostic_parameters(
+            diagnostic_available, diagnostic_parameter_path, project_name)
         self.assertEqual(v_range, [2.7, 4.2])
+
+    def test_get_interpolated_diagnostic_cycles(self):
+        cycler_run = RawCyclerRun.from_file(self.maccor_file_w_diagnostics)
+        diagnostic_available = {'type': 'HPPC',
+                                'cycle_type': ['hppc'],
+                                'length': 1,
+                                'diagnostic_starts_at': [1]
+                                }
+        diagnostic_cycles_interpolated = \
+            cycler_run.get_interpolated_diagnostic_cycles(
+                diagnostic_available, resolution=500)
+        self.assertGreaterEqual(
+            len(diagnostic_cycles_interpolated.cycle_index.unique()), 1)
+        self.assertEqual(
+            diagnostic_cycles_interpolated.discharge_capacity[4], 2.635393836921498)
+
+
+class CliTest(unittest.TestCase):
+    def setUp(self):
+        # Setup events for testing
+        try:
+            kinesis = boto3.client('kinesis')
+            response = kinesis.list_streams()
+            self.events_mode = "test"
+        except NoRegionError or NoCredentialsError as e:
+            self.events_mode = "events_off"
+
+        self.arbin_file = os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29.csv")
 
     def test_simple_conversion(self):
         with ScratchDir('.'):

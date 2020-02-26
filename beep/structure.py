@@ -336,7 +336,6 @@ class RawCyclerRun(MSONable):
                      if i <= max_cycle]
         diag_cycles_at = list(itertools.chain.from_iterable(
             [range(i, i + diagnostic_available['length']) for i in starts_at]))
-        import nose; nose.tools.set_trace()
         # Duplicate cycle type list end to end for each starting index
         diag_cycle_type = diagnostic_available['cycle_type'] * len(starts_at)
         if not len(diag_cycles_at) == len(diag_cycle_type):
@@ -1032,7 +1031,8 @@ def get_interpolated_data(dataframe, field_name='voltage', field_range=None,
             range is the min/max of the dataframe field_name values
         columns (list): list of column names to provide interpolated values for,
             default value of None indicates all columns should be interpolated
-        resolution (int): number of data points to sample in the uniform cycles, defaults to 1000
+        resolution (int): number of data points to sample in the uniform
+            cycles, defaults to 1000
 
     Returns:
         pandas.DataFrame: DataFrame of interpolated values
@@ -1040,13 +1040,14 @@ def get_interpolated_data(dataframe, field_name='voltage', field_range=None,
     columns = columns or dataframe.columns
     columns = list(set(columns) | {field_name})
 
-    df = dataframe.loc[:,columns]
+    df = dataframe.loc[:, columns]
     field_range = field_range or [df[field_name].iloc[0], df[field_name].iloc[-1]]
     # If interpolating on datetime, change column to datetime series and
     # use date_range to create interpolating vector
     if field_name == 'date_time_iso':
         df['date_time_iso'] = pd.to_datetime(df['date_time_iso'])
-        interp_x = pd.date_range(start=df[field_name].iloc[0], end=df[field_name].iloc[-1], periods=resolution)
+        interp_x = pd.date_range(
+            start=df[field_name].iloc[0], end=df[field_name].iloc[-1], periods=resolution)
     else:
         interp_x = np.linspace(*field_range, resolution)
     interpolated_df = pd.DataFrame({field_name: interp_x, "interpolated": True})
@@ -1073,7 +1074,7 @@ def diagnostic_function(df, column):
 
     Args:
         df (pandas.DataFrame): A dataframe.
-.        column (str): A column name.
+        column (str): A column name.
 
     Returns:
         float: median value of column.
