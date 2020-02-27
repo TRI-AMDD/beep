@@ -331,7 +331,6 @@ class RawCyclerRun(MSONable):
 
         # Determine the cycles and types of the diagnostic cycles
         max_cycle = self.data.cycle_index.max()
-        # TODO: is it okay to have a diagnostic cycle as the "final" cycle?
         starts_at = [i for i in diagnostic_available['diagnostic_starts_at']
                      if i <= max_cycle]
         diag_cycles_at = list(itertools.chain.from_iterable(
