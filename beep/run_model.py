@@ -599,7 +599,6 @@ def main():
     try:
         args = docopt(__doc__)
         input_json = args['INPUT_JSON']
-        # TODO: resolve test file dir
         if args['--fit']:
             print(process_file_list_from_json(input_json, predict_only=False, model_dir=MODEL_DIR), end="")
         else:
