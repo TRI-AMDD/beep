@@ -1,10 +1,21 @@
-## Summary
+# Summary
 
-D3Batt Scripts for data validation, processing, machine learning and early prediction
+Beep is software designed to support Battery Estimation and Early Prediction
+of cycle life corresponding to the research of the
+[d3batt program](https://d3batt.mit.edu/) and the 
+[Toyota Research Institute](http://www.tri.global/accelerated-materials-design-and-discovery/).
 
-# Installation
 
-Clone the repo via git and use pip (or `python setup.py develop`) for an editable install:
+Beep enables parsing and handing of electrochemical battery cycling data
+via data objects reflecting cycling run data, experimental protocols,
+featurization, and modeling of cycle life.  Currently beep supports 
+arbin and maccor cyclers.
+
+## Installation
+Use `pip install beep` to install.
+
+If you want to develop beep, clone the repo via git and use 
+pip (or `python setup.py develop`)  for an editable install:
 
 ```bash
 git clone git@github.com:ToyotaResearchInstitute/BEEP.git
@@ -12,8 +23,9 @@ cd BEEP
 pip install -e .
 ```
 
-# Testing
-You can use nose or pytests for running unittests (use `pip install nose` to install nose if not installed)
+## Testing
+You can use nose or pytests for running unittests (use `pip install nose` 
+to install nose if not installed)
 
 ```bash
 nosetests beep
@@ -22,7 +34,7 @@ nosetests beep
 Note that the editable install (as prescribed above), is necessary
 for nosetests.
 
-# Using scripts
+## Using scripts
 
 The standard installation procedure above should install and link console scripts
 with currently available BEEP functionality.  Each beep script takes a JSON string
