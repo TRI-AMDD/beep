@@ -27,7 +27,10 @@ The output json contains the following fields:
 
 Example:
 ```angular2
-$ structure '{"validity": [false, false, true], "file_list": ["/data-share/renamed_cycler_files/FastCharge/FastCharge_0_CH33.csv", "/data-share/renamed_cycler_files/FastCharge/FastCharge_1_CH44.csv", "/data-share/renamed_cycler_files/FastCharge/FastCharge_2_CH29.csv"]}''
+$ structure '{"validity": [false, false, true],
+             file_list": ["/data-share/renamed_cycler_files/FastCharge/FastCharge_0_CH33.csv",
+                          "/data-share/renamed_cycler_files/FastCharge/FastCharge_1_CH44.csv",
+                          "/data-share/renamed_cycler_files/FastCharge/FastCharge_2_CH29.csv"]}''
 {"invalid_file_list": ["/data-share/renamed_cycler_files/FastCharge/FastCharge_0_CH33.csv",
                        "/data-share/renamed_cycler_files/FastCharge/FastCharge_1_CH44.csv"],
  "file_list": ["/data-share/structure/FastCharge_2_CH29_structure.json"]}
@@ -54,7 +57,8 @@ from beep import tqdm
 from beep import StringIO, MODULE_DIR
 from beep.validate import ValidatorBeep, BeepValidationError
 from beep.collate import add_suffix_to_filename
-from beep.conversion_schemas import ARBIN_CONFIG, MACCOR_CONFIG, FastCharge_CONFIG, xTesladiag_CONFIG, INDIGO_CONFIG
+from beep.conversion_schemas import ARBIN_CONFIG, MACCOR_CONFIG, \
+    FastCharge_CONFIG, xTesladiag_CONFIG, INDIGO_CONFIG
 from beep.utils import KinesisEvents
 from beep import logger, __version__
 
@@ -69,8 +73,10 @@ class RawCyclerRun(MSONable):
     Attributes:
         data (pandas.DataFrame): DataFrame corresponding to cycler run data.
         metadata (dict): Dict corresponding to cycler run metadata.
-        eis (beep.structure.EISpectrum): electrochemical impedence spectrum object. Defaults to None.
-        validate (bool): whether or not to validate DataFrame upon instantiation. Defaults to None.
+        eis (beep.structure.EISpectrum): electrochemical impedence
+            spectrum object. Defaults to None.
+        validate (bool): whether or not to validate DataFrame upon
+            instantiation. Defaults to None.
     """
     # These define float and int columns for numeric binary save files
     FLOAT_COLUMNS = ["test_time", "current", "voltage", "charge_capacity",
@@ -84,7 +90,8 @@ class RawCyclerRun(MSONable):
         Args:
             data (pandas.DataFrame): DataFrame corresponding to cycler run data
             metadata (dict): Dict corresponding to cycler run metadata
-            eis (beep.structure.EISpectrum): electrochemical impedence spectrum object. Defaults to None
+            eis (beep.structure.EISpectrum): electrochemical impedence
+                spectrum object. Defaults to None
             validate (bool): whether or not to validate DataFrame upon
                 instantiation. Defaults to None.
         """
@@ -158,47 +165,6 @@ class RawCyclerRun(MSONable):
 
         return result
 
-    def get_interpolated_diagnostic_cycles(self, min_n_steps_diagnostic=3,
-                                           field_name="date_time_iso", n_interp_diagnostic=500):
-        """
-        Gets interpolated cycles for the discharging states in diagnostic cycles
-
-        Args:
-            min_n_steps_diagnostic (int): number of steps in diagnostic cycle must exceed this threshold.
-            field_name (str) : independent field to interpolate on.
-            n_interp_diagnostic (int): number of interpolated datapoints within each step of diagnostic cycle.
-
-        Returns:
-            pandas.DataFrame: DataFrame corresponding to interpolated diagnostic values. Each step is separately
-            interpolated to have 'n_interp' rows.
-
-        """
-        # Find diagnostic cycles
-        temp_df = self.data.groupby('cycle_index').agg({'step_index': 'nunique'})
-        diagnostic_cycle_indices = temp_df[temp_df.step_index > min_n_steps_diagnostic].index
-        assert len(diagnostic_cycle_indices) > 0, "No diagnostic cycles found"
-
-        # Subset only diagnostic cycles into a dataframe
-        diagnostic_cycles = self.data[self.data.cycle_index.isin(diagnostic_cycle_indices)]
-
-        group = diagnostic_cycles.groupby(["cycle_index", "step_index"]).filter(
-            determine_whether_step_is_discharging).groupby(["cycle_index", "step_index"])
-
-        incl_columns = ["current", "charge_capacity", "discharge_capacity",
-                        "internal_resistance", "temperature", "date_time_iso"]
-        all_dfs = []
-        for (cycle_index, step_index), df in tqdm(group):
-            new_df = get_interpolated_data(df, field_name=field_name,
-                                           columns=incl_columns, resolution=n_interp_diagnostic)
-            new_df['cycle_index'] = cycle_index
-            new_df['step_index'] = step_index
-            all_dfs.append(new_df)
-        # Ignore the index to avoid issues with overlapping voltages
-        result = pd.concat(all_dfs, ignore_index=True)
-        # Cycle_index gets a little weird about typing, so round it here
-        result.cycle_index = result.cycle_index.round()
-        return result
-
     def as_dict(self):
         """
         Method for dictionary/json serialization hook in MSONable
@@ -233,9 +199,12 @@ class RawCyclerRun(MSONable):
         Args:
             nominal_capacity (float): nominal capacity for summary stats
             full_fast_charge (float): full fast charge for summary stats
-            cycle_complete_discharge_ratio (float): expected ratio discharge/charge at the end of any complete cycle
-            cycle_complete_vmin (float): expected voltage minimum achieved in any complete cycle
-            cycle_complete_vmax (float): expected voltage maximum achieved in any complete cycle
+            cycle_complete_discharge_ratio (float): expected ratio
+                discharge/charge at the end of any complete cycle
+            cycle_complete_vmin (float): expected voltage minimum achieved
+                in any complete cycle
+            cycle_complete_vmax (float): expected voltage maximum achieved
+                in any complete cycle
 
         Returns:
             pandas.DataFrame: summary statistics by cycle.
@@ -252,7 +221,7 @@ class RawCyclerRun(MSONable):
 
         summary.columns = ['discharge_capacity', 'charge_capacity',
                            'discharge_energy', 'charge_energy',
-                           'dc_internal_resistance','temperature_maximum',
+                           'dc_internal_resistance', 'temperature_maximum',
                            'temperature_average', 'temperature_minimum',
                            'date_time_iso']
 
@@ -297,13 +266,15 @@ class RawCyclerRun(MSONable):
         else:
             return summary.iloc[:-1]
 
-    def diagnostic_summary(self, diagnostic_available):
+    def get_diagnostic_summary(self, diagnostic_available):
         """
-        Gets summary statistics for data according to location of diagnostic cycles in the data
+        Gets summary statistics for data according to location of
+        diagnostic cycles in the data
 
         Args:
-            diagnostic_available (dict): dictionary with diagnostic_types as list,
-             'length' of the diagnostic in cycles and location of the diagnostic by cycle index
+            diagnostic_available (dict): dictionary with diagnostic_types
+                as list, 'length' of the diagnostic in cycles and location
+                of the diagnostic by cycle index
 
         Returns:
             (DataFrame) of summary statistics by cycle
@@ -311,7 +282,8 @@ class RawCyclerRun(MSONable):
         """
 
         max_cycle = self.data.cycle_index.max()
-        starts_at = [i for i in diagnostic_available['diagnostic_starts_at'] if i < max_cycle]
+        starts_at = [i for i in diagnostic_available['diagnostic_starts_at']
+                     if i < max_cycle]
         diag_cycles_at = list(itertools.chain.from_iterable(
             [list(range(i, i + diagnostic_available['length'])) for i in starts_at]))
         diag_summary = self.data.groupby("cycle_index").agg({
@@ -323,24 +295,29 @@ class RawCyclerRun(MSONable):
             "date_time_iso": "first"})
 
         diag_summary.columns = ['discharge_capacity', 'charge_capacity',
-                                'discharge_energy', 'charge_energy', 'temperature_maximum',
-                                'temperature_average', 'temperature_minimum',
-                                'date_time_iso']
+                                'discharge_energy', 'charge_energy',
+                                'temperature_maximum', 'temperature_average',
+                                'temperature_minimum', 'date_time_iso']
         diag_summary = diag_summary[diag_summary.index.isin(diag_cycles_at)]
 
-        diag_summary['coulombic_efficiency'] = diag_summary['discharge_capacity'] / diag_summary['charge_capacity']
+        diag_summary['coulombic_efficiency'] = diag_summary['discharge_capacity'] \
+                                               / diag_summary['charge_capacity']
         diag_summary['diagnostic_type'] = list(itertools.chain.from_iterable(
-            [diagnostic_available['cycle_type'] for i in starts_at]))
+            [diagnostic_available['cycle_type'] for _ in starts_at]))
 
         return diag_summary
 
-    def diagnostic_interpolated(self, diagnostic_available, n_interp_diagnostic=500):
+    def get_interpolated_diagnostic_cycles(self, diagnostic_available,
+                                           resolution=500):
         """
-        Interpolates data according to location and type of diagnostic cycles in the data
+        Interpolates data according to location and type of diagnostic
+        cycles in the data
 
         Args:
-            diagnostic_available (dict): dictionary with diagnostic_types as list,
-             'length' of the diagnostic in cycles and location of the diagnostic
+            diagnostic_available (dict): dictionary with diagnostic_types
+                as list, 'length' of the diagnostic in cycles and location
+                of the diagnostic
+            resolution (int): resolution of interpolation
 
         Returns:
             (DataFrame) of interpolated diagnostic steps by step and cycle
@@ -349,16 +326,21 @@ class RawCyclerRun(MSONable):
         # Get the project name and the parameter file for the diagnostic
         project_name_list = get_project_sequence(self.filename)
         diag_path = os.path.join(MODULE_DIR, 'procedure_templates')
-        v_range = get_diagnostic_parameters(diagnostic_available, diag_path, project_name_list[0])
+        v_range = get_diagnostic_parameters(
+            diagnostic_available, diag_path, project_name_list[0])
 
         # Determine the cycles and types of the diagnostic cycles
         max_cycle = self.data.cycle_index.max()
-        starts_at = [i for i in diagnostic_available['diagnostic_starts_at'] if i < max_cycle]
+        starts_at = [i for i in diagnostic_available['diagnostic_starts_at']
+                     if i <= max_cycle]
         diag_cycles_at = list(itertools.chain.from_iterable(
-            [list(range(i, i + diagnostic_available['length'])) for i in starts_at]))
-        diag_cycle_type = list(itertools.chain.from_iterable(
-            [diagnostic_available['cycle_type'] for i in starts_at]))
-        assert len(diag_cycles_at) == len(diag_cycle_type)
+            [range(i, i + diagnostic_available['length']) for i in starts_at]))
+        # Duplicate cycle type list end to end for each starting index
+        diag_cycle_type = diagnostic_available['cycle_type'] * len(starts_at)
+        if not len(diag_cycles_at) == len(diag_cycle_type):
+            errmsg = "Diagnostic cycles, {}, and diagnostic cycle types, "\
+                     "{}, are unequal lengths".format(diag_cycles_at, diag_cycle_type)
+            raise ValueError(errmsg)
 
         diag_data = self.data[self.data['cycle_index'].isin(diag_cycles_at)]
 
@@ -385,7 +367,7 @@ class RawCyclerRun(MSONable):
         all_dfs = []
         for (cycle_index, step_index, step_index_counter), df in tqdm(group):
             new_df = get_interpolated_data(df, field_name="voltage", field_range=v_range,
-                                           columns=incl_columns, resolution=n_interp_diagnostic)
+                                           columns=incl_columns, resolution=resolution)
             new_df['cycle_index'] = cycle_index
             new_df['cycle_type'] = diag_cycle_type[diag_cycles_at.index(cycle_index)]
             new_df['step_index'] = step_index
@@ -400,61 +382,6 @@ class RawCyclerRun(MSONable):
         # Cycle_index gets a little weird about typing, so round it here
         result.cycle_index = result.cycle_index.round()
         return result
-
-    def is_diagnostic_cycle(self, group, stat_variable,
-                            nominal_capacity, c_rate_bounds,
-                            min_n_steps_diagnostic):
-        """
-        Helper function for get_diagnostic_summary
-
-        Args:
-            group:
-            stat_variable:
-            nominal_capacity:
-            c_rate_bounds:
-            min_n_steps_diagnostic:
-
-        Returns:
-            float:
-        """
-        if len(group.step_index.unique()) > min_n_steps_diagnostic:
-            value = group.groupby('step_index'). \
-                apply(lambda g: self.is_diagnostic_step(g, stat_variable, nominal_capacity, c_rate_bounds)). \
-                agg(np.nanmean)
-        else:
-            value = np.NaN
-        return value
-
-    def is_diagnostic_step(self, group, stat_variable,
-                           nominal_capacity, c_rate_bounds):
-        """
-        Helper function for get_diagnostic_summary
-
-        Args:
-            group:
-            stat_variable:
-            nominal_capacity:
-            c_rate_bounds:
-
-        Returns:
-            float:
-        """
-        if max(c_rate_bounds) < 0:
-            step_monotonic_variable = 'discharge_capacity'
-        elif max(c_rate_bounds) > 0:
-            step_monotonic_variable = 'charge_capacity'
-        else:
-            step_monotonic_variable = 'date_time_iso'
-
-        if (min(c_rate_bounds) * nominal_capacity < group.current.median()
-                < max(c_rate_bounds) * nominal_capacity and
-                group[step_monotonic_variable].is_monotonic is True and
-                group[step_monotonic_variable].is_unique is True):
-
-            value = diagnostic_function(group, stat_variable)
-        else:
-            value = np.NaN
-        return value
 
     @classmethod
     def from_arbin_file(cls, path, validate=False):
@@ -502,7 +429,7 @@ class RawCyclerRun(MSONable):
         metadata = dict()
 
         if len(list(data['cell_id'].unique())) > 1:
-            raise ValueError(f'More than 1 cell_id exists in {path}')
+            raise ValueError('More than 1 cell_id exists in {}'.format(path))
 
         metadata['indigo_cell_id'] = int(data['cell_id'].iloc[0])
         metadata['filename'] = path
@@ -533,24 +460,25 @@ class RawCyclerRun(MSONable):
     @staticmethod
     def get_maccor_quantity_sum(data, quantity, state_type):
         """
-        Computes non-decreasing capacity or energy (either charge or discharge) through
-        multiple steps of a single cycle and resets capacity at the start of
-        each new cycle. Input Maccor data resets to zero at each step.
+        Computes non-decreasing capacity or energy (either charge or discharge)
+        through multiple steps of a single cycle and resets capacity at the
+        start of each new cycle. Input Maccor data resets to zero at each step.
 
         Args:
-            data (dict): maccor data.
+            data (pd.DataFrame): maccor data.
             quantity (str):  capacity or energy.
             state_type (str): charge or discharge.
+
         Returns:
             list: summed quantities.
         """
-        state_code = {'charge': MACCOR_CONFIG['charge_state_code'],
-                      'discharge': MACCOR_CONFIG['discharge_state_code']}
-        quantity = data.apply(lambda row: row['_' + quantity] if row['_state'] == state_code[state_type] else 0.0, axis=1)
+        state_code = MACCOR_CONFIG["{}_state_code".format(state_type)]
+        quantity = data.apply(lambda row: row['_' + quantity] if row['_state'] == state_code else 0.0, axis=1)
         earlier_quantity = 0.
         earlier_cycle_index = data['cycle_index'][0]
         new_step_flag = False
-        for i, (step_quantity, es, cycle_index) in enumerate(zip(quantity, data['_ending_status'], data['cycle_index'])):
+        for i, (step_quantity, es, cycle_index) in \
+                enumerate(zip(quantity, data['_ending_status'], data['cycle_index'])):
             if new_step_flag:
                 if cycle_index > earlier_cycle_index:
                     earlier_quantity = 0.
@@ -663,7 +591,8 @@ class RawCyclerRun(MSONable):
         Method for converting to ProcessedCyclerRun
 
         Returns:
-            beep.structure.ProcessedCyclerRun: ProcessedCyclerRun that corresponds to processed RawCyclerRun
+            beep.structure.ProcessedCyclerRun: ProcessedCyclerRun
+                that corresponds to processed RawCyclerRun
 
         """
         v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \
@@ -720,7 +649,8 @@ class ProcessedCyclerRun(MSONable):
         protocol (str): protocol for the experiment.
         channel_id (int): id for the channel for the experiment.
         summary (pandas.DataFrame): data of summary data for each cycle.
-        cycles_interpolated (pandas.DataFrame): interpolated data for discharge over 2.8-3.5.
+        cycles_interpolated (pandas.DataFrame): interpolated data for
+            discharge over 2.8-3.5.
     """
     def __init__(self, barcode, protocol, channel_id, summary,
                  cycles_interpolated, diagnostic_summary=None,
@@ -758,24 +688,28 @@ class ProcessedCyclerRun(MSONable):
 
     @classmethod
     def from_raw_cycler_run(cls, raw_cycler_run, v_range=None, resolution=1000,
-                            n_interp_diagnostic=500, nominal_capacity=1.1,
+                            diagnostic_resolution=500, nominal_capacity=1.1,
                             full_fast_charge=0.8, diagnostic_available=False):
         """
         Method to invoke ProcessedCyclerRun from RawCyclerRun object
 
         Args:
-            raw_cycler_run (beep.structure.RawCyclerRun): RawCyclerRun object to create
-                ProcessedCyclerRun from.
+            raw_cycler_run (beep.structure.RawCyclerRun): RawCyclerRun
+                object to create ProcessedCyclerRun from.
             v_range ([int, int]): range of voltages for cycle interpolation.
             resolution (int): resolution for cycle interpolation.
-            n_interp_diagnostic (int): number of datapoints per step for interpolating diagnostic cycles.
+            diagnostic_resolution (int): number of datapoints per step for
+                interpolating diagnostic cycles.
             nominal_capacity (float): nominal capacity for summary stats.
             full_fast_charge (float): full fast charge for summary stats.
-            diagnostic_available (dict): project metadata for processing diagnostic cycles correctly.
+            diagnostic_available (dict): project metadata for processing
+                diagnostic cycles correctly.
         """
         if diagnostic_available:
-            diagnostic_summary = raw_cycler_run.diagnostic_summary(diagnostic_available)
-            diagnostic_interpolated = raw_cycler_run.diagnostic_interpolated(diagnostic_available)
+            diagnostic_summary = raw_cycler_run.get_diagnostic_summary(
+                diagnostic_available)
+            diagnostic_interpolated = raw_cycler_run.get_interpolated_diagnostic_cycles(
+                diagnostic_available, diagnostic_resolution)
         else:
             diagnostic_summary = None
             diagnostic_interpolated = None
@@ -812,14 +746,10 @@ class ProcessedCyclerRun(MSONable):
         # Arbin files are via standard pipeline
         if re.match(FastCharge_CONFIG['file_pattern'], filename):
             raw = RawCyclerRun.from_arbin_file(filename, validate)
-            return raw.to_processed_cycler_run(
-                v_range=FastCharge_CONFIG['cell_specification']['v_range'],
-                resolution=FastCharge_CONFIG['cell_specification']['resolution'])
+            return raw.to_processed_cycler_run()
         elif re.match(xTesladiag_CONFIG['file_pattern'], filename):
             raw = RawCyclerRun.from_maccor_file(filename, validate)
-            return raw.to_processed_cycler_run(
-                v_range=xTesladiag_CONFIG['cell_specification']['v_range'],
-                resolution=xTesladiag_CONFIG['cell_specification']['resolution'])
+            return raw.to_processed_cycler_run()
 
         else:
             raise ValueError("File pattern or contents of {} not recognized".format(
@@ -1100,7 +1030,8 @@ def get_interpolated_data(dataframe, field_name='voltage', field_range=None,
             range is the min/max of the dataframe field_name values
         columns (list): list of column names to provide interpolated values for,
             default value of None indicates all columns should be interpolated
-        resolution (int): number of data points to sample in the uniform cycles, defaults to 1000
+        resolution (int): number of data points to sample in the uniform
+            cycles, defaults to 1000
 
     Returns:
         pandas.DataFrame: DataFrame of interpolated values
@@ -1108,13 +1039,14 @@ def get_interpolated_data(dataframe, field_name='voltage', field_range=None,
     columns = columns or dataframe.columns
     columns = list(set(columns) | {field_name})
 
-    df = dataframe.loc[:,columns]
+    df = dataframe.loc[:, columns]
     field_range = field_range or [df[field_name].iloc[0], df[field_name].iloc[-1]]
     # If interpolating on datetime, change column to datetime series and
     # use date_range to create interpolating vector
     if field_name == 'date_time_iso':
         df['date_time_iso'] = pd.to_datetime(df['date_time_iso'])
-        interp_x = pd.date_range(start=df[field_name].iloc[0], end=df[field_name].iloc[-1], periods=resolution)
+        interp_x = pd.date_range(
+            start=df[field_name].iloc[0], end=df[field_name].iloc[-1], periods=resolution)
     else:
         interp_x = np.linspace(*field_range, resolution)
     interpolated_df = pd.DataFrame({field_name: interp_x, "interpolated": True})
@@ -1141,7 +1073,7 @@ def diagnostic_function(df, column):
 
     Args:
         df (pandas.DataFrame): A dataframe.
-.        column (str): A column name.
+        column (str): A column name.
 
     Returns:
         float: median value of column.
@@ -1176,6 +1108,16 @@ def parse_maccor_metadata(metadata_string):
 
 
 def get_project_sequence(path):
+    """
+    Returns project sequence for a given path
+
+    Args:
+        path (str): full project file path
+
+    Returns:
+        ([str]): list of project parts
+
+    """
     root, file = os.path.split(path)
     file_parts = file.split('_')
     return file_parts
@@ -1210,19 +1152,22 @@ def get_protocol_parameters(filepath, parameters_path='data-share/raw/parameters
     return parameter_row, df
 
 
-def get_diagnostic_parameters(diagnostic_available, diagnostic_parameter_path, project_name):
+def get_diagnostic_parameters(diagnostic_available, diagnostic_parameter_path,
+                              project_name):
     """
-    Interpolates data according to location and type of diagnostic cycles in the data
+    Interpolates data according to location and type of diagnostic
+    cycles in the data
 
     Args:
         diagnostic_available (dict): dictionary with diagnostic_types as list,
-         'length' of the diagnostic in cycles and location of the diagnostic
-         diagnostic_parameter_path (str): full path to the location of the diagnostic
-         parameter files
-         project_name (str): name of the project to search with
+            'length' of the diagnostic in cycles and location of the diagnostic
+        diagnostic_parameter_path (str): full path to the location of the
+            diagnostic parameter files
+        project_name (str): name of the project to search with
 
     Returns:
-        (list) containing upper and lower voltage limits for the diagnostic cycle
+        (list): containing upper and lower voltage limits for the
+            diagnostic cycle
 
     """
     project_diag_files = glob(os.path.join(diagnostic_parameter_path, project_name + '*'))
@@ -1311,8 +1256,7 @@ def maccor_timestamp(x):
     return iso
 
 
-def process_file_list_from_json(file_list_json, processed_dir='data-share/structure/',
-                                v_range=None, resolution=1000):
+def process_file_list_from_json(file_list_json, processed_dir='data-share/structure/'):
     """
     Function to take a json filename corresponding to a data structure
     with a 'file_list' and a 'validity' attribute, process each file
@@ -1327,9 +1271,6 @@ def process_file_list_from_json(file_list_json, processed_dir='data-share/struct
             and loaded, otherwise interpreted as a json string.
         processed_dir (str): location for processed cycler run output
             files to be placed.
-        v_range ([int, int]): voltage range for interpolation in processing,
-            defaults to [2.8, 3.5].
-        resolution (int): resolution for interpolation in processing.
 
     Returns:
         str: json string of processed files (with key "processed_file_list").
@@ -1348,8 +1289,7 @@ def process_file_list_from_json(file_list_json, processed_dir='data-share/struct
     events = KinesisEvents(service='DataStructurer', mode=file_list_data['mode'])
 
     # Prepend optional root to output directory
-    processed_dir = os.path.join(os.environ.get("BEEP_ROOT", "/"),
-                                 processed_dir)
+    processed_dir = os.path.join(os.environ.get("BEEP_ROOT", "/"), processed_dir)
 
     file_list = file_list_data['file_list']
     validities = file_list_data['validity']
@@ -1364,8 +1304,7 @@ def process_file_list_from_json(file_list_json, processed_dir='data-share/struct
         if validity == 'valid':
             # Process raw cycler run and dump to file
             raw_cycler_run = RawCyclerRun.from_file(filename)
-            processed_cycler_run = raw_cycler_run.to_processed_cycler_run(
-                v_range=v_range, resolution=resolution)
+            processed_cycler_run = raw_cycler_run.to_processed_cycler_run()
             new_filename, ext = os.path.splitext(os.path.basename(filename))
             new_filename = new_filename + ".json"
             new_filename = add_suffix_to_filename(new_filename, "_structure")

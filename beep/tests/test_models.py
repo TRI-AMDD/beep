@@ -5,16 +5,17 @@ import unittest
 import os
 import json
 import numpy as np
-import pandas as pd
 from glob import glob
-from beep import TEST_FILE_DIR
+from beep import TEST_FILE_DIR, MODEL_DIR
 from beep.run_model import DegradationModel, process_file_list_from_json, get_project_name_from_list
-from monty.serialization import dumpfn, loadfn
+from monty.serialization import loadfn
 
 import boto3
 from botocore.exceptions import NoRegionError, NoCredentialsError
-single_task_features_path = os.path.join(TEST_FILE_DIR,"feature_jsons_for_training_model/single_task")
-multi_task_features_path = os.path.join(TEST_FILE_DIR,"feature_jsons_for_training_model/multi_task")
+single_task_features_path = os.path.join(
+    TEST_FILE_DIR, "feature_jsons_for_training_model", "single_task")
+multi_task_features_path = os.path.join(
+    TEST_FILE_DIR, "feature_jsons_for_training_model", "multi_task")
 
 
 class TestRunModel(unittest.TestCase):
@@ -36,14 +37,14 @@ class TestRunModel(unittest.TestCase):
             'run_list': list(range(len(featurized_jsons)))
         }
         json_string = json.dumps(json_obj)
-        model = DegradationModel.train(json_string, dataset_id=2,
-              model_type='linear', regularization_type='elasticnet',
-              model_name='test_model', hyperparameters={})
+        model = DegradationModel.train(
+            json_string, dataset_id=2, model_type='linear',
+            regularization_type='elasticnet', model_name='test_model',
+            hyperparameters={})
         model.serialize(processed_dir=TEST_FILE_DIR)
-        serialized_model_reloaded = DegradationModel.from_serialized_model(model_dir=TEST_FILE_DIR,
-                                                                           serialized_model= model.name + '.model')
+        serialized_model_reloaded = DegradationModel.from_serialized_model(
+            model_dir=TEST_FILE_DIR, serialized_model=model.name + '.model')
         self.assertIsInstance(serialized_model_reloaded, DegradationModel)
-
 
     def test_multi_task_model_training(self):
         featurized_jsons = glob(os.path.join(multi_task_features_path, "*features.json"))
@@ -59,10 +60,9 @@ class TestRunModel(unittest.TestCase):
                                        model_name='test_model', hyperparameters={})
         model.serialize(processed_dir=TEST_FILE_DIR)
         serialized_model_reloaded = DegradationModel.from_serialized_model(model_dir=TEST_FILE_DIR,
-                                                                           serialized_model= model.name + '.model')
+                                                                           serialized_model=model.name + '.model')
         self.assertGreater(len(serialized_model_reloaded.model['confidence_bounds']), 1)
         self.assertIsInstance(serialized_model_reloaded, DegradationModel)
-
 
     def test_multi_task_prediction_list_to_json(self):
         featurized_jsons = glob(os.path.join(multi_task_features_path, "*features.json"))
@@ -72,7 +72,7 @@ class TestRunModel(unittest.TestCase):
             'run_list': list(range(len(featurized_jsons)))
         }
         json_string = json.dumps(json_obj)
-        newjsonpaths = process_file_list_from_json(json_string, model_dir=TEST_FILE_DIR,
+        newjsonpaths = process_file_list_from_json(json_string, model_dir=MODEL_DIR,
                                                    processed_dir=multi_task_features_path, predict_only=True)
         reloaded = json.loads(newjsonpaths)
 
@@ -96,7 +96,7 @@ class TestRunModel(unittest.TestCase):
             'run_list': [0, 1]
         }
         json_string = json.dumps(json_obj)
-        newjsonpaths = process_file_list_from_json(json_string, model_dir=TEST_FILE_DIR,
+        newjsonpaths = process_file_list_from_json(json_string, model_dir=MODEL_DIR,
                                                    processed_dir=TEST_FILE_DIR)
         reloaded = json.loads(newjsonpaths)
         prediction_reloaded = loadfn(reloaded['file_list'][0])
@@ -114,7 +114,7 @@ class TestRunModel(unittest.TestCase):
             'run_list': list(range(len(featurized_jsons)))
         }
         json_string = json.dumps(json_obj)
-        newjsonpaths = process_file_list_from_json(json_string, model_dir=TEST_FILE_DIR,
+        newjsonpaths = process_file_list_from_json(json_string, model_dir=MODEL_DIR,
                                                    processed_dir=single_task_features_path, predict_only=True)
         reloaded = json.loads(newjsonpaths)
 

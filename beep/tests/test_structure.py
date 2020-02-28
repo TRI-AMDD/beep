@@ -12,8 +12,9 @@ import pandas as pd
 from botocore.exceptions import NoRegionError, NoCredentialsError
 
 from beep import TEST_FILE_DIR, MODULE_DIR
-from beep.structure import RawCyclerRun, ProcessedCyclerRun, add_suffix_to_filename, \
-    process_file_list_from_json, EISpectrum, get_project_sequence, get_protocol_parameters, get_diagnostic_parameters
+from beep.structure import RawCyclerRun, ProcessedCyclerRun, \
+    process_file_list_from_json, EISpectrum, get_project_sequence, \
+    get_protocol_parameters, get_diagnostic_parameters
 from monty.serialization import loadfn, dumpfn
 from monty.tempfile import ScratchDir
 import matplotlib.pyplot as plt
@@ -164,7 +165,7 @@ class RawCyclerRunTest(unittest.TestCase):
         processed_cycler_run_loc = os.path.join(TEST_FILE_DIR, 'processed_diagnostic.json')
         dumpfn(processed_cycler_run, processed_cycler_run_loc)
         test = loadfn(processed_cycler_run_loc)
-        self.assertIsInstance(test.diagnostic_summary, pd.DataFrame)
+        self.assertIsInstance(test.get_diagnostic_summary, pd.DataFrame)
         os.remove(processed_cycler_run_loc)
 
     @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
@@ -178,7 +179,7 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertEqual(nominal_capacity, 4.84)
         self.assertEqual(v_range, [2.7, 4.2])
         self.assertEqual(diagnostic_available['cycle_type'], ['reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C'])
-        diag_summary = cycler_run.diagnostic_summary(diagnostic_available)
+        diag_summary = cycler_run.get_diagnostic_summary(diagnostic_available)
         self.assertEqual(diag_summary.index.tolist(), [1, 2, 3, 4, 5,
                                                        36, 37, 38, 39, 40,
                                                        141, 142, 143, 144, 145,
@@ -197,7 +198,7 @@ class RawCyclerRunTest(unittest.TestCase):
 
         v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \
             cycler_run.determine_structuring_parameters()
-        diag_interpolated = cycler_run.diagnostic_interpolated(diagnostic_available)
+        diag_interpolated = cycler_run.get_interpolated_diagnostic_cycles(diagnostic_available)
         diag_cycle = diag_interpolated[(diag_interpolated.cycle_type == 'rpt_0.2C')
                                        & (diag_interpolated.step_type == 1)]
         plt.figure()
@@ -238,45 +239,6 @@ class RawCyclerRunTest(unittest.TestCase):
                 assert np.abs(off_by) <= (np.abs(closest_interp2_match.iloc[0][column_check]) *
                                           acceptable_error + acceptable_error_offest)
 
-    def test_get_interpolated_diagnostic_cycles_maccor(self):
-        cycler_run = RawCyclerRun.from_file(self.maccor_file_w_diagnostics)
-        diagnostic_cycles_interpolated = \
-            cycler_run.get_interpolated_diagnostic_cycles(min_n_steps_diagnostic=3,
-                                                          field_name='date_time_iso',
-                                                          n_interp_diagnostic=500)
-        self.assertGreaterEqual(len(diagnostic_cycles_interpolated.cycle_index.unique()), 2)
-        self.assertEqual(diagnostic_cycles_interpolated.discharge_capacity[4], 2.635393836921498)
-
-    def test_get_diagnostic_summary(self):
-        cycler_run = RawCyclerRun.from_file(self.maccor_file_w_diagnostics)
-        stat_name = '2C_median_voltage_diag'
-        c_rate_bounds = [-2.1, -1.9]
-        min_n_steps_diagnostic = 3
-        nominal_capacity = 4.7
-        stat_variable = 'voltage'
-        summary = cycler_run.data.groupby("cycle_index").agg({
-            "discharge_capacity": "max",
-            "charge_capacity": "max",
-            "internal_resistance": "last",
-            "temperature": ["max", "mean", "min"],
-            "date_time_iso": "first"})
-
-        summary.columns = ['discharge_capacity', 'charge_capacity', 'dc_internal_resistance',
-                           'temperature_maximum',
-                           'temperature_average', 'temperature_minimum',
-                           'date_time_iso']
-        summary = cycler_run.get_diagnostic_summary(summary,
-                                                    nominal_capacity=nominal_capacity,
-                                                    stat_name=stat_name,
-                                                    c_rate_bounds=c_rate_bounds,
-                                                    min_n_steps_diagnostic=min_n_steps_diagnostic,
-                                                    stat_variable=stat_variable
-                                                    )
-        print(summary['2C_median_voltage_diag'].to_numpy())
-        test_array = np.array([np.nan, 3.461738, np.nan, 3.448692, np.nan, 3.422656, np.nan,
-                               3.412432, np.nan, 3.403887, np.nan, 3.405776, np.nan])
-        np.testing.assert_allclose(summary['2C_median_voltage_diag'].to_numpy(), test_array, rtol=1e-03)
-
     def test_get_summary(self):
         cycler_run = RawCyclerRun.from_file(self.maccor_file_w_diagnostics)
         summary = cycler_run.get_summary(nominal_capacity=4.7, full_fast_charge=0.8)
@@ -302,26 +264,12 @@ class RawCyclerRunTest(unittest.TestCase):
                          set({"indigo_cell_id", "_today_datetime", "start_datetime","filename"}))
 
         # general
-        raw_cycler_run = None
         raw_cycler_run = RawCyclerRun.from_file(self.indigo_file)
         self.assertTrue({"data_point", "cycle_index", "step_index", "voltage", "temperature",
                          "current", "charge_capacity", "discharge_capacity"} < set(raw_cycler_run.data.columns))
 
         self.assertEqual(set(raw_cycler_run.metadata.keys()),
                          set({"indigo_cell_id", "_today_datetime", "start_datetime","filename"}))
-
-
-class CliTest(unittest.TestCase):
-    def setUp(self):
-        # Setup events for testing
-        try:
-            kinesis = boto3.client('kinesis')
-            response = kinesis.list_streams()
-            self.events_mode = "test"
-        except NoRegionError or NoCredentialsError as e:
-            self.events_mode = "events_off"
-
-        self.arbin_file = os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29.csv")
 
     def test_get_project_name(self):
         project_name_parts = get_project_sequence(os.path.join(TEST_FILE_DIR,
@@ -352,8 +300,42 @@ class CliTest(unittest.TestCase):
                                 }
         diagnostic_parameter_path = os.path.join(MODULE_DIR, 'procedure_templates')
         project_name = 'PreDiag'
-        v_range = get_diagnostic_parameters(diagnostic_available, diagnostic_parameter_path, project_name)
+        v_range = get_diagnostic_parameters(
+            diagnostic_available, diagnostic_parameter_path, project_name)
         self.assertEqual(v_range, [2.7, 4.2])
+
+    def test_get_interpolated_diagnostic_cycles(self):
+        cycler_run = RawCyclerRun.from_file(self.maccor_file_w_diagnostics)
+        diagnostic_available = {'type': 'HPPC',
+                                'cycle_type': ['hppc'],
+                                'length': 1,
+                                'diagnostic_starts_at': [1]
+                                }
+        d_interp = \
+            cycler_run.get_interpolated_diagnostic_cycles(
+                diagnostic_available, resolution=500)
+        self.assertGreaterEqual(
+            len(d_interp.cycle_index.unique()), 1)
+
+        # Ensure step indices are partitioned and processed separately
+        self.assertEqual(len(d_interp.step_index.unique()), 9)
+        first_step = d_interp[(d_interp.step_index == 7) & (d_interp.step_index_counter == 1)]
+        second_step = d_interp[(d_interp.step_index == 7) & (d_interp.step_index_counter == 4)]
+        self.assertEqual(len(first_step), 500)
+        self.assertEqual(len(second_step), 500)
+
+
+class CliTest(unittest.TestCase):
+    def setUp(self):
+        # Setup events for testing
+        try:
+            kinesis = boto3.client('kinesis')
+            response = kinesis.list_streams()
+            self.events_mode = "test"
+        except NoRegionError or NoCredentialsError as e:
+            self.events_mode = "events_off"
+
+        self.arbin_file = os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29.csv")
 
     def test_simple_conversion(self):
         with ScratchDir('.'):
