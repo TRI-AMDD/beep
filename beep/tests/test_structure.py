@@ -127,11 +127,13 @@ class RawCyclerRunTest(unittest.TestCase):
 
     def test_get_interpolated_discharge_cycles(self):
         cycler_run = RawCyclerRun.from_file(self.arbin_file)
-        all_interpolated = cycler_run.get_interpolated_discharge_cycles()
+        all_interpolated = cycler_run.get_interpolated_cycles()
+        all_interpolated = all_interpolated[(all_interpolated.step_type == 'discharge')]
         lengths = [len(df) for index, df in all_interpolated.groupby("cycle_index")]
         self.assertTrue(np.all(np.array(lengths) == 1000))
 
         # Found these manually
+        all_interpolated = all_interpolated.drop(columns=["step_type"])
         y_at_point = all_interpolated.iloc[[1500]]
         x_at_point = all_interpolated.voltage[1500]
         cycle_1 = cycler_run.data[cycler_run.data['cycle_index'] == 1]
@@ -143,7 +145,7 @@ class RawCyclerRunTest(unittest.TestCase):
         # Get an interval between which one can find the interpolated value
         measurement_index = np.max(np.where(discharge.voltage - x_at_point < 0))
         interval = discharge.iloc[measurement_index:measurement_index + 2]
-        interval = interval.drop("date_time_iso", "columns")  # Drop non-numeric column
+        interval = interval.drop(columns=["date_time_iso"])  # Drop non-numeric column
 
         # Test interpolation with a by-hand calculation of slope
         diff = np.diff(interval, axis=0)
@@ -152,6 +154,14 @@ class RawCyclerRunTest(unittest.TestCase):
         pred = pred.reset_index()
         for col_name in y_at_point.columns:
             self.assertAlmostEqual(pred[col_name].iloc[0], y_at_point[col_name].iloc[0])
+
+    def test_get_interpolated_charge_cycles(self):
+        cycler_run = RawCyclerRun.from_file(self.arbin_file)
+        all_interpolated = cycler_run.get_interpolated_cycles()
+        all_interpolated = all_interpolated[(all_interpolated.step_type == 'charge')]
+        lengths = [len(df) for index, df in all_interpolated.groupby("cycle_index")]
+        self.assertTrue(np.all(np.array(lengths) == 1000))
+        self.assertTrue(all_interpolated['current'].mean() > 0)
 
     @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_get_diagnostic(self):
@@ -171,7 +181,7 @@ class RawCyclerRunTest(unittest.TestCase):
                                                        246, 247
                                                        ])
 
-        diag_interpolated = cycler_run.get_interpolated_diagnostic_cycles(diagnostic_available)
+        diag_interpolated = cycler_run.get_interpolated_diagnostic_cycles(diagnostic_available, resolution=500)
         diag_cycle = diag_interpolated[(diag_interpolated.cycle_type == 'rpt_0.2C')
                                        & (diag_interpolated.step_type == 1)]
         plt.figure()
@@ -190,10 +200,20 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertIsInstance(test.diagnostic_summary, pd.DataFrame)
         os.remove(processed_cycler_run_loc)
 
-    def test_get_interpolated_discharge_cycles_maccor(self):
+    def test_get_interpolated_cycles_maccor(self):
         cycler_run = RawCyclerRun.from_file(self.maccor_file)
-        all_interpolated = cycler_run.get_interpolated_discharge_cycles(v_range=[3.0, 4.2], resolution=10000)
-        interp2 = all_interpolated[all_interpolated.cycle_index == 2].sort_values('discharge_capacity')
+        all_interpolated = cycler_run.get_interpolated_cycles(v_range=[3.0, 4.2], resolution=10000)
+        interp2 = all_interpolated[(all_interpolated.cycle_index == 2) &
+                                   (all_interpolated.step_type == 'discharge')].sort_values('discharge_capacity')
+        interp3 = all_interpolated[(all_interpolated.cycle_index == 1) &
+                                   (all_interpolated.step_type == 'charge')].sort_values('charge_capacity')
+
+        self.assertTrue(interp3.current.mean() > 0)
+        self.assertEqual(len(interp3.voltage), 10000)
+        self.assertEqual(interp3.voltage.median(), 3.6)
+        np.testing.assert_almost_equal(interp3[interp3.voltage <= interp3.voltage.median()].current.iloc[0],
+                                       2.4227011, decimal=6)
+
         cycle_2 = cycler_run.data[cycler_run.data['cycle_index'] == 2]
         discharge = cycle_2[cycle_2.step_index == 12]
         discharge = discharge.sort_values('discharge_capacity')

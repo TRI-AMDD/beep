@@ -132,9 +132,50 @@ class RawCyclerRun(MSONable):
         else:
             raise ValueError("{} does not match any known file pattern".format(path))
 
-    def get_interpolated_discharge_cycles(self, v_range=None, resolution=1000):
+    def interpolated_cycles(self, v_range, resolution, step_type='discharge'):
         """
-        Gets interpolated cycles just for the discharging states.
+        Gets interpolated cycles for the step specified, charge or discharge.
+
+        Args:
+            v_range ([Float, Float]): list of two floats that define
+                the voltage interpolation range endpoints.
+            resolution (int): resolution of interpolated data.
+            step_type (str): which step to interpolate i.e. 'charge' or 'discharge'
+
+        Returns:
+            pandas.DataFrame: DataFrame corresponding to interpolated values.
+        """
+        if step_type is 'discharge':
+            group = self.data.groupby(["cycle_index", "step_index"]).filter(
+                determine_whether_step_is_discharging).groupby("cycle_index")
+        elif step_type is 'charge':
+            group = self.data.groupby(["cycle_index", "step_index"]).filter(
+                determine_whether_step_is_charging).groupby("cycle_index")
+        else:
+            raise NotImplementedError
+
+        incl_columns = ["current", "charge_capacity", "discharge_capacity",
+                        "internal_resistance", "temperature", "cycle_index"]
+        all_dfs = []
+        for cycle_index, df in tqdm(group):
+            new_df = get_interpolated_data(df, "voltage", field_range=v_range,
+                                           columns=incl_columns, resolution=resolution)
+            new_df.cycle_index = cycle_index
+            new_df['step_type'] = step_type
+            new_df['step_type'].astype('category')
+            all_dfs.append(new_df)
+
+        # Ignore the index to avoid issues with overlapping voltages
+        result = pd.concat(all_dfs, ignore_index=True)
+
+        # Cycle_index gets a little weird about typing, so round it here
+        result.cycle_index = result.cycle_index.round()
+
+        return result
+
+    def get_interpolated_cycles(self, v_range=None, resolution=1000):
+        """
+        Gets interpolated cycles for both charge and discharge steps.
 
         Args:
             v_range ([Float, Float]): list of two floats that define
@@ -144,25 +185,10 @@ class RawCyclerRun(MSONable):
         Returns:
             pandas.DataFrame: DataFrame corresponding to interpolated values.
         """
-
         v_range = v_range or [2.8, 3.5]
-        group = self.data.groupby(["cycle_index", "step_index"]).filter(
-            determine_whether_step_is_discharging).groupby("cycle_index")
-        incl_columns = ["current", "charge_capacity", "discharge_capacity",
-                        "internal_resistance", "temperature", "cycle_index"]
-        all_dfs = []
-        for cycle_index, df in tqdm(group):
-            new_df = get_interpolated_data(df, "voltage", field_range=v_range,
-                                           columns=incl_columns, resolution=resolution)
-            new_df.cycle_index = cycle_index
-            all_dfs.append(new_df)
-
-        # Ignore the index to avoid issues with overlapping voltages
-        result = pd.concat(all_dfs, ignore_index=True)
-
-        # Cycle_index gets a little weird about typing, so round it here
-        result.cycle_index = result.cycle_index.round()
-
+        interpolated_discharge = self.interpolated_cycles(v_range, resolution, step_type='discharge')
+        interpolated_charge = self.interpolated_cycles(v_range, resolution, step_type='charge')
+        result = pd.concat([interpolated_discharge, interpolated_charge], ignore_index=True)
         return result
 
     def as_dict(self):
@@ -679,7 +705,9 @@ class ProcessedCyclerRun(MSONable):
 
         # We can drop this restriction later if we don't need it
         min_index = cycles_interpolated.cycle_index.min()
-        min_index_df = cycles_interpolated[cycles_interpolated.cycle_index == min_index]
+        if 'step_type' in cycles_interpolated.columns:
+            cycles_interpolated = cycles_interpolated[(cycles_interpolated.step_type == 'discharge')]
+        min_index_df = cycles_interpolated[(cycles_interpolated.cycle_index == min_index)]
         matches = cycles_interpolated.groupby("cycle_index").apply(
             lambda x: np.allclose(x.voltage.values, min_index_df.voltage.values))
         if not np.all(matches):
@@ -718,7 +746,7 @@ class ProcessedCyclerRun(MSONable):
             diagnostic_summary = None
             diagnostic_interpolated = None
 
-        cycles_interpolated = raw_cycler_run.get_interpolated_discharge_cycles(
+        cycles_interpolated = raw_cycler_run.get_interpolated_cycles(
             v_range=v_range, resolution=resolution)
         return cls(raw_cycler_run.metadata.get("barcode"),
                    raw_cycler_run.metadata.get("protocol"),
@@ -1018,6 +1046,20 @@ def determine_whether_step_is_discharging(step_dataframe):
     """
     cap = step_dataframe[["charge_capacity", "discharge_capacity"]]
     return cap.diff(axis=0).mean(axis=0).diff().iloc[-1] > 0
+
+
+def determine_whether_step_is_charging(step_dataframe):
+    """
+    Helper function to determine whether a given dataframe corresponding
+    to a single cycle_index/step is charging or discharging, only intended
+    to be used with a dataframe for single step/cycle
+
+    Args:
+         step_dataframe (pandas.DataFrame): dataframe to determine whether
+         charging or discharging
+    """
+    cap = step_dataframe[["charge_capacity", "discharge_capacity"]]
+    return cap.diff(axis=0).mean(axis=0).diff().iloc[-1] < 0
 
 
 def get_interpolated_data(dataframe, field_name='voltage', field_range=None,
