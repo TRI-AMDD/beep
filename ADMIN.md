@@ -66,7 +66,7 @@ Then, do the release with the following sequence of commands (you can put them
 in a bash script in your PATH somewhere):
 
     conda activate py37
-    invoke release --notest --nodoc
+    invoke release --notest
     conda deactivate
 
 Double check that the releases are properly done on Pypi. If you are releasing
