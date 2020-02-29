@@ -86,7 +86,7 @@ class TestFeaturizer(unittest.TestCase):
                                                          diagnostic_features=True)
         diagnostic_feature_label = predictor.feature_labels[-1]
         self.assertEqual(diagnostic_feature_label, "median_diagnostic_cycles_discharge_capacity")
-        np.testing.assert_almost_equal(predictor.X[diagnostic_feature_label][0], 4.2327690032,  decimal=8)
+        np.testing.assert_almost_equal(predictor.X[diagnostic_feature_label][0], 4.481564593,  decimal=8)
 
     def test_feature_generation_list_to_json(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, processed_cycler_file)
