@@ -29,7 +29,7 @@ class RawCyclerRunTest(unittest.TestCase):
         self.arbin_file = os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29.csv")
         self.maccor_file = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000019_CH70.070")
         self.maccor_file_w_diagnostics = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000020_CH71.071")
-        self.maccor_file_w_parameters = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000136_00002D.037")
+        self.maccor_file_w_parameters = os.path.join(TEST_FILE_DIR, "PreDiag_000287_000128.092")
         self.maccor_file_timezone = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010")
         self.maccor_file_timestamp = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000151_test.052")
         self.indigo_file = os.path.join(TEST_FILE_DIR, "indigo_test_sample.h5")
@@ -154,22 +154,7 @@ class RawCyclerRunTest(unittest.TestCase):
             self.assertAlmostEqual(pred[col_name].iloc[0], y_at_point[col_name].iloc[0])
 
     @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
-    def test_to_processed_cycler_run(self):
-        os.environ['BEEP_ROOT'] = TEST_FILE_DIR
-
-        cycler_run = RawCyclerRun.from_file(self.maccor_file_w_parameters)
-
-        v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \
-            cycler_run.determine_structuring_parameters()
-        processed_cycler_run = cycler_run.to_processed_cycler_run()
-        processed_cycler_run_loc = os.path.join(TEST_FILE_DIR, 'processed_diagnostic.json')
-        dumpfn(processed_cycler_run, processed_cycler_run_loc)
-        test = loadfn(processed_cycler_run_loc)
-        self.assertIsInstance(test.get_diagnostic_summary, pd.DataFrame)
-        os.remove(processed_cycler_run_loc)
-
-    @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
-    def test_to_diagnostic_summary_cycler_run(self):
+    def test_get_diagnostic(self):
         os.environ['BEEP_ROOT'] = TEST_FILE_DIR
 
         cycler_run = RawCyclerRun.from_file(self.maccor_file_w_parameters)
@@ -183,21 +168,9 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertEqual(diag_summary.index.tolist(), [1, 2, 3, 4, 5,
                                                        36, 37, 38, 39, 40,
                                                        141, 142, 143, 144, 145,
-                                                       246, 247, 248, 249, 250,
-                                                       351, 352, 353, 354, 355,
-                                                       456, 457, 458, 459, 460,
-                                                       561, 562, 563, 564, 565,
-                                                       666, 667, 668, 669, 670,
-                                                       771, 772, 773, 774, 775
+                                                       246, 247
                                                        ])
 
-    @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
-    def test_to_diagnostic_interpolation_cycler_run(self):
-        os.environ['BEEP_ROOT'] = TEST_FILE_DIR
-        cycler_run = RawCyclerRun.from_file(self.maccor_file_w_parameters)
-
-        v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \
-            cycler_run.determine_structuring_parameters()
         diag_interpolated = cycler_run.get_interpolated_diagnostic_cycles(diagnostic_available)
         diag_cycle = diag_interpolated[(diag_interpolated.cycle_type == 'rpt_0.2C')
                                        & (diag_interpolated.step_type == 1)]
@@ -208,7 +181,14 @@ class RawCyclerRunTest(unittest.TestCase):
         plt.plot(diag_cycle.voltage, diag_cycle.discharge_dQdV)
         plt.savefig(os.path.join(TEST_FILE_DIR, "discharge_dQdV_interpolation.png"))
 
-        self.assertEqual(len(diag_cycle.index), 4500)
+        self.assertEqual(len(diag_cycle.index), 1500)
+
+        processed_cycler_run = cycler_run.to_processed_cycler_run()
+        processed_cycler_run_loc = os.path.join(TEST_FILE_DIR, 'processed_diagnostic.json')
+        dumpfn(processed_cycler_run, processed_cycler_run_loc)
+        test = loadfn(processed_cycler_run_loc)
+        self.assertIsInstance(test.diagnostic_summary, pd.DataFrame)
+        os.remove(processed_cycler_run_loc)
 
     def test_get_interpolated_discharge_cycles_maccor(self):
         cycler_run = RawCyclerRun.from_file(self.maccor_file)

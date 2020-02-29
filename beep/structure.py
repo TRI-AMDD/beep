@@ -292,18 +292,22 @@ class RawCyclerRun(MSONable):
             "discharge_energy": "max",
             "charge_energy": "max",
             "temperature": ["max", "mean", "min"],
-            "date_time_iso": "first"})
+            "date_time_iso": "first",
+            "cycle_index": "first"},
+        )
 
         diag_summary.columns = ['discharge_capacity', 'charge_capacity',
                                 'discharge_energy', 'charge_energy',
                                 'temperature_maximum', 'temperature_average',
-                                'temperature_minimum', 'date_time_iso']
+                                'temperature_minimum', 'date_time_iso',
+                                'cycle_index']
         diag_summary = diag_summary[diag_summary.index.isin(diag_cycles_at)]
 
         diag_summary['coulombic_efficiency'] = diag_summary['discharge_capacity'] \
                                                / diag_summary['charge_capacity']
-        diag_summary['diagnostic_type'] = list(itertools.chain.from_iterable(
-            [diagnostic_available['cycle_type'] for _ in starts_at]))
+
+        diag_summary['diagnostic_type'] = pd.Series(list(itertools.chain.from_iterable(
+            [diagnostic_available['cycle_type'] for _ in starts_at])))
 
         return diag_summary
 

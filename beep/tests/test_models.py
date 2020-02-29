@@ -45,6 +45,7 @@ class TestRunModel(unittest.TestCase):
         serialized_model_reloaded = DegradationModel.from_serialized_model(
             model_dir=TEST_FILE_DIR, serialized_model=model.name + '.model')
         self.assertIsInstance(serialized_model_reloaded, DegradationModel)
+        os.remove(os.path.join(TEST_FILE_DIR, 'test_model.model'))
 
     def test_multi_task_model_training(self):
         featurized_jsons = glob(os.path.join(multi_task_features_path, "*features.json"))
@@ -105,6 +106,7 @@ class TestRunModel(unittest.TestCase):
         self.assertEqual(features.nominal_capacity, 1.0628421000000001)
         self.assertFalse((prediction_reloaded['discharge_capacity'] -
                          np.around(np.arange(.98, 0.78, -0.03), 2) * features.nominal_capacity).any())
+        os.remove(os.path.join(TEST_FILE_DIR, '2017-06-30_2C-10per_6C_CH10_full_model_multi_predictions.json'))
 
     def test_single_task_prediction_list_to_json(self):
         featurized_jsons = glob(os.path.join(single_task_features_path, "*features.json"))
