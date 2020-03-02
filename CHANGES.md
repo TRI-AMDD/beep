@@ -1,5 +1,10 @@
 
 
+v2020.3.2
+---------
+* Update tests to be standalone
+* Added local logs directory
+
 v2020.2.28
 ----------
 * update README.md
