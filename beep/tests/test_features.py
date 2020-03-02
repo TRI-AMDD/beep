@@ -62,7 +62,7 @@ class TestFeaturizer(unittest.TestCase):
         os.remove(os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_features_predict_only.json"))
 
     def test_feature_serialization_for_training(self):
-        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, processed_cycler_file)
+        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
         predictor = DegradationPredictor.from_processed_cycler_run_file(processed_cycler_run_path,
                                                                         features_label='full_model', predict_only=False)
         dumpfn(predictor, os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_features.json"))
