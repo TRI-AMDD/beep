@@ -60,6 +60,7 @@ class TestFeaturizer(unittest.TestCase):
         self.assertIsInstance(predictor_reloaded, DegradationPredictor)
         # test nominal capacity is being generated
         self.assertEqual(predictor_reloaded.nominal_capacity, 1.0628421000000001)
+        os.remove(os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_features_predict_only.json"))
 
     def test_feature_serialization_for_training(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, processed_cycler_file)
