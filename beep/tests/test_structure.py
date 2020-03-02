@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 from botocore.exceptions import NoRegionError, NoCredentialsError
 
-from beep import TEST_FILE_DIR, MODULE_DIR
+from beep import MODULE_DIR
 from beep.structure import RawCyclerRun, ProcessedCyclerRun, \
     process_file_list_from_json, EISpectrum, get_project_sequence, \
     get_protocol_parameters, get_diagnostic_parameters
@@ -21,6 +21,8 @@ import matplotlib.pyplot as plt
 
 BIG_FILE_TESTS = os.environ.get("BEEP_BIG_TESTS", False)
 SKIP_MSG = "Tests requiring large files with diagnostic cycles are disabled, set BIG_FILE_TESTS to run full tests"
+TEST_DIR = os.path.dirname(__file__)
+TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 
 class RawCyclerRunTest(unittest.TestCase):

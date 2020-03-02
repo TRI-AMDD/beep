@@ -39,12 +39,14 @@ if ENVIRONMENT is None or ENVIRONMENT not in config.keys():
                      + f'Found: {ENVIRONMENT}')
 
 MODULE_DIR = os.path.dirname(__file__)
-TEST_DIR = os.path.join(MODULE_DIR, "tests")
-TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 CONVERSION_SCHEMA_DIR = os.path.join(MODULE_DIR, "conversion_schemas")
 VALIDATION_SCHEMA_DIR = os.path.join(MODULE_DIR, "validation_schemas")
 PROCEDURE_TEMPLATE_DIR = os.path.join(MODULE_DIR, "procedure_templates")
 MODEL_DIR = os.path.join(MODULE_DIR, "models")
+
+LOG_DIR = os.path.join(MODULE_DIR, "logs")
+if not os.path.isdir(LOG_DIR):
+    os.mkdir(LOG_DIR)
 
 # Get S3 cache location from env or use default in repo
 S3_CACHE = os.environ.get("BEEP_S3_CACHE",
@@ -80,7 +82,7 @@ if 'stdout' in config[ENVIRONMENT]['logging']['streams']:
     hdlr.setFormatter(formatter)
     logger.addHandler(hdlr)
 if 'file' in config[ENVIRONMENT]['logging']['streams']:
-    log_file = os.path.join(TEST_FILE_DIR, "Testing_logger.log")
+    log_file = os.path.join(MODULE_DIR, "Testing_logger.log")
     hdlr = logging.FileHandler(log_file, 'a')
     hdlr.setFormatter(formatter)
     logger.addHandler(hdlr)

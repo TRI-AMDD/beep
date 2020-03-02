@@ -14,7 +14,10 @@ from monty.serialization import loadfn
 from botocore.exceptions import NoRegionError, NoCredentialsError
 
 from beep import collate, validate, structure, featurize,\
-    run_model, TEST_FILE_DIR, MODEL_DIR
+    run_model, MODEL_DIR
+
+TEST_DIR = os.path.dirname(__file__)
+TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 
 class EndToEndTest(unittest.TestCase):

@@ -3,9 +3,12 @@ import json
 import os
 import unittest
 import numpy as np
-from beep import TEST_FILE_DIR
 from sklearn.decomposition import PCA
 from beep.principal_components import PrincipalComponents, pivot_data
+
+TEST_DIR = os.path.dirname(__file__)
+TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
+
 
 class PrincipalComponentsTest(unittest.TestCase):
     def setUp(self):
