@@ -9,7 +9,6 @@ import boto3
 import numpy as np
 from botocore.exceptions import NoRegionError, NoCredentialsError
 
-from beep import TEST_FILE_DIR
 from beep.structure import RawCyclerRun, ProcessedCyclerRun
 from beep.featurize import DegradationPredictor, process_file_list_from_json
 from monty.serialization import dumpfn, loadfn
@@ -20,6 +19,8 @@ maccor_file_w_diagnostics = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000020_CH71.
 
 BIG_FILE_TESTS = os.environ.get("BEEP_BIG_TESTS", False)
 SKIP_MSG = "Tests requiring large files with diagnostic cycles are disabled, set BIG_FILE_TESTS to run full tests"
+TEST_DIR = os.path.dirname(__file__)
+TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 
 class TestFeaturizer(unittest.TestCase):
@@ -59,7 +60,6 @@ class TestFeaturizer(unittest.TestCase):
         self.assertIsInstance(predictor_reloaded, DegradationPredictor)
         # test nominal capacity is being generated
         self.assertEqual(predictor_reloaded.nominal_capacity, 1.0628421000000001)
-        os.remove(os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_features_predict_only.json"))
 
     def test_feature_serialization_for_training(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, processed_cycler_file)

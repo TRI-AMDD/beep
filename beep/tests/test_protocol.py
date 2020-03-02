@@ -6,7 +6,7 @@ import unittest
 import json
 import boto3
 import datetime
-from beep import TEST_FILE_DIR, PROCEDURE_TEMPLATE_DIR
+from beep import PROCEDURE_TEMPLATE_DIR
 from beep.generate_protocol import ProcedureFile, \
     generate_protocol_files_from_csv
 from monty.tempfile import ScratchDir
@@ -14,6 +14,9 @@ from monty.serialization import dumpfn, loadfn
 from monty.os import makedirs_p
 from botocore.exceptions import NoRegionError, NoCredentialsError
 import difflib
+
+TEST_DIR = os.path.dirname(__file__)
+TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 
 class GenerateProcedureTest(unittest.TestCase):

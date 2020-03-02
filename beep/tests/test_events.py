@@ -10,7 +10,10 @@ import boto3
 from dateutil.tz import tzutc
 from botocore.exceptions import NoRegionError, NoCredentialsError
 from beep.utils import KinesisEvents, Logger
-from beep import TEST_FILE_DIR, ENVIRONMENT, __version__
+from beep import ENVIRONMENT, __version__
+
+TEST_DIR = os.path.dirname(__file__)
+TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 
 class KinesisEventsTest(unittest.TestCase):
