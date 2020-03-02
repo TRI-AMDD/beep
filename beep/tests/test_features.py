@@ -59,6 +59,7 @@ class TestFeaturizer(unittest.TestCase):
         self.assertIsInstance(predictor_reloaded, DegradationPredictor)
         # test nominal capacity is being generated
         self.assertEqual(predictor_reloaded.nominal_capacity, 1.0628421000000001)
+        os.remove(os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_features_predict_only.json"))
 
     def test_feature_serialization_for_training(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, processed_cycler_file)
@@ -67,11 +68,12 @@ class TestFeaturizer(unittest.TestCase):
         dumpfn(predictor, os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_features.json"))
         predictor_reloaded = loadfn(os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_features.json"))
         self.assertIsInstance(predictor_reloaded, DegradationPredictor)
+        os.remove(os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_features.json"))
 
     @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_diagnostic_feature_generation(self):
         os.environ['BEEP_ROOT'] = TEST_FILE_DIR
-        maccor_file_w_parameters = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000136_00002D.037")
+        maccor_file_w_parameters = os.path.join(TEST_FILE_DIR, "PreDiag_000287_000128.092")
         raw_run = RawCyclerRun.from_file(maccor_file_w_parameters)
         v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \
             raw_run.determine_structuring_parameters()
@@ -84,7 +86,7 @@ class TestFeaturizer(unittest.TestCase):
                                                          diagnostic_features=True)
         diagnostic_feature_label = predictor.feature_labels[-1]
         self.assertEqual(diagnostic_feature_label, "median_diagnostic_cycles_discharge_capacity")
-        np.testing.assert_almost_equal(predictor.X[diagnostic_feature_label][0], 4.2327690032,  decimal=8)
+        np.testing.assert_almost_equal(predictor.X[diagnostic_feature_label][0], 4.481564593,  decimal=8)
 
     def test_feature_generation_list_to_json(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, processed_cycler_file)
@@ -120,4 +122,4 @@ class TestFeaturizer(unittest.TestCase):
         json_path = process_file_list_from_json(json_string, processed_dir=TEST_FILE_DIR)
         output_obj = json.loads(json_path)
         self.assertEqual(output_obj['result_list'][0],'incomplete')
-        self.assertEqual(output_obj['message_list'][0]['comment'],'Insufficient data for featurization')
+        self.assertEqual(output_obj['message_list'][0]['comment'], 'Insufficient data for featurization')

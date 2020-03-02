@@ -47,6 +47,7 @@ class GenerateProcedureTest(unittest.TestCase):
             self.assertFalse(list(difflib.unified_diff(original, parsed)))
             for line in difflib.unified_diff(original, parsed):
                 self.assertIsNotNone(line)
+        os.remove(os.path.join(templates, test_out))
 
     def test_dict_to_file_2(self):
         sdu = ProcedureFile(version='0.1')
@@ -69,6 +70,8 @@ class GenerateProcedureTest(unittest.TestCase):
             self.assertFalse(list(difflib.unified_diff(original, parsed)))
             for line in difflib.unified_diff(original, parsed):
                 self.assertIsNotNone(line)
+
+        os.remove(os.path.join(templates, test_out))
 
     def test_generate_proc_exp(self):
         sdu = ProcedureFile(version='0.1')
@@ -93,6 +96,7 @@ class GenerateProcedureTest(unittest.TestCase):
             self.assertFalse(list(difflib.unified_diff(original, parsed)))
             for line in difflib.unified_diff(original, parsed):
                 self.assertIsNotNone(line)
+        os.remove(os.path.join(templates, test_out))
 
     def test_missing(self):
         sdu = ProcedureFile(version='0.1')

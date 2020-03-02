@@ -132,22 +132,32 @@ class RawCyclerRun(MSONable):
         else:
             raise ValueError("{} does not match any known file pattern".format(path))
 
-    def get_interpolated_discharge_cycles(self, v_range=None, resolution=1000):
+    def get_interpolated_steps(self, v_range, resolution, step_type='discharge', reg_cycles=None):
         """
-        Gets interpolated cycles just for the discharging states.
+        Gets interpolated cycles for the step specified, charge or discharge.
 
         Args:
             v_range ([Float, Float]): list of two floats that define
                 the voltage interpolation range endpoints.
             resolution (int): resolution of interpolated data.
+            step_type (str): which step to interpolate i.e. 'charge' or 'discharge'
+            diag_cycles (dict): dictionary containing information about
+                location of diagnostic cycles
 
         Returns:
             pandas.DataFrame: DataFrame corresponding to interpolated values.
         """
+        if step_type is 'discharge':
+            group = self.data.groupby(["cycle_index", "step_index"]).filter(
+                determine_whether_step_is_discharging).groupby("cycle_index")
+            group.apply(lambda g: g[g['cycle_index'].isin(reg_cycles)])
+        elif step_type is 'charge':
+            group = self.data.groupby(["cycle_index", "step_index"]).filter(
+                determine_whether_step_is_charging).groupby("cycle_index")
+            group.apply(lambda g: g[g['cycle_index'].isin(reg_cycles)])
+        else:
+            raise ValueError("{} is not a recognized step type")
 
-        v_range = v_range or [2.8, 3.5]
-        group = self.data.groupby(["cycle_index", "step_index"]).filter(
-            determine_whether_step_is_discharging).groupby("cycle_index")
         incl_columns = ["current", "charge_capacity", "discharge_capacity",
                         "internal_resistance", "temperature", "cycle_index"]
         all_dfs = []
@@ -155,6 +165,8 @@ class RawCyclerRun(MSONable):
             new_df = get_interpolated_data(df, "voltage", field_range=v_range,
                                            columns=incl_columns, resolution=resolution)
             new_df.cycle_index = cycle_index
+            new_df['step_type'] = step_type
+            new_df['step_type'].astype('category')
             all_dfs.append(new_df)
 
         # Ignore the index to avoid issues with overlapping voltages
@@ -162,6 +174,42 @@ class RawCyclerRun(MSONable):
 
         # Cycle_index gets a little weird about typing, so round it here
         result.cycle_index = result.cycle_index.round()
+
+        return result
+
+    def get_interpolated_cycles(self, v_range=None, resolution=1000, diagnostic_available=None):
+        """
+        Gets interpolated cycles for both charge and discharge steps.
+
+        Args:
+            v_range ([Float, Float]): list of two floats that define
+                the voltage interpolation range endpoints.
+            resolution (int): resolution of interpolated data.
+            diagnostic_available (dict): dictionary containing information about
+                location of diagnostic cycles
+
+        Returns:
+            pandas.DataFrame: DataFrame corresponding to interpolated values.
+        """
+        if diagnostic_available:
+            diag_cycles = list(itertools.chain.from_iterable(
+                [list(range(i, i + diagnostic_available['length'])) for i in
+                 diagnostic_available['diagnostic_starts_at']
+                 if i <= self.data.cycle_index.max()]))
+            reg_cycles = [i for i in self.data.cycle_index.unique() if i not in diag_cycles]
+        else:
+            reg_cycles = [i for i in self.data.cycle_index.unique()]
+
+        v_range = v_range or [2.8, 3.5]
+        interpolated_discharge = self.get_interpolated_steps(v_range,
+                                                             resolution,
+                                                             step_type='discharge',
+                                                             reg_cycles=reg_cycles)
+        interpolated_charge = self.get_interpolated_steps(v_range,
+                                                          resolution,
+                                                          step_type='charge',
+                                                          reg_cycles=reg_cycles)
+        result = pd.concat([interpolated_discharge, interpolated_charge], ignore_index=True)
 
         return result
 
@@ -283,7 +331,7 @@ class RawCyclerRun(MSONable):
 
         max_cycle = self.data.cycle_index.max()
         starts_at = [i for i in diagnostic_available['diagnostic_starts_at']
-                     if i < max_cycle]
+                     if i <= max_cycle]
         diag_cycles_at = list(itertools.chain.from_iterable(
             [list(range(i, i + diagnostic_available['length'])) for i in starts_at]))
         diag_summary = self.data.groupby("cycle_index").agg({
@@ -292,18 +340,21 @@ class RawCyclerRun(MSONable):
             "discharge_energy": "max",
             "charge_energy": "max",
             "temperature": ["max", "mean", "min"],
-            "date_time_iso": "first"})
+            "date_time_iso": "first",
+            "cycle_index": "first"},
+        )
 
         diag_summary.columns = ['discharge_capacity', 'charge_capacity',
                                 'discharge_energy', 'charge_energy',
                                 'temperature_maximum', 'temperature_average',
-                                'temperature_minimum', 'date_time_iso']
+                                'temperature_minimum', 'date_time_iso',
+                                'cycle_index']
         diag_summary = diag_summary[diag_summary.index.isin(diag_cycles_at)]
 
         diag_summary['coulombic_efficiency'] = diag_summary['discharge_capacity'] \
                                                / diag_summary['charge_capacity']
-        diag_summary['diagnostic_type'] = list(itertools.chain.from_iterable(
-            [diagnostic_available['cycle_type'] for _ in starts_at]))
+
+        diag_summary['diagnostic_type'] = pd.Series(diagnostic_available['cycle_type'] * len(starts_at))
 
         return diag_summary
 
@@ -675,7 +726,9 @@ class ProcessedCyclerRun(MSONable):
 
         # We can drop this restriction later if we don't need it
         min_index = cycles_interpolated.cycle_index.min()
-        min_index_df = cycles_interpolated[cycles_interpolated.cycle_index == min_index]
+        if 'step_type' in cycles_interpolated.columns:
+            cycles_interpolated = cycles_interpolated[(cycles_interpolated.step_type == 'discharge')]
+        min_index_df = cycles_interpolated[(cycles_interpolated.cycle_index == min_index)]
         matches = cycles_interpolated.groupby("cycle_index").apply(
             lambda x: np.allclose(x.voltage.values, min_index_df.voltage.values))
         if not np.all(matches):
@@ -714,8 +767,8 @@ class ProcessedCyclerRun(MSONable):
             diagnostic_summary = None
             diagnostic_interpolated = None
 
-        cycles_interpolated = raw_cycler_run.get_interpolated_discharge_cycles(
-            v_range=v_range, resolution=resolution)
+        cycles_interpolated = raw_cycler_run.get_interpolated_cycles(
+            v_range=v_range, resolution=resolution, diagnostic_available=diagnostic_available)
         return cls(raw_cycler_run.metadata.get("barcode"),
                    raw_cycler_run.metadata.get("protocol"),
                    raw_cycler_run.metadata.get("channel_id"),
@@ -1014,6 +1067,20 @@ def determine_whether_step_is_discharging(step_dataframe):
     """
     cap = step_dataframe[["charge_capacity", "discharge_capacity"]]
     return cap.diff(axis=0).mean(axis=0).diff().iloc[-1] > 0
+
+
+def determine_whether_step_is_charging(step_dataframe):
+    """
+    Helper function to determine whether a given dataframe corresponding
+    to a single cycle_index/step is charging or discharging, only intended
+    to be used with a dataframe for single step/cycle
+
+    Args:
+         step_dataframe (pandas.DataFrame): dataframe to determine whether
+         charging or discharging
+    """
+    cap = step_dataframe[["charge_capacity", "discharge_capacity"]]
+    return cap.diff(axis=0).mean(axis=0).diff().iloc[-1] < 0
 
 
 def get_interpolated_data(dataframe, field_name='voltage', field_range=None,

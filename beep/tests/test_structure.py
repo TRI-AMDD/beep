@@ -29,7 +29,7 @@ class RawCyclerRunTest(unittest.TestCase):
         self.arbin_file = os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29.csv")
         self.maccor_file = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000019_CH70.070")
         self.maccor_file_w_diagnostics = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000020_CH71.071")
-        self.maccor_file_w_parameters = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000136_00002D.037")
+        self.maccor_file_w_parameters = os.path.join(TEST_FILE_DIR, "PreDiag_000287_000128.092")
         self.maccor_file_timezone = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010")
         self.maccor_file_timestamp = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000151_test.052")
         self.indigo_file = os.path.join(TEST_FILE_DIR, "indigo_test_sample.h5")
@@ -39,7 +39,7 @@ class RawCyclerRunTest(unittest.TestCase):
         with ScratchDir('.'):
             dumpfn(smaller_run, "smaller_cycler_run.json")
             resurrected = loadfn("smaller_cycler_run.json")
-        self.assertTrue(smaller_run.data.dropna(axis=1).equals(resurrected.data.dropna(axis=1)))
+        pd.testing.assert_frame_equal(smaller_run.data, resurrected.data, check_dtype=True)
 
     def test_ingestion_maccor(self):
         raw_cycler_run = RawCyclerRun.from_maccor_file(self.maccor_file, include_eis=False)
@@ -127,11 +127,13 @@ class RawCyclerRunTest(unittest.TestCase):
 
     def test_get_interpolated_discharge_cycles(self):
         cycler_run = RawCyclerRun.from_file(self.arbin_file)
-        all_interpolated = cycler_run.get_interpolated_discharge_cycles()
+        all_interpolated = cycler_run.get_interpolated_cycles()
+        all_interpolated = all_interpolated[(all_interpolated.step_type == 'discharge')]
         lengths = [len(df) for index, df in all_interpolated.groupby("cycle_index")]
         self.assertTrue(np.all(np.array(lengths) == 1000))
 
         # Found these manually
+        all_interpolated = all_interpolated.drop(columns=["step_type"])
         y_at_point = all_interpolated.iloc[[1500]]
         x_at_point = all_interpolated.voltage[1500]
         cycle_1 = cycler_run.data[cycler_run.data['cycle_index'] == 1]
@@ -143,7 +145,7 @@ class RawCyclerRunTest(unittest.TestCase):
         # Get an interval between which one can find the interpolated value
         measurement_index = np.max(np.where(discharge.voltage - x_at_point < 0))
         interval = discharge.iloc[measurement_index:measurement_index + 2]
-        interval = interval.drop("date_time_iso", "columns")  # Drop non-numeric column
+        interval = interval.drop(columns=["date_time_iso"])  # Drop non-numeric column
 
         # Test interpolation with a by-hand calculation of slope
         diff = np.diff(interval, axis=0)
@@ -151,25 +153,18 @@ class RawCyclerRunTest(unittest.TestCase):
                / (interval.voltage.iloc[1] - interval.voltage.iloc[0])
         pred = pred.reset_index()
         for col_name in y_at_point.columns:
-            self.assertAlmostEqual(pred[col_name].iloc[0], y_at_point[col_name].iloc[0])
+            self.assertAlmostEqual(pred[col_name].iloc[0], y_at_point[col_name].iloc[0], places=5)
+
+    def test_get_interpolated_charge_cycles(self):
+        cycler_run = RawCyclerRun.from_file(self.arbin_file)
+        all_interpolated = cycler_run.get_interpolated_cycles()
+        all_interpolated = all_interpolated[(all_interpolated.step_type == 'charge')]
+        lengths = [len(df) for index, df in all_interpolated.groupby("cycle_index")]
+        self.assertTrue(np.all(np.array(lengths) == 1000))
+        self.assertTrue(all_interpolated['current'].mean() > 0)
 
     @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
-    def test_to_processed_cycler_run(self):
-        os.environ['BEEP_ROOT'] = TEST_FILE_DIR
-
-        cycler_run = RawCyclerRun.from_file(self.maccor_file_w_parameters)
-
-        v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \
-            cycler_run.determine_structuring_parameters()
-        processed_cycler_run = cycler_run.to_processed_cycler_run()
-        processed_cycler_run_loc = os.path.join(TEST_FILE_DIR, 'processed_diagnostic.json')
-        dumpfn(processed_cycler_run, processed_cycler_run_loc)
-        test = loadfn(processed_cycler_run_loc)
-        self.assertIsInstance(test.get_diagnostic_summary, pd.DataFrame)
-        os.remove(processed_cycler_run_loc)
-
-    @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
-    def test_to_diagnostic_summary_cycler_run(self):
+    def test_get_diagnostic(self):
         os.environ['BEEP_ROOT'] = TEST_FILE_DIR
 
         cycler_run = RawCyclerRun.from_file(self.maccor_file_w_parameters)
@@ -183,22 +178,10 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertEqual(diag_summary.index.tolist(), [1, 2, 3, 4, 5,
                                                        36, 37, 38, 39, 40,
                                                        141, 142, 143, 144, 145,
-                                                       246, 247, 248, 249, 250,
-                                                       351, 352, 353, 354, 355,
-                                                       456, 457, 458, 459, 460,
-                                                       561, 562, 563, 564, 565,
-                                                       666, 667, 668, 669, 670,
-                                                       771, 772, 773, 774, 775
+                                                       246, 247
                                                        ])
 
-    @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
-    def test_to_diagnostic_interpolation_cycler_run(self):
-        os.environ['BEEP_ROOT'] = TEST_FILE_DIR
-        cycler_run = RawCyclerRun.from_file(self.maccor_file_w_parameters)
-
-        v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \
-            cycler_run.determine_structuring_parameters()
-        diag_interpolated = cycler_run.get_interpolated_diagnostic_cycles(diagnostic_available)
+        diag_interpolated = cycler_run.get_interpolated_diagnostic_cycles(diagnostic_available, resolution=500)
         diag_cycle = diag_interpolated[(diag_interpolated.cycle_type == 'rpt_0.2C')
                                        & (diag_interpolated.step_type == 1)]
         plt.figure()
@@ -208,12 +191,30 @@ class RawCyclerRunTest(unittest.TestCase):
         plt.plot(diag_cycle.voltage, diag_cycle.discharge_dQdV)
         plt.savefig(os.path.join(TEST_FILE_DIR, "discharge_dQdV_interpolation.png"))
 
-        self.assertEqual(len(diag_cycle.index), 4500)
+        self.assertEqual(len(diag_cycle.index), 1500)
 
-    def test_get_interpolated_discharge_cycles_maccor(self):
+        processed_cycler_run = cycler_run.to_processed_cycler_run()
+        self.assertNotIn(diag_summary.index.tolist(), processed_cycler_run.cycles_interpolated.cycle_index.unique())
+        processed_cycler_run_loc = os.path.join(TEST_FILE_DIR, 'processed_diagnostic.json')
+        dumpfn(processed_cycler_run, processed_cycler_run_loc)
+        test = loadfn(processed_cycler_run_loc)
+        self.assertIsInstance(test.diagnostic_summary, pd.DataFrame)
+        os.remove(processed_cycler_run_loc)
+
+    def test_get_interpolated_cycles_maccor(self):
         cycler_run = RawCyclerRun.from_file(self.maccor_file)
-        all_interpolated = cycler_run.get_interpolated_discharge_cycles(v_range=[3.0, 4.2], resolution=10000)
-        interp2 = all_interpolated[all_interpolated.cycle_index == 2].sort_values('discharge_capacity')
+        all_interpolated = cycler_run.get_interpolated_cycles(v_range=[3.0, 4.2], resolution=10000)
+        interp2 = all_interpolated[(all_interpolated.cycle_index == 2) &
+                                   (all_interpolated.step_type == 'discharge')].sort_values('discharge_capacity')
+        interp3 = all_interpolated[(all_interpolated.cycle_index == 1) &
+                                   (all_interpolated.step_type == 'charge')].sort_values('charge_capacity')
+
+        self.assertTrue(interp3.current.mean() > 0)
+        self.assertEqual(len(interp3.voltage), 10000)
+        self.assertEqual(interp3.voltage.median(), 3.6)
+        np.testing.assert_almost_equal(interp3[interp3.voltage <= interp3.voltage.median()].current.iloc[0],
+                                       2.4227011, decimal=6)
+
         cycle_2 = cycler_run.data[cycler_run.data['cycle_index'] == 2]
         discharge = cycle_2[cycle_2.step_index == 12]
         discharge = discharge.sort_values('discharge_capacity')

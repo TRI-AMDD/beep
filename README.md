@@ -108,7 +108,7 @@ The output json will have the following fields:
 
 Example:
 ```bash
-$ validate csvs '{
+$ validate '{
     "mode": "run",
     "run_list": [1, 20, 34],
     "strname": ["2017-05-09_test-TC-contact", 
@@ -192,7 +192,7 @@ The output json file will contain the following:
 
 Example:
 ```bash
-$ generate_features '{
+$ featurize '{
     "mode": "run",
     "run_list": [1, 20, 34],
     "invalid_file_list": ["/data-share/renamed_cycler_files/FastCharge/FastCharge_0_CH33.csv", 
