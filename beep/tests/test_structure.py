@@ -326,6 +326,8 @@ class RawCyclerRunTest(unittest.TestCase):
         second_step = d_interp[(d_interp.step_index == 7) & (d_interp.step_index_counter == 4)]
         self.assertEqual(len(first_step), 500)
         self.assertEqual(len(second_step), 500)
+        self.assertTrue('date_time_iso' in d_interp.columns)
+        self.assertFalse(d_interp.date_time_iso.isna().all())
 
 
 class CliTest(unittest.TestCase):

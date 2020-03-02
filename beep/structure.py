@@ -45,6 +45,7 @@ import pandas as pd
 import numpy as np
 import os
 import pytz
+import time
 from scipy import integrate
 import itertools
 
@@ -395,6 +396,14 @@ class RawCyclerRun(MSONable):
 
         diag_data = self.data[self.data['cycle_index'].isin(diag_cycles_at)]
 
+        #Convert date_time_iso field into pd.datetime object
+        diag_data['date_time_iso'] = pd.to_datetime(diag_data['date_time_iso'])
+
+        #Convert datetime into seconds to allow interpolation of time
+        diag_data['datetime_seconds'] = [time.mktime(t.timetuple())
+                                if t is not pd.NaT else float('nan')
+                                for t in diag_data['date_time_iso']]
+
         # Counter to ensure non-contiguous repeats of step_index
         # within same cycle_index are grouped separately
         diag_data['step_index_counter'] = 0
@@ -408,7 +417,8 @@ class RawCyclerRun(MSONable):
         group = diag_data.groupby(["cycle_index", "step_index", "step_index_counter"])
         incl_columns = ["current", "charge_capacity", "discharge_capacity",
                         "charge_energy", "discharge_energy", "internal_resistance",
-                        "temperature", "date_time_iso"]
+                        "temperature", "datetime_seconds"]
+
         diag_dict = {}
         for cycle in diag_data.cycle_index.unique():
             diag_dict.update({cycle: None})
@@ -419,6 +429,12 @@ class RawCyclerRun(MSONable):
         for (cycle_index, step_index, step_index_counter), df in tqdm(group):
             new_df = get_interpolated_data(df, field_name="voltage", field_range=v_range,
                                            columns=incl_columns, resolution=resolution)
+
+            #Convert interpolated time in seconds back to datetime
+            new_df['date_time_iso'] = [datetime.utcfromtimestamp(t).isoformat()
+                                       if ~np.isnan(t) else t for t in new_df['datetime_seconds']]
+            new_df = new_df.drop(columns='datetime_seconds')
+
             new_df['cycle_index'] = cycle_index
             new_df['cycle_type'] = diag_cycle_type[diag_cycles_at.index(cycle_index)]
             new_df['step_index'] = step_index
