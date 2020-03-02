@@ -39,8 +39,6 @@ if ENVIRONMENT is None or ENVIRONMENT not in config.keys():
                      + f'Found: {ENVIRONMENT}')
 
 MODULE_DIR = os.path.dirname(__file__)
-TEST_DIR = os.path.join(MODULE_DIR, "tests")
-TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 CONVERSION_SCHEMA_DIR = os.path.join(MODULE_DIR, "conversion_schemas")
 VALIDATION_SCHEMA_DIR = os.path.join(MODULE_DIR, "validation_schemas")
 PROCEDURE_TEMPLATE_DIR = os.path.join(MODULE_DIR, "procedure_templates")
