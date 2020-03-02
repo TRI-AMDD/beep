@@ -177,7 +177,7 @@ class RawCyclerRun(MSONable):
 
         return result
 
-    def get_interpolated_cycles(self, v_range=None, resolution=1000, diag_avail=None):
+    def get_interpolated_cycles(self, v_range=None, resolution=1000, diagnostic_available=None):
         """
         Gets interpolated cycles for both charge and discharge steps.
 
@@ -185,15 +185,16 @@ class RawCyclerRun(MSONable):
             v_range ([Float, Float]): list of two floats that define
                 the voltage interpolation range endpoints.
             resolution (int): resolution of interpolated data.
-            diag_avail (dict): dictionary containing information about
+            diagnostic_available (dict): dictionary containing information about
                 location of diagnostic cycles
 
         Returns:
             pandas.DataFrame: DataFrame corresponding to interpolated values.
         """
-        if diag_avail:
+        if diagnostic_available:
             diag_cycles = list(itertools.chain.from_iterable(
-                [list(range(i, i + diag_avail['length'])) for i in diag_avail['diagnostic_starts_at']
+                [list(range(i, i + diagnostic_available['length'])) for i in
+                 diagnostic_available['diagnostic_starts_at']
                  if i <= self.data.cycle_index.max()]))
             reg_cycles = [i for i in self.data.cycle_index.unique() if i not in diag_cycles]
         else:
@@ -767,7 +768,7 @@ class ProcessedCyclerRun(MSONable):
             diagnostic_interpolated = None
 
         cycles_interpolated = raw_cycler_run.get_interpolated_cycles(
-            v_range=v_range, resolution=resolution, diag_avail=diagnostic_available)
+            v_range=v_range, resolution=resolution, diagnostic_available=diagnostic_available)
         return cls(raw_cycler_run.metadata.get("barcode"),
                    raw_cycler_run.metadata.get("protocol"),
                    raw_cycler_run.metadata.get("channel_id"),
