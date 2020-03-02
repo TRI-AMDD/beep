@@ -17,7 +17,7 @@ Options:
 """
 import pandas as pd
 from beep import StringIO
-from beep import TEST_FILE_DIR
+from beep import LOG_DIR
 import os
 
 
@@ -115,17 +115,3 @@ class MaccorSplice:
         data_1, data_2 = self.column_increment(data_1, data_2)
         data_final = self.splice_operation(data_1, data_2)
         self.write_maccor_file(metadata_line_1, data_final, self.output)
-
-
-if __name__ == "__main__":
-    filename_part_1 = '/Users/patrickherring/Downloads/xTESLADIAG_000038.078'
-    filename_part_2 = '/Users/patrickherring/Downloads/xTESLADIAG_000038con.078'
-    test = '/Users/patrickherring/Downloads/xTESLADIAG_000038test.078'
-    output = '/Users/patrickherring/Downloads/xTESLADIAG_000038joined.078'
-
-    filename_part_1 = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000038.078")
-    filename_part_2 = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000038con.078")
-    output = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000038joined.078")
-
-    splicer = MaccorSplice(filename_part_1, filename_part_2, output)
-    splicer.run_splice()

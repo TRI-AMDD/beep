@@ -12,7 +12,7 @@ import watchtower
 import numpy as np
 import boto3
 import pytz
-from beep import TEST_FILE_DIR
+from beep import LOG_DIR
 
 
 class Logger:
@@ -71,7 +71,7 @@ class KinesisEvents:
             self.kinesis = boto3.client('kinesis', region_name='us-west-2')
 
         if self.mode == 'events_off':
-            self.logger = Logger(log_file=os.path.join(TEST_FILE_DIR, "Event_logger.log"))
+            self.logger = Logger(log_file=os.path.join(LOG_DIR, "Event_logger.log"))
 
     def get_file_size(self, file_list):
         """

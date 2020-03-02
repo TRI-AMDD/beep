@@ -44,6 +44,10 @@ VALIDATION_SCHEMA_DIR = os.path.join(MODULE_DIR, "validation_schemas")
 PROCEDURE_TEMPLATE_DIR = os.path.join(MODULE_DIR, "procedure_templates")
 MODEL_DIR = os.path.join(MODULE_DIR, "models")
 
+LOG_DIR = os.path.join(MODULE_DIR, "logs")
+if not os.path.isdir(LOG_DIR):
+    os.mkdir(LOG_DIR)
+
 # Get S3 cache location from env or use default in repo
 S3_CACHE = os.environ.get("BEEP_S3_CACHE",
                           os.path.join(MODULE_DIR, "..", "s3_cache"))
