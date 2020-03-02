@@ -132,7 +132,7 @@ class RawCyclerRun(MSONable):
         else:
             raise ValueError("{} does not match any known file pattern".format(path))
 
-    def interpolated_cycles(self, v_range, resolution, step_type='discharge'):
+    def get_interpolated_steps(self, v_range, resolution, step_type='discharge', reg_cycles=None):
         """
         Gets interpolated cycles for the step specified, charge or discharge.
 
@@ -141,6 +141,8 @@ class RawCyclerRun(MSONable):
                 the voltage interpolation range endpoints.
             resolution (int): resolution of interpolated data.
             step_type (str): which step to interpolate i.e. 'charge' or 'discharge'
+            diag_cycles (dict): dictionary containing information about
+                location of diagnostic cycles
 
         Returns:
             pandas.DataFrame: DataFrame corresponding to interpolated values.
@@ -148,11 +150,13 @@ class RawCyclerRun(MSONable):
         if step_type is 'discharge':
             group = self.data.groupby(["cycle_index", "step_index"]).filter(
                 determine_whether_step_is_discharging).groupby("cycle_index")
+            group.apply(lambda g: g[g['cycle_index'].isin(reg_cycles)])
         elif step_type is 'charge':
             group = self.data.groupby(["cycle_index", "step_index"]).filter(
                 determine_whether_step_is_charging).groupby("cycle_index")
+            group.apply(lambda g: g[g['cycle_index'].isin(reg_cycles)])
         else:
-            raise NotImplementedError
+            raise ValueError("{} is not a recognized step type")
 
         incl_columns = ["current", "charge_capacity", "discharge_capacity",
                         "internal_resistance", "temperature", "cycle_index"]
@@ -173,7 +177,7 @@ class RawCyclerRun(MSONable):
 
         return result
 
-    def get_interpolated_cycles(self, v_range=None, resolution=1000):
+    def get_interpolated_cycles(self, v_range=None, resolution=1000, diag_avail=None):
         """
         Gets interpolated cycles for both charge and discharge steps.
 
@@ -181,14 +185,31 @@ class RawCyclerRun(MSONable):
             v_range ([Float, Float]): list of two floats that define
                 the voltage interpolation range endpoints.
             resolution (int): resolution of interpolated data.
+            diag_avail (dict): dictionary containing information about
+                location of diagnostic cycles
 
         Returns:
             pandas.DataFrame: DataFrame corresponding to interpolated values.
         """
+        if diag_avail:
+            diag_cycles = list(itertools.chain.from_iterable(
+                [list(range(i, i + diag_avail['length'])) for i in diag_avail['diagnostic_starts_at']
+                 if i <= self.data.cycle_index.max()]))
+            reg_cycles = [i for i in self.data.cycle_index.unique() if i not in diag_cycles]
+        else:
+            reg_cycles = [i for i in self.data.cycle_index.unique()]
+
         v_range = v_range or [2.8, 3.5]
-        interpolated_discharge = self.interpolated_cycles(v_range, resolution, step_type='discharge')
-        interpolated_charge = self.interpolated_cycles(v_range, resolution, step_type='charge')
+        interpolated_discharge = self.get_interpolated_steps(v_range,
+                                                             resolution,
+                                                             step_type='discharge',
+                                                             reg_cycles=reg_cycles)
+        interpolated_charge = self.get_interpolated_steps(v_range,
+                                                          resolution,
+                                                          step_type='charge',
+                                                          reg_cycles=reg_cycles)
         result = pd.concat([interpolated_discharge, interpolated_charge], ignore_index=True)
+
         return result
 
     def as_dict(self):
@@ -309,7 +330,7 @@ class RawCyclerRun(MSONable):
 
         max_cycle = self.data.cycle_index.max()
         starts_at = [i for i in diagnostic_available['diagnostic_starts_at']
-                     if i < max_cycle]
+                     if i <= max_cycle]
         diag_cycles_at = list(itertools.chain.from_iterable(
             [list(range(i, i + diagnostic_available['length'])) for i in starts_at]))
         diag_summary = self.data.groupby("cycle_index").agg({
@@ -332,8 +353,7 @@ class RawCyclerRun(MSONable):
         diag_summary['coulombic_efficiency'] = diag_summary['discharge_capacity'] \
                                                / diag_summary['charge_capacity']
 
-        diag_summary['diagnostic_type'] = pd.Series(list(itertools.chain.from_iterable(
-            [diagnostic_available['cycle_type'] for _ in starts_at])))
+        diag_summary['diagnostic_type'] = pd.Series(diagnostic_available['cycle_type'] * len(starts_at))
 
         return diag_summary
 
@@ -747,7 +767,7 @@ class ProcessedCyclerRun(MSONable):
             diagnostic_interpolated = None
 
         cycles_interpolated = raw_cycler_run.get_interpolated_cycles(
-            v_range=v_range, resolution=resolution)
+            v_range=v_range, resolution=resolution, diag_avail=diagnostic_available)
         return cls(raw_cycler_run.metadata.get("barcode"),
                    raw_cycler_run.metadata.get("protocol"),
                    raw_cycler_run.metadata.get("channel_id"),

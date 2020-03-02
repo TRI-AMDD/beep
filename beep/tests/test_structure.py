@@ -39,7 +39,7 @@ class RawCyclerRunTest(unittest.TestCase):
         with ScratchDir('.'):
             dumpfn(smaller_run, "smaller_cycler_run.json")
             resurrected = loadfn("smaller_cycler_run.json")
-        self.assertTrue(smaller_run.data.dropna(axis=1).equals(resurrected.data.dropna(axis=1)))
+        pd.testing.assert_frame_equal(smaller_run.data, resurrected.data, check_dtype=True)
 
     def test_ingestion_maccor(self):
         raw_cycler_run = RawCyclerRun.from_maccor_file(self.maccor_file, include_eis=False)
@@ -153,7 +153,7 @@ class RawCyclerRunTest(unittest.TestCase):
                / (interval.voltage.iloc[1] - interval.voltage.iloc[0])
         pred = pred.reset_index()
         for col_name in y_at_point.columns:
-            self.assertAlmostEqual(pred[col_name].iloc[0], y_at_point[col_name].iloc[0])
+            self.assertAlmostEqual(pred[col_name].iloc[0], y_at_point[col_name].iloc[0], places=5)
 
     def test_get_interpolated_charge_cycles(self):
         cycler_run = RawCyclerRun.from_file(self.arbin_file)
@@ -194,6 +194,7 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertEqual(len(diag_cycle.index), 1500)
 
         processed_cycler_run = cycler_run.to_processed_cycler_run()
+        self.assertNotIn(diag_summary.index.tolist(), processed_cycler_run.cycles_interpolated.cycle_index.unique())
         processed_cycler_run_loc = os.path.join(TEST_FILE_DIR, 'processed_diagnostic.json')
         dumpfn(processed_cycler_run, processed_cycler_run_loc)
         test = loadfn(processed_cycler_run_loc)
