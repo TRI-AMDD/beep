@@ -78,7 +78,7 @@ if 'stdout' in config[ENVIRONMENT]['logging']['streams']:
     hdlr.setFormatter(formatter)
     logger.addHandler(hdlr)
 if 'file' in config[ENVIRONMENT]['logging']['streams']:
-    log_file = os.path.join(TEST_FILE_DIR, "Testing_logger.log")
+    log_file = os.path.join(MODULE_DIR, "Testing_logger.log")
     hdlr = logging.FileHandler(log_file, 'a')
     hdlr.setFormatter(formatter)
     logger.addHandler(hdlr)
