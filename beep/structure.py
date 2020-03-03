@@ -396,10 +396,10 @@ class RawCyclerRun(MSONable):
 
         diag_data = self.data[self.data['cycle_index'].isin(diag_cycles_at)]
 
-        #Convert date_time_iso field into pd.datetime object
+        # Convert date_time_iso field into pd.datetime object
         diag_data['date_time_iso'] = pd.to_datetime(diag_data['date_time_iso'])
 
-        #Convert datetime into seconds to allow interpolation of time
+        # Convert datetime into seconds to allow interpolation of time
         diag_data['datetime_seconds'] = [time.mktime(t.timetuple())
                                 if t is not pd.NaT else float('nan')
                                 for t in diag_data['date_time_iso']]
