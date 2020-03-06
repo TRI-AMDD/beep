@@ -1,5 +1,10 @@
 
 
+v2020.3.5
+---------
+* add waveform step as placeholder
+* interpolate `date_time_iso` for diagnostic cycles
+
 v2020.3.2
 ---------
 * Update tests to be standalone
