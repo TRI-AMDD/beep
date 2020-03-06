@@ -18,7 +18,7 @@ arbin and maccor cyclers.
 
 setup(name="beep",
       url="https://github.com/ToyotaResearchInstitute/beep",
-      version="2020.3.2",
+      version="2020.3.5",
       description=DESCRIPTION,
       long_description=LONG_DESCRIPTION,
       long_description_content_type='text/markdown',
