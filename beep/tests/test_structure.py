@@ -178,15 +178,15 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertEqual(diagnostic_available['cycle_type'], ['reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C'])
         diag_summary = cycler_run.get_diagnostic_summary(diagnostic_available)
         self.assertEqual(diag_summary.cycle_index.tolist(), [1, 2, 3, 4, 5,
-                                                       36, 37, 38, 39, 40,
-                                                       141, 142, 143, 144, 145,
-                                                       246, 247
-                                                       ])
+                                                             36, 37, 38, 39, 40,
+                                                             141, 142, 143, 144, 145,
+                                                             246, 247
+                                                             ])
         self.assertEqual(diag_summary.cycle_type.tolist(), ['reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C',
-                                                                 'reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C',
-                                                                 'reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C',
-                                                                 'reset', 'hppc'
-                                                                 ])
+                                                            'reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C',
+                                                            'reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C',
+                                                            'reset', 'hppc'
+                                                            ])
         diag_interpolated = cycler_run.get_interpolated_diagnostic_cycles(diagnostic_available, resolution=500)
         diag_cycle = diag_interpolated[(diag_interpolated.cycle_type == 'rpt_0.2C')
                                        & (diag_interpolated.step_type == 1)]
@@ -292,6 +292,7 @@ class RawCyclerRunTest(unittest.TestCase):
         parameters, _ = get_protocol_parameters(filepath, parameters_path=test_path)
 
         self.assertEqual(parameters['diagnostic_type'].iloc[0], 'HPPC+RPT')
+        self.assertEqual(parameters['diagnostic_parameter_set'].iloc[0], 'Tesla21700')
         self.assertEqual(parameters['seq_num'].iloc[0], 109)
         self.assertEqual(len(parameters.index), 1)
 
@@ -299,9 +300,36 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertEqual(parameters_missing, None)
         self.assertEqual(project_missing, None)
 
+    def test_determine_structering_parameters(self):
+        os.environ['BEEP_ROOT'] = TEST_FILE_DIR
+        raw_cycler_run = RawCyclerRun.from_file(self.maccor_file_timestamp)
+        v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \
+            raw_cycler_run.determine_structuring_parameters()
+        diagnostic_available_test = {'parameter_set': 'Tesla21700',
+                                     'cycle_type': ['reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C'],
+                                     'length': 5,
+                                     'diagnostic_starts_at': [1, 36, 141, 246, 351, 456, 561, 666, 771, 876, 981,
+                                                              1086, 1191, 1296, 1401, 1506, 1611, 1716, 1821, 1926,
+                                                              2031, 2136, 2241, 2346, 2451, 2556, 2661, 2766, 2871,
+                                                              2976, 3081, 3186, 3291, 3396, 3501, 3606, 3711, 3816,
+                                                              3921, 4026, 4131, 4236, 4341, 4446, 4551, 4656, 4761,
+                                                              4866, 4971, 5076, 5181, 5286, 5391, 5496, 5601, 5706,
+                                                              5811, 5916, 6021, 6126, 6231, 6336, 6441, 6546, 6651,
+                                                              6756, 6861, 6966, 7071, 7176, 7281, 7386, 7491, 7596,
+                                                              7701, 7806, 7911, 8016, 8121, 8226, 8331, 8436, 8541,
+                                                              8646, 8751, 8856, 8961, 9066, 9171, 9276, 9381, 9486,
+                                                              9591, 9696, 9801, 9906, 10011, 10116, 10221, 10326,
+                                                              10431]
+                                     }
+        self.assertEqual(v_range, [2.7, 4.2])
+        self.assertEqual(resolution, 1000)
+        self.assertEqual(nominal_capacity, 4.84)
+        self.assertEqual(full_fast_charge, 0.8)
+        self.assertEqual(diagnostic_available, diagnostic_available_test)
+
     def test_get_diagnostic_parameters(self):
         os.environ['BEEP_ROOT'] = TEST_FILE_DIR
-        diagnostic_available = {'type': 'HPPC+RPT',
+        diagnostic_available = {'parameter_set': 'Tesla21700',
                                 'cycle_type': ['reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C'],
                                 'length': 5,
                                 'diagnostic_starts_at': [1, 36, 141]

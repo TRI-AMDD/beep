@@ -987,8 +987,8 @@ def generate_protocol_files_from_csv(csv_filename, output_directory, **kwargs):
             elif template == 'diagnosticV2.000':
                 diag_params_df = pd.read_csv(os.path.join(PROCEDURE_TEMPLATE_DIR,
                                                           "PreDiag_parameters - DP.csv"))
-                diagnostic_params = diag_params_df[diag_params_df['diagnostic_type'] ==
-                                                   protocol_params['diagnostic_type']].squeeze()
+                diagnostic_params = diag_params_df[diag_params_df['diagnostic_parameter_set'] ==
+                                                   protocol_params['diagnostic_parameter_set']].squeeze()
 
                 proc_dict = procedure_file_generator.generate_procedure_regcyclev2(
                     proc_dict, protocol_params)
@@ -997,8 +997,8 @@ def generate_protocol_files_from_csv(csv_filename, output_directory, **kwargs):
             elif template == 'diagnosticV3.000':
                 diag_params_df = pd.read_csv(os.path.join(PROCEDURE_TEMPLATE_DIR,
                                                           "PreDiag_parameters - DP.csv"))
-                diagnostic_params = diag_params_df[diag_params_df['diagnostic_type'] ==
-                                                   protocol_params['diagnostic_type']].squeeze()
+                diagnostic_params = diag_params_df[diag_params_df['diagnostic_parameter_set'] ==
+                                                   protocol_params['diagnostic_parameter_set']].squeeze()
 
                 proc_dict = procedure_file_generator.generate_procedure_regcyclev3(index,
                     proc_dict, protocol_params)

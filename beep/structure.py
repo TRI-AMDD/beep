@@ -648,7 +648,7 @@ class RawCyclerRun(MSONable):
                         diag_cycle_num = (i * (run_parameter['diagnostic_interval'].iloc[0] + hppc_rpt_len) +
                                           1 + run_parameter['diagnostic_start_cycle'].iloc[0] + 1 * hppc_rpt_len)
                         diagnostic_starts_at.append(diag_cycle_num)
-                    diagnostic_available = {"type": run_parameter['diagnostic_type'].iloc[0],
+                    diagnostic_available = {"parameter_set": run_parameter['diagnostic_parameter_set'].iloc[0],
                                             "cycle_type": hppc_rpt,
                                             "length": hppc_rpt_len,
                                             "diagnostic_starts_at": diagnostic_starts_at}
@@ -1262,7 +1262,7 @@ def get_diagnostic_parameters(diagnostic_available, diagnostic_parameter_path,
     # Find the voltage range for the diagnostic cycles
     if len(project_diag_files) == 1:
         df = pd.read_csv(project_diag_files[0])
-        diag_row = df[df.diagnostic_type == diagnostic_available['type']]
+        diag_row = df[df.diagnostic_parameter_set == diagnostic_available['parameter_set']]
         v_range = [diag_row['diagnostic_discharge_cutoff_voltage'].iloc[0],
                    diag_row['diagnostic_charge_cutoff_voltage'].iloc[0]]
     else:
