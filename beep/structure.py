@@ -355,7 +355,9 @@ class RawCyclerRun(MSONable):
         diag_summary['coulombic_efficiency'] = diag_summary['discharge_capacity'] \
                                                / diag_summary['charge_capacity']
 
-        diag_summary['diagnostic_type'] = pd.Series(diagnostic_available['cycle_type'] * len(starts_at))
+        diag_summary.reset_index(drop=True, inplace=True)
+
+        diag_summary['cycle_type'] = pd.Series(diagnostic_available['cycle_type'] * len(starts_at))
 
         return diag_summary
 

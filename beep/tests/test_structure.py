@@ -177,15 +177,20 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertEqual(v_range, [2.7, 4.2])
         self.assertEqual(diagnostic_available['cycle_type'], ['reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C'])
         diag_summary = cycler_run.get_diagnostic_summary(diagnostic_available)
-        self.assertEqual(diag_summary.index.tolist(), [1, 2, 3, 4, 5,
+        self.assertEqual(diag_summary.cycle_index.tolist(), [1, 2, 3, 4, 5,
                                                        36, 37, 38, 39, 40,
                                                        141, 142, 143, 144, 145,
                                                        246, 247
                                                        ])
-
+        self.assertEqual(diag_summary.cycle_type.tolist(), ['reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C',
+                                                                 'reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C',
+                                                                 'reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C',
+                                                                 'reset', 'hppc'
+                                                                 ])
         diag_interpolated = cycler_run.get_interpolated_diagnostic_cycles(diagnostic_available, resolution=500)
         diag_cycle = diag_interpolated[(diag_interpolated.cycle_type == 'rpt_0.2C')
                                        & (diag_interpolated.step_type == 1)]
+        self.assertEqual(diag_cycle.cycle_index.unique().tolist(), [3, 38, 143])
         plt.figure()
         plt.plot(diag_cycle.discharge_capacity, diag_cycle.voltage)
         plt.savefig(os.path.join(TEST_FILE_DIR, "discharge_capacity_interpolation.png"))
