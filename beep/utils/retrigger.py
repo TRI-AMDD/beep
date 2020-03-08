@@ -18,6 +18,8 @@ Options:
 """
 
 import time
+import datetime
+from dateutil.tz import tzutc
 import boto3
 import collections
 import ast
@@ -80,7 +82,10 @@ def scan(config):
     # objects = [obj for obj in objects if obj['Key'] not in db_objects]
     objects = [obj for obj in objects if "PredictionDiagnostics" in obj['Key']
                and "x" not in obj['Key']
-               and "Complete" not in obj['Key']]
+               and "Complete" not in obj['Key']
+               # and obj['LastModified'] < datetime.datetime(2020, 2, 15, 5, 35, 43, tzinfo=tzutc())]
+               and "_000128_" in obj['Key']
+               ]
     print(len(objects))
 
     events = KinesisEvents(service='S3Syncer', mode=config.mode)
