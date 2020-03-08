@@ -1,5 +1,10 @@
 
 
+v2020.3.8
+---------
+* Update the key for looking up diagnostic parameters to be `diagnostic_parameter_set`
+* Fix for the diagnostic summary so that cycle_type is correctly assigned
+
 v2020.3.5
 ---------
 * add waveform step as placeholder
