@@ -24,3 +24,9 @@ data_columns:
     beep_name: charge_capacity
     data_type: float
     scale: 0.001
+  Energy charge/W.h:
+    beep_name: charge_energy
+    data_type: float
+  Energy discharge/W.h:
+    beep_name: discharge_energy
+    data_type: float

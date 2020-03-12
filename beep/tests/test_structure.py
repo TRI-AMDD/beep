@@ -286,7 +286,8 @@ class RawCyclerRunTest(unittest.TestCase):
         raw_cycler_run = RawCyclerRun.from_biologic_file(self.biologic_file)
 
         self.assertEqual({"cycle_index", "step_index", "voltage", "current",
-                         "discharge_capacity", "charge_capacity", "data_point"},
+                         "discharge_capacity", "charge_capacity", "data_point",
+                          "charge_energy", "discharge_energy"},
                          set(raw_cycler_run.data.columns))
 
         self.assertEqual(set({"_today_datetime", "filename"}),
@@ -296,7 +297,8 @@ class RawCyclerRunTest(unittest.TestCase):
         raw_cycler_run = RawCyclerRun.from_file(self.biologic_file)
 
         self.assertEqual({"cycle_index", "step_index", "voltage", "current",
-                         "discharge_capacity", "charge_capacity", "data_point"},
+                         "discharge_capacity", "charge_capacity", "data_point",
+                          "charge_energy", "discharge_energy"},
                          set(raw_cycler_run.data.columns))
 
         self.assertEqual(set({"_today_datetime", "filename"}),
