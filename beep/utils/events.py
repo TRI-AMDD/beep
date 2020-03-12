@@ -12,7 +12,9 @@ import watchtower
 import numpy as np
 import boto3
 import pytz
-from beep import LOG_DIR
+from beep import LOG_DIR, ENVIRONMENT
+from beep.config import config
+from beep.utils.secrets_manager import get_secret
 
 
 class Logger:
@@ -63,11 +65,11 @@ class KinesisEvents:
         self.mode = mode
 
         if self.mode == 'run':
-            self.stream = 'beep-events'
+            self.stream = get_secret(config[ENVIRONMENT]['kinesis']['stream'])['streamName']
             self.kinesis = boto3.client('kinesis', region_name='us-west-2')
 
         if self.mode == 'test':
-            self.stream = 'kinesis-test'
+            self.stream = get_secret(config[ENVIRONMENT]['kinesis']['stream'])['streamName']
             self.kinesis = boto3.client('kinesis', region_name='us-west-2')
 
         if self.mode == 'events_off':

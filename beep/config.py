@@ -10,6 +10,9 @@ config = {
         'logging': {
             'container': 'Testing',
             'streams': ['CloudWatch']
+        },
+        'kinesis': {
+            'stream': 'local/beep/eventstream'
         }
     },
 
@@ -17,6 +20,9 @@ config = {
         'logging': {
             'container': 'Testing',
             'streams': ['file']
+        },
+        'kinesis': {
+            'stream': 'local/beep/eventstream'
         }
     },
 
@@ -24,6 +30,9 @@ config = {
         'logging': {
             'container': 'Testing',
             'streams': ['CloudWatch']
+        },
+        'kinesis': {
+            'stream': 'local/beep/eventstream'
         }
     },
 
@@ -31,6 +40,9 @@ config = {
         'logging': {
             'container': 'BEEP_EP',
             'streams': ['CloudWatch']
+        },
+        'kinesis': {
+            'stream': 'stage/beep/eventstream/stage'
         }
     },
 
