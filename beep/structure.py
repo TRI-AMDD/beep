@@ -59,7 +59,7 @@ from beep import StringIO, MODULE_DIR
 from beep.validate import ValidatorBeep, BeepValidationError
 from beep.collate import add_suffix_to_filename
 from beep.conversion_schemas import ARBIN_CONFIG, MACCOR_CONFIG, \
-    FastCharge_CONFIG, xTesladiag_CONFIG, INDIGO_CONFIG
+    FastCharge_CONFIG, xTesladiag_CONFIG, INDIGO_CONFIG, BIOLOGIC_CONFIG
 from beep.utils import KinesisEvents
 from beep import logger, __version__
 
@@ -129,6 +129,9 @@ class RawCyclerRun(MSONable):
 
         elif re.match(INDIGO_CONFIG['file_pattern'], path):
             return cls.from_indigo_file(path, validate)
+
+        elif re.match(BIOLOGIC_CONFIG['file_pattern'], path):
+            return cls.from_biologic_file(path, validate)
 
         else:
             raise ValueError("{} does not match any known file pattern".format(path))
@@ -523,6 +526,72 @@ class RawCyclerRun(MSONable):
         data = data.rename(INDIGO_CONFIG['data_columns'], axis='columns')
 
         metadata['start_datetime'] = data.sort_values(by='system_time_us')['date_time_iso'].iloc[0]
+
+        return cls(data, metadata, None, validate, filename=path)
+
+    @classmethod
+    def from_biologic_file(cls, path, validate=False):
+        """
+        Creates RawCyclerRun from an Biologic data file.
+
+        Args:
+            path (str): file path to data file
+            validate (bool): True if data is to be validated.
+
+        Returns:
+            beep.structure.RawCyclerRun
+        """
+
+        header_line = 3             # specific to file layout
+        data_starts_line = 4        # specific to file layout
+        column_map = BIOLOGIC_CONFIG['data_columns']
+
+        raw = dict()
+        i = 0
+        with open(path, 'rb') as f:
+
+            empty_lines = 0         # used to find the end of the data entries.
+            while empty_lines < 2:  # finding 2 empty lines in a row => EOF
+                line = f.readline()
+                i += 1
+
+                if i == header_line:
+                    header = str(line.strip())[2:-1]
+                    columns = header.split('\\t')
+                    for c in columns:
+                        raw[c] = list()
+
+                if i >= data_starts_line:
+                    line = line.strip().decode()
+                    if len(line) == 0:
+                        empty_lines += 1
+                        continue
+                    items = line.split('\t')
+                    for ci in range(len(items)):
+                        column_name = columns[ci]
+                        data_type = column_map.get(column_name, dict()).get('data_type', str)
+                        scale = column_map.get(column_name, dict()).get('scale', 1.0)
+                        item = items[ci]
+                        if data_type == 'int':
+                            item = int(float(item))
+                        if data_type == 'float':
+                            item = float(item) * scale
+                        raw[column_name].append(item)
+
+        data = dict()
+        for column_name in column_map.keys():
+            data[column_map[column_name]['beep_name']] = raw[column_name]
+        data['data_point'] = list(range(1, len(raw['cycle number']) + 1))
+
+        data = pd.DataFrame(data)
+        data.loc[data.step_index % 2 == 0, 'charge_capacity'] = abs(data.charge_capacity)
+        data.loc[data.step_index % 2 == 1, 'charge_capacity'] = 0
+        data.loc[data.step_index % 2 == 1, 'discharge_capacity'] = abs(data.discharge_capacity)
+        data.loc[data.step_index % 2 == 0, 'discharge_capacity'] = 0
+
+        metadata = dict()
+        metadata['filename'] = path
+        metadata['_today_datetime'] = datetime.now().strftime('%Y-%m-%d %H:%M:%s')
 
         return cls(data, metadata, None, validate, filename=path)
 
