@@ -10,6 +10,8 @@ import boto3
 from dateutil.tz import tzutc
 from botocore.exceptions import NoRegionError, NoCredentialsError
 from beep.utils import KinesisEvents, Logger
+from beep.utils.secrets_manager import get_secret
+from beep.config import config
 from beep import ENVIRONMENT, __version__
 
 TEST_DIR = os.path.dirname(__file__)
@@ -28,7 +30,8 @@ class KinesisEventsTest(unittest.TestCase):
         beep_kinesis_connection_broken = True
 
     def setUp(self):
-        pass
+        self.assertEqual('kinesis-test',
+                         get_secret(config[ENVIRONMENT]['kinesis']['stream'])['streamName'])
 
     def test_get_file_size(self):
         events = KinesisEvents(service='Testing', mode='test')
