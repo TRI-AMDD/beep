@@ -178,7 +178,7 @@ class GenerateProcedureTest(unittest.TestCase):
         makedirs_p(os.path.join(TEST_FILE_DIR, "procedures"))
         makedirs_p(os.path.join(TEST_FILE_DIR, "names"))
         generate_protocol_files_from_csv(csv_file_list, TEST_FILE_DIR)
-        self.assertEqual(len(os.listdir(os.path.join(TEST_FILE_DIR, "procedures"))), 192)
+        self.assertEqual(len(os.listdir(os.path.join(TEST_FILE_DIR, "procedures"))), 265)
 
     def test_console_script(self):
         csv_file = os.path.join(TEST_FILE_DIR, "parameter_test.csv")
