@@ -588,7 +588,7 @@ class ProcedureFile:
         offset_seconds = 120
         assert steps[rest_idx]['StepType'] == "Rest"
         assert steps[rest_idx]['Ends']['EndEntry'][0]['EndType'] == "StepTime"
-        time_s = int(round(3 * 3600 + offset_seconds * index))
+        time_s = int(round(3 * 3600 + offset_seconds * (index % 96)))
         steps[rest_idx]['Ends']['EndEntry'][0]['Value'] = time.strftime('%H:%M:%S', time.gmtime(time_s))
 
         return proc_dict
