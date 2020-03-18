@@ -6,8 +6,7 @@ env:
 install:
   - pip install -e .[tests]
 script:
-  - pytest beep --cov=beep --cov-report html:coverage_reports
+  - pytest --cov=beep --cov-report html:coverage_reports
 after_script:
-  - pip install coveralls
   - coveralls
 
