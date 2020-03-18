@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/TRI-AMDD/beep.svg?branch=master)](https://travis-ci.com/TRI-AMDD/beep)
+
 # Summary
 
 Beep is software designed to support Battery Estimation and Early Prediction
