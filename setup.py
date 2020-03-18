@@ -43,7 +43,7 @@ setup(name="beep",
                         "tables==3.6.1"
                         ],
       extras_require={
-          "tests": ["nose",
+          "tests": ["pytest",
                     "coverage",
                     "pylint",
                     "memory_profiler",

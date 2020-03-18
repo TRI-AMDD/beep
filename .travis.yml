@@ -4,7 +4,10 @@ python:
 env:
   - BEEP_ENV=dev
 install:
-  pip install -e .[tests]
+  - pip install -e .[tests]
 script:
-  nosetests .
+  - pytest --cov=beep --cov-report html:coverage_reports
+after_script:
+  - pip install coveralls
+  - coveralls
 
