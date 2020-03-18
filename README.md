@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.com/TRI-AMDD/beep.svg?branch=master)](https://travis-ci.com/TRI-AMDD/beep)
+[![Coverage Status](https://coveralls.io/repos/github/TRI-AMDD/beep/badge.svg?branch=master)](https://coveralls.io/github/TRI-AMDD/beep?branch=master)
 
 # Summary
 
