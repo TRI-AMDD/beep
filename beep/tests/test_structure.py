@@ -253,7 +253,8 @@ class RawCyclerRunTest(unittest.TestCase):
         summary = cycler_run.get_summary(nominal_capacity=4.7, full_fast_charge=0.8)
         self.assertTrue(set.issubset({'discharge_capacity', 'charge_capacity', 'dc_internal_resistance',
                                       'temperature_maximum', 'temperature_average', 'temperature_minimum',
-                                      'date_time_iso'}, set(summary.columns)))
+                                      'date_time_iso', 'charge_throughput', 'energy_throughput',
+                                      'charge_energy', 'discharge_energy', 'energy_efficiency'}, set(summary.columns)))
         self.assertEqual(len(summary.index), len(summary['date_time_iso']))
 
     def test_get_energy(self):
@@ -261,6 +262,12 @@ class RawCyclerRunTest(unittest.TestCase):
         summary = cycler_run.get_summary(nominal_capacity=4.7, full_fast_charge=0.8)
         self.assertEqual(summary['charge_energy'][5], 3.7134638)
         self.assertEqual(summary['energy_efficiency'][5], 0.872866405753033)
+
+    def test_get_charge_throughput(self):
+        cycler_run = RawCyclerRun.from_file(self.arbin_file)
+        summary = cycler_run.get_summary(nominal_capacity=4.7, full_fast_charge=0.8)
+        self.assertEqual(summary['charge_throughput'][5], 6.7614094)
+        self.assertEqual(summary['energy_throughput'][5], 23.2752363)
 
     def test_ingestion_indigo(self):
 
@@ -404,7 +411,6 @@ class CliTest(unittest.TestCase):
         with ScratchDir('.'):
             # Set root env
             os.environ['BEEP_ROOT'] = os.getcwd()
-
             # Make necessary directories
             os.mkdir("data-share")
             os.mkdir(os.path.join("data-share", "structure"))

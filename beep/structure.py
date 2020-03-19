@@ -243,12 +243,14 @@ class RawCyclerRun(MSONable):
         data = data.sort_index()
         return cls(data, d['metadata'], d['eis'])
 
-    def get_summary(self, nominal_capacity=1.1, full_fast_charge=0.8,
-                    cycle_complete_discharge_ratio=0.97, cycle_complete_vmin=3.3, cycle_complete_vmax=3.3):
+    def get_summary(self, diagnostic_available=None, nominal_capacity=1.1,
+                    full_fast_charge=0.8, cycle_complete_discharge_ratio=0.97,
+                    cycle_complete_vmin=3.3, cycle_complete_vmax=3.3):
         """
         Gets summary statistics for data according to
 
         Args:
+            diagnostic_available (dict): dictionary with diagnostic_types
             nominal_capacity (float): nominal capacity for summary stats
             full_fast_charge (float): full fast charge for summary stats
             cycle_complete_discharge_ratio (float): expected ratio
@@ -262,6 +264,16 @@ class RawCyclerRun(MSONable):
             pandas.DataFrame: summary statistics by cycle.
 
         """
+        #Filter out only regular cycles for summary stats. Diagnostic summary computed separately
+        if diagnostic_available:
+            diag_cycles = list(itertools.chain.from_iterable(
+                [list(range(i, i + diagnostic_available['length'])) for i in
+                 diagnostic_available['diagnostic_starts_at']
+                 if i <= self.data.cycle_index.max()]))
+            reg_cycles_at = [i for i in self.data.cycle_index.unique() if i not in diag_cycles]
+        else:
+            reg_cycles_at = [i for i in self.data.cycle_index.unique()]
+
         summary = self.data.groupby("cycle_index").agg({
             "discharge_capacity": "max",
             "charge_capacity": "max",
@@ -276,9 +288,11 @@ class RawCyclerRun(MSONable):
                            'dc_internal_resistance', 'temperature_maximum',
                            'temperature_average', 'temperature_minimum',
                            'date_time_iso']
-
+        summary = summary[summary.index.isin(reg_cycles_at)]
         summary['energy_efficiency'] = summary['discharge_energy']/summary['charge_energy']
         summary.loc[~np.isfinite(summary['energy_efficiency']), 'energy_efficiency'] = np.NaN
+        summary['charge_throughput'] = summary.charge_capacity.cumsum()
+        summary['energy_throughput'] = summary.charge_energy.cumsum()
 
         # This method for computing charge start and end times implicitly
         # assumes that a cycle starts with a charge step and is then followed
