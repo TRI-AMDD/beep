@@ -35,6 +35,7 @@ class RawCyclerRunTest(unittest.TestCase):
         self.maccor_file_timezone = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010")
         self.maccor_file_timestamp = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000151_test.052")
         self.indigo_file = os.path.join(TEST_FILE_DIR, "indigo_test_sample.h5")
+        self.biologic_file = os.path.join(TEST_FILE_DIR, "raw", "biologic_test_file_short.mpt")
 
     def test_serialization(self):
         smaller_run = RawCyclerRun.from_file(self.arbin_bad)
@@ -278,6 +279,30 @@ class RawCyclerRunTest(unittest.TestCase):
 
         self.assertEqual(set(raw_cycler_run.metadata.keys()),
                          set({"indigo_cell_id", "_today_datetime", "start_datetime","filename"}))
+
+    def test_ingestion_biologic(self):
+
+        # specific
+        raw_cycler_run = RawCyclerRun.from_biologic_file(self.biologic_file)
+
+        self.assertEqual({"cycle_index", "step_index", "voltage", "current",
+                         "discharge_capacity", "charge_capacity", "data_point",
+                          "charge_energy", "discharge_energy"},
+                         set(raw_cycler_run.data.columns))
+
+        self.assertEqual(set({"_today_datetime", "filename"}),
+                         set(raw_cycler_run.metadata.keys()))
+
+        # general
+        raw_cycler_run = RawCyclerRun.from_file(self.biologic_file)
+
+        self.assertEqual({"cycle_index", "step_index", "voltage", "current",
+                         "discharge_capacity", "charge_capacity", "data_point",
+                          "charge_energy", "discharge_energy"},
+                         set(raw_cycler_run.data.columns))
+
+        self.assertEqual(set({"_today_datetime", "filename"}),
+                         set(raw_cycler_run.metadata.keys()))
 
     def test_get_project_name(self):
         project_name_parts = get_project_sequence(os.path.join(TEST_FILE_DIR,

@@ -1,0 +1,32 @@
+file_pattern: ".*\\.mpt"
+metadata_fields:
+  filename: filename
+  _today_datetime: _today_datetime
+data_columns:
+  cycle number:
+    beep_name: cycle_index
+    data_type: int
+  half cycle:
+    beep_name: step_index
+    data_type: int
+  Ecell/V:
+    beep_name: voltage
+    data_type: float
+  I/mA:
+    beep_name: current
+    data_type: float
+    scale: 0.001
+  Q discharge/mA.h:
+    beep_name: discharge_capacity
+    data_type: float
+    scale: 0.001
+  Q charge/mA.h:
+    beep_name: charge_capacity
+    data_type: float
+    scale: 0.001
+  Energy charge/W.h:
+    beep_name: charge_energy
+    data_type: float
+  Energy discharge/W.h:
+    beep_name: discharge_energy
+    data_type: float
