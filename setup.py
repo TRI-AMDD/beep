@@ -43,9 +43,9 @@ setup(name="beep",
                         "tables==3.6.1"
                         ],
       extras_require={
-          "tests": ["nose",
-                    "coverage",
-                    "pylint",
+          "tests": ["pytest",
+                    "pytest-cov",
+                    "coveralls",
                     "memory_profiler",
                     "matplotlib"]
       },
