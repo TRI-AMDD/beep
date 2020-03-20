@@ -1313,8 +1313,10 @@ def get_protocol_parameters(filepath, parameters_path='data-share/raw/parameters
     if len(project_parameter_files) == 1:
         df = pd.read_csv(project_parameter_files[0])
         parameter_row = df[df.seq_num == int(project_name_list[1])]
-        if parameter_row.empty is not False:
+        if parameter_row.empty:
             logger.error("Unable to get project parameters for: %s", filepath, extra=s)
+            parameter_row = None
+            df = None
     else:
         parameter_row = None
         df = None
