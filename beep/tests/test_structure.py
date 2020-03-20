@@ -332,6 +332,10 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertEqual(parameters_missing, None)
         self.assertEqual(project_missing, None)
 
+        filepath = os.path.join(TEST_FILE_DIR, "PreDiag_000292_tztest.010")
+        parameters, _ = get_protocol_parameters(filepath, parameters_path=test_path)
+        self.assertIsNone(parameters)
+
     def test_determine_structering_parameters(self):
         os.environ['BEEP_ROOT'] = TEST_FILE_DIR
         raw_cycler_run = RawCyclerRun.from_file(self.maccor_file_timestamp)
