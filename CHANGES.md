@@ -1,5 +1,12 @@
 
 
+v2020.3.19
+----------
+* add cumulative capacity to summary stats
+* add biologic parsing functionality (beta)
+* add coverage, travis to CI
+* updates to batch processing
+
 v2020.3.8
 ---------
 * Update the key for looking up diagnostic parameters to be `diagnostic_parameter_set`
