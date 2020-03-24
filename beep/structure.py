@@ -446,8 +446,12 @@ class RawCyclerRun(MSONable):
 
         all_dfs = []
         for (cycle_index, step_index, step_index_counter), df in tqdm(group):
-            new_df = get_interpolated_data(df, field_name="voltage", field_range=v_range,
-                                           columns=incl_columns, resolution=resolution)
+            if diag_dict[cycle_index].index(step_index) == 'hppc':
+                new_df = get_interpolated_data(df, field_name="voltage", field_range=v_range,
+                                               columns=incl_columns, resolution=resolution * 2)
+            else:
+                new_df = get_interpolated_data(df, field_name="voltage", field_range=v_range,
+                                               columns=incl_columns, resolution=resolution)
 
             #Convert interpolated time in seconds back to datetime
             new_df['date_time_iso'] = [datetime.utcfromtimestamp(t).isoformat()
@@ -842,7 +846,7 @@ class ProcessedCyclerRun(MSONable):
 
     @classmethod
     def from_raw_cycler_run(cls, raw_cycler_run, v_range=None, resolution=1000,
-                            diagnostic_resolution=1000, nominal_capacity=1.1,
+                            diagnostic_resolution=500, nominal_capacity=1.1,
                             full_fast_charge=0.8, diagnostic_available=False):
         """
         Method to invoke ProcessedCyclerRun from RawCyclerRun object
