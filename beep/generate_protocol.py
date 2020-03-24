@@ -585,7 +585,7 @@ class ProcedureFile:
         """
         steps = proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep']
         # Initial rest
-        offset_seconds = 120
+        offset_seconds = 720
         assert steps[rest_idx]['StepType'] == "Rest"
         assert steps[rest_idx]['Ends']['EndEntry'][0]['EndType'] == "StepTime"
         time_s = int(round(3 * 3600 + offset_seconds * (index % 96)))

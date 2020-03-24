@@ -159,7 +159,7 @@ class GenerateProcedureTest(unittest.TestCase):
             diff = list(difflib.unified_diff(original, parsed))
             diff_expected = ['--- \n', '+++ \n', '@@ -27,7 +27,7 @@\n', '           <SpecialType> </SpecialType>\n',
              '           <Oper> = </Oper>\n', '           <Step>002</Step>\n', '-          <Value>03:00:00</Value>\n',
-             '+          <Value>03:02:00</Value>\n', '         </EndEntry>\n', '         <EndEntry>\n',
+             '+          <Value>03:12:00</Value>\n', '         </EndEntry>\n', '         <EndEntry>\n',
              '           <EndType>Voltage </EndType>\n']
             self.assertEqual(diff, diff_expected)
             for line in difflib.unified_diff(original, parsed):
