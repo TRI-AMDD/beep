@@ -842,7 +842,7 @@ class ProcessedCyclerRun(MSONable):
 
     @classmethod
     def from_raw_cycler_run(cls, raw_cycler_run, v_range=None, resolution=1000,
-                            diagnostic_resolution=500, nominal_capacity=1.1,
+                            diagnostic_resolution=1000, nominal_capacity=1.1,
                             full_fast_charge=0.8, diagnostic_available=False):
         """
         Method to invoke ProcessedCyclerRun from RawCyclerRun object
