@@ -129,6 +129,8 @@ class EndToEndTest(unittest.TestCase):
             'run_list': list(range(len(rename_output['file_list'])))  # list of run_ids [0, 1]
             }
         validation_input = format_cli_json(json.dumps(validation_input))
+        import warnings
+        warnings.warn(validation_input)
         validation_output = subprocess.check_output("validate {}".format(validation_input),
                                                     shell=True).decode('utf-8')
 
@@ -190,9 +192,12 @@ class EndToEndTest(unittest.TestCase):
         self.assertAlmostEqual(np.floor(loaded_prediction['cycle_number'][0]), 121)
 
 
-def format_cli_json(json_string):
+def format_cli_json(json_string, osname=None):
     """Helper function to ensure json string inputs are os compatible"""
-    if os.name == "nt":
+    osname = osname or os.name
+    import warnings
+    warnings.warn(osname)
+    if osname == "nt":
         # Add ^ escape character for windows
         json_string.replace("\"", "^\"")
         return "\"{}\"".format(json_string)
