@@ -199,7 +199,7 @@ def format_cli_json(json_string, osname=None):
     warnings.warn(osname)
     if osname == "nt":
         # Add ^ escape character for windows
-        json_string.replace("\"", "^\"")
+        json_string = json_string.replace("\"", "^\"")
         return "\"{}\"".format(json_string)
     else:
         return "'{}'".format(json_string)
