@@ -12,6 +12,7 @@ environment:
       SPLIT_RUN: "FALSE"
   PYPIPWD:
     secure: cGsD88uzW0R371kFpYuczg==
+  BEEP_ENV: dev
 install:
   # Add the paths
   - 'set PATH=%PYTHON%;%PYTHON%\Library\bin;%PYTHON%\Scripts;%PATH%'
