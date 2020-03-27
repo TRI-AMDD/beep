@@ -519,7 +519,7 @@ class RawCyclerRun(MSONable):
 
         metadata['indigo_cell_id'] = int(data['cell_id'].iloc[0])
         metadata['filename'] = path
-        metadata['_today_datetime'] = datetime.now().strftime('%Y-%m-%d %H:%M:%s')
+        metadata['_today_datetime'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         # transformations
         data = data.reset_index().reset_index()  # twice in case old index is stored in file
@@ -605,7 +605,7 @@ class RawCyclerRun(MSONable):
 
         metadata = dict()
         metadata['filename'] = path
-        metadata['_today_datetime'] = datetime.now().strftime('%Y-%m-%d %H:%M:%s')
+        metadata['_today_datetime'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         return cls(data, metadata, None, validate, filename=path)
 
