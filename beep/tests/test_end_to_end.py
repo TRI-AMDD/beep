@@ -193,7 +193,8 @@ class EndToEndTest(unittest.TestCase):
 def format_cli_json(json_string):
     """Helper function to ensure json string inputs are os compatible"""
     if os.name == "nt":
-        json_string.replace("\"", "\\\"")
+        # Add ^ escape character for windows
+        json_string.replace("\"", "^\"")
         return "\"{}\"".format(json_string)
     else:
         return "'{}'".format(json_string)
