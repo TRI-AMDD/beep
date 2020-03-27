@@ -182,6 +182,7 @@ class GenerateProcedureTest(unittest.TestCase):
             os.remove(os.path.join(TEST_FILE_DIR, "procedures", ".DS_Store"))
         self.assertEqual(len(os.listdir(os.path.join(TEST_FILE_DIR, "procedures"))), 265)
 
+    @unittest.skipIf(os.name == "nt", "CLI unsupported on windows")
     def test_console_script(self):
         csv_file = os.path.join(TEST_FILE_DIR, "parameter_test.csv")
 

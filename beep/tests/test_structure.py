@@ -395,6 +395,7 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertFalse(d_interp.date_time_iso.isna().all())
 
 
+@unittest.skipIf(os.name == "nt", "CLI unsupported on windows")
 class CliTest(unittest.TestCase):
     def setUp(self):
         # Setup events for testing
