@@ -42,7 +42,7 @@ from sklearn.linear_model import Lasso, LassoCV, RidgeCV, Ridge, ElasticNetCV, \
     ElasticNet, MultiTaskElasticNet, MultiTaskElasticNetCV
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
-from beep.utils import KinesisEvents
+from beep.utils import KinesisEvents, warn_os
 from beep import MODEL_DIR, logger, __version__
 
 s = {'service': 'DataAnalyzer'}
@@ -593,6 +593,7 @@ def main():
     and output filename corresponding to featurized run data
     and creates a predictor object output for analysis/ML processing
     """
+    warn_os()
     # Parse args and construct initial cycler run
     logger.info('starting', extra=s)
     logger.info('Running version=%s', __version__, extra=s)

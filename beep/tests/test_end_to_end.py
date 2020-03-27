@@ -112,6 +112,7 @@ class EndToEndTest(unittest.TestCase):
         # Validate output files
         self._check_result_file_validity()
 
+    @unittest.skipIf(os.name == "nt", "CLI unsupported on Windows")
     def test_console(self):
         """
         Console command for end to end test, run by passing the output of
@@ -128,10 +129,8 @@ class EndToEndTest(unittest.TestCase):
             "file_list": rename_output['file_list'],  # list of file paths ['path/test1.csv', 'path/test2.csv']
             'run_list': list(range(len(rename_output['file_list'])))  # list of run_ids [0, 1]
             }
-        validation_input = format_cli_json(json.dumps(validation_input))
-        import warnings
-        warnings.warn(validation_input)
-        validation_output = subprocess.check_output("validate {}".format(validation_input),
+        validation_input = json.dumps(validation_input)
+        validation_output = subprocess.check_output("validate '{}'".format(validation_input),
                                                     shell=True).decode('utf-8')
 
         # Structure console test
@@ -142,8 +141,8 @@ class EndToEndTest(unittest.TestCase):
             'run_list': list(range(len(validation_output['file_list']))),  # list of run_ids [0, 1]
             "validity": validation_output['validity']  # list of validities ['valid', 'invalid']
             }
-        structure_input = format_cli_json(json.dumps(structure_input))
-        structure_output = subprocess.check_output("structure {}".format(structure_input),
+        structure_input = json.dumps(structure_input)
+        structure_output = subprocess.check_output("structure '{}'".format(structure_input),
                                                    shell=True).decode('utf-8')
 
         # Featurizing console test
@@ -153,8 +152,8 @@ class EndToEndTest(unittest.TestCase):
             "file_list": structure_output['file_list'],  # list of file paths ['path/test1.json', 'path/test2.json']
             'run_list': list(range(len(structure_output['file_list'])))  # list of run_ids [0, 1]
             }
-        feature_input = format_cli_json(json.dumps(feature_input))
-        feature_output = subprocess.check_output("featurize {}".format(feature_input),
+        feature_input = json.dumps(feature_input)
+        feature_output = subprocess.check_output("featurize '{}'".format(feature_input),
                                                  shell=True).decode('utf-8')
 
         # Fitting console test
@@ -164,8 +163,8 @@ class EndToEndTest(unittest.TestCase):
             "file_list": feature_output['file_list'],  # list of file paths ['path/test1.json', 'path/test2.json']
             'run_list': list(range(len(feature_output['file_list'])))  # list of run_ids [0, 1]
             }
-        fitting_input = format_cli_json(json.dumps(fitting_input))
-        model_output = subprocess.check_output("run_model {}".format(fitting_input),
+        fitting_input = json.dumps(fitting_input)
+        model_output = subprocess.check_output("run_model '{}'".format(fitting_input),
                                                shell=True).decode('utf-8')
 
         # Validate output files
@@ -190,20 +189,6 @@ class EndToEndTest(unittest.TestCase):
         loaded_prediction = loadfn(
             os.path.join("data-share", "predictions", "FastCharge_000002_CH29_full_model_multi_predictions.json"))
         self.assertAlmostEqual(np.floor(loaded_prediction['cycle_number'][0]), 121)
-
-
-def format_cli_json(json_string, osname=None):
-    """Helper function to ensure json string inputs are os compatible"""
-    osname = osname or os.name
-    import warnings
-    warnings.warn(osname)
-    if osname == "nt":
-        # Add ^ escape character for windows
-        return "{}".format(json_string)
-        # json_string = json_string.replace("\"", "^\"")
-        # return "\"{}\"".format(json_string)
-    else:
-        return "'{}'".format(json_string)
 
 
 if __name__ == "__main__":

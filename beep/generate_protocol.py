@@ -51,7 +51,7 @@ import xmltodict
 from docopt import docopt
 from monty.serialization import loadfn
 from beep import logger, __version__, PROCEDURE_TEMPLATE_DIR
-from beep.utils import KinesisEvents
+from beep.utils import KinesisEvents, warn_os
 s = {'service': 'ProtocolGenerator'}
 
 
@@ -1084,6 +1084,7 @@ def process_csv_file_list_from_json(file_list_json, processed_dir='data-share/pr
 
 def main():
     """Main function for the script"""
+    warn_os()
     logger.info('starting', extra=s)
     logger.info('Running version=%s', __version__, extra=s)
     try:

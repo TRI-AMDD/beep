@@ -9,6 +9,7 @@ import sys
 from functools import partial
 import numpy as np
 import watchtower
+import warnings
 from tqdm import tqdm as _tqdm
 
 from .config import config
