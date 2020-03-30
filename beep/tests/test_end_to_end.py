@@ -15,6 +15,7 @@ from botocore.exceptions import NoRegionError, NoCredentialsError
 
 from beep import collate, validate, structure, featurize,\
     run_model, MODEL_DIR
+from beep.utils import os_format
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
@@ -188,13 +189,6 @@ class EndToEndTest(unittest.TestCase):
         loaded_prediction = loadfn(
             os.path.join("data-share", "predictions", "FastCharge_000002_CH29_full_model_multi_predictions.json"))
         self.assertAlmostEqual(np.floor(loaded_prediction['cycle_number'][0]), 121)
-
-
-def os_format(json_string):
-    if os.name == "nt":
-        return "\"{}\"".format(json_string.replace("\"", "\\\""))
-    else:
-        return "'{}'".format(json_string)
 
 
 if __name__ == "__main__":

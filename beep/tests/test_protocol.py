@@ -13,7 +13,7 @@ from monty.tempfile import ScratchDir
 from monty.serialization import dumpfn, loadfn
 from monty.os import makedirs_p
 from botocore.exceptions import NoRegionError, NoCredentialsError
-from .test_end_to_end import os_format
+from beep.utils import os_format
 import difflib
 
 TEST_DIR = os.path.dirname(__file__)

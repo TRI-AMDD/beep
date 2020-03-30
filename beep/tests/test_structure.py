@@ -17,7 +17,7 @@ from beep.structure import RawCyclerRun, ProcessedCyclerRun, \
     get_protocol_parameters, get_diagnostic_parameters
 from monty.serialization import loadfn, dumpfn
 from monty.tempfile import ScratchDir
-from .test_end_to_end import os_format
+from beep.utils import os_format
 import matplotlib.pyplot as plt
 
 BIG_FILE_TESTS = os.environ.get("BEEP_BIG_TESTS", False)
