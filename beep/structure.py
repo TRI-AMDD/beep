@@ -60,7 +60,7 @@ from beep.validate import ValidatorBeep, BeepValidationError
 from beep.collate import add_suffix_to_filename
 from beep.conversion_schemas import ARBIN_CONFIG, MACCOR_CONFIG, \
     FastCharge_CONFIG, xTesladiag_CONFIG, INDIGO_CONFIG, BIOLOGIC_CONFIG
-from beep.utils import KinesisEvents, warn_os
+from beep.utils import KinesisEvents
 from beep import logger, __version__
 
 s = {'service': 'DataStructurer'}
@@ -1508,7 +1508,6 @@ def main():
     and output filename and uses the input file to create a
     structured data output for analysis/ML processing.
     """
-    warn_os()
     logger.info('starting', extra=s)
     logger.info('Running version=%s', __version__, extra=s)
     try:
