@@ -4,7 +4,7 @@ import json
 from monty.json import MSONable
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-from monty.serialization import loadfn, dumpfn
+from monty.serialization import loadfn
 
 
 class PrincipalComponents(MSONable):

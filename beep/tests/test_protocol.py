@@ -13,6 +13,7 @@ from monty.tempfile import ScratchDir
 from monty.serialization import dumpfn, loadfn
 from monty.os import makedirs_p
 from botocore.exceptions import NoRegionError, NoCredentialsError
+from beep.utils import os_format
 import difflib
 
 TEST_DIR = os.path.dirname(__file__)
@@ -130,9 +131,9 @@ class GenerateProcedureTest(unittest.TestCase):
         with ScratchDir('.') as scratch_dir:
             makedirs_p(os.path.join(scratch_dir, "procedures"))
             makedirs_p(os.path.join(scratch_dir, "names"))
-            dumpfn({"hello": "world"}, "procedures/name_000007.000")
+            dumpfn({"hello": "world"}, os.path.join("procedures", "name_000007.000"))
             generate_protocol_files_from_csv(csv_file, scratch_dir)
-            post_file = loadfn("procedures/name_000007.000")
+            post_file = loadfn(os.path.join("procedures", "name_000007.000"))
             self.assertEqual(post_file, {"hello": "world"})
             self.assertEqual(len(os.listdir(os.path.join(scratch_dir, "procedures"))), 3)
 
@@ -189,11 +190,13 @@ class GenerateProcedureTest(unittest.TestCase):
         with ScratchDir('.') as scratch_dir:
             # Set BEEP_ROOT directory to scratch_dir
             os.environ['BEEP_ROOT'] = os.getcwd()
-            makedirs_p("data-share/protocols/procedures")
-            makedirs_p("data-share/protocols/names")
+            procedures_path = os.path.join("data-share", "protocols", "procedures")
+            names_path = os.path.join("data-share", "protocols", "names")
+            makedirs_p(procedures_path)
+            makedirs_p(names_path)
             # Test the script
             json_input = json.dumps(
                 {"file_list": [csv_file],
                  "mode": self.events_mode})
-            os.system("generate_protocol '{}'".format(json_input))
-            self.assertEqual(len(os.listdir('data-share/protocols/procedures')), 3)
+            os.system("generate_protocol {}".format(os_format(json_input)))
+            self.assertEqual(len(os.listdir(procedures_path)), 3)
