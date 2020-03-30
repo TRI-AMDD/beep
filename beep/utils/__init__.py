@@ -1,13 +1,20 @@
 import os
-import warnings
 from .events import Logger, KinesisEvents
 from .splice import MaccorSplice
 
 
-def warn_os():
-    """Helper function to issue warning to CLI invocations on windows"""
-    if os.name == "nt":
-        warnings.warn("Command-line scripts are currently "
-                      "unsupported with direct json input "
-                      "on Windows, use with caution")
+def os_format(json_string):
+    """
+    Helper function to format json string into something
+    that can be parsed on the command line.  For nt (windows)
+    systems, uses enclosing double quotes and escaped quotes,
+    for POSIX systems uses enclosing single quotes and
+    no escape characters.
 
+    Args:
+        json_string (str): json string to be formatted
+    """
+    if os.name == "nt":
+        return "\"{}\"".format(json_string.replace("\"", "\\\""))
+    else:
+        return "'{}'".format(json_string)

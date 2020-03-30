@@ -13,6 +13,7 @@ from monty.tempfile import ScratchDir
 from monty.serialization import dumpfn, loadfn
 from monty.os import makedirs_p
 from botocore.exceptions import NoRegionError, NoCredentialsError
+from beep.utils import os_format
 import difflib
 
 TEST_DIR = os.path.dirname(__file__)
@@ -182,7 +183,6 @@ class GenerateProcedureTest(unittest.TestCase):
             os.remove(os.path.join(TEST_FILE_DIR, "procedures", ".DS_Store"))
         self.assertEqual(len(os.listdir(os.path.join(TEST_FILE_DIR, "procedures"))), 265)
 
-    @unittest.skipIf(os.name == "nt", "CLI unsupported on windows")
     def test_console_script(self):
         csv_file = os.path.join(TEST_FILE_DIR, "parameter_test.csv")
 
@@ -198,5 +198,5 @@ class GenerateProcedureTest(unittest.TestCase):
             json_input = json.dumps(
                 {"file_list": [csv_file],
                  "mode": self.events_mode})
-            os.system("generate_protocol '{}'".format(json_input))
+            os.system("generate_protocol {}".format(os_format(json_input)))
             self.assertEqual(len(os.listdir(procedures_path)), 3)

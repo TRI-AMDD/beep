@@ -17,6 +17,7 @@ from beep.structure import RawCyclerRun, ProcessedCyclerRun, \
     get_protocol_parameters, get_diagnostic_parameters
 from monty.serialization import loadfn, dumpfn
 from monty.tempfile import ScratchDir
+from beep.utils import os_format
 import matplotlib.pyplot as plt
 
 BIG_FILE_TESTS = os.environ.get("BEEP_BIG_TESTS", False)
@@ -395,7 +396,6 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertFalse(d_interp.date_time_iso.isna().all())
 
 
-@unittest.skipIf(os.name == "nt", "CLI unsupported on windows")
 class CliTest(unittest.TestCase):
     def setUp(self):
         # Setup events for testing
@@ -424,7 +424,7 @@ class CliTest(unittest.TestCase):
                         }
             json_string = json.dumps(json_obj)
 
-            command = "structure '{}'".format(json_string)
+            command = "structure {}".format(os_format(json_string))
             result = subprocess.check_call(command, shell=True)
             self.assertEqual(result, 0)
             print(os.listdir(os.path.join("data-share", "structure")))

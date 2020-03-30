@@ -53,7 +53,7 @@ from monty.serialization import loadfn, dumpfn
 
 from beep import VALIDATION_SCHEMA_DIR
 from beep.conversion_schemas import ARBIN_CONFIG, MACCOR_CONFIG
-from beep.utils import KinesisEvents, warn_os
+from beep.utils import KinesisEvents
 from beep import logger, __version__
 
 DEFAULT_ARBIN_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-arbin-lfp.yaml")
@@ -551,7 +551,6 @@ def validate_file_list_from_json(file_list_json, record_results=False,
 
 
 def main():
-    warn_os()
     logger.info('starting', extra=s)
     logger.info('Running version=%s', __version__, extra=s)
     try:

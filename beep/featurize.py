@@ -41,7 +41,7 @@ from monty.json import MSONable
 from monty.serialization import loadfn, dumpfn
 from scipy.stats import skew, kurtosis
 from beep.collate import scrub_underscore_suffix, add_suffix_to_filename
-from beep.utils import KinesisEvents, warn_os
+from beep.utils import KinesisEvents
 from beep import logger, __version__
 
 s = {'service': 'DataAnalyzer'}
@@ -135,7 +135,7 @@ class DegradationPredictor(MSONable):
         iini = init_pred_cycle - 1
         summary = processed_cycler_run.summary
         assert len(processed_cycler_run.summary) > final_pred_cycle, 'cycle count must exceed final_pred_cycle'
-        cycles_to_average_over = 40 #For nominal capacity, use median discharge capacity of first n cycles
+        cycles_to_average_over = 40  # For nominal capacity, use median discharge capacity of first n cycles
 
         interpolated_df = processed_cycler_run.cycles_interpolated
         X = pd.DataFrame(np.zeros((1, 20)))
@@ -427,11 +427,9 @@ def main():
         None
 
     """
-    warn_os()
     # Parse args and construct initial cycler run
     logger.info('starting', extra=s)
     logger.info('Running version=%s', __version__, extra=s)
-    warn_os()
     try:
         args = docopt(__doc__)
         input_json = args['INPUT_JSON']
