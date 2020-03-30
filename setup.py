@@ -38,7 +38,6 @@ setup(name="beep",
                         "docopt==0.6.2",
                         "msgpack-python==0.5.6",
                         "python-dateutil==2.8.0",
-                        "ruamel.yaml==0.16.5",
                         "xmltodict==0.12.0",
                         "tables==3.6.1"
                         ],
