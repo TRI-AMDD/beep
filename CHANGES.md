@@ -1,5 +1,14 @@
 
 
+v2020.3.31
+----------
+* Add appveyor integration and fix path problems to allow windows compatibility - Thanks to Joseph Montoya
+* Update the rest to increment by 12 min per protocol
+* add cumulative capacity to summary stats
+* Update the template file to change lower safety voltage to 2.0V
+* add charge energy and discharge energy to the biologic parser
+* add method for biologic file parsing
+
 v2020.3.19
 ----------
 * add cumulative capacity to summary stats
