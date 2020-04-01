@@ -189,7 +189,7 @@ class RawCyclerRunTest(unittest.TestCase):
                                                             'reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C',
                                                             'reset', 'hppc'
                                                             ])
-        diag_interpolated = cycler_run.get_interpolated_diagnostic_cycles(diagnostic_available, resolution=500)
+        diag_interpolated = cycler_run.get_interpolated_diagnostic_cycles(diagnostic_available, resolution=1000)
         diag_cycle = diag_interpolated[(diag_interpolated.cycle_type == 'rpt_0.2C')
                                        & (diag_interpolated.step_type == 1)]
         self.assertEqual(diag_cycle.cycle_index.unique().tolist(), [3, 38, 143])
@@ -200,7 +200,7 @@ class RawCyclerRunTest(unittest.TestCase):
         plt.plot(diag_cycle.voltage, diag_cycle.discharge_dQdV)
         plt.savefig(os.path.join(TEST_FILE_DIR, "discharge_dQdV_interpolation.png"))
 
-        self.assertEqual(len(diag_cycle.index), 1500)
+        self.assertEqual(len(diag_cycle.index), 3000)
 
         processed_cycler_run = cycler_run.to_processed_cycler_run()
         self.assertNotIn(diag_summary.index.tolist(), processed_cycler_run.cycles_interpolated.cycle_index.unique())

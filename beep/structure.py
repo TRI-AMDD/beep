@@ -446,8 +446,12 @@ class RawCyclerRun(MSONable):
 
         all_dfs = []
         for (cycle_index, step_index, step_index_counter), df in tqdm(group):
-            new_df = get_interpolated_data(df, field_name="voltage", field_range=v_range,
-                                           columns=incl_columns, resolution=resolution)
+            if diag_dict[cycle_index].index(step_index) == 'hppc':
+                new_df = get_interpolated_data(df, field_name="voltage", field_range=v_range,
+                                               columns=incl_columns, resolution=resolution * 2)
+            else:
+                new_df = get_interpolated_data(df, field_name="voltage", field_range=v_range,
+                                               columns=incl_columns, resolution=resolution)
 
             #Convert interpolated time in seconds back to datetime
             new_df['date_time_iso'] = [datetime.utcfromtimestamp(t).isoformat()
