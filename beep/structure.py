@@ -55,7 +55,7 @@ from monty.serialization import loadfn, dumpfn
 from glob import glob
 from beep import tqdm
 
-from beep import StringIO, MODULE_DIR
+from beep import StringIO, MODULE_DIR, ENVIRONMENT
 from beep.validate import ValidatorBeep, BeepValidationError
 from beep.collate import add_suffix_to_filename
 from beep.conversion_schemas import ARBIN_CONFIG, MACCOR_CONFIG, \
@@ -1427,14 +1427,22 @@ def main():
     """
     logger.info('starting', extra=s)
     logger.info('Running version=%s', __version__, extra=s)
+    if ENVIRONMENT == 'stage':
+        print('starting')
     try:
         args = docopt(__doc__)
         input_json = args['INPUT_JSON']
+        if ENVIRONMENT == 'stage':
+            print(input_json)
         print(process_file_list_from_json(input_json))
     except Exception as e:
         logger.error(str(e), extra=s)
+        if ENVIRONMENT == 'stage':
+            print(str(e))
         raise e
     logger.info('finish', extra=s)
+    if ENVIRONMENT == 'stage':
+        print('finish')
     return None
 
 

@@ -51,7 +51,7 @@ from cerberus import Validator
 from beep import tqdm
 from monty.serialization import loadfn, dumpfn
 
-from beep import VALIDATION_SCHEMA_DIR
+from beep import VALIDATION_SCHEMA_DIR, ENVIRONMENT
 from beep.conversion_schemas import ARBIN_CONFIG, MACCOR_CONFIG
 from beep.utils import KinesisEvents
 from beep import logger, __version__
@@ -553,14 +553,22 @@ def validate_file_list_from_json(file_list_json, record_results=False,
 def main():
     logger.info('starting', extra=s)
     logger.info('Running version=%s', __version__, extra=s)
+    if ENVIRONMENT == 'stage':
+        print('starting')
     try:
         args = docopt(__doc__)
         input_json = args['INPUT_JSON']
+        if ENVIRONMENT == 'stage':
+            print(input_json)
         print(validate_file_list_from_json(input_json), end="")
     except Exception as e:
         logger.error(str(e), extra=s)
+        if ENVIRONMENT == 'stage':
+            print(str(e))
         raise e
     logger.info('finish', extra=s)
+    if ENVIRONMENT == 'stage':
+        print('finish')
     return None
 
 
