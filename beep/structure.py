@@ -275,6 +275,7 @@ class RawCyclerRun(MSONable):
             reg_cycles_at = [i for i in self.data.cycle_index.unique()]
 
         summary = self.data.groupby("cycle_index").agg({
+            "cycle_index": "first",
             "discharge_capacity": "max",
             "charge_capacity": "max",
             "discharge_energy": "max",
@@ -283,7 +284,7 @@ class RawCyclerRun(MSONable):
             "temperature": ["max", "mean", "min"],
             "date_time_iso": "first"})
 
-        summary.columns = ['discharge_capacity', 'charge_capacity',
+        summary.columns = ['cycle_index', 'discharge_capacity', 'charge_capacity',
                            'discharge_energy', 'charge_energy',
                            'dc_internal_resistance', 'temperature_maximum',
                            'temperature_average', 'temperature_minimum',
@@ -305,7 +306,7 @@ class RawCyclerRun(MSONable):
         # charge_capacity and will have NaN for charge duration
         merged = charge_start_time.merge(charge_finish_time, on='cycle_index', how='left')
 
-        # Charge duration stored in seconds
+        # Charge duration stored in seconds - note that date_time_iso is only ~1sec resolution
         time_diff = np.subtract(pd.to_datetime(merged.date_time_iso_y, utc=True, errors='coerce'),
                                 pd.to_datetime(merged.date_time_iso_x, errors='coerce'))
         summary["charge_duration"] = np.round(time_diff/np.timedelta64(1, 's'), 2)
@@ -379,7 +380,7 @@ class RawCyclerRun(MSONable):
         return diag_summary
 
     def get_interpolated_diagnostic_cycles(self, diagnostic_available,
-                                           resolution=500):
+                                           resolution=1000, v_resolution=0.0005):
         """
         Interpolates data according to location and type of diagnostic
         cycles in the data
@@ -389,6 +390,7 @@ class RawCyclerRun(MSONable):
                 as list, 'length' of the diagnostic in cycles and location
                 of the diagnostic
             resolution (int): resolution of interpolation
+            v_resolution (int): voltage delta to set for range based interpolation
 
         Returns:
             (DataFrame) of interpolated diagnostic steps by step and cycle
@@ -436,7 +438,7 @@ class RawCyclerRun(MSONable):
         group = diag_data.groupby(["cycle_index", "step_index", "step_index_counter"])
         incl_columns = ["current", "charge_capacity", "discharge_capacity",
                         "charge_energy", "discharge_energy", "internal_resistance",
-                        "temperature", "datetime_seconds"]
+                        "temperature", "datetime_seconds", "test_time"]
 
         diag_dict = {}
         for cycle in diag_data.cycle_index.unique():
@@ -446,9 +448,11 @@ class RawCyclerRun(MSONable):
 
         all_dfs = []
         for (cycle_index, step_index, step_index_counter), df in tqdm(group):
-            if diag_dict[cycle_index].index(step_index) == 'hppc':
-                new_df = get_interpolated_data(df, field_name="voltage", field_range=v_range,
-                                               columns=incl_columns, resolution=resolution * 2)
+            if diag_cycle_type[diag_cycles_at.index(cycle_index)] == 'hppc':
+                v_hppc_step = [df.voltage.min(), df.voltage.max()]
+                hppc_resolution = int((df.voltage.max() - df.voltage.min()) / v_resolution)
+                new_df = get_interpolated_data(df, field_name="voltage", field_range=v_hppc_step,
+                                               columns=incl_columns, resolution=hppc_resolution)
             else:
                 new_df = get_interpolated_data(df, field_name="voltage", field_range=v_range,
                                                columns=incl_columns, resolution=resolution)
@@ -463,6 +467,12 @@ class RawCyclerRun(MSONable):
             new_df['step_index'] = step_index
             new_df['step_index_counter'] = step_index_counter
             new_df['step_type'] = diag_dict[cycle_index].index(step_index)
+            new_df.astype({'cycle_index': 'int32',
+                           'cycle_type': 'category',
+                           'step_index': 'uint8',
+                           'step_index_counter': 'int16',
+                           'step_type': 'uint8'
+                           })
             new_df['discharge_dQdV'] = new_df.discharge_capacity.diff() / new_df.voltage.diff()
             new_df['charge_dQdV'] = new_df.charge_capacity.diff() / new_df.voltage.diff()
             all_dfs.append(new_df)

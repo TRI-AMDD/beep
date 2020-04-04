@@ -202,10 +202,25 @@ class RawCyclerRunTest(unittest.TestCase):
 
         self.assertEqual(len(diag_cycle.index), 3000)
 
+        hppcs = diag_interpolated[(diag_interpolated.cycle_type == 'hppc') & pd.isnull(diag_interpolated.current)]
+        self.assertEqual(len(hppcs), 0)
+
+        hppc_dischg1 = diag_interpolated[(diag_interpolated.cycle_index == 37)
+                                         & (diag_interpolated.step_type == 2)
+                                         & (diag_interpolated.step_index_counter == 3)
+                                         & ~pd.isnull(diag_interpolated.current)]
+        print(hppc_dischg1)
+        plt.figure()
+        plt.plot(hppc_dischg1.test_time, hppc_dischg1.voltage)
+        plt.savefig(os.path.join(TEST_FILE_DIR, "hppc_discharge_pulse_1.png"))
+        self.assertEqual(len(hppc_dischg1), 176)
+
         processed_cycler_run = cycler_run.to_processed_cycler_run()
         self.assertNotIn(diag_summary.index.tolist(), processed_cycler_run.cycles_interpolated.cycle_index.unique())
         processed_cycler_run_loc = os.path.join(TEST_FILE_DIR, 'processed_diagnostic.json')
         dumpfn(processed_cycler_run, processed_cycler_run_loc)
+        proc_size = os.path.getsize(processed_cycler_run_loc)
+        self.assertLess(proc_size, 29000000)
         test = loadfn(processed_cycler_run_loc)
         self.assertIsInstance(test.diagnostic_summary, pd.DataFrame)
         os.remove(processed_cycler_run_loc)
@@ -394,8 +409,8 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertEqual(len(d_interp.step_index.unique()), 9)
         first_step = d_interp[(d_interp.step_index == 7) & (d_interp.step_index_counter == 1)]
         second_step = d_interp[(d_interp.step_index == 7) & (d_interp.step_index_counter == 4)]
-        self.assertEqual(len(first_step), 500)
-        self.assertEqual(len(second_step), 500)
+        self.assertLess(first_step.voltage.diff().max(), 0.001)
+        self.assertLess(second_step.voltage.diff().max(), 0.001)
         self.assertTrue('date_time_iso' in d_interp.columns)
         self.assertFalse(d_interp.date_time_iso.isna().all())
 
