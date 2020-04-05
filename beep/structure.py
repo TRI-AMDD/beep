@@ -1421,7 +1421,7 @@ def add_file_prefix_to_path(path, prefix):
 
 def determine_paused(group, paused_threshold=3600):
     """
-    Load RawCyclerRun from numeric binary file
+    Evaluate a raw cycling dataframe to determine if there is a pause in cycling
 
     Args:
         group (pd.DataFrame): cycling dataframe with date_time_iso column
