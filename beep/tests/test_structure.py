@@ -14,7 +14,8 @@ from botocore.exceptions import NoRegionError, NoCredentialsError
 from beep import MODULE_DIR
 from beep.structure import RawCyclerRun, ProcessedCyclerRun, \
     process_file_list_from_json, EISpectrum, get_project_sequence, \
-    get_protocol_parameters, get_diagnostic_parameters
+    get_protocol_parameters, get_diagnostic_parameters, \
+    determine_paused
 from monty.serialization import loadfn, dumpfn
 from monty.tempfile import ScratchDir
 from beep.utils import os_format
@@ -35,6 +36,7 @@ class RawCyclerRunTest(unittest.TestCase):
         self.maccor_file_w_parameters = os.path.join(TEST_FILE_DIR, "PreDiag_000287_000128.092")
         self.maccor_file_timezone = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010")
         self.maccor_file_timestamp = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000151_test.052")
+        self.maccor_file_paused = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000151_paused.052")
         self.indigo_file = os.path.join(TEST_FILE_DIR, "indigo_test_sample.h5")
         self.biologic_file = os.path.join(TEST_FILE_DIR, "raw", "biologic_test_file_short.mpt")
 
@@ -272,6 +274,7 @@ class RawCyclerRunTest(unittest.TestCase):
                                       'date_time_iso', 'charge_throughput', 'energy_throughput',
                                       'charge_energy', 'discharge_energy', 'energy_efficiency'}, set(summary.columns)))
         self.assertEqual(len(summary.index), len(summary['date_time_iso']))
+        self.assertFalse(summary['paused'].any())
 
     def test_get_energy(self):
         cycler_run = RawCyclerRun.from_file(self.arbin_file)
@@ -413,6 +416,22 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertLess(second_step.voltage.diff().max(), 0.001)
         self.assertTrue('date_time_iso' in d_interp.columns)
         self.assertFalse(d_interp.date_time_iso.isna().all())
+
+    def test_get_diagnostic_summary(self):
+        cycler_run = RawCyclerRun.from_file(self.maccor_file_w_diagnostics)
+        diagnostic_available = {'type': 'HPPC',
+                                'cycle_type': ['hppc'],
+                                'length': 1,
+                                'diagnostic_starts_at': [1]
+                                }
+        diag_summary = cycler_run.get_diagnostic_summary(diagnostic_available)
+        self.assertFalse(diag_summary['paused'].any())
+
+
+    def test_determine_paused(self):
+        cycler_run = RawCyclerRun.from_file(self.maccor_file_paused)
+        paused = cycler_run.data.groupby('cycle_index').apply(determine_paused)
+        self.assertTrue(paused.any())
 
 
 class CliTest(unittest.TestCase):

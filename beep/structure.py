@@ -325,6 +325,9 @@ class RawCyclerRun(MSONable):
         # Drop the time since cycle start column
         self.data.drop(columns=['time_since_cycle_start'])
 
+        # Determine if any of the cycles has been paused
+        summary['paused'] = self.data.groupby("cycle_index").apply(determine_paused)
+
         last_voltage = self.data.loc[self.data['cycle_index'] == self.data['cycle_index'].max()]['voltage']
         if ((last_voltage.min() < cycle_complete_vmin) and (last_voltage.max() > cycle_complete_vmax) and
             ((summary.iloc[[-1]])['discharge_capacity'].iloc[0] > cycle_complete_discharge_ratio
@@ -372,6 +375,7 @@ class RawCyclerRun(MSONable):
 
         diag_summary['coulombic_efficiency'] = diag_summary['discharge_capacity'] \
                                                / diag_summary['charge_capacity']
+        diag_summary['paused'] = self.data.groupby("cycle_index").apply(determine_paused)
 
         diag_summary.reset_index(drop=True, inplace=True)
 
@@ -1413,6 +1417,26 @@ def add_file_prefix_to_path(path, prefix):
     split_path = list(os.path.split(path))
     split_path[-1] = prefix + split_path[-1]
     return os.path.join(*split_path)
+
+
+def determine_paused(group, paused_threshold=3600):
+    """
+    Load RawCyclerRun from numeric binary file
+
+    Args:
+        group (pd.DataFrame): cycling dataframe with date_time_iso column
+        paused_threshold (int): gap in seconds to classify as a pause in cycling
+
+    Returns:
+        bool: is there a pause in this cycle?
+
+    """
+    date_time_obj = pd.to_datetime(group['date_time_iso'])
+    date_time_float = [time.mktime(t.timetuple())
+                       if t is not pd.NaT else float('nan')
+                       for t in date_time_obj]
+    date_time_float = pd.Series(date_time_float)
+    return date_time_float.diff().max() > paused_threshold
 
 
 def maccor_timestamp(x):
