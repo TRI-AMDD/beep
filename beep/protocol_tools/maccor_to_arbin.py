@@ -1,14 +1,16 @@
 # Copyright 2019 Toyota Research Institute. All rights reserved.
-""" Schedule file parsing and parameter insertion"""
-
+""" Parsing and conversion of maccor procedure files to arbin schedule files"""
 
 import os
 import re
 from datetime import datetime
-from beep_oed import SCHEMA_FILE_DIR
-from beep_oed.arbin_schedule_file import ScheduleFile
+from beep import PROTOCOL_SCHEMA_DIR
+from beep.protocol_tools.arbin_schedule_file import ScheduleFile
 from collections import OrderedDict
 from monty.serialization import loadfn
+
+TEST_DIR = os.path.dirname(__file__)
+TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 
 class ProcedureToSchedule:
@@ -103,7 +105,7 @@ class ProcedureToSchedule:
 
         """
 
-        ARBIN_SCHEMA = loadfn(os.path.join(SCHEMA_FILE_DIR, "arbin_schedule_schema.yaml"))
+        ARBIN_SCHEMA = loadfn(os.path.join(PROTOCOL_SCHEMA_DIR, "arbin_schedule_schema.yaml"))
         blank_step = OrderedDict(ARBIN_SCHEMA['step_blank_body'])
 
         blank_step['m_szLabel'] = str(step_index + 1) + '-' + str(step_abs['StepNote'])
@@ -263,7 +265,7 @@ class ProcedureToSchedule:
             dict: blank limit that advances to the next step immediately
 
         """
-        ARBIN_SCHEMA = loadfn(os.path.join(SCHEMA_FILE_DIR, "arbin_schedule_schema.yaml"))
+        ARBIN_SCHEMA = loadfn(os.path.join(PROTOCOL_SCHEMA_DIR, "arbin_schedule_schema.yaml"))
         limit = ARBIN_SCHEMA['step_blank_limit']
         limit['m_bStepLimit'] = "1"
         limit['m_bLogDataLimit'] = "0"
@@ -292,7 +294,7 @@ class ProcedureToSchedule:
             dict: the converted limit
 
         """
-        ARBIN_SCHEMA = loadfn(os.path.join(SCHEMA_FILE_DIR, "arbin_schedule_schema.yaml"))
+        ARBIN_SCHEMA = loadfn(os.path.join(PROTOCOL_SCHEMA_DIR, "arbin_schedule_schema.yaml"))
         limit = ARBIN_SCHEMA['step_blank_limit']
         limit['m_bStepLimit'] = "1"
         limit['m_bLogDataLimit'] = "1"
@@ -335,7 +337,8 @@ class ProcedureToSchedule:
                 nofrag, frag = end['Value'].split(".")
                 frag = frag[:6]  # truncate to microseconds
                 frag += (6 - len(frag)) * '0'  # add 0s
-                elapsed = datetime.strptime(nofrag.replace('::', '00:00:0'), "%H:%M:%S").replace(microsecond=int(frag)) - \
+                elapsed = datetime.strptime(nofrag.replace('::', '00:00:0'),
+                                            "%H:%M:%S").replace(microsecond=int(frag)) - \
                     datetime.strptime("00:00:00", "%H:%M:%S")
             else:
                 elapsed = datetime.strptime(end['Value'].replace('::', '00:00:0'), "%H:%M:%S") - \
@@ -372,7 +375,7 @@ class ProcedureToSchedule:
                 maccor report
 
         """
-        ARBIN_SCHEMA = loadfn(os.path.join(SCHEMA_FILE_DIR, "arbin_schedule_schema.yaml"))
+        ARBIN_SCHEMA = loadfn(os.path.join(PROTOCOL_SCHEMA_DIR, "arbin_schedule_schema.yaml"))
         limit = ARBIN_SCHEMA['step_blank_limit']
         limit['m_bStepLimit'] = "0"
         limit['m_bLogDataLimit'] = "1"
@@ -393,7 +396,8 @@ class ProcedureToSchedule:
                 nofrag, frag = report['Value'].split(".")
                 frag = frag[:6]  # truncate to microseconds
                 frag += (6 - len(frag)) * '0'  # add 0s
-                elapsed = datetime.strptime(nofrag.replace('::', '00:00:0'), "%H:%M:%S").replace(microsecond=int(frag)) - \
+                elapsed = datetime.strptime(nofrag.replace('::', '00:00:0'),
+                                            "%H:%M:%S").replace(microsecond=int(frag)) - \
                     datetime.strptime("00:00:00", "%H:%M:%S")
             else:
                 elapsed = datetime.strptime(report['Value'].replace('::', '00:00:0'), "%H:%M:%S") - \

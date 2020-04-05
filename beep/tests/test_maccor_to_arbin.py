@@ -3,9 +3,12 @@
 
 import os
 import unittest
-from beep_oed import TEST_FILE_DIR
-from beep_oed.maccor_procedure_file import ProcedureFile
-from beep_oed.maccor_to_arbin import ProcedureToSchedule
+from beep import PROCEDURE_TEMPLATE_DIR, SCHEDULE_TEMPLATE_DIR
+from beep.generate_protocol import ProcedureFile
+from beep.protocol_tools.maccor_to_arbin import ProcedureToSchedule
+
+TEST_DIR = os.path.dirname(__file__)
+TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 
 class ProcedureToScheduleTest(unittest.TestCase):
@@ -16,7 +19,7 @@ class ProcedureToScheduleTest(unittest.TestCase):
     def test_single_step_conversion(self):
         procedure = ProcedureFile()
 
-        templates = TEST_FILE_DIR
+        templates = PROCEDURE_TEMPLATE_DIR
 
         test_file = 'diagnosticV3.000'
         json_file = 'test.json'
@@ -51,7 +54,7 @@ class ProcedureToScheduleTest(unittest.TestCase):
     def test_serial_conversion(self):
         procedure = ProcedureFile()
 
-        templates = TEST_FILE_DIR
+        templates = PROCEDURE_TEMPLATE_DIR
 
         test_file = 'diagnosticV3.000'
         json_file = 'test.json'
@@ -68,7 +71,8 @@ class ProcedureToScheduleTest(unittest.TestCase):
         for step_index, step in enumerate(test_step_dict):
             if 'Loop' in step['StepType']:
                 print(step_index, step)
-            step_arbin = converter.compile_to_arbin(test_step_dict[step_index], step_index, step_name_list, step_flow_ctrl)
+            step_arbin = converter.compile_to_arbin(test_step_dict[step_index], step_index,
+                                                    step_name_list, step_flow_ctrl)
             if 'Loop' in step['StepType']:
                 self.assertEqual(step_arbin['m_szStepCtrlType'], 'Set Variable(s)')
                 self.assertEqual(step_arbin['m_uLimitNum'], '2')
@@ -79,12 +83,11 @@ class ProcedureToScheduleTest(unittest.TestCase):
     def test_schedule_creation(self):
         procedure = ProcedureFile()
 
-        templates = TEST_FILE_DIR
+        templates = PROCEDURE_TEMPLATE_DIR
 
         test_file = 'diagnosticV3.000'
         json_file = 'test.json'
-
-        sdu_test_input = os.path.join(TEST_FILE_DIR, '20170630-3_6C_9per_5C.sdu')
+        sdu_test_input = os.path.join(SCHEDULE_TEMPLATE_DIR, '20170630-3_6C_9per_5C.sdu')
         sdu_test_output = os.path.join(TEST_FILE_DIR, 'schedule_test_output.sdu')
 
         proc_dict, sp = procedure.to_dict(os.path.join(templates, test_file),
@@ -95,3 +98,4 @@ class ProcedureToScheduleTest(unittest.TestCase):
 
         converter = ProcedureToSchedule(test_step_dict)
         converter.create_sdu(sdu_test_input, sdu_test_output)
+        os.remove(sdu_test_output)
