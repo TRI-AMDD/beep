@@ -50,6 +50,7 @@ class ProcedureToScheduleTest(unittest.TestCase):
         self.assertEqual(step_arbin['[Schedule_Step8_Limit0]']['Equation0_szLeft'], 'PV_CHAN_CV_Stage_Current')
         self.assertEqual(step_arbin['[Schedule_Step8_Limit0]']['Equation0_szRight'],
                          test_step_dict[step_index]['Ends']['EndEntry'][0]['Value'])
+        os.remove(os.path.join(templates, json_file))
 
     def test_serial_conversion(self):
         procedure = ProcedureFile()
@@ -79,6 +80,7 @@ class ProcedureToScheduleTest(unittest.TestCase):
             if step_index == 15:
                 self.assertEqual(step_arbin['[Schedule_Step15_Limit0]']['m_szGotoStep'], '11-None')
                 self.assertEqual(step_arbin['[Schedule_Step15_Limit1]']['m_szGotoStep'], 'Next Step')
+        os.remove(os.path.join(templates, json_file))
 
     def test_schedule_creation(self):
         procedure = ProcedureFile()
@@ -98,4 +100,5 @@ class ProcedureToScheduleTest(unittest.TestCase):
 
         converter = ProcedureToSchedule(test_step_dict)
         converter.create_sdu(sdu_test_input, sdu_test_output)
+        os.remove(os.path.join(templates, json_file))
         os.remove(sdu_test_output)
