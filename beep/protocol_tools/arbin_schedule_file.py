@@ -18,10 +18,9 @@ class Schedule(OrderedDict):
         facts (str): Default version.
 
     """
-    def __init__(self, facts):
-        super.__init__()
-        for fact in facts:
-            self[fact[0]] = fact[1]
+    def __init__(self, kv_pairs):
+        super.__init__(kv_pairs)
+        # TODO: other attributes?  If none, shouldn't even have to define __init__
 
     @staticmethod
     def hash_file(inputfile):
@@ -99,8 +98,8 @@ class Schedule(OrderedDict):
                 if len(keys) == 3:
                     sdu_dict[keys[0]][keys[1]][keys[2]][key] = value.strip('\r\n')
 
-        sdu_dict = OrderedDict(sdu_dict)
-        return sdu_dict
+        # TODO: other args?
+        return cls(sdu_dict.items())
 
     def to_file(self, outputfile):
         """
