@@ -9,65 +9,62 @@ from beep import SCHEDULE_TEMPLATE_DIR
 from collections import OrderedDict, defaultdict
 
 
-class Schedule(OrderedDict):
+class ScheduleFile:
     """
     Schedule file utility. Provides the ability to read an Arbin type schedule file
 
     Args:
-        # TODO: what are the facts?
-        facts (str): Default version.
+        version (str): Default version.
+        section_regex (raw str): regex string to return all section headers from
+            the schedule file
+        step_regex (raw str): regex string to return all step headers from the
+            schedule file
+        limit_regex (raw str): regex string to return all limit headers from
+            the schedule file
 
     """
-    def __init__(self, kv_pairs):
-        super.__init__(kv_pairs)
-        # TODO: other attributes?  If none, shouldn't even have to define __init__
+    def __init__(self,
+                 version=None,
+                 section_regex=r'(?<=\[).*',
+                 step_regex=r'.Schedule_Step[0-9]*',
+                 limit_regex=r'.Schedule_Step[0-9]*_Limit[0-9]*'):
+        self.service = version
+        self.section = section_regex
+        self.step = step_regex
+        self.limit = limit_regex
+        self.schedule_file_encoding = 'latin-1'
 
-    @staticmethod
-    def hash_file(inputfile):
+    def hash_file(self, inputfile):
         with open(inputfile, 'rb') as f:
             chunk = f.read()
         return hashlib.md5(chunk).digest()
 
-    @classmethod
-    def from_file(cls, filename, section_regex=r'(?<=\[).*',
-                  step_regex=r'.Schedule_Step[0-9]*',
-                  limit_regex=r'.Schedule_Step[0-9]*_Limit[0-9]*',
-                  encoding='latin-1'):
-        """
-        Schedule file ingestion. Converts a schedule file with section headers
+    def to_dict(self, inputfile):
+        """Schedule file ingestion. Converts a schedule file with section headers
         to an ordered dict with section headers as nested dicts. One line in the
         schedule file is not parsable by utf-8. This line is stored and returned
         separately with the line number that it came from
 
         Args:
-            filename (str): Schedule file name (tested with FastCharge schedule file)
-            section_regex (raw str): regex string to return all section headers from
-                the schedule file
-            step_regex (raw str): regex string to return all step headers from the
-                schedule file
-            limit_regex (raw str): regex string to return all limit headers from
-                the schedule file
-            encoding (str): encoding of schedule file
+            inputfile (str): Schedule file (tested with FastCharge schedule file)
 
         Returns:
-            (Schedule): Ordered dictionary with keys corresponding to options
-                or control variables. Section headers are nested dicts within
-                the dict
+            sdu_dict (dict): Ordered dictionary with keys corresponding to options
+                or control variables. Section headers are nested dicts within the dict
 
         """
         sdu_dict = defaultdict(dict)
-        f = open(filename, 'rb')
+        f = open(inputfile, 'rb')
         lines = f.readlines()
         keys = []
         for line_num, line in enumerate(lines):
             try:
-                line_plain = line.decode(encoding)
+                line_plain = line.decode(self.schedule_file_encoding)
             except UnicodeDecodeError:
-                raise ValueError('Wrong encoding for schedule file '
-                                 'at line: ' + str(line_num))
-            if re.search(section_regex, line_plain) is not None:
-                if re.search(step_regex, line_plain) is not None:
-                    if re.search(limit_regex, line_plain) is not None:
+                print('Wrong encoding for schedule file at line: ' + str(line_num))
+            if re.search(self.section, line_plain) is not None:
+                if re.search(self.step, line_plain) is not None:
+                    if re.search(self.limit, line_plain) is not None:
                         if len(keys) >= 3:
                             keys = keys[:3]
                             keys[2] = line_plain.strip('\r\n')
@@ -98,10 +95,10 @@ class Schedule(OrderedDict):
                 if len(keys) == 3:
                     sdu_dict[keys[0]][keys[1]][keys[2]][key] = value.strip('\r\n')
 
-        # TODO: other args?
-        return cls(sdu_dict.items())
+        sdu_dict = OrderedDict(sdu_dict)
+        return sdu_dict
 
-    def to_file(self, outputfile):
+    def dict_to_file(self, dict_obj, outputfile):
         """
         Schedule file output. Converts an dictionary to a schedule file with
         the appropriate section headers. The one line in the schedule file that is
@@ -110,46 +107,45 @@ class Schedule(OrderedDict):
         must represent a valid schedule before it is passed to this function.
 
         Args:
-            self (dict): Ordered dictionary containing all of the schedule file
+            dict_obj (dict): Ordered dictionary containing all of the schedule file
                 sections with keys and values. Nested dicts correspond to sections
             outputfile (str): File string corresponding to the file to output the schedule to
         """
         f = open(outputfile, 'wb')
-        self.keys()
-        for key_line in self.keys():
+        dict_obj.keys()
+        for key_line in dict_obj.keys():
             if re.search(self.section, key_line) is not None:
                 line = key_line + '\r\n'
                 f.write(line.encode(self.schedule_file_encoding))
-                key_lines_1 = self[key_line].keys()
+                key_lines_1 = dict_obj[key_line].keys()
                 for key_line_1 in key_lines_1:
 
                     if re.search(self.step, key_line_1) is not None:
                         line = key_line_1 + '\r\n'
                         f.write(line.encode(self.schedule_file_encoding))
-                        key_lines_2 = self[key_line][key_line_1].keys()
+                        key_lines_2 = dict_obj[key_line][key_line_1].keys()
                         for key_line_2 in key_lines_2:
                             if re.search(self.limit, key_line_2) is not None:
                                 line = key_line_2 + '\r\n'
                                 f.write(line.encode(self.schedule_file_encoding))
-                                for key_line_3 in self[key_line][key_line_1][key_line_2].keys():
+                                for key_line_3 in dict_obj[key_line][key_line_1][key_line_2].keys():
                                     line = key_line_3 + '=' + \
-                                           self[key_line][key_line_1][key_line_2][key_line_3] + \
+                                           dict_obj[key_line][key_line_1][key_line_2][key_line_3] + \
                                            '\r\n'
                                     f.write(line.encode(self.schedule_file_encoding))
                             else:
                                 line = key_line_2 + '=' + \
-                                       self[key_line][key_line_1][key_line_2] + \
+                                       dict_obj[key_line][key_line_1][key_line_2] + \
                                        '\r\n'
                                 f.write(line.encode(self.schedule_file_encoding))
                     else:
                         line = key_line_1 + '=' + \
-                               self[key_line][key_line_1] + \
+                               dict_obj[key_line][key_line_1] + \
                                '\r\n'
                         f.write(line.encode(self.schedule_file_encoding))
         f.close()
 
-    @classmethod
-    def from_fast_charge(cls, CC1, CC1_capacity, CC2, inputname, outputname):
+    def fast_charge_file(self, CC1, CC1_capacity, CC2, inputname, outputname):
         """
         Function takes parameters for the FastCharge Project
         and creates the schedule files necessary to run each of
@@ -166,6 +162,7 @@ class Schedule(OrderedDict):
                 schedule file to
 
         """
+
         templates = SCHEDULE_TEMPLATE_DIR
 
         sdu_dict = self.to_dict(os.path.join(templates, inputname))
