@@ -1,5 +1,10 @@
 
 
+v2020.4.5
+---------
+* Add function to determine if there is a pause in the run
+* Change method for interpolation of the HPPC cycle to be based on local voltage range
+
 v2020.3.31
 ----------
 * Add appveyor integration and fix path problems to allow windows compatibility - Thanks to Joseph Montoya
