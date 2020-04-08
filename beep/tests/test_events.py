@@ -31,8 +31,8 @@ class KinesisEventsTest(unittest.TestCase):
 
     def setUp(self):
         try:
-            self.assertEqual('kinesis-test',
-                             get_secret(config[ENVIRONMENT]['kinesis']['stream'])['streamName'])
+            stream_name = get_secret(config[ENVIRONMENT]['kinesis']['stream'])['streamName']
+            self.assertEqual('kinesis-test', stream_name)
         except NoRegionError or NoCredentialsError as e:
             beep_secrets_connection_broken = True
 
