@@ -135,7 +135,7 @@ class DegradationPredictor(MSONable):
         iini = init_pred_cycle - 1
         summary = processed_cycler_run.summary
         assert len(processed_cycler_run.summary) > final_pred_cycle, 'cycle count must exceed final_pred_cycle'
-        cycles_to_average_over = 40 #For nominal capacity, use median discharge capacity of first n cycles
+        cycles_to_average_over = 40  # For nominal capacity, use median discharge capacity of first n cycles
 
         interpolated_df = processed_cycler_run.cycles_interpolated
         X = pd.DataFrame(np.zeros((1, 20)))
