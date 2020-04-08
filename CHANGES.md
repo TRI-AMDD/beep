@@ -1,5 +1,12 @@
 
 
+v2020.4.8
+---------
+* Add print statements for stdout only in the stage enviroment
+* Add test for events using secrets manager
+* Switch over the kinesis event stream name to be pulled from secrets manager
+
+
 v2020.4.5
 ---------
 * Add function to determine if there is a pause in the run
