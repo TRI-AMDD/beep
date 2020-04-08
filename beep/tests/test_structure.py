@@ -14,9 +14,11 @@ from botocore.exceptions import NoRegionError, NoCredentialsError
 from beep import MODULE_DIR
 from beep.structure import RawCyclerRun, ProcessedCyclerRun, \
     process_file_list_from_json, EISpectrum, get_project_sequence, \
-    get_protocol_parameters, get_diagnostic_parameters
+    get_protocol_parameters, get_diagnostic_parameters, \
+    determine_paused
 from monty.serialization import loadfn, dumpfn
 from monty.tempfile import ScratchDir
+from beep.utils import os_format
 import matplotlib.pyplot as plt
 
 BIG_FILE_TESTS = os.environ.get("BEEP_BIG_TESTS", False)
@@ -34,7 +36,9 @@ class RawCyclerRunTest(unittest.TestCase):
         self.maccor_file_w_parameters = os.path.join(TEST_FILE_DIR, "PreDiag_000287_000128.092")
         self.maccor_file_timezone = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010")
         self.maccor_file_timestamp = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000151_test.052")
+        self.maccor_file_paused = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000151_paused.052")
         self.indigo_file = os.path.join(TEST_FILE_DIR, "indigo_test_sample.h5")
+        self.biologic_file = os.path.join(TEST_FILE_DIR, "raw", "biologic_test_file_short.mpt")
 
     def test_serialization(self):
         smaller_run = RawCyclerRun.from_file(self.arbin_bad)
@@ -187,7 +191,7 @@ class RawCyclerRunTest(unittest.TestCase):
                                                             'reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C',
                                                             'reset', 'hppc'
                                                             ])
-        diag_interpolated = cycler_run.get_interpolated_diagnostic_cycles(diagnostic_available, resolution=500)
+        diag_interpolated = cycler_run.get_interpolated_diagnostic_cycles(diagnostic_available, resolution=1000)
         diag_cycle = diag_interpolated[(diag_interpolated.cycle_type == 'rpt_0.2C')
                                        & (diag_interpolated.step_type == 1)]
         self.assertEqual(diag_cycle.cycle_index.unique().tolist(), [3, 38, 143])
@@ -198,12 +202,27 @@ class RawCyclerRunTest(unittest.TestCase):
         plt.plot(diag_cycle.voltage, diag_cycle.discharge_dQdV)
         plt.savefig(os.path.join(TEST_FILE_DIR, "discharge_dQdV_interpolation.png"))
 
-        self.assertEqual(len(diag_cycle.index), 1500)
+        self.assertEqual(len(diag_cycle.index), 3000)
+
+        hppcs = diag_interpolated[(diag_interpolated.cycle_type == 'hppc') & pd.isnull(diag_interpolated.current)]
+        self.assertEqual(len(hppcs), 0)
+
+        hppc_dischg1 = diag_interpolated[(diag_interpolated.cycle_index == 37)
+                                         & (diag_interpolated.step_type == 2)
+                                         & (diag_interpolated.step_index_counter == 3)
+                                         & ~pd.isnull(diag_interpolated.current)]
+        print(hppc_dischg1)
+        plt.figure()
+        plt.plot(hppc_dischg1.test_time, hppc_dischg1.voltage)
+        plt.savefig(os.path.join(TEST_FILE_DIR, "hppc_discharge_pulse_1.png"))
+        self.assertEqual(len(hppc_dischg1), 176)
 
         processed_cycler_run = cycler_run.to_processed_cycler_run()
         self.assertNotIn(diag_summary.index.tolist(), processed_cycler_run.cycles_interpolated.cycle_index.unique())
         processed_cycler_run_loc = os.path.join(TEST_FILE_DIR, 'processed_diagnostic.json')
         dumpfn(processed_cycler_run, processed_cycler_run_loc)
+        proc_size = os.path.getsize(processed_cycler_run_loc)
+        self.assertLess(proc_size, 29000000)
         test = loadfn(processed_cycler_run_loc)
         self.assertIsInstance(test.diagnostic_summary, pd.DataFrame)
         os.remove(processed_cycler_run_loc)
@@ -252,14 +271,22 @@ class RawCyclerRunTest(unittest.TestCase):
         summary = cycler_run.get_summary(nominal_capacity=4.7, full_fast_charge=0.8)
         self.assertTrue(set.issubset({'discharge_capacity', 'charge_capacity', 'dc_internal_resistance',
                                       'temperature_maximum', 'temperature_average', 'temperature_minimum',
-                                      'date_time_iso'}, set(summary.columns)))
+                                      'date_time_iso', 'charge_throughput', 'energy_throughput',
+                                      'charge_energy', 'discharge_energy', 'energy_efficiency'}, set(summary.columns)))
         self.assertEqual(len(summary.index), len(summary['date_time_iso']))
+        self.assertFalse(summary['paused'].any())
 
     def test_get_energy(self):
         cycler_run = RawCyclerRun.from_file(self.arbin_file)
         summary = cycler_run.get_summary(nominal_capacity=4.7, full_fast_charge=0.8)
         self.assertEqual(summary['charge_energy'][5], 3.7134638)
         self.assertEqual(summary['energy_efficiency'][5], 0.872866405753033)
+
+    def test_get_charge_throughput(self):
+        cycler_run = RawCyclerRun.from_file(self.arbin_file)
+        summary = cycler_run.get_summary(nominal_capacity=4.7, full_fast_charge=0.8)
+        self.assertEqual(summary['charge_throughput'][5], 6.7614094)
+        self.assertEqual(summary['energy_throughput'][5], 23.2752363)
 
     def test_ingestion_indigo(self):
 
@@ -278,6 +305,30 @@ class RawCyclerRunTest(unittest.TestCase):
 
         self.assertEqual(set(raw_cycler_run.metadata.keys()),
                          set({"indigo_cell_id", "_today_datetime", "start_datetime","filename"}))
+
+    def test_ingestion_biologic(self):
+
+        # specific
+        raw_cycler_run = RawCyclerRun.from_biologic_file(self.biologic_file)
+
+        self.assertEqual({"cycle_index", "step_index", "voltage", "current",
+                         "discharge_capacity", "charge_capacity", "data_point",
+                          "charge_energy", "discharge_energy"},
+                         set(raw_cycler_run.data.columns))
+
+        self.assertEqual(set({"_today_datetime", "filename"}),
+                         set(raw_cycler_run.metadata.keys()))
+
+        # general
+        raw_cycler_run = RawCyclerRun.from_file(self.biologic_file)
+
+        self.assertEqual({"cycle_index", "step_index", "voltage", "current",
+                         "discharge_capacity", "charge_capacity", "data_point",
+                          "charge_energy", "discharge_energy"},
+                         set(raw_cycler_run.data.columns))
+
+        self.assertEqual(set({"_today_datetime", "filename"}),
+                         set(raw_cycler_run.metadata.keys()))
 
     def test_get_project_name(self):
         project_name_parts = get_project_sequence(os.path.join(TEST_FILE_DIR,
@@ -299,6 +350,10 @@ class RawCyclerRunTest(unittest.TestCase):
         parameters_missing, project_missing = get_protocol_parameters('Fake', parameters_path=test_path)
         self.assertEqual(parameters_missing, None)
         self.assertEqual(project_missing, None)
+
+        filepath = os.path.join(TEST_FILE_DIR, "PreDiag_000292_tztest.010")
+        parameters, _ = get_protocol_parameters(filepath, parameters_path=test_path)
+        self.assertIsNone(parameters)
 
     def test_determine_structering_parameters(self):
         os.environ['BEEP_ROOT'] = TEST_FILE_DIR
@@ -357,10 +412,26 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertEqual(len(d_interp.step_index.unique()), 9)
         first_step = d_interp[(d_interp.step_index == 7) & (d_interp.step_index_counter == 1)]
         second_step = d_interp[(d_interp.step_index == 7) & (d_interp.step_index_counter == 4)]
-        self.assertEqual(len(first_step), 500)
-        self.assertEqual(len(second_step), 500)
+        self.assertLess(first_step.voltage.diff().max(), 0.001)
+        self.assertLess(second_step.voltage.diff().max(), 0.001)
         self.assertTrue('date_time_iso' in d_interp.columns)
         self.assertFalse(d_interp.date_time_iso.isna().all())
+
+    def test_get_diagnostic_summary(self):
+        cycler_run = RawCyclerRun.from_file(self.maccor_file_w_diagnostics)
+        diagnostic_available = {'type': 'HPPC',
+                                'cycle_type': ['hppc'],
+                                'length': 1,
+                                'diagnostic_starts_at': [1]
+                                }
+        diag_summary = cycler_run.get_diagnostic_summary(diagnostic_available)
+        self.assertFalse(diag_summary['paused'].any())
+
+
+    def test_determine_paused(self):
+        cycler_run = RawCyclerRun.from_file(self.maccor_file_paused)
+        paused = cycler_run.data.groupby('cycle_index').apply(determine_paused)
+        self.assertTrue(paused.any())
 
 
 class CliTest(unittest.TestCase):
@@ -379,7 +450,6 @@ class CliTest(unittest.TestCase):
         with ScratchDir('.'):
             # Set root env
             os.environ['BEEP_ROOT'] = os.getcwd()
-
             # Make necessary directories
             os.mkdir("data-share")
             os.mkdir(os.path.join("data-share", "structure"))
@@ -392,7 +462,7 @@ class CliTest(unittest.TestCase):
                         }
             json_string = json.dumps(json_obj)
 
-            command = "structure '{}'".format(json_string)
+            command = "structure {}".format(os_format(json_string))
             result = subprocess.check_call(command, shell=True)
             self.assertEqual(result, 0)
             print(os.listdir(os.path.join("data-share", "structure")))

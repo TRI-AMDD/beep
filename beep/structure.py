@@ -59,7 +59,7 @@ from beep import StringIO, MODULE_DIR, ENVIRONMENT
 from beep.validate import ValidatorBeep, BeepValidationError
 from beep.collate import add_suffix_to_filename
 from beep.conversion_schemas import ARBIN_CONFIG, MACCOR_CONFIG, \
-    FastCharge_CONFIG, xTesladiag_CONFIG, INDIGO_CONFIG
+    FastCharge_CONFIG, xTesladiag_CONFIG, INDIGO_CONFIG, BIOLOGIC_CONFIG
 from beep.utils import KinesisEvents
 from beep import logger, __version__
 
@@ -129,6 +129,9 @@ class RawCyclerRun(MSONable):
 
         elif re.match(INDIGO_CONFIG['file_pattern'], path):
             return cls.from_indigo_file(path, validate)
+
+        elif re.match(BIOLOGIC_CONFIG['file_pattern'], path):
+            return cls.from_biologic_file(path, validate)
 
         else:
             raise ValueError("{} does not match any known file pattern".format(path))
@@ -240,12 +243,14 @@ class RawCyclerRun(MSONable):
         data = data.sort_index()
         return cls(data, d['metadata'], d['eis'])
 
-    def get_summary(self, nominal_capacity=1.1, full_fast_charge=0.8,
-                    cycle_complete_discharge_ratio=0.97, cycle_complete_vmin=3.3, cycle_complete_vmax=3.3):
+    def get_summary(self, diagnostic_available=None, nominal_capacity=1.1,
+                    full_fast_charge=0.8, cycle_complete_discharge_ratio=0.97,
+                    cycle_complete_vmin=3.3, cycle_complete_vmax=3.3):
         """
         Gets summary statistics for data according to
 
         Args:
+            diagnostic_available (dict): dictionary with diagnostic_types
             nominal_capacity (float): nominal capacity for summary stats
             full_fast_charge (float): full fast charge for summary stats
             cycle_complete_discharge_ratio (float): expected ratio
@@ -259,7 +264,18 @@ class RawCyclerRun(MSONable):
             pandas.DataFrame: summary statistics by cycle.
 
         """
+        #Filter out only regular cycles for summary stats. Diagnostic summary computed separately
+        if diagnostic_available:
+            diag_cycles = list(itertools.chain.from_iterable(
+                [list(range(i, i + diagnostic_available['length'])) for i in
+                 diagnostic_available['diagnostic_starts_at']
+                 if i <= self.data.cycle_index.max()]))
+            reg_cycles_at = [i for i in self.data.cycle_index.unique() if i not in diag_cycles]
+        else:
+            reg_cycles_at = [i for i in self.data.cycle_index.unique()]
+
         summary = self.data.groupby("cycle_index").agg({
+            "cycle_index": "first",
             "discharge_capacity": "max",
             "charge_capacity": "max",
             "discharge_energy": "max",
@@ -268,14 +284,16 @@ class RawCyclerRun(MSONable):
             "temperature": ["max", "mean", "min"],
             "date_time_iso": "first"})
 
-        summary.columns = ['discharge_capacity', 'charge_capacity',
+        summary.columns = ['cycle_index', 'discharge_capacity', 'charge_capacity',
                            'discharge_energy', 'charge_energy',
                            'dc_internal_resistance', 'temperature_maximum',
                            'temperature_average', 'temperature_minimum',
                            'date_time_iso']
-
+        summary = summary[summary.index.isin(reg_cycles_at)]
         summary['energy_efficiency'] = summary['discharge_energy']/summary['charge_energy']
         summary.loc[~np.isfinite(summary['energy_efficiency']), 'energy_efficiency'] = np.NaN
+        summary['charge_throughput'] = summary.charge_capacity.cumsum()
+        summary['energy_throughput'] = summary.charge_energy.cumsum()
 
         # This method for computing charge start and end times implicitly
         # assumes that a cycle starts with a charge step and is then followed
@@ -288,7 +306,7 @@ class RawCyclerRun(MSONable):
         # charge_capacity and will have NaN for charge duration
         merged = charge_start_time.merge(charge_finish_time, on='cycle_index', how='left')
 
-        # Charge duration stored in seconds
+        # Charge duration stored in seconds - note that date_time_iso is only ~1sec resolution
         time_diff = np.subtract(pd.to_datetime(merged.date_time_iso_y, utc=True, errors='coerce'),
                                 pd.to_datetime(merged.date_time_iso_x, errors='coerce'))
         summary["charge_duration"] = np.round(time_diff/np.timedelta64(1, 's'), 2)
@@ -306,6 +324,9 @@ class RawCyclerRun(MSONable):
 
         # Drop the time since cycle start column
         self.data.drop(columns=['time_since_cycle_start'])
+
+        # Determine if any of the cycles has been paused
+        summary['paused'] = self.data.groupby("cycle_index").apply(determine_paused)
 
         last_voltage = self.data.loc[self.data['cycle_index'] == self.data['cycle_index'].max()]['voltage']
         if ((last_voltage.min() < cycle_complete_vmin) and (last_voltage.max() > cycle_complete_vmax) and
@@ -354,6 +375,7 @@ class RawCyclerRun(MSONable):
 
         diag_summary['coulombic_efficiency'] = diag_summary['discharge_capacity'] \
                                                / diag_summary['charge_capacity']
+        diag_summary['paused'] = self.data.groupby("cycle_index").apply(determine_paused)
 
         diag_summary.reset_index(drop=True, inplace=True)
 
@@ -362,7 +384,7 @@ class RawCyclerRun(MSONable):
         return diag_summary
 
     def get_interpolated_diagnostic_cycles(self, diagnostic_available,
-                                           resolution=500):
+                                           resolution=1000, v_resolution=0.0005):
         """
         Interpolates data according to location and type of diagnostic
         cycles in the data
@@ -372,6 +394,7 @@ class RawCyclerRun(MSONable):
                 as list, 'length' of the diagnostic in cycles and location
                 of the diagnostic
             resolution (int): resolution of interpolation
+            v_resolution (int): voltage delta to set for range based interpolation
 
         Returns:
             (DataFrame) of interpolated diagnostic steps by step and cycle
@@ -419,7 +442,7 @@ class RawCyclerRun(MSONable):
         group = diag_data.groupby(["cycle_index", "step_index", "step_index_counter"])
         incl_columns = ["current", "charge_capacity", "discharge_capacity",
                         "charge_energy", "discharge_energy", "internal_resistance",
-                        "temperature", "datetime_seconds"]
+                        "temperature", "datetime_seconds", "test_time"]
 
         diag_dict = {}
         for cycle in diag_data.cycle_index.unique():
@@ -429,8 +452,14 @@ class RawCyclerRun(MSONable):
 
         all_dfs = []
         for (cycle_index, step_index, step_index_counter), df in tqdm(group):
-            new_df = get_interpolated_data(df, field_name="voltage", field_range=v_range,
-                                           columns=incl_columns, resolution=resolution)
+            if diag_cycle_type[diag_cycles_at.index(cycle_index)] == 'hppc':
+                v_hppc_step = [df.voltage.min(), df.voltage.max()]
+                hppc_resolution = int((df.voltage.max() - df.voltage.min()) / v_resolution)
+                new_df = get_interpolated_data(df, field_name="voltage", field_range=v_hppc_step,
+                                               columns=incl_columns, resolution=hppc_resolution)
+            else:
+                new_df = get_interpolated_data(df, field_name="voltage", field_range=v_range,
+                                               columns=incl_columns, resolution=resolution)
 
             #Convert interpolated time in seconds back to datetime
             new_df['date_time_iso'] = [datetime.utcfromtimestamp(t).isoformat()
@@ -442,6 +471,12 @@ class RawCyclerRun(MSONable):
             new_df['step_index'] = step_index
             new_df['step_index_counter'] = step_index_counter
             new_df['step_type'] = diag_dict[cycle_index].index(step_index)
+            new_df.astype({'cycle_index': 'int32',
+                           'cycle_type': 'category',
+                           'step_index': 'uint8',
+                           'step_index_counter': 'int16',
+                           'step_type': 'uint8'
+                           })
             new_df['discharge_dQdV'] = new_df.discharge_capacity.diff() / new_df.voltage.diff()
             new_df['charge_dQdV'] = new_df.charge_capacity.diff() / new_df.voltage.diff()
             all_dfs.append(new_df)
@@ -502,7 +537,7 @@ class RawCyclerRun(MSONable):
 
         metadata['indigo_cell_id'] = int(data['cell_id'].iloc[0])
         metadata['filename'] = path
-        metadata['_today_datetime'] = datetime.now().strftime('%Y-%m-%d %H:%M:%s')
+        metadata['_today_datetime'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         # transformations
         data = data.reset_index().reset_index()  # twice in case old index is stored in file
@@ -523,6 +558,72 @@ class RawCyclerRun(MSONable):
         data = data.rename(INDIGO_CONFIG['data_columns'], axis='columns')
 
         metadata['start_datetime'] = data.sort_values(by='system_time_us')['date_time_iso'].iloc[0]
+
+        return cls(data, metadata, None, validate, filename=path)
+
+    @classmethod
+    def from_biologic_file(cls, path, validate=False):
+        """
+        Creates RawCyclerRun from an Biologic data file.
+
+        Args:
+            path (str): file path to data file
+            validate (bool): True if data is to be validated.
+
+        Returns:
+            beep.structure.RawCyclerRun
+        """
+
+        header_line = 3             # specific to file layout
+        data_starts_line = 4        # specific to file layout
+        column_map = BIOLOGIC_CONFIG['data_columns']
+
+        raw = dict()
+        i = 0
+        with open(path, 'rb') as f:
+
+            empty_lines = 0         # used to find the end of the data entries.
+            while empty_lines < 2:  # finding 2 empty lines in a row => EOF
+                line = f.readline()
+                i += 1
+
+                if i == header_line:
+                    header = str(line.strip())[2:-1]
+                    columns = header.split('\\t')
+                    for c in columns:
+                        raw[c] = list()
+
+                if i >= data_starts_line:
+                    line = line.strip().decode()
+                    if len(line) == 0:
+                        empty_lines += 1
+                        continue
+                    items = line.split('\t')
+                    for ci in range(len(items)):
+                        column_name = columns[ci]
+                        data_type = column_map.get(column_name, dict()).get('data_type', str)
+                        scale = column_map.get(column_name, dict()).get('scale', 1.0)
+                        item = items[ci]
+                        if data_type == 'int':
+                            item = int(float(item))
+                        if data_type == 'float':
+                            item = float(item) * scale
+                        raw[column_name].append(item)
+
+        data = dict()
+        for column_name in column_map.keys():
+            data[column_map[column_name]['beep_name']] = raw[column_name]
+        data['data_point'] = list(range(1, len(raw['cycle number']) + 1))
+
+        data = pd.DataFrame(data)
+        data.loc[data.step_index % 2 == 0, 'charge_capacity'] = abs(data.charge_capacity)
+        data.loc[data.step_index % 2 == 1, 'charge_capacity'] = 0
+        data.loc[data.step_index % 2 == 1, 'discharge_capacity'] = abs(data.discharge_capacity)
+        data.loc[data.step_index % 2 == 0, 'discharge_capacity'] = 0
+
+        metadata = dict()
+        metadata['filename'] = path
+        metadata['_today_datetime'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         return cls(data, metadata, None, validate, filename=path)
 
@@ -1230,7 +1331,10 @@ def get_protocol_parameters(filepath, parameters_path='data-share/raw/parameters
     if len(project_parameter_files) == 1:
         df = pd.read_csv(project_parameter_files[0])
         parameter_row = df[df.seq_num == int(project_name_list[1])]
-        assert parameter_row.empty is False, "Unable to get project parameters for: " + filepath
+        if parameter_row.empty:
+            logger.error("Unable to get project parameters for: %s", filepath, extra=s)
+            parameter_row = None
+            df = None
     else:
         parameter_row = None
         df = None
@@ -1313,6 +1417,26 @@ def add_file_prefix_to_path(path, prefix):
     split_path = list(os.path.split(path))
     split_path[-1] = prefix + split_path[-1]
     return os.path.join(*split_path)
+
+
+def determine_paused(group, paused_threshold=3600):
+    """
+    Evaluate a raw cycling dataframe to determine if there is a pause in cycling
+
+    Args:
+        group (pd.DataFrame): cycling dataframe with date_time_iso column
+        paused_threshold (int): gap in seconds to classify as a pause in cycling
+
+    Returns:
+        bool: is there a pause in this cycle?
+
+    """
+    date_time_obj = pd.to_datetime(group['date_time_iso'])
+    date_time_float = [time.mktime(t.timetuple())
+                       if t is not pd.NaT else float('nan')
+                       for t in date_time_obj]
+    date_time_float = pd.Series(date_time_float)
+    return date_time_float.diff().max() > paused_threshold
 
 
 def maccor_timestamp(x):

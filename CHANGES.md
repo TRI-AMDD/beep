@@ -1,5 +1,26 @@
 
 
+v2020.4.5
+---------
+* Add function to determine if there is a pause in the run
+* Change method for interpolation of the HPPC cycle to be based on local voltage range
+
+v2020.3.31
+----------
+* Add appveyor integration and fix path problems to allow windows compatibility - Thanks to Joseph Montoya
+* Update the rest to increment by 12 min per protocol
+* add cumulative capacity to summary stats
+* Update the template file to change lower safety voltage to 2.0V
+* add charge energy and discharge energy to the biologic parser
+* add method for biologic file parsing
+
+v2020.3.19
+----------
+* add cumulative capacity to summary stats
+* add biologic parsing functionality (beta)
+* add coverage, travis to CI
+* updates to batch processing
+
 v2020.3.8
 ---------
 * Update the key for looking up diagnostic parameters to be `diagnostic_parameter_set`

@@ -15,6 +15,7 @@ from botocore.exceptions import NoRegionError, NoCredentialsError
 
 from beep import collate, validate, structure, featurize,\
     run_model, MODEL_DIR
+from beep.utils import os_format
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
@@ -128,8 +129,8 @@ class EndToEndTest(unittest.TestCase):
             "file_list": rename_output['file_list'],  # list of file paths ['path/test1.csv', 'path/test2.csv']
             'run_list': list(range(len(rename_output['file_list'])))  # list of run_ids [0, 1]
             }
-        validation_input = json.dumps(validation_input)
-        validation_output = subprocess.check_output("validate '{}'".format(validation_input),
+        validation_input = os_format(json.dumps(validation_input))
+        validation_output = subprocess.check_output("validate {}".format(validation_input),
                                                     shell=True).decode('utf-8')
 
         # Structure console test
@@ -140,8 +141,8 @@ class EndToEndTest(unittest.TestCase):
             'run_list': list(range(len(validation_output['file_list']))),  # list of run_ids [0, 1]
             "validity": validation_output['validity']  # list of validities ['valid', 'invalid']
             }
-        structure_input = json.dumps(structure_input)
-        structure_output = subprocess.check_output("structure '{}'".format(structure_input),
+        structure_input = os_format(json.dumps(structure_input))
+        structure_output = subprocess.check_output("structure {}".format(structure_input),
                                                    shell=True).decode('utf-8')
 
         # Featurizing console test
@@ -151,8 +152,8 @@ class EndToEndTest(unittest.TestCase):
             "file_list": structure_output['file_list'],  # list of file paths ['path/test1.json', 'path/test2.json']
             'run_list': list(range(len(structure_output['file_list'])))  # list of run_ids [0, 1]
             }
-        feature_input = json.dumps(feature_input)
-        feature_output = subprocess.check_output("featurize '{}'".format(feature_input),
+        feature_input = os_format(json.dumps(feature_input))
+        feature_output = subprocess.check_output("featurize {}".format(feature_input),
                                                  shell=True).decode('utf-8')
 
         # Fitting console test
@@ -162,8 +163,8 @@ class EndToEndTest(unittest.TestCase):
             "file_list": feature_output['file_list'],  # list of file paths ['path/test1.json', 'path/test2.json']
             'run_list': list(range(len(feature_output['file_list'])))  # list of run_ids [0, 1]
             }
-        fitting_input = json.dumps(fitting_input)
-        model_output = subprocess.check_output("run_model '{}'".format(fitting_input),
+        fitting_input = os_format(json.dumps(fitting_input))
+        model_output = subprocess.check_output("run_model {}".format(fitting_input),
                                                shell=True).decode('utf-8')
 
         # Validate output files

@@ -83,8 +83,8 @@ def scan(config):
     objects = [obj for obj in objects if "PredictionDiagnostics" in obj['Key']
                and "x" not in obj['Key']
                and "Complete" not in obj['Key']
-               # and obj['LastModified'] < datetime.datetime(2020, 2, 15, 5, 35, 43, tzinfo=tzutc())]
-               and "_000128_" in obj['Key']
+               # and obj['LastModified'] < datetime.datetime(2020, 3, 24, 5, 35, 43, tzinfo=tzutc())
+               and "_000159_" in obj['Key']
                ]
     print(len(objects))
 
@@ -99,6 +99,7 @@ def scan(config):
         }
         events.put_upload_retrigger_event('complete', retrigger_data)
         print(retrigger_data)
+        time.sleep(1)
 
 
 if __name__ == "__main__":

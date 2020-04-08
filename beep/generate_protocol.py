@@ -531,7 +531,7 @@ class ProcedureFile:
             dict: dictionary of procedure parameters.
         """
         assert reg_param['charge_cutoff_voltage'] > reg_param['discharge_cutoff_voltage']
-        assert reg_param['charge_constant_current_1'] == reg_param['charge_constant_current_2']
+        assert reg_param['charge_constant_current_1'] <= reg_param['charge_constant_current_2']
 
         rest_idx = 0
         proc_dict = self.insert_initialrest_regcyclev3(proc_dict, rest_idx, protocol_index)
@@ -585,10 +585,10 @@ class ProcedureFile:
         """
         steps = proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep']
         # Initial rest
-        offset_seconds = 120
+        offset_seconds = 720
         assert steps[rest_idx]['StepType'] == "Rest"
         assert steps[rest_idx]['Ends']['EndEntry'][0]['EndType'] == "StepTime"
-        time_s = int(round(3 * 3600 + offset_seconds * index))
+        time_s = int(round(3 * 3600 + offset_seconds * (index % 96)))
         steps[rest_idx]['Ends']['EndEntry'][0]['Value'] = time.strftime('%H:%M:%S', time.gmtime(time_s))
 
         return proc_dict
@@ -966,7 +966,8 @@ def generate_protocol_files_from_csv(csv_filename, output_directory, **kwargs):
                'error': ''}
     for index, protocol_params in protocol_params_df.iterrows():
         template = protocol_params['template']
-        if template not in ["EXP.000", "diagnosticV1.000", "diagnosticV2.000", "diagnosticV3.000"]:
+        if template not in ["EXP.000", "diagnosticV1.000", "diagnosticV2.000",
+                            "diagnosticV3.000", "diagnosticV4.000"]:
             warnings.warn("Unsupported file template {}, skipping.".format(template))
             result = "error"
             message = {'comment': 'Unable to find template: ' + template,
@@ -994,7 +995,7 @@ def generate_protocol_files_from_csv(csv_filename, output_directory, **kwargs):
                     proc_dict, protocol_params)
                 proc_dict = procedure_file_generator.generate_procedure_diagcyclev2(
                     proc_dict, protocol_params["capacity_nominal"], diagnostic_params)
-            elif template == 'diagnosticV3.000':
+            elif template in ['diagnosticV3.000', 'diagnosticV4.000']:
                 diag_params_df = pd.read_csv(os.path.join(PROCEDURE_TEMPLATE_DIR,
                                                           "PreDiag_parameters - DP.csv"))
                 diagnostic_params = diag_params_df[diag_params_df['diagnostic_parameter_set'] ==
@@ -1028,7 +1029,7 @@ def generate_protocol_files_from_csv(csv_filename, output_directory, **kwargs):
     _, namefile = os.path.split(csv_filename)
     namefile = namefile.split('_')[0] + '_names_'
     namefile = namefile + datetime.datetime.now().strftime("%Y%m%d_%H%M") + '.csv'
-    with open(os.path.join(output_directory, "names", namefile), 'w') as outputfile:
+    with open(os.path.join(output_directory, "names", namefile), 'w', newline='') as outputfile:
         wr = csv.writer(outputfile)
         for name in names:
             wr.writerow([name])
