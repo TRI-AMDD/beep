@@ -36,6 +36,7 @@ class KinesisEventsTest(unittest.TestCase):
         except NoRegionError or NoCredentialsError as e:
             beep_secrets_connection_broken = True
 
+    @unittest.skipIf(beep_kinesis_connection_broken, "Unable to connect to Kinesis")
     def test_get_file_size(self):
         events = KinesisEvents(service='Testing', mode='test')
         file_list = [os.path.join(TEST_FILE_DIR, "2017-05-09_test-TC-contact_CH33.csv"),
