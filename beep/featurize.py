@@ -42,7 +42,7 @@ from monty.serialization import loadfn, dumpfn
 from scipy.stats import skew, kurtosis
 from beep.collate import scrub_underscore_suffix, add_suffix_to_filename
 from beep.utils import KinesisEvents
-from beep import logger, __version__
+from beep import logger, ENVIRONMENT, __version__
 
 s = {'service': 'DataAnalyzer'}
 
@@ -430,15 +430,22 @@ def main():
     # Parse args and construct initial cycler run
     logger.info('starting', extra=s)
     logger.info('Running version=%s', __version__, extra=s)
+    if ENVIRONMENT == 'stage':
+        print('starting')
     try:
         args = docopt(__doc__)
         input_json = args['INPUT_JSON']
+        if ENVIRONMENT == 'stage':
+            print(input_json)
         print(process_file_list_from_json(input_json), end="")
     except Exception as e:
         logger.error(str(e), extra=s)
+        if ENVIRONMENT == 'stage':
+            print(str(e))
         raise e
     logger.info('finish', extra=s)
-
+    if ENVIRONMENT == 'stage':
+        print('finish')
     return None
 
 

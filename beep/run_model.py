@@ -43,7 +43,7 @@ from sklearn.linear_model import Lasso, LassoCV, RidgeCV, Ridge, ElasticNetCV, \
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
 from beep.utils import KinesisEvents
-from beep import MODEL_DIR, logger, __version__
+from beep import MODEL_DIR, ENVIRONMENT, logger, __version__
 
 s = {'service': 'DataAnalyzer'}
 # Projects that have cycling profiles compatible with the FastCharge model should be included in the list below
@@ -596,9 +596,13 @@ def main():
     # Parse args and construct initial cycler run
     logger.info('starting', extra=s)
     logger.info('Running version=%s', __version__, extra=s)
+    if ENVIRONMENT == 'stage':
+        print('starting')
     try:
         args = docopt(__doc__)
         input_json = args['INPUT_JSON']
+        if ENVIRONMENT == 'stage':
+            print(input_json)
         if args['--fit']:
             print(process_file_list_from_json(input_json, predict_only=False, model_dir=MODEL_DIR), end="")
         else:
@@ -606,9 +610,12 @@ def main():
 
     except Exception as e:
         logger.error(str(e), extra=s)
+        if ENVIRONMENT == 'stage':
+            print(str(e))
         raise e
     logger.info('finish', extra=s)
-
+    if ENVIRONMENT == 'stage':
+        print('finish')
     return None
 
 
