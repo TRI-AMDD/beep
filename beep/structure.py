@@ -151,6 +151,12 @@ class RawCyclerRun(MSONable):
         Returns:
             pandas.DataFrame: DataFrame corresponding to interpolated values.
         """
+        if step_type is 'discharge':
+            step_filter = determine_whether_step_is_discharging
+        elif step_type is 'charge':
+            step_filter = determine_whether_step_is_charging
+        else:
+            raise ValueError("{} is not a recognized step type")
         incl_columns = ["current", "charge_capacity", "discharge_capacity",
                         "internal_resistance", "temperature", "cycle_index"]
         all_dfs = []
@@ -158,14 +164,7 @@ class RawCyclerRun(MSONable):
         cycle_indices = [c for c in cycle_indices if c in reg_cycles]
         cycle_indices.sort()
         for cycle_index in tqdm(cycle_indices):
-            if step_type is 'discharge':
-                new_df = self.data.loc[self.data["cycle_index"] == cycle_index].groupby("step_index").filter(
-                    determine_whether_step_is_discharging)
-            elif step_type is 'charge':
-                new_df = self.data.loc[self.data["cycle_index"] == cycle_index].groupby("step_index").filter(
-                    determine_whether_step_is_charging)
-            else:
-                raise ValueError("{} is not a recognized step type")
+            new_df = self.data.loc[self.data["cycle_index"] == cycle_index].groupby("step_index").filter(step_filter)
             if new_df.size == 0:
                 continue
             new_df = get_interpolated_data(new_df, "voltage", field_range=v_range,
