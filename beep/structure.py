@@ -151,22 +151,24 @@ class RawCyclerRun(MSONable):
         Returns:
             pandas.DataFrame: DataFrame corresponding to interpolated values.
         """
-        if step_type is 'discharge':
-            group = self.data.groupby(["cycle_index", "step_index"]).filter(
-                determine_whether_step_is_discharging).groupby("cycle_index")
-            group.apply(lambda g: g[g['cycle_index'].isin(reg_cycles)])
-        elif step_type is 'charge':
-            group = self.data.groupby(["cycle_index", "step_index"]).filter(
-                determine_whether_step_is_charging).groupby("cycle_index")
-            group.apply(lambda g: g[g['cycle_index'].isin(reg_cycles)])
-        else:
-            raise ValueError("{} is not a recognized step type")
-
         incl_columns = ["current", "charge_capacity", "discharge_capacity",
                         "internal_resistance", "temperature", "cycle_index"]
         all_dfs = []
-        for cycle_index, df in tqdm(group):
-            new_df = get_interpolated_data(df, "voltage", field_range=v_range,
+        cycle_indices = self.data.cycle_index.unique()
+        cycle_indices = [c for c in cycle_indices if c in reg_cycles]
+        cycle_indices.sort()
+        for cycle_index in tqdm(cycle_indices):
+            if step_type is 'discharge':
+                new_df = self.data.loc[self.data["cycle_index"] == cycle_index].groupby("step_index").filter(
+                    determine_whether_step_is_discharging)
+            elif step_type is 'charge':
+                new_df = self.data.loc[self.data["cycle_index"] == cycle_index].groupby("step_index").filter(
+                    determine_whether_step_is_charging)
+            else:
+                raise ValueError("{} is not a recognized step type")
+            if new_df.size == 0:
+                continue
+            new_df = get_interpolated_data(new_df, "voltage", field_range=v_range,
                                            columns=incl_columns, resolution=resolution)
             new_df.cycle_index = cycle_index
             new_df['step_type'] = step_type
@@ -422,21 +424,21 @@ class RawCyclerRun(MSONable):
         diag_data = self.data[self.data['cycle_index'].isin(diag_cycles_at)]
 
         # Convert date_time_iso field into pd.datetime object
-        diag_data['date_time_iso'] = pd.to_datetime(diag_data['date_time_iso'])
+        diag_data.loc[:, 'date_time_iso'] = pd.to_datetime(diag_data['date_time_iso'])
 
         # Convert datetime into seconds to allow interpolation of time
-        diag_data['datetime_seconds'] = [time.mktime(t.timetuple())
-                                if t is not pd.NaT else float('nan')
-                                for t in diag_data['date_time_iso']]
+        diag_data.loc[:, 'datetime_seconds'] = [time.mktime(t.timetuple())
+                                                if t is not pd.NaT else float('nan')
+                                                for t in diag_data['date_time_iso']]
 
         # Counter to ensure non-contiguous repeats of step_index
         # within same cycle_index are grouped separately
-        diag_data['step_index_counter'] = 0
+        diag_data.loc[:, 'step_index_counter'] = 0
 
         for cycle_index in diag_cycles_at:
             indices = diag_data.loc[diag_data.cycle_index == cycle_index].index
             step_index_list = diag_data.step_index.loc[indices]
-            diag_data['step_index_counter'].loc[indices] = \
+            diag_data.loc[indices, 'step_index_counter'] = \
                 step_index_list.ne(step_index_list.shift()).cumsum()
 
         group = diag_data.groupby(["cycle_index", "step_index", "step_index_counter"])
@@ -501,12 +503,11 @@ class RawCyclerRun(MSONable):
         """
         metadata_path = path.replace(".csv", "_Metadata.csv")
         data = pd.read_csv(path)
-        data = data.rename(str.lower, axis='columns')
-        data = data.rename(ARBIN_CONFIG['data_columns'], axis='columns')
+        data.rename(str.lower, axis='columns', inplace=True)
+        data.rename(ARBIN_CONFIG['data_columns'], axis='columns', inplace=True)
         metadata = pd.read_csv(metadata_path)
-        metadata = metadata.rename(str.lower, axis='columns')
-        metadata = metadata.rename(ARBIN_CONFIG['metadata_fields'],
-                                   axis='columns')
+        metadata.rename(str.lower, axis='columns', inplace=True)
+        metadata.rename(ARBIN_CONFIG['metadata_fields'], axis='columns', inplace=True)
         # Note the to_dict, which scrubs numpy typing
         metadata = {col: item[0] for col, item
                     in metadata.to_dict('list').items()}
@@ -542,7 +543,7 @@ class RawCyclerRun(MSONable):
         # transformations
         data = data.reset_index().reset_index()  # twice in case old index is stored in file
         data = data.drop(columns=['index'])
-        data = data.rename(columns={'level_0': 'data_point'})
+        data.rename(columns={'level_0': 'data_point'}, inplace=True)
         data.loc[data.half_cycle_count % 2 == 1, 'charge_capacity'] = abs(data.cell_coulomb_count_c) / 3600
         data.loc[data.half_cycle_count % 2 == 0, 'charge_capacity'] = 0
         data.loc[data.half_cycle_count % 2 == 0, 'discharge_capacity'] = abs(data.cell_coulomb_count_c) / 3600
@@ -555,7 +556,7 @@ class RawCyclerRun(MSONable):
         data['date_time_iso'] = data['system_time_us']\
             .apply(lambda x: datetime.utcfromtimestamp(x/1000000).replace(tzinfo=pytz.UTC).isoformat())
 
-        data = data.rename(INDIGO_CONFIG['data_columns'], axis='columns')
+        data.rename(INDIGO_CONFIG['data_columns'], axis='columns', inplace=True)
 
         metadata['start_datetime'] = data.sort_values(by='system_time_us')['date_time_iso'].iloc[0]
 
@@ -676,9 +677,9 @@ class RawCyclerRun(MSONable):
 
         # Parse data
         data = pd.read_csv(filename, delimiter="\t", skiprows=1)
-        data = data.rename(str.lower, axis='columns')
+        data.rename(str.lower, axis='columns', inplace=True)
         data = data.astype(MACCOR_CONFIG['data_types'])
-        data = data.rename(MACCOR_CONFIG['data_columns'], axis='columns')
+        data.rename(MACCOR_CONFIG['data_columns'], axis='columns', inplace=True)
         data['charge_capacity'] = cls.get_maccor_quantity_sum(data, 'capacity', 'charge')
         data['discharge_capacity'] = cls.get_maccor_quantity_sum(data, 'capacity', 'discharge')
         data['charge_energy'] = cls.get_maccor_quantity_sum(data, 'energy', 'charge')
@@ -692,8 +693,8 @@ class RawCyclerRun(MSONable):
         metadata = pd.DataFrame(metadata)
         _, channel_number = os.path.splitext(filename)
         metadata['channel_id'] = int(channel_number.replace('.', ''))
-        metadata = metadata.rename(str.lower, axis='columns')
-        metadata = metadata.rename(MACCOR_CONFIG['metadata_fields'], axis='columns')
+        metadata.rename(str.lower, axis='columns', inplace=True)
+        metadata.rename(MACCOR_CONFIG['metadata_fields'], axis='columns', inplace=True)
         # Note the to_dict, which scrubs numpy typing
         metadata = {col: item[0] for col, item
                     in metadata.to_dict('list').items()}
