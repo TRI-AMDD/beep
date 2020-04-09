@@ -1,5 +1,9 @@
 
 
+v2020.4.9
+---------
+* Reduce memory and reduce warnings - Thanks to Linda Hung
+
 v2020.4.8
 ---------
 * Add print statements for stdout only in the stage enviroment
