@@ -164,6 +164,7 @@ class RawCyclerRun(MSONable):
         cycle_indices = [c for c in cycle_indices if c in reg_cycles]
         cycle_indices.sort()
         for cycle_index in tqdm(cycle_indices):
+            # Use a cycle_index mask instead of a global groupby to save memory
             new_df = self.data.loc[self.data["cycle_index"] == cycle_index].groupby("step_index").filter(step_filter)
             if new_df.size == 0:
                 continue
