@@ -39,7 +39,8 @@ setup(name="beep",
                         "msgpack-python==0.5.6",
                         "python-dateutil==2.8.0",
                         "xmltodict==0.12.0",
-                        "tables==3.6.1"
+                        "tables==3.6.1",
+                        "pydash==4.5.0",
                         ],
       extras_require={
           "tests": ["pytest",

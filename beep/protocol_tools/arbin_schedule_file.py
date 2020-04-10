@@ -7,11 +7,13 @@ import hashlib
 import re
 from beep import SCHEDULE_TEMPLATE_DIR
 from collections import OrderedDict, defaultdict
+from pydash import set_
 
 
 class Schedule(OrderedDict):
     """
-    Schedule file utility. Provides the ability to read an Arbin type schedule file
+    Schedule file utility. Provides the ability to read
+    an Arbin type schedule file
 
     Args:
         # TODO: what are the facts?
