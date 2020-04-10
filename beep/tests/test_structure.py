@@ -191,6 +191,7 @@ class RawCyclerRunTest(unittest.TestCase):
                                                             'reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C',
                                                             'reset', 'hppc'
                                                             ])
+        self.assertEqual(diag_summary.paused.max(), 0)
         diag_interpolated = cycler_run.get_interpolated_diagnostic_cycles(diagnostic_available, resolution=1000)
         diag_cycle = diag_interpolated[(diag_interpolated.cycle_type == 'rpt_0.2C')
                                        & (diag_interpolated.step_type == 1)]
