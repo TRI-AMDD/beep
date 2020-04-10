@@ -641,25 +641,31 @@ class RawCyclerRun(MSONable):
             state_type (str): charge or discharge.
 
         Returns:
-            list: summed quantities.
+            Series: summed quantities.
         """
         state_code = MACCOR_CONFIG["{}_state_code".format(state_type)]
-        quantity = data.apply(lambda row: row['_' + quantity] if row['_state'] == state_code else 0.0, axis=1)
-        earlier_quantity = 0.
-        earlier_cycle_index = data['cycle_index'][0]
-        new_step_flag = False
-        for i, (step_quantity, es, cycle_index) in \
-                enumerate(zip(quantity, data['_ending_status'], data['cycle_index'])):
-            if new_step_flag:
-                if cycle_index > earlier_cycle_index:
-                    earlier_quantity = 0.
-                    earlier_cycle_index = cycle_index
-                new_step_flag = False
-            quantity[i] += earlier_quantity
-            if (es >= MACCOR_CONFIG['end_step_code_min']) and (es <= MACCOR_CONFIG['end_step_code_max']):
-                new_step_flag = True
-                earlier_quantity += step_quantity
-        return quantity
+        quantity_agg = data['_' + quantity].where(data['_state'] == state_code, other=0.0, axis=0)
+        end_step = data['_ending_status'].apply(lambda x: MACCOR_CONFIG['end_step_code_min'] <= x
+                                                          <= MACCOR_CONFIG['end_step_code_max'])
+        end_step_inds = end_step.index[end_step]
+
+        if end_step_inds.size == 0:
+            return quantity_agg
+
+        lastindex = quantity_agg.size - 1
+        for i, istep in enumerate(end_step_inds):
+            if i > 0:
+                quantity_agg[istep_old+1:istep+1] += cycle_sum
+            if istep == lastindex:
+                cycle_sum = 0.
+            elif data.loc[istep+1, 'cycle_index'] != data.loc[istep, 'cycle_index']:
+                cycle_sum = 0.
+            else:
+                cycle_sum = quantity_agg[istep]
+            istep_old = istep
+        if end_step_inds[-1] < lastindex:
+            quantity_agg[istep_old+1:] += cycle_sum
+        return quantity_agg
 
     @classmethod
     def from_maccor_file(cls, filename, include_eis=True, validate=False):
