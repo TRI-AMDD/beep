@@ -58,50 +58,20 @@ class Schedule(OrderedDict):
                 the dict
 
         """
-        sdu_dict = defaultdict(dict)
-        f = open(filename, 'rb')
-        lines = f.readlines()
-        keys = []
-        for line_num, line in enumerate(lines):
-            try:
-                line_plain = line.decode(encoding)
-            except UnicodeDecodeError:
-                raise ValueError('Wrong encoding for schedule file '
-                                 'at line: ' + str(line_num))
-            if re.search(section_regex, line_plain) is not None:
-                if re.search(step_regex, line_plain) is not None:
-                    if re.search(limit_regex, line_plain) is not None:
-                        if len(keys) >= 3:
-                            keys = keys[:3]
-                            keys[2] = line_plain.strip('\r\n')
-                            sdu_dict[keys[0]][keys[1]][keys[2]] = OrderedDict({})
-                        else:
-                            keys.append(line_plain.strip('\r\n'))
-                            sdu_dict[keys[0]][keys[1]][keys[2]] = OrderedDict({})
-                    else:
-                        if len(keys) >= 2:
-                            keys = keys[:2]
-                            keys[1] = line_plain.strip('\r\n')
-                            sdu_dict[keys[0]][keys[1]] = OrderedDict({})
-                        else:
-                            keys.append(line_plain.strip('\r\n'))
-                            sdu_dict[keys[0]][keys[1]] = OrderedDict({})
-                else:
-                    if len(keys) >= 1:
-                        keys = keys[:1]
-                        keys[0] = line_plain.strip('\r\n')
-                    else:
-                        keys.append(line_plain.strip('\r\n'))
-            else:
-                key, value = line_plain.split('=', 1)
-                if len(keys) == 1:
-                    sdu_dict[keys[0]][key] = value.strip('\r\n')
-                if len(keys) == 2:
-                    sdu_dict[keys[0]][keys[1]][key] = value.strip('\r\n')
-                if len(keys) == 3:
-                    sdu_dict[keys[0]][keys[1]][keys[2]][key] = value.strip('\r\n')
+        sdu_dict = OrderedDict()
+        with open(filename, 'rb') as f:
+            # TODO: add error back?
+            text = f.read()
+            text = text.decode(encoding)
 
-        sdu_dict = OrderedDict(sdu_dict)
+        split_text = re.split(r'\[(.+)\]', text)
+        for heading, body in zip(split_text[0::2], split_text[1::2]):
+            line_pairs = [line.split('=') for line in body.split()]
+            body_dict = OrderedDict(line_pairs)
+            # TODO: partition the ordinals as keys as well?
+            heading = heading.replace('_', '.')
+            set_(sdu_dict, heading, body_dict)
+
         return sdu_dict
 
     def to_file(self, outputfile):
@@ -116,7 +86,12 @@ class Schedule(OrderedDict):
             self (dict): Ordered dictionary containing all of the schedule file
                 sections with keys and values. Nested dicts correspond to sections
             outputfile (str): File string corresponding to the file to output the schedule to
+
         """
+        headers = _get_headings(self, delimiter='.')
+        for header in headers:
+            pass
+
         f = open(outputfile, 'wb')
         self.keys()
         for key_line in self.keys():
@@ -246,6 +221,29 @@ class Schedule(OrderedDict):
                               sdu_dict[s][sch_keys][step_keys][equ + 'CompareSign'] +
                               sdu_dict[s][sch_keys][step_keys][equ + 'Right'])
         return sdu_dict
+
+
+def _get_headings(obj, delimiter='.'):
+    """
+    Utility function for getting all nested keys
+    of a dictionary whose values are themselves
+    a dict
+
+    Args:
+        obj (dict): nested dictionary to be searched
+        delimiter (str): string delimiter for nested
+            sub_headings, e. g. top_middle_low for
+            'top', 'middle', and 'low' nested keys
+
+    """
+    headings = []
+    for heading, body in obj.items():
+        if isinstance(body, dict):
+            headings.append(heading)
+            sub_headings = _get_headings(body, delimiter=delimiter)
+            headings.extend([delimiter.join([heading, sub_heading])
+                             for sub_heading in sub_headings])
+    return headings
 
 
 def main():
