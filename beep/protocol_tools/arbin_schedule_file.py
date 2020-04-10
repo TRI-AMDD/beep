@@ -5,6 +5,7 @@
 import os
 import hashlib
 import re
+import warnings
 from copy import deepcopy
 from beep import SCHEDULE_TEMPLATE_DIR
 from collections import OrderedDict, defaultdict
@@ -197,7 +198,8 @@ class Schedule(OrderedDict):
 
         return self
 
-    def step_limit_values(self, step_label, limit_var, limit_set=None):
+    # TODO: clarify limit_var
+    def step_limit_values(self, step_label, limit_var, comparator, value):
         """
         Insert values for the limits in the steps in the schedule section
 
@@ -206,8 +208,9 @@ class Schedule(OrderedDict):
                 are multiple identical labels this will operate on the first one it
                 encounters
             limit_var (str): Variable being used for this particular limit in the step
-            limit_set (dict): Value comparison to trip the limit (evaluating to True
-                triggers the limit) {'compare': '>', 'value': '0.086'}
+            value (int or str): threshold value to trip limit
+            comparator (str): str-represented comparator to trip limit,
+                e.g. '>' or '<'
 
         Returns:
             dict: Altered ordered dictionary with keys corresponding to options or control
@@ -215,29 +218,18 @@ class Schedule(OrderedDict):
         """
         labelled_steps = self.get_labelled_steps(step_label)
         for step in labelled_steps:
-
-        values = []
-        s = '[Schedule]'
-        equ = 'Equation0_sz'
-        for sch_keys in sdu_dict[s].keys():
-            if re.search(self.step, sch_keys) and sdu_dict[s][sch_keys]['m_szLabel'] == step_label:
-                for step_keys in sdu_dict[s][sch_keys].keys():
-                    if re.search(self.limit, step_keys) and \
-                            sdu_dict[s][sch_keys][step_keys][equ + 'Left'] == limit_var and \
-                            sdu_dict[s][sch_keys][step_keys]['m_bStepLimit'] == '1':
-                        if limit_set is not None:
-                            sdu_dict[s][sch_keys][step_keys][equ + 'CompareSign'] = limit_set['compare']
-                            sdu_dict[s][sch_keys][step_keys][equ + 'Right'] = limit_set['value']
-                        values.append(sdu_dict[s][sch_keys][step_keys][equ + 'Left'] +
-                                      sdu_dict[s][sch_keys][step_keys][equ + 'CompareSign'] +
-                                      sdu_dict[s][sch_keys][step_keys][equ + 'Right'])
-                    elif re.search(self.limit, step_keys) and \
-                            sdu_dict[s][sch_keys][step_keys]['m_bStepLimit'] == '1':
-                        print('Warning, additional step limit: ' +
-                              sdu_dict[s][sch_keys][step_keys][equ + 'Left'] +
-                              sdu_dict[s][sch_keys][step_keys][equ + 'CompareSign'] +
-                              sdu_dict[s][sch_keys][step_keys][equ + 'Right'])
-        return sdu_dict
+            # Get all matching limit keys
+            limit_keys = [heading for heading in _get_headings(self)
+                          if heading.split('.')[-1].startswith('Limit')]
+            for limit_key in limit_keys:
+                limit_data = get(self, limit_key)
+                if limit_data['m_bStepLimit'] == '1':
+                    if limit_data['Equation0_szLeft'] == limit_var:
+                        set_(self, "{}.Equation0_szCompareSign".format(limit_key), comparator)
+                        set_(self, "{}.Equation0_szRight", value)
+                    else:
+                        warnings.warn("Additional step limit at {}".format(limit_key))
+        return self
 
 
 def _get_headings(obj, delimiter='.'):
