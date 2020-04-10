@@ -191,6 +191,7 @@ class RawCyclerRunTest(unittest.TestCase):
                                                             'reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C',
                                                             'reset', 'hppc'
                                                             ])
+        self.assertEqual(diag_summary.paused.max(), 0)
         diag_interpolated = cycler_run.get_interpolated_diagnostic_cycles(diagnostic_available, resolution=1000)
         diag_cycle = diag_interpolated[(diag_interpolated.cycle_type == 'rpt_0.2C')
                                        & (diag_interpolated.step_type == 1)]
@@ -273,8 +274,9 @@ class RawCyclerRunTest(unittest.TestCase):
                                       'temperature_maximum', 'temperature_average', 'temperature_minimum',
                                       'date_time_iso', 'charge_throughput', 'energy_throughput',
                                       'charge_energy', 'discharge_energy', 'energy_efficiency'}, set(summary.columns)))
+        self.assertEqual(summary['cycle_index'].tolist(), list(range(0, 13)))
         self.assertEqual(len(summary.index), len(summary['date_time_iso']))
-        self.assertFalse(summary['paused'].any())
+        self.assertEqual(summary['paused'].max(), 0)
 
     def test_get_energy(self):
         cycler_run = RawCyclerRun.from_file(self.arbin_file)
@@ -425,13 +427,12 @@ class RawCyclerRunTest(unittest.TestCase):
                                 'diagnostic_starts_at': [1]
                                 }
         diag_summary = cycler_run.get_diagnostic_summary(diagnostic_available)
-        self.assertFalse(diag_summary['paused'].any())
-
+        self.assertEqual(diag_summary['paused'].max(), 0)
 
     def test_determine_paused(self):
         cycler_run = RawCyclerRun.from_file(self.maccor_file_paused)
         paused = cycler_run.data.groupby('cycle_index').apply(determine_paused)
-        self.assertTrue(paused.any())
+        self.assertEqual(paused.max(), 1)
 
 
 class CliTest(unittest.TestCase):
