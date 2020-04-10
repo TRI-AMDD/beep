@@ -5,9 +5,10 @@
 import os
 import hashlib
 import re
+from copy import deepcopy
 from beep import SCHEDULE_TEMPLATE_DIR
 from collections import OrderedDict, defaultdict
-from pydash import set_
+from pydash import get, set_, unset
 
 
 class Schedule(OrderedDict):
@@ -74,7 +75,7 @@ class Schedule(OrderedDict):
 
         return sdu_dict
 
-    def to_file(self, outputfile):
+    def to_file(self, outputfile, encoding="latin-1", linesep="\r\n"):
         """
         Schedule file output. Converts an dictionary to a schedule file with
         the appropriate section headers. The one line in the schedule file that is
@@ -83,48 +84,34 @@ class Schedule(OrderedDict):
         must represent a valid schedule before it is passed to this function.
 
         Args:
-            self (dict): Ordered dictionary containing all of the schedule file
-                sections with keys and values. Nested dicts correspond to sections
-            outputfile (str): File string corresponding to the file to output the schedule to
+            outputfile (str): File string corresponding to the file to
+                output the schedule to
 
         """
-        headers = _get_headings(self, delimiter='.')
-        for header in headers:
-            pass
+        # Flatten dict
+        data = deepcopy(self)
+        flat_keys = _get_headings(data, delimiter='.')
+        flat_keys.reverse()
+        data_tuples = []
+        for flat_key in flat_keys:
+            data_tuple = (flat_key.replace('.', '_'), get(data, flat_key))
 
-        f = open(outputfile, 'wb')
-        self.keys()
-        for key_line in self.keys():
-            if re.search(self.section, key_line) is not None:
-                line = key_line + '\r\n'
-                f.write(line.encode(self.schedule_file_encoding))
-                key_lines_1 = self[key_line].keys()
-                for key_line_1 in key_lines_1:
+            data_tuples.append(data_tuple)
+            unset(data, flat_key)
+        data_tuples.reverse()
 
-                    if re.search(self.step, key_line_1) is not None:
-                        line = key_line_1 + '\r\n'
-                        f.write(line.encode(self.schedule_file_encoding))
-                        key_lines_2 = self[key_line][key_line_1].keys()
-                        for key_line_2 in key_lines_2:
-                            if re.search(self.limit, key_line_2) is not None:
-                                line = key_line_2 + '\r\n'
-                                f.write(line.encode(self.schedule_file_encoding))
-                                for key_line_3 in self[key_line][key_line_1][key_line_2].keys():
-                                    line = key_line_3 + '=' + \
-                                           self[key_line][key_line_1][key_line_2][key_line_3] + \
-                                           '\r\n'
-                                    f.write(line.encode(self.schedule_file_encoding))
-                            else:
-                                line = key_line_2 + '=' + \
-                                       self[key_line][key_line_1][key_line_2] + \
-                                       '\r\n'
-                                f.write(line.encode(self.schedule_file_encoding))
-                    else:
-                        line = key_line_1 + '=' + \
-                               self[key_line][key_line_1] + \
-                               '\r\n'
-                        f.write(line.encode(self.schedule_file_encoding))
-        f.close()
+        # Construct text
+        blocks = []
+        for section_title, body_data in data_tuples:
+            section_header = "[{}]".format(section_title)
+            body = linesep.join(["=".join([key, value])
+                                 for key, value in body_data.items()])
+            blocks.append(linesep.join([section_header, body]))
+        contents = linesep.join(blocks)
+
+        # Write file
+        with open(outputfile, 'wb') as f:
+            f.write(contents.encode(encoding))
 
     @classmethod
     def from_fast_charge(cls, CC1, CC1_capacity, CC2, inputname, outputname):
