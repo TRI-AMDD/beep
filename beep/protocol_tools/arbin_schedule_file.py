@@ -4,7 +4,7 @@ import re
 import warnings
 from copy import deepcopy
 from collections import OrderedDict
-from pydash import get, set_, unset
+from pydash import get, set_with, unset
 
 
 class Schedule(OrderedDict):
@@ -15,6 +15,15 @@ class Schedule(OrderedDict):
     tuple or dictionary inputs
 
     """
+    def set(self, string, value):
+        set_with(self, string, value, lambda x: OrderedDict())
+
+    def get(self, string):
+        return get(self, string)
+
+    def unset(self, string):
+        unset(self, string)
+
     @classmethod
     def from_file(cls, filename, encoding='latin-1'):
         """
@@ -39,21 +48,22 @@ class Schedule(OrderedDict):
                 the dict
 
         """
-        sdu_dict = OrderedDict()
+        obj = cls()
         with open(filename, 'rb') as f:
             # TODO: add error back?
             text = f.read()
             text = text.decode(encoding)
 
         split_text = re.split(r'\[(.+)\]', text)
-        for heading, body in zip(split_text[0::2], split_text[1::2]):
-            line_pairs = [line.split('=') for line in body.split()]
-            body_dict = OrderedDict(line_pairs)
+        for heading, body in zip(split_text[1::2], split_text[2::2]):
+            body_lines = re.split(r'[\r\n]+', body.strip())
+            body_dict = OrderedDict([line.split('=', 1)
+                                     for line in body_lines])
             # TODO: partition the ordinals as keys as well?
             heading = heading.replace('_', '.')
-            set_(sdu_dict, heading, body_dict)
+            obj.set(heading, body_dict)
 
-        return sdu_dict
+        return obj
 
     def to_file(self, filename, encoding="latin-1", linesep="\r\n"):
         """
@@ -77,9 +87,9 @@ class Schedule(OrderedDict):
         flat_keys.reverse()  # Reverse ensures sub-dicts are removed first
         data_tuples = []
         for flat_key in flat_keys:
-            data_tuple = (flat_key.replace('.', '_'), get(data, flat_key))
+            data_tuple = (flat_key.replace('.', '_'), data.get(flat_key))
             data_tuples.append(data_tuple)
-            unset(data, flat_key)
+            data.unset(flat_key)
         data_tuples.reverse()
 
         # Construct text
@@ -89,15 +99,14 @@ class Schedule(OrderedDict):
             body = linesep.join(["=".join([key, value])
                                  for key, value in body_data.items()])
             blocks.append(linesep.join([section_header, body]))
-        contents = linesep.join(blocks)
+        contents = linesep.join(blocks) + linesep
 
         # Write file
         with open(filename, 'wb') as f:
             f.write(contents.encode(encoding))
 
     @classmethod
-    def from_fast_charge(cls, CC1, CC1_capacity, CC2, template_filename,
-                         output_filename=None):
+    def from_fast_charge(cls, CC1, CC1_capacity, CC2, template_filename):
         """
         Function takes parameters for the FastCharge Project
         and creates the schedule files necessary to run each of
@@ -110,24 +119,16 @@ class Schedule(OrderedDict):
             CC2 (float): Constant current value for charge section 2
             template_filename (str): File path to pull the template schedule
                 file from
-            # TODO: do we want this here?
-            output_filename (str): File path to save the parameterized
-                schedule file to
 
         """
         obj = cls.from_file(template_filename)
 
-        # TODO: give this more domain interpretability?
         obj.set_labelled_steps('CC1', 'm_szCtrlValue',
                                step_value='{0:.3f}'.format(CC1).rstrip('0'))
-        obj.set_labelled_limits('CC1', 'PV_CHAN_Charge_Capacity',
-                                {'compare': '>',
-                                 'value': '{0:.3f}'.format(CC1_capacity).rstrip('0')}
-                                )
+        obj.set_labelled_limits('CC1', 'PV_CHAN_Charge_Capacity', comparator=">",
+                                value='{0:.3f}'.format(CC1_capacity).rstrip('0'))
         obj.set_labelled_steps('CC2', 'm_szCtrlValue',
                                step_value='{0:.3f}'.format(CC2).rstrip('0'))
-        if output_filename is not None:
-            obj.to_file(output_filename)
         return obj
 
     def get_labelled_steps(self, step_label):
@@ -145,7 +146,7 @@ class Schedule(OrderedDict):
         """
         # Find all step labels
         labelled_steps = filter(
-            lambda x: get(self, "Schedule.{}.m_szLabel".format(x)) == step_label,
+            lambda x: self.get("Schedule.{}.m_szLabel".format(x)) == step_label,
             self['Schedule'].keys()
         )
         return labelled_steps
@@ -174,14 +175,13 @@ class Schedule(OrderedDict):
 
         # TODO: should update happen in place or return new?
         for step in labelled_steps:
-            set_(self, "Schedule.{}.{}".format(step, step_key), step_value)
+            self.set("Schedule.{}.{}".format(step, step_key), step_value)
             if mode == "first":
                 break
 
         return self
 
-    # TODO: clarify limit_var
-    def step_limit_values(self, step_label, limit_var, comparator, value):
+    def set_labelled_limits(self, step_label, limit_var, comparator, value):
         """
         Insert values for the limits in the steps in the schedule section
 
@@ -203,12 +203,13 @@ class Schedule(OrderedDict):
             # Get all matching limit keys
             limit_keys = [heading for heading in _get_headings(self)
                           if heading.split('.')[-1].startswith('Limit')]
+            # Set limit of first limit step with matching code
             for limit_key in limit_keys:
                 limit_data = get(self, limit_key)
-                if limit_data['m_bStepLimit'] == '1':
+                if limit_data['m_bStepLimit'] == '1':  # Code corresponding to stop
                     if limit_data['Equation0_szLeft'] == limit_var:
-                        set_(self, "{}.Equation0_szCompareSign".format(limit_key), comparator)
-                        set_(self, "{}.Equation0_szRight", value)
+                        self.set("{}.Equation0_szCompareSign".format(limit_key), comparator)
+                        self.set("{}.Equation0_szRight".format(limit_key), value)
                     else:
                         warnings.warn("Additional step limit at {}".format(limit_key))
         return self
