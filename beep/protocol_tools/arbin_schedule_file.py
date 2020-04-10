@@ -1,14 +1,8 @@
 # Copyright 2019 Toyota Research Institute. All rights reserved.
 """ Schedule file parsing and parameter insertion"""
-
-
-import os
-import hashlib
 import re
 import warnings
 from copy import deepcopy
-from beep import SCHEDULE_TEMPLATE_DIR
-from collections import OrderedDict, defaultdict
 from pydash import get, set_, unset
 
 
