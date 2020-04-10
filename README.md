@@ -28,7 +28,8 @@ pip install -e .
 
 ## Testing
 You can use nose or pytests for running unittests (use `pip install nose` 
-to install nose if not installed)
+to install nose if not installed). In order to run tests the environment variable
+needs to be set (ie. export BEEP_ENV='local')
 
 ```bash
 nosetests beep
