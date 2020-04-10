@@ -249,7 +249,8 @@ class RawCyclerRun(MSONable):
                     full_fast_charge=0.8, cycle_complete_discharge_ratio=0.97,
                     cycle_complete_vmin=3.3, cycle_complete_vmax=3.3):
         """
-        Gets summary statistics for data according to
+        Gets summary statistics for data according to cycle number. Summary data
+        must be float or int type for compatibility with other methods
 
         Args:
             diagnostic_available (dict): dictionary with diagnostic_types
@@ -1443,7 +1444,7 @@ def determine_paused(group, paused_threshold=3600):
                        if t is not pd.NaT else float('nan')
                        for t in date_time_obj]
     date_time_float = pd.Series(date_time_float)
-    return date_time_float.diff().max() > paused_threshold
+    return int(date_time_float.diff().max() > paused_threshold)
 
 
 def maccor_timestamp(x):
