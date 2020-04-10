@@ -12,7 +12,7 @@ config = {
             'streams': ['CloudWatch']
         },
         'kinesis': {
-            'stream': 'local/beep/eventstream'
+            'stream': 'stage/beep/eventstream/stage'
         }
     },
 

@@ -1,5 +1,10 @@
 
 
+v2020.4.10
+----------
+* Change the paused column in the summary data to be int type
+* Reduce actual peak memory usage and compute time - Thanks to Linda Hung
+
 v2020.4.9
 ---------
 * Reduce memory and reduce warnings - Thanks to Linda Hung

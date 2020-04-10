@@ -69,7 +69,7 @@ class KinesisEvents:
             self.kinesis = boto3.client('kinesis', region_name='us-west-2')
 
         if self.mode == 'test':
-            self.stream = get_secret(config[ENVIRONMENT]['kinesis']['stream'])['streamName']
+            self.stream = get_secret(config['test']['kinesis']['stream'])['streamName']
             self.kinesis = boto3.client('kinesis', region_name='us-west-2')
 
         if self.mode == 'events_off':
