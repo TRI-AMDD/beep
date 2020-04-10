@@ -15,24 +15,11 @@ from pydash import get, set_, unset
 class Schedule(OrderedDict):
     """
     Schedule file utility. Provides the ability to read
-    an Arbin type schedule file
-
-    Args:
-        # TODO: what are the facts?
-        facts (str): Default version.
+    an Arbin type schedule file.  Note that __init__ works
+    identically to that of an OrderedDict, i. e. with
+    tuple or dictionary inputs
 
     """
-    def __init__(self, facts):
-        super.__init__()
-        for fact in facts:
-            self[fact[0]] = fact[1]
-
-    @staticmethod
-    def hash_file(inputfile):
-        with open(inputfile, 'rb') as f:
-            chunk = f.read()
-        return hashlib.md5(chunk).digest()
-
     @classmethod
     def from_file(cls, filename, encoding='latin-1'):
         """
