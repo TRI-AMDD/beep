@@ -43,7 +43,6 @@ class ArbinScheduleTest(unittest.TestCase):
             sdu.to_file(test_file)
             hash1 = hash_file(os.path.join(SCHEDULE_TEMPLATE_DIR, filename))
             hash2 = hash_file(test_file)
-            # TODO: these shouldn't be the same, right?
             if hash1 != hash2:
                 original = open(os.path.join(SCHEDULE_TEMPLATE_DIR, filename), encoding='latin-1').readlines()
                 parsed = open(test_file, encoding='latin-1').readlines()

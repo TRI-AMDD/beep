@@ -201,17 +201,22 @@ class Schedule(OrderedDict):
         labelled_steps = self.get_labelled_steps(step_label)
         for step in labelled_steps:
             # Get all matching limit keys
-            limit_keys = [heading for heading in _get_headings(self)
-                          if heading.split('.')[-1].startswith('Limit')]
+            step_data = self.get("Schedule.{}".format(step))
+            limits = [heading for heading in _get_headings(step_data)
+                      if heading.startswith('Limit')]
             # Set limit of first limit step with matching code
-            for limit_key in limit_keys:
-                limit_data = get(self, limit_key)
+            for limit in limits:
+                limit_data = step_data[limit]
                 if limit_data['m_bStepLimit'] == '1':  # Code corresponding to stop
                     if limit_data['Equation0_szLeft'] == limit_var:
-                        self.set("{}.Equation0_szCompareSign".format(limit_key), comparator)
-                        self.set("{}.Equation0_szRight".format(limit_key), value)
+                        limit_prefix = "Schedule.{}.{}".format(step, limit)
+                        self.set(
+                            "{}.Equation0_szCompareSign".format(limit_prefix), comparator)
+                        self.set(
+                            "{}.Equation0_szRight".format(
+                                limit_prefix), value)
                     else:
-                        warnings.warn("Additional step limit at {}".format(limit_key))
+                        warnings.warn("Additional step limit at {}.{}".format(step, limit))
         return self
 
 
