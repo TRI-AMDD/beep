@@ -148,7 +148,8 @@ class DegradationPredictor(MSONable):
         labels.append("discharge_capacity_cycle_2")
 
         # Max discharge capacity - discharge capacity, cycle 2 = max_n(Q(n)) - Q(n=2)
-        X[1] = max([x - processed_cycler_data['summary']['discharge_capacity'][1] for x in processed_cycler_data['summary']['discharge_capacity'][:final_pred_cycle]])
+        X[1] = max(processed_cycler_data['summary']['discharge_capacity'][:final_pred_cycle]) \
+               - processed_cycler_data['summary']['discharge_capacity'][1]
         labels.append("max_discharge_capacity_difference")
 
         # Discharge capacity, cycle 100 = Q(n=100)
@@ -212,9 +213,7 @@ class DegradationPredictor(MSONable):
         labels.append("intercept_discharge_capacity_cycle_number_91:100")
 
         IR_trend = processed_cycler_data['summary']['dc_internal_resistance'][1:final_pred_cycle]
-        for i in range(len(IR_trend)):
-            if IR_trend[i] == 0:
-                IR_trend[i] = np.nan
+        IR_trend = np.where(IR_trend == 0, np.nan, IR_trend)
 
         # Internal resistance minimum
         X[17] = np.nanmin(IR_trend)
