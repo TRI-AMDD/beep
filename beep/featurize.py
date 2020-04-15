@@ -97,10 +97,12 @@ class DegradationPredictor(MSONable):
             prediction_type (str): Type of regression - 'single' vs 'multi'.
             diagnostic_features (bool): whether to compute diagnostic features.
         """
-        processed_cycler_run = loadfn(path)
+
+        with open(path) as f:
+            processed_cycler_data = json.loads(f.read())
 
         if features_label == 'full_model':
-            return cls.init_full_model(processed_cycler_run, predict_only=predict_only,
+            return cls.init_full_model(processed_cycler_data, predict_only=predict_only,
                                        predicted_quantity=predicted_quantity,
                                        diagnostic_features=diagnostic_features,
                                        prediction_type=prediction_type)
@@ -108,7 +110,7 @@ class DegradationPredictor(MSONable):
             raise NotImplementedError
 
     @classmethod
-    def init_full_model(cls, processed_cycler_run, init_pred_cycle=10, mid_pred_cycle=91,
+    def init_full_model(cls, processed_cycler_data, init_pred_cycle=10, mid_pred_cycle=91,
                         final_pred_cycle=100, predict_only=False, prediction_type='multi',
                         predicted_quantity="cycle", diagnostic_features=False):
         """
@@ -128,44 +130,46 @@ class DegradationPredictor(MSONable):
         Returns:
             beep.featurize.DegradationPredictor: DegradationPredictor corresponding to the ProcessedCyclerRun file.
         """
+        required_cycle_count = 100
+        if len(processed_cycler_data['summary']['discharge_capacity']) < required_cycle_count:
+            return None
+
         assert mid_pred_cycle > 10, 'Insufficient cycles for analysis'
         assert final_pred_cycle > mid_pred_cycle, 'Must have final_pred_cycle > mid_pred_cycle'
         ifinal = final_pred_cycle - 1  # python indexing
         imid = mid_pred_cycle - 1
-        iini = init_pred_cycle - 1
-        summary = processed_cycler_run.summary
-        assert len(processed_cycler_run.summary) > final_pred_cycle, 'cycle count must exceed final_pred_cycle'
+        assert len(processed_cycler_data['summary']['discharge_capacity']) > final_pred_cycle, 'cycle count must exceed final_pred_cycle'
         cycles_to_average_over = 40  # For nominal capacity, use median discharge capacity of first n cycles
 
-        interpolated_df = processed_cycler_run.cycles_interpolated
         X = pd.DataFrame(np.zeros((1, 20)))
         labels = []
         # Discharge capacity, cycle 2 = Q(n=2)
-        X[0] = summary.discharge_capacity[1]
+        X[0] = processed_cycler_data['summary']['discharge_capacity'][1]
         labels.append("discharge_capacity_cycle_2")
 
         # Max discharge capacity - discharge capacity, cycle 2 = max_n(Q(n)) - Q(n=2)
-        X[1] = max(summary.discharge_capacity[np.arange(final_pred_cycle)] - summary.discharge_capacity[1])
+        X[1] = max([x - processed_cycler_data['summary']['discharge_capacity'][1] for x in processed_cycler_data['summary']['discharge_capacity'][:final_pred_cycle]])
         labels.append("max_discharge_capacity_difference")
 
         # Discharge capacity, cycle 100 = Q(n=100)
-        X[2] = summary.discharge_capacity[ifinal]
+        X[2] = processed_cycler_data['summary']['discharge_capacity'][ifinal]
         labels.append("discharge_capacity_cycle_100")
 
         # Feature representing time-temperature integral over cycles 2 to 100
-        X[3] = np.nansum(summary.time_temperature_integrated[np.arange(final_pred_cycle)])
+        X[3] = np.nansum(processed_cycler_data['summary']['time_temperature_integrated'][:final_pred_cycle])
         labels.append("integrated_time_temperature_cycles_1:100")
 
         # Mean of charge times of first 5 cycles
-        X[4] = np.nanmean(summary.charge_duration[1:6])
+        X[4] = np.nanmean(processed_cycler_data['summary']['charge_duration'][1:6])
         labels.append("charge_time_cycles_1:5")
 
         # Descriptors based on capacity loss between cycles 10 and 100.
-        Qd_final = interpolated_df.discharge_capacity[interpolated_df.cycle_index == ifinal]
-        Qd_10 = interpolated_df.discharge_capacity[interpolated_df.cycle_index == 9]
+        _ixf = [i for i, x in enumerate(processed_cycler_data['cycles_interpolated']['cycle_index']) if x == ifinal]
+        Qd_final = np.array(processed_cycler_data['cycles_interpolated']['discharge_capacity'])[_ixf]
+        _ix9 = [i for i, x in enumerate(processed_cycler_data['cycles_interpolated']['cycle_index']) if x == 9]
+        Qd_10 = np.array(processed_cycler_data['cycles_interpolated']['discharge_capacity'])[_ix9]
 
-        Vd = interpolated_df.voltage[interpolated_df.cycle_index == iini]
-        Qd_diff = Qd_final.values - Qd_10.values
+        Qd_diff = Qd_final - Qd_10
 
         X[5] = np.log10(np.abs(np.min(Qd_diff)))   # Minimum
         labels.append("abs_min_discharge_capacity_difference_cycles_2:100")
@@ -185,17 +189,17 @@ class DegradationPredictor(MSONable):
         X[10] = np.log10(np.abs(Qd_diff[0]))       # First difference
         labels.append("abs_first_discharge_capacity_difference_cycles_2:100")
 
-        X[11] = max(summary.temperature_maximum[list(range(1, final_pred_cycle))])  # Max T
+        X[11] = max(processed_cycler_data['summary']['temperature_maximum'][1:final_pred_cycle])  # Max T
         labels.append("max_temperature_cycles_1:100")
 
-        X[12] = min(summary.temperature_minimum[list(range(1, final_pred_cycle))])  # Min T
+        X[12] = min(processed_cycler_data['summary']['temperature_minimum'][1:final_pred_cycle])  # Min T
         labels.append("min_temperature_cycles_1:100")
 
         # Slope and intercept of linear fit to discharge capacity as a fn of cycle #, cycles 2 to 100
 
         X[13], X[14] = np.polyfit(
             list(range(1, final_pred_cycle)),
-            summary.discharge_capacity[list(range(1, final_pred_cycle))], 1)
+            processed_cycler_data['summary']['discharge_capacity'][1:final_pred_cycle], 1)
 
         labels.append("slope_discharge_capacity_cycle_number_2:100")
         labels.append("intercept_discharge_capacity_cycle_number_2:100")
@@ -203,28 +207,29 @@ class DegradationPredictor(MSONable):
         # Slope and intercept of linear fit to discharge capacity as a fn of cycle #, cycles 91 to 100
         X[15], X[16] = np.polyfit(
             list(range(imid, final_pred_cycle)),
-            summary.discharge_capacity[list(range(imid, final_pred_cycle))], 1)
+            processed_cycler_data['summary']['discharge_capacity'][imid:final_pred_cycle], 1)
         labels.append("slope_discharge_capacity_cycle_number_91:100")
         labels.append("intercept_discharge_capacity_cycle_number_91:100")
 
-        IR_trend = summary.dc_internal_resistance[list(range(1, final_pred_cycle))]
-        if any(v == 0 for v in IR_trend):
-            IR_trend[IR_trend == 0] = np.nan
+        IR_trend = processed_cycler_data['summary']['dc_internal_resistance'][1:final_pred_cycle]
+        for i in range(len(IR_trend)):
+            if IR_trend[i] == 0:
+                IR_trend[i] = np.nan
 
         # Internal resistance minimum
         X[17] = np.nanmin(IR_trend)
         labels.append("min_internal_resistance_cycles_2:100")
 
         # Internal resistance at cycle 2
-        X[18] = summary.dc_internal_resistance[1]
+        X[18] = processed_cycler_data['summary']['dc_internal_resistance'][1]
         labels.append("internal_resistance_cycle_2")
 
         # Internal resistance at cycle 100 - cycle 2
-        X[19] = summary.dc_internal_resistance[ifinal] - summary.dc_internal_resistance[1]
+        X[19] = processed_cycler_data['summary']['dc_internal_resistance'][ifinal] - processed_cycler_data['summary']['dc_internal_resistance'][1]
         labels.append("internal_resistance_difference_cycles_2:100")
 
         if diagnostic_features:
-            X_diagnostic, labels_diagnostic = init_diagnostic_features(processed_cycler_run)
+            X_diagnostic, labels_diagnostic = init_diagnostic_features(processed_cycler_data)
             X = pd.concat([X, X_diagnostic], axis=1, sort=False)
             labels = labels + labels_diagnostic
 
@@ -233,18 +238,20 @@ class DegradationPredictor(MSONable):
             y = None
         else:
             if prediction_type == 'single':
-                y = processed_cycler_run.get_cycle_life()
+                y = get_cycle_life(processed_cycler_data)
             elif prediction_type == 'multi':
                 if predicted_quantity == 'cycle':
-                    y = processed_cycler_run.cycles_to_reach_set_capacities(
-                        thresh_max_cap=0.98, thresh_min_cap=0.78, interval_cap=0.03)
+                    y = cycles_to_reach_set_capacities(processed_cycler_data,
+                                                       thresh_max_cap=0.98,
+                                                       thresh_min_cap=0.78,
+                                                       interval_cap=0.03)
                 elif predicted_quantity == 'capacity':
-                    y = processed_cycler_run.capacities_at_set_cycles()
+                    y = capacities_at_set_cycles(processed_cycler_data)
                 else:
                     raise NotImplementedError(
                         "{} predicted_quantity type not implemented".format(
                             predicted_quantity))
-        nominal_capacity = np.median(summary.discharge_capacity.iloc[0:cycles_to_average_over])
+        nominal_capacity = np.median(processed_cycler_data['summary']['discharge_capacity'][0:cycles_to_average_over])
 
         return cls('full_model', X, feature_labels=labels, y=y,
                    nominal_capacity=nominal_capacity, predict_only=predict_only,
@@ -303,8 +310,7 @@ def init_diagnostic_features(processed_cycler_run, diagnostic_param_dict=None):
     # Create a dataframe for storing diagnostic features
     X = pd.DataFrame(np.zeros((1, diagnostic_param_dict['n_diagnostic_features'])))
     labels = []
-    print(processed_cycler_run.diagnostic_summary.discharge_capacity.iloc[5:20])
-    X[0] = processed_cycler_run.diagnostic_summary.discharge_capacity.iloc[5:20].median()
+    X[0] = np.median(processed_cycler_run['diagnostic_summary']['discharge_capacity'][5:20])
     labels.append("median_diagnostic_cycles_discharge_capacity")
 
     # Insert feature computations here
@@ -372,13 +378,14 @@ def process_file_list_from_json(file_list_json, processed_dir='data-share/featur
     processed_message_list = []
     processed_paths_list = []
 
-    required_cycle_num = 100 #for full model
-
     for path, run_id in zip(file_list, run_ids):
         logger.info('run_id=%s featurizing=%s', str(run_id), path, extra=s)
 
-        #check if there is enough data to try featurizing
-        if not len(loadfn(path).summary) > required_cycle_num:
+        processed_data = DegradationPredictor.from_processed_cycler_run_file(
+            path, features_label=features_label, predict_only=predict_only,
+            prediction_type=prediction_type, predicted_quantity=predicted_quantity)
+
+        if processed_data is None:
             logger.info("run_id=%s Insufficient data for featurization",str(run_id),extra=s)
             processed_paths_list.append(path)
             processed_run_list.append(run_id)
@@ -387,9 +394,6 @@ def process_file_list_from_json(file_list_json, processed_dir='data-share/featur
                                             'error': ''})
 
         else:
-            processed_data = DegradationPredictor.from_processed_cycler_run_file(
-                path, features_label=features_label, predict_only=predict_only,
-                prediction_type=prediction_type, predicted_quantity=predicted_quantity)
             new_filename = os.path.basename(path)
             new_filename = scrub_underscore_suffix(new_filename)
 
@@ -415,6 +419,87 @@ def process_file_list_from_json(file_list_json, processed_dir='data-share/featur
     events.put_analyzing_event(output_data, 'featurizing', 'complete')
     # Return jsonable file list
     return json.dumps(output_data)
+
+
+def get_cycle_life(processed_cycler_data, n_cycles_cutoff=40, threshold=0.8):
+    """
+    Calculate cycle life for capacity loss below a certain threshold
+
+    Args:
+        n_cycles_cutoff (int): cutoff for number of cycles to sample
+            for the cycle life in order to use median method.
+        threshold (float): fraction of capacity loss for which
+            to find the cycle index.
+
+    Returns:
+        float: cycle life.
+    """
+    # discharge_capacity has a spike and  then increases slightly between \
+    # 1-40 cycles, so let us use take median of 1st 40 cycles for max.
+
+    # If n_cycles <  n_cycles_cutoff, do not use median method
+    if len(processed_cycler_data['summary']['discharge_capacity']) > n_cycles_cutoff:
+        max_capacity = np.median(processed_cycler_data['summary']['discharge_capacity'][0:n_cycles_cutoff])
+    else:
+        max_capacity = 1.1
+
+    # If capacity falls below 80% of initial capacity by end of run
+    if processed_cycler_data['summary']['discharge_capacity'][-1] / max_capacity <= threshold:
+        ix_min = min([x for x in range(len(processed_cycler_data['summary']['discharge_capacity']))
+                      if processed_cycler_data['summary']['discharge_capacity'][x] < threshold * max_capacity])
+        cycle_life = ix_min
+    else:
+        # Some cells do not degrade below the threshold (low degradation rate)
+        cycle_life = len(processed_cycler_data['summary']['discharge_capacity']) + 1
+
+    return cycle_life
+
+
+def cycles_to_reach_set_capacities(processed_cycler_data, thresh_max_cap=0.98, thresh_min_cap=0.78, interval_cap=0.03):
+    """
+    Get cycles to reach set threshold capacities.
+
+    Args:
+        thresh_max_cap (float): Upper bound on capacity to compute cycles at.
+        thresh_min_cap (float): Lower bound on capacity to compute cycles at.
+        interval_cap (float): Interval/step size.
+
+    Returns:
+        pandas.DataFrame:
+    """
+    threshold_list = np.around(np.arange(thresh_max_cap, thresh_min_cap, - interval_cap), 2)
+    counter = 0
+    cycles = pd.DataFrame(np.zeros((1, len(threshold_list))))
+    for threshold in threshold_list:
+        cycles[counter] = get_cycle_life(processed_cycler_data, threshold=threshold)
+        counter = counter + 1
+    cycles.columns = np.core.defchararray.add("capacity_", threshold_list.astype(str))
+    return cycles
+
+
+def capacities_at_set_cycles(processed_cycler_data, cycle_min=200, cycle_max=1800, cycle_interval=200):
+    """
+    Get discharge capacity at constant intervals of 200 cycles
+
+    Args:
+        cycle_min (int): Cycle number to being forecasting capacity at
+        cycle_max (int): Cycle number to end forecasting capacity at
+        cycle_interval (int): Intervals for forecasts
+
+    Returns:
+        pandas.DataFrame:
+    """
+    discharge_capacities = pd.DataFrame(np.zeros((1, int((cycle_max-cycle_min)/cycle_interval))))
+    counter = 0
+    cycle_indices = np.arange(cycle_min, cycle_max, cycle_interval)
+    for cycle_index in cycle_indices:
+        try:
+            discharge_capacities[counter] = processed_cycler_data['summary']['discharge_capacity'][cycle_index]
+        except IndexError:
+            pass
+        counter = counter + 1
+    discharge_capacities.columns = np.core.defchararray.add("cycle_", cycle_indices.astype(str))
+    return discharge_capacities
 
 
 def main():
