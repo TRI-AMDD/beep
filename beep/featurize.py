@@ -117,7 +117,7 @@ class DegradationPredictor(MSONable):
         Generate features listed in early prediction manuscript
 
         Args:
-            processed_cycler_run (beep.structure.ProcessedCyclerRun): information about cycler run
+            processed_cycler_data (dict): information about cycler run
             init_pred_cycle (int): index of initial cycle index used for predictions
             mid_pred_cycle (int): index of intermediate cycle index used for predictions
             final_pred_cycle (int): index of highest cycle index used for predictions
@@ -426,6 +426,7 @@ def get_cycle_life(processed_cycler_data, n_cycles_cutoff=40, threshold=0.8):
     Calculate cycle life for capacity loss below a certain threshold
 
     Args:
+        processed_cycler_data (dict): process data
         n_cycles_cutoff (int): cutoff for number of cycles to sample
             for the cycle life in order to use median method.
         threshold (float): fraction of capacity loss for which
@@ -460,6 +461,7 @@ def cycles_to_reach_set_capacities(processed_cycler_data, thresh_max_cap=0.98, t
     Get cycles to reach set threshold capacities.
 
     Args:
+        processed_cycler_data (dict): process data
         thresh_max_cap (float): Upper bound on capacity to compute cycles at.
         thresh_min_cap (float): Lower bound on capacity to compute cycles at.
         interval_cap (float): Interval/step size.
@@ -482,6 +484,7 @@ def capacities_at_set_cycles(processed_cycler_data, cycle_min=200, cycle_max=180
     Get discharge capacity at constant intervals of 200 cycles
 
     Args:
+        processed_cycler_data (dict): process data
         cycle_min (int): Cycle number to being forecasting capacity at
         cycle_max (int): Cycle number to end forecasting capacity at
         cycle_interval (int): Intervals for forecasts
