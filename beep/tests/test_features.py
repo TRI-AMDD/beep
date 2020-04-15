@@ -10,7 +10,8 @@ import numpy as np
 from botocore.exceptions import NoRegionError, NoCredentialsError
 
 from beep.structure import RawCyclerRun, ProcessedCyclerRun
-from beep.featurize import DegradationPredictor, process_file_list_from_json
+from beep.featurize import DegradationPredictor, process_file_list_from_json, \
+    get_cycle_life, cycles_to_reach_set_capacities, capacities_at_set_cycles
 from monty.serialization import dumpfn, loadfn
 
 TEST_DIR = os.path.dirname(__file__)
@@ -123,3 +124,26 @@ class TestFeaturizer(unittest.TestCase):
         output_obj = json.loads(json_path)
         self.assertEqual(output_obj['result_list'][0],'incomplete')
         self.assertEqual(output_obj['message_list'][0]['comment'], 'Insufficient data for featurization')
+
+
+class CycleLifeTest(unittest.TestCase):
+
+    CYCLER_TEST_FILE_PATH = os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_processed.json")
+
+    def test_get_cycle_life(self):
+        with open(self.CYCLER_TEST_FILE_PATH) as f:
+            processed_cycler_data = json.loads(f.read())
+        self.assertEqual(get_cycle_life(processed_cycler_data, 30, 0.99), 82)
+        self.assertEqual(get_cycle_life(processed_cycler_data), 189)
+
+    def test_cycles_to_reach_set_capacities(self):
+        with open(self.CYCLER_TEST_FILE_PATH) as f:
+            processed_cycler_data = json.loads(f.read())
+        cycles = cycles_to_reach_set_capacities(processed_cycler_data)
+        self.assertGreaterEqual(cycles.iloc[0,0], 100)
+
+    def test_capacities_at_set_cycles(self):
+        with open(self.CYCLER_TEST_FILE_PATH) as f:
+            processed_cycler_data = json.loads(f.read())
+        capacities = capacities_at_set_cycles(processed_cycler_data)
+        self.assertLessEqual(capacities.iloc[0,0], 1.1)
