@@ -4,26 +4,24 @@ import re
 import warnings
 from copy import deepcopy
 from collections import OrderedDict
-from pydash import get, set_with, unset
+from beep.utils import DashOrderedDict
 
 
-class Schedule(OrderedDict):
+class Schedule(DashOrderedDict):
     """
     Schedule file utility. Provides the ability to read
     an Arbin type schedule file.  Note that __init__ works
     identically to that of an OrderedDict, i. e. with
-    tuple or dictionary inputs
+    tuple or dictionary inputs and inherits from pydash
+    getters and setters with Schedule.get, Schedule.set
+    and Schedule.unset e.g.
+
+    >>> schedule = Schedule.from_file("arbin_file_1.sdu")
+    >>> schedule.set("Schedule.Step7.m_szLabel", "CC1")
+    >>> print(schedule['Schedule']['Step7']['m_szLabel'])
+    >>> "CC1"
 
     """
-    def set(self, string, value):
-        set_with(self, string, value, lambda x: OrderedDict())
-
-    def get(self, string):
-        return get(self, string)
-
-    def unset(self, string):
-        unset(self, string)
-
     @classmethod
     def from_file(cls, filename, encoding='latin-1'):
         """
@@ -34,12 +32,6 @@ class Schedule(OrderedDict):
 
         Args:
             filename (str): Schedule file name (tested with FastCharge schedule file)
-            section_regex (raw str): regex string to return all section headers from
-                the schedule file
-            step_regex (raw str): regex string to return all step headers from the
-                schedule file
-            limit_regex (raw str): regex string to return all limit headers from
-                the schedule file
             encoding (str): encoding of schedule file
 
         Returns:
@@ -50,7 +42,6 @@ class Schedule(OrderedDict):
         """
         obj = cls()
         with open(filename, 'rb') as f:
-            # TODO: add error back?
             text = f.read()
             text = text.decode(encoding)
 
@@ -59,7 +50,6 @@ class Schedule(OrderedDict):
             body_lines = re.split(r'[\r\n]+', body.strip())
             body_dict = OrderedDict([line.split('=', 1)
                                      for line in body_lines])
-            # TODO: partition the ordinals as keys as well?
             heading = heading.replace('_', '.')
             obj.set(heading, body_dict)
 
@@ -245,7 +235,7 @@ def _get_headings(obj, delimiter='.'):
 
 def main():
     sdu = Schedule.from_fast_charge(
-        1.1*3.6, 0.086, 1.1*5, '20170630-3_6C_9per_5C.sdu', 'test.sdu')
+        1.1*3.6, 0.086, 1.1*5, '20170630-3_6C_9per_5C.sdu')
 
 
 if __name__ == "__main__":

@@ -38,24 +38,24 @@ $ generate_protocol '{"file_list": ["/data-share/raw/parameters/procedure_params
 """
 
 import os
-import hashlib
 import warnings
 import re
 import json
 import time
 import datetime
 import csv
+from copy import deepcopy
 
 import pandas as pd
 import xmltodict
 from docopt import docopt
 from monty.serialization import loadfn
 from beep import logger, __version__, PROCEDURE_TEMPLATE_DIR
-from beep.utils import KinesisEvents
+from beep.utils import KinesisEvents, DashOrderedDict
 s = {'service': 'ProtocolGenerator'}
 
 
-class ProcedureFile:
+class Procedure(DashOrderedDict):
     """
     Procedure file utility. Provides the ability to read a
     Maccor-type procedure file
@@ -64,60 +64,28 @@ class ProcedureFile:
         version (str): version. Defaults to '0.1'
         sp_num (int):
     """
-
-    def __init__(self, version=None):
+    # TODO: versioning? - Comments in maccor/arbin files?
+    # TODO: sp_num resolved?
+    @classmethod
+    def from_file(cls, filename, encoding='latin-1'):
         """
+        Procedure file ingestion. Invokes Procedure object
+        from standard Maccor xml file.
 
         Args:
-            version (str): version.
-        """
-        self.service = version
-        self.sp_num = 1
-
-    @staticmethod
-    def hash_file(inputfile):
-        """
-        Reads a file and returns md5 hash.
-
-        Args:
-            inputfile (str): path to file.
+            filename (str): xml procedure file.
 
         Returns:
-            bytes: hash of file content.
-        """
-        with open(inputfile, 'rb') as f:
-            chunk = f.read()
-        return hashlib.md5(chunk).digest()
-
-    def to_dict(self, inputfile, json_file):
-        """
-        Procedure file ingestion. Converts a procedure file as xml into
-        a dict that can be altered with standard python dict methods. Also
-        saves a version of the file as json for easier reading.
-
-        Args:
-            inputfile (str): xml procedure file.
-            json_file (str): file save json to.
-
-        Returns:
-            dict: Ordered dictionary with keys corresponding to options or
+            (Procedure): Ordered dictionary with keys corresponding to options or
                 control variables. Section headers are nested dicts or lists
                 within the dict.
-            int: Line number of the unparsable string.
-            str: String not parsed by xmltodict.
         """
-        f = open(inputfile)
-        proc_dict = xmltodict.parse(f.read(), process_namespaces=False, strip_whitespace=True)
-        f.close()
-        f = open(inputfile)
-        sp = f.readlines()[self.sp_num]
-        f.close()
-        with open(json_file, 'w') as j:
-            json.dump(proc_dict, j)
+        with open(filename, 'rb') as f:
+            text = f.read().decode(encoding)
+        data = xmltodict.parse(text, process_namespaces=False, strip_whitespace=True)
+        return cls(data)
 
-        return proc_dict, sp
-
-    def maccor_format_dict(self, proc_dict):
+    def _format_maccor(self):
         """
         Dictionary reformatting of the entries in the procedure in
         order to match the maccor formats. Mainly re-adding whitespace
@@ -131,7 +99,8 @@ class ProcedureFile:
             dict: Ordered dictionary with reformatted entries to match the
                 formatting used in the maccor procedure files.
         """
-        for step in proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep']:
+        formatted = deepcopy(self)
+        for step in formatted['MaccorTestProcedure']['ProcSteps']['TestStep']:
             # print(json.dumps(step['StepType'], indent=2))
             while len(step['StepType']) < 8:
                 step['StepType'] = step['StepType'].center(8)
@@ -155,7 +124,7 @@ class ProcedureFile:
                 if isinstance(step['Reports']['ReportEntry'], dict):
                     self.reports_whitespace(step['Reports']['ReportEntry'])
 
-        return proc_dict
+        return formatted
 
     @staticmethod
     def ends_whitespace(end_entry):
@@ -174,25 +143,25 @@ class ProcedureFile:
         while len(rep_entry['ReportType']) < 8:
             rep_entry['ReportType'] = rep_entry['ReportType'].center(8)
 
-    def dict_to_xml(self, proc_dict, xml_file, sp):
+    def to_file(self, filename, encoding='UTF-8'):
         """
-        Dictionary conversion back to xml using the xmltodict
-        unparse function. Also re-adds the line that gets dropped on
-        ingestion.
+        Writes object to maccor-formatted xml file using xmltodict
+        unparse function.
 
         Args:
-            proc_dict (dict): dictionary of the procedure file as converted by
-                xmltodict package with already reformatted entries (see maccor_format_dict).
-            xml_file (str):file name to save xml to.
-            sp (str): line from original file to re-add to the xml_file output.
+            filename (str):file name to save xml to.
         """
-        xml = open(xml_file, 'w')
-        xml.write(xmltodict.unparse(proc_dict, None, 'UTF-8', True,
-                                    short_empty_elements=False,
-                                    pretty=True,
-                                    newl="\n",
-                                    indent="  "))
-        xml.close()
+        with open(filename, 'w') as f:
+            contents = xmltodict.unparse(
+                input_dict=self,
+                output=None,
+                encoding='UTF-8',
+                short_empty_elements=False,
+                pretty=True,
+                newl="\n",
+                indent="  ")
+            f.write(contents)
+
         # Need to insert line that is dropped
         f = open(xml_file, 'r')
         contents = f.readlines()
