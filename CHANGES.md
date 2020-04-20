@@ -1,5 +1,11 @@
 
 
+v2020.4.20
+----------
+* Add newline to put_record data
+* Capitalize protocol generator service name
+* Adding instructions to setup testing in README
+
 v2020.4.10
 ----------
 * Change the paused column in the summary data to be int type
