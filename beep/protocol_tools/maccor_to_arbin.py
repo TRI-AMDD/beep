@@ -66,7 +66,9 @@ class ProcedureToSchedule:
 
         Returns:
             list: unique strings consisting of the step number and note
-            dict: key value pairs for the step that
+            dict: key value pairs for the loop control steps indicating
+                which step the Loop step should GOTO when the end condition
+                is not matched
 
         """
         step_name_list = []
