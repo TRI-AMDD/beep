@@ -99,7 +99,7 @@ class KinesisEvents:
 
         if self.mode == 'test':
             response = self.kinesis.put_record(StreamName=self.stream,
-                                               Data=record,
+                                               Data=record + "\n",
                                                PartitionKey=str(hash('test'))
                                                )
         elif self.mode == 'events_off':
@@ -115,7 +115,7 @@ class KinesisEvents:
 
         else:
             response = self.kinesis.put_record(StreamName=self.stream,
-                                               Data=record,
+                                               Data=record + "\n",
                                                PartitionKey=str(hash(module_name))
                                                )
         return response
@@ -161,7 +161,7 @@ class KinesisEvents:
 
         if self.mode == 'test':
             response = self.kinesis.put_record(StreamName=self.stream,
-                                               Data=json.dumps(record),
+                                               Data=json.dumps(record) + "\n",
                                                PartitionKey=str(hash('test'))
                                                )
 
@@ -178,7 +178,7 @@ class KinesisEvents:
 
         else:
             response = self.kinesis.put_record(StreamName=self.stream,
-                                               Data=json.dumps(record),
+                                               Data=json.dumps(record) + "\n",
                                                PartitionKey=str(hash(self.service))
                                                )
         return response
