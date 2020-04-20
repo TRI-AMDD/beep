@@ -18,7 +18,7 @@ class ArbinScheduleTest(unittest.TestCase):
         pass
 
     def test_dict_to_file(self):
-        sdu = ScheduleFile(version='0.1')
+        sdu = ScheduleFile()
         filename = '20170630-3_6C_9per_5C.sdu'
         testname = 'test1.sdu'
         sdu_dict = sdu.to_dict(os.path.join(SCHEDULE_TEMPLATE_DIR, filename))
@@ -38,7 +38,7 @@ class ArbinScheduleTest(unittest.TestCase):
         os.remove(os.path.join(TEST_FILE_DIR, testname))
 
     def test_fastcharge(self):
-        sdu = ScheduleFile(version='0.1')
+        sdu = ScheduleFile()
         filename = '20170630-3_6C_9per_5C.sdu'
         test_file = 'test.sdu'
         sdu.fast_charge_file(1.1 * 3.6, 0.086, 1.1 * 5, filename, os.path.join(TEST_FILE_DIR, test_file))

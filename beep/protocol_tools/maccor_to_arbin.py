@@ -99,6 +99,23 @@ class ProcedureToSchedule:
         the loop condition is met, while advancing the TC counter every time the Loop step is
         passed.
 
+        Arbin control values decoded: Arbin is using a 20-bit value for control and masking
+        off specific portions for each of the different actions (reset, increment, decrement)
+        and using different bits for each of the different counters
+        =====================================================================================================
+        Step Number	Name	    CtrlValue	Ext1	Ext2    Reset Increment
+        3	Loop (CI 0)	                0	   1	  0				    CI			                    00001
+        7	First Loop (Reset)	        0	   2	  0				    T1			                    00010
+        8	Loop (CI 1)	                0	   1	  0				    CI			                    00001
+        16	Loop 2 ( HPPC)	            0	   2	  0				    T1			                    00010
+        17	Loop (CI 2)	                0	   1	  0				    CI			                    00001
+        21	Loop (CI 3)     	        0	   1	  0				    CI			                    00001
+        25	Loop (CI 4)	                0	   1	  0				    CI			                    00001
+        29	Loop (CI 5)	                0	   1	  0				    CI			                    00001
+        35	Loop 3 (Cycling 30)	    65536	   13	  0			T1	    T2		00010 00000 00000 00000	01101
+        36	Loop 4 (Cycling 100)	    0	   16	  0				    T4			                    10000
+        37	Loop 5 (always true)	524288	   1	  0			T4	    CI		10000 00000 00000 00000	00001
+
         Args:
             step_abs (OrderedDict): A ordered dict of the maccor step to be converted
             step_index (int): The index of the step to be converted
@@ -113,7 +130,6 @@ class ProcedureToSchedule:
         Returns:
             OrderedDict: The arbin step resulting from the conversion of the
                 procedure step
-
         """
 
         ARBIN_SCHEMA = loadfn(os.path.join(PROTOCOL_SCHEMA_DIR, "arbin_schedule_schema.yaml"))
