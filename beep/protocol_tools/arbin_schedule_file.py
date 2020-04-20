@@ -149,9 +149,9 @@ class ScheduleFile:
         is CCCV.
 
         Args:
-            CC1 (float): Constant current value for charge section 1
-            CC1_capacity (float): Capacity to charge to for section 1
-            CC2 (float): Constant current value for charge section 2
+            CC1 (float): Constant current value for charge section 1 in Amps
+            CC1_capacity (float): Capacity to charge to for section 1 in Amp-hours
+            CC2 (float): Constant current value for charge section 2 in Amps
             inputname (str): File path to pull the template schedule
                 file from
             outputname (str): File path to save the parameterized
@@ -239,8 +239,8 @@ class ScheduleFile:
 
 
 def main():
-    sdu = ScheduleFile(version='0.1')
-    sdu.fast_charge_file(1.1*3.6, 0.086, 1.1*5, '20170630-3_6C_9per_5C.sdu', 'test.sdu')
+    sdu = ScheduleFile()
+    sdu.fast_charge_file(1.1 * 3.6, 0.086, 1.1 * 5, '20170630-3_6C_9per_5C.sdu', 'test.sdu')
 
 
 if __name__ == "__main__":
