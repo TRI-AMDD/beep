@@ -256,13 +256,13 @@ class ProcedureToSchedule:
                 report_index = 0
                 limit_start = len(step_abs['Ends']['EndEntry'])
                 limit_key = "[Schedule_Step{}_Limit{}]".format(str(step_index), str(report_index + limit_start))
-                blank_step[limit_key] = OrderedDict(self.convert_report_to_limit(report))
+                blank_step[limit_key] = OrderedDict(self.convert_report_to_logging_limit(report))
             elif isinstance(step_abs['Ends']['EndEntry'], list):
                 blank_step['m_uLimitNum'] = blank_step['m_uLimitNum'] + len(step_abs['Ends']['EndEntry'])
                 for report_index, report in enumerate(step_abs['Reports']['ReportEntry']):
                     limit_start = len(step_abs['Ends']['EndEntry'])
                     limit_key = "[Schedule_Step{}_Limit{}]".format(str(step_index), str(report_index + limit_start))
-                    blank_step[limit_key] = OrderedDict(self.convert_report_to_limit(report))
+                    blank_step[limit_key] = OrderedDict(self.convert_report_to_logging_limit(report))
 
         blank_step['m_uLimitNum'] = str(blank_step['m_uLimitNum'])
 
@@ -373,7 +373,7 @@ class ProcedureToSchedule:
 
         return limit
 
-    def convert_report_to_limit(self, report):
+    def convert_report_to_logging_limit(self, report):
         """
         Takes the reporting conditions for the maccor step and converts them to the logging
         limits for the arbin step.
