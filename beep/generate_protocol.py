@@ -1061,7 +1061,7 @@ def process_csv_file_list_from_json(file_list_json, processed_dir='data-share/pr
         file_list_data = json.loads(file_list_json)
 
     # Setup Events
-    events = KinesisEvents(service='protocolGenerator', mode=file_list_data['mode'])
+    events = KinesisEvents(service='ProtocolGenerator', mode=file_list_data['mode'])
 
     file_list = file_list_data['file_list']
     all_output_files = []
