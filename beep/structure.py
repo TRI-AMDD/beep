@@ -1054,7 +1054,6 @@ class ProcessedCyclerRun(MSONable):
         """MSONable deserialization method"""
         for obj, dtype_dict in STRUCTURE_DTYPES.items():
             for column, dtype in dtype_dict.items():
-                # TODO: refactor with pydash
                 if d.get(obj) is not None:
                     if d[obj].get(column) is not None:
                         d[obj][column] = pd.Series(d[obj][column], dtype=dtype)
