@@ -24,11 +24,9 @@ class ScheduleFile:
 
     """
     def __init__(self,
-                 version=None,
                  section_regex=r'(?<=\[).*',
                  step_regex=r'.Schedule_Step[0-9]*',
                  limit_regex=r'.Schedule_Step[0-9]*_Limit[0-9]*'):
-        self.service = version
         self.section = section_regex
         self.step = step_regex
         self.limit = limit_regex
