@@ -14,10 +14,21 @@ TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 
 class ProcedureToSchedule:
-    def __init__(self, procedure_dict_steps,
-                 version=None
+    """
+    This class is a set of methods to convert from a maccor procedure file to
+    an arbin schedule file. This is essentially a translation between two
+    different system languages. Since the two systems are not equivalent,
+    its not possible to perform an exact translation and some control methods
+    cannot be supported.
+
+    Args:
+        procedure_dict_steps (OrderedDict): A dictionary containing each of
+            the steps in the procedure
+
+    """
+    def __init__(self,
+                 procedure_dict_steps
                  ):
-        self.service = version
         self.procedure_dict_steps = procedure_dict_steps
 
     def create_sdu(self, sdu_input_name, sdu_output_name):
