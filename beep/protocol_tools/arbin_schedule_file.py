@@ -39,9 +39,7 @@ class ScheduleFile:
 
     def to_dict(self, inputfile):
         """Schedule file ingestion. Converts a schedule file with section headers
-        to an ordered dict with section headers as nested dicts. One line in the
-        schedule file is not parsable by utf-8. This line is stored and returned
-        separately with the line number that it came from
+        to an ordered dict with section headers as nested dicts.
 
         Args:
             inputfile (str): Schedule file (tested with FastCharge schedule file)
