@@ -190,19 +190,19 @@ class RawCyclerRunTest(unittest.TestCase):
     def test_summary_dtypes(self):
         cycler_run = RawCyclerRun.from_file(self.arbin_file)
         all_summary = cycler_run.get_summary()
-        cycles_interpolated_dyptes = all_summary.dtypes.tolist()
-        cycles_interpolated_columns = all_summary.columns.tolist()
-        cycles_interpolated_dyptes = [str(dtyp) for dtyp in cycles_interpolated_dyptes]
-        for indx, col in enumerate(cycles_interpolated_columns):
-            self.assertEqual(cycles_interpolated_dyptes[indx], STRUCTURE_DTYPES['summary'][col])
+        reg_dyptes = all_summary.dtypes.tolist()
+        reg_columns = all_summary.columns.tolist()
+        reg_dyptes = [str(dtyp) for dtyp in reg_dyptes]
+        for indx, col in enumerate(reg_columns):
+            self.assertEqual(reg_dyptes[indx], STRUCTURE_DTYPES['summary'][col])
 
         cycler_run = RawCyclerRun.from_maccor_file(self.maccor_file_w_diagnostics, include_eis=False)
         all_summary = cycler_run.get_summary()
-        cycles_interpolated_dyptes = all_summary.dtypes.tolist()
-        cycles_interpolated_columns = all_summary.columns.tolist()
-        cycles_interpolated_dyptes = [str(dtyp) for dtyp in cycles_interpolated_dyptes]
-        for indx, col in enumerate(cycles_interpolated_columns):
-            self.assertEqual(cycles_interpolated_dyptes[indx], STRUCTURE_DTYPES['summary'][col])
+        reg_dyptes = all_summary.dtypes.tolist()
+        reg_columns = all_summary.columns.tolist()
+        reg_dyptes = [str(dtyp) for dtyp in reg_dyptes]
+        for indx, col in enumerate(reg_columns):
+            self.assertEqual(reg_dyptes[indx], STRUCTURE_DTYPES['summary'][col])
 
 
     @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
@@ -274,8 +274,21 @@ class RawCyclerRunTest(unittest.TestCase):
         dumpfn(processed_cycler_run, processed_cycler_run_loc)
         proc_size = os.path.getsize(processed_cycler_run_loc)
         self.assertLess(proc_size, 29000000)
+
         test = loadfn(processed_cycler_run_loc)
         self.assertIsInstance(test.diagnostic_summary, pd.DataFrame)
+        diag_dyptes = test.diagnostic_summary.dtypes.tolist()
+        diag_columns = test.diagnostic_summary.columns.tolist()
+        diag_dyptes = [str(dtyp) for dtyp in diag_dyptes]
+        for indx, col in enumerate(diag_columns):
+            self.assertEqual(diag_dyptes[indx], STRUCTURE_DTYPES['diagnostic_summary'][col])
+
+        diag_dyptes = test.diagnostic_interpolated.dtypes.tolist()
+        diag_columns = test.diagnostic_interpolated.columns.tolist()
+        diag_dyptes = [str(dtyp) for dtyp in diag_dyptes]
+        for indx, col in enumerate(diag_columns):
+            self.assertEqual(diag_dyptes[indx], STRUCTURE_DTYPES['diagnostic_interpolated'][col])
+
         os.remove(processed_cycler_run_loc)
 
     def test_get_interpolated_cycles_maccor(self):
@@ -568,6 +581,23 @@ class ProcessedCyclerRunTest(unittest.TestCase):
         pcycler_run = loadfn(self.pcycler_run_file)
         self.assertEqual(pcycler_run.get_cycle_life(30,0.99), 82)
         self.assertEqual(pcycler_run.get_cycle_life(),189)
+
+    def test_data_types_old_processed(self):
+        pcycler_run = loadfn(self.pcycler_run_file)
+
+        all_summary = pcycler_run.summary
+        reg_dyptes = all_summary.dtypes.tolist()
+        reg_columns = all_summary.columns.tolist()
+        reg_dyptes = [str(dtyp) for dtyp in reg_dyptes]
+        for indx, col in enumerate(reg_columns):
+            self.assertEqual(reg_dyptes[indx], STRUCTURE_DTYPES['summary'][col])
+
+        all_interpolated = pcycler_run.cycles_interpolated
+        cycles_interpolated_dyptes = all_interpolated.dtypes.tolist()
+        cycles_interpolated_columns = all_interpolated.columns.tolist()
+        cycles_interpolated_dyptes = [str(dtyp) for dtyp in cycles_interpolated_dyptes]
+        for indx, col in enumerate(cycles_interpolated_columns):
+            self.assertEqual(cycles_interpolated_dyptes[indx], STRUCTURE_DTYPES['cycles_interpolated'][col])
 
     def test_cycles_to_reach_set_capacities(self):
         pcycler_run = loadfn(self.pcycler_run_file)

@@ -1052,6 +1052,13 @@ class ProcessedCyclerRun(MSONable):
             beep.structure.ProcessedCyclerRun: deserialized ProcessedCyclerRun.
         """
         """MSONable deserialization method"""
+        for obj, dtype_dict in STRUCTURE_DTYPES.items():
+            for column, dtype in dtype_dict.items():
+                # TODO: refactor with pydash
+                if d.get(obj) is not None:
+                    if d[obj].get(column) is not None:
+                        d[obj][column] = pd.Series(d[obj][column], dtype=dtype)
+
         d['cycles_interpolated'] = pd.DataFrame(d['cycles_interpolated'])
         d['summary'] = pd.DataFrame(d['summary'])
         d['diagnostic_summary'] = pd.DataFrame(d.get('diagnostic_summary'))
