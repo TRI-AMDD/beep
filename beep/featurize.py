@@ -430,22 +430,14 @@ def main():
     # Parse args and construct initial cycler run
     logger.info('starting', extra=s)
     logger.info('Running version=%s', __version__, extra=s)
-    if ENVIRONMENT == 'stage':
-        print('starting')
     try:
         args = docopt(__doc__)
         input_json = args['INPUT_JSON']
-        if ENVIRONMENT == 'stage':
-            print(input_json)
         print(process_file_list_from_json(input_json), end="")
     except Exception as e:
         logger.error(str(e), extra=s)
-        if ENVIRONMENT == 'stage':
-            print(str(e))
         raise e
     logger.info('finish', extra=s)
-    if ENVIRONMENT == 'stage':
-        print('finish')
     return None
 
 
