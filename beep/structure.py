@@ -59,7 +59,8 @@ from beep import StringIO, MODULE_DIR, ENVIRONMENT
 from beep.validate import ValidatorBeep, BeepValidationError
 from beep.collate import add_suffix_to_filename
 from beep.conversion_schemas import ARBIN_CONFIG, MACCOR_CONFIG, \
-    FastCharge_CONFIG, xTesladiag_CONFIG, INDIGO_CONFIG, BIOLOGIC_CONFIG
+    FastCharge_CONFIG, xTesladiag_CONFIG, INDIGO_CONFIG, BIOLOGIC_CONFIG, \
+    STRUCTURE_DTYPES
 from beep.utils import KinesisEvents
 from beep import logger, __version__
 
@@ -145,8 +146,7 @@ class RawCyclerRun(MSONable):
                 the voltage interpolation range endpoints.
             resolution (int): resolution of interpolated data.
             step_type (str): which step to interpolate i.e. 'charge' or 'discharge'
-            diag_cycles (dict): dictionary containing information about
-                location of diagnostic cycles
+            reg_cycles (dict): list containing cycle indicies of regular cycles
 
         Returns:
             pandas.DataFrame: DataFrame corresponding to interpolated values.
@@ -158,7 +158,7 @@ class RawCyclerRun(MSONable):
         else:
             raise ValueError("{} is not a recognized step type")
         incl_columns = ["current", "charge_capacity", "discharge_capacity",
-                        "internal_resistance", "temperature", "cycle_index"]
+                        "internal_resistance", "temperature"]
         all_dfs = []
         cycle_indices = self.data.cycle_index.unique()
         cycle_indices = [c for c in cycle_indices if c in reg_cycles]
@@ -170,9 +170,9 @@ class RawCyclerRun(MSONable):
                 continue
             new_df = get_interpolated_data(new_df, "voltage", field_range=v_range,
                                            columns=incl_columns, resolution=resolution)
-            new_df.cycle_index = cycle_index
+            new_df['cycle_index'] = cycle_index
             new_df['step_type'] = step_type
-            new_df['step_type'].astype('category')
+            new_df['step_type'] = new_df['step_type'].astype('category')
             all_dfs.append(new_df)
 
         # Ignore the index to avoid issues with overlapping voltages
@@ -216,6 +216,7 @@ class RawCyclerRun(MSONable):
                                                           step_type='charge',
                                                           reg_cycles=reg_cycles)
         result = pd.concat([interpolated_discharge, interpolated_charge], ignore_index=True)
+        result = result.astype(STRUCTURE_DTYPES['cycles_interpolated'])
 
         return result
 
@@ -331,6 +332,8 @@ class RawCyclerRun(MSONable):
         # Determine if any of the cycles has been paused
         summary['paused'] = self.data.groupby("cycle_index").apply(determine_paused)
 
+        summary = summary.astype(STRUCTURE_DTYPES['summary'])
+
         last_voltage = self.data.loc[self.data['cycle_index'] == self.data['cycle_index'].max()]['voltage']
         if ((last_voltage.min() < cycle_complete_vmin) and (last_voltage.max() > cycle_complete_vmax) and
             ((summary.iloc[[-1]])['discharge_capacity'].iloc[0] > cycle_complete_discharge_ratio
@@ -383,6 +386,8 @@ class RawCyclerRun(MSONable):
         diag_summary.reset_index(drop=True, inplace=True)
 
         diag_summary['cycle_type'] = pd.Series(diagnostic_available['cycle_type'] * len(starts_at))
+
+        diag_summary = diag_summary.astype(STRUCTURE_DTYPES['diagnostic_summary'])
 
         return diag_summary
 
@@ -488,6 +493,9 @@ class RawCyclerRun(MSONable):
         result = pd.concat(all_dfs, ignore_index=True)
         # Cycle_index gets a little weird about typing, so round it here
         result.cycle_index = result.cycle_index.round()
+
+        result = result.astype(STRUCTURE_DTYPES['diagnostic_interpolated'])
+
         return result
 
     @classmethod
@@ -1044,6 +1052,12 @@ class ProcessedCyclerRun(MSONable):
             beep.structure.ProcessedCyclerRun: deserialized ProcessedCyclerRun.
         """
         """MSONable deserialization method"""
+        for obj, dtype_dict in STRUCTURE_DTYPES.items():
+            for column, dtype in dtype_dict.items():
+                if d.get(obj) is not None:
+                    if d[obj].get(column) is not None:
+                        d[obj][column] = pd.Series(d[obj][column], dtype=dtype)
+
         d['cycles_interpolated'] = pd.DataFrame(d['cycles_interpolated'])
         d['summary'] = pd.DataFrame(d['summary'])
         d['diagnostic_summary'] = pd.DataFrame(d.get('diagnostic_summary'))

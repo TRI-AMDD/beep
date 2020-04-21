@@ -1,0 +1,65 @@
+cycles_interpolated:
+  cycle_index: 'int32'
+  current: 'float32'
+  voltage: 'float32'
+  temperature: 'float32'
+  internal_resistance: 'float32'
+  charge_capacity: 'float64'
+  discharge_capacity: 'float64'
+  step_type: 'category'
+
+summary:
+  cycle_index: 'int32'
+  discharge_capacity: 'float64'
+  charge_capacity: 'float64'
+  discharge_energy: 'float64'
+  charge_energy: 'float64'
+  dc_internal_resistance: 'float32'
+  temperature_maximum: 'float32'
+  temperature_average: 'float32'
+  temperature_minimum: 'float32'
+  date_time_iso: 'object'
+  energy_efficiency: 'float64'
+  charge_throughput: 'float32'
+  energy_throughput: 'float32'
+  charge_duration: 'float32'
+  time_temperature_integrated: 'float64'
+  paused: 'int8'
+
+diagnostic_summary:
+  discharge_capacity: 'float64'
+  charge_capacity: 'float64'
+  discharge_energy: 'float64'
+  charge_energy: 'float64'
+  temperature_maximum: 'float32'
+  temperature_average: 'float32'
+  temperature_minimum: 'float32'
+  date_time_iso: 'object'
+  cycle_index: 'int32'
+  coulombic_efficiency: 'float64'
+  paused: 'int8'
+  cycle_type: 'category'
+
+diagnostic_interpolated:
+  voltage: 'float32'
+  current: 'float32'
+  charge_capacity: 'float64'
+  discharge_capacity: 'float64'
+  charge_energy: 'float64'
+  discharge_energy: 'float64'
+  internal_resistance: 'float32'
+  temperature: 'float32'
+  test_time: 'float64'
+  date_time_iso: 'object'
+  cycle_index: 'int32'
+  cycle_type: 'category'
+  step_index: 'int16'
+  step_index_counter: 'int16'
+  step_type: 'category'
+  discharge_dQdV: 'float64'
+  charge_dQdV: 'float64'
+
+
+
+
+

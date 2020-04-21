@@ -16,6 +16,7 @@ from beep.structure import RawCyclerRun, ProcessedCyclerRun, \
     process_file_list_from_json, EISpectrum, get_project_sequence, \
     get_protocol_parameters, get_diagnostic_parameters, \
     determine_paused
+from beep.conversion_schemas import STRUCTURE_DTYPES
 from monty.serialization import loadfn, dumpfn
 from monty.tempfile import ScratchDir
 from beep.utils import os_format
@@ -169,6 +170,41 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertTrue(np.all(np.array(lengths) == 1000))
         self.assertTrue(all_interpolated['current'].mean() > 0)
 
+    def test_interpolated_cycles_dtypes(self):
+        cycler_run = RawCyclerRun.from_file(self.arbin_file)
+        all_interpolated = cycler_run.get_interpolated_cycles()
+        cycles_interpolated_dyptes = all_interpolated.dtypes.tolist()
+        cycles_interpolated_columns = all_interpolated.columns.tolist()
+        cycles_interpolated_dyptes = [str(dtyp) for dtyp in cycles_interpolated_dyptes]
+        for indx, col in enumerate(cycles_interpolated_columns):
+            self.assertEqual(cycles_interpolated_dyptes[indx], STRUCTURE_DTYPES['cycles_interpolated'][col])
+
+        cycler_run = RawCyclerRun.from_maccor_file(self.maccor_file_w_diagnostics, include_eis=False)
+        all_interpolated = cycler_run.get_interpolated_cycles()
+        cycles_interpolated_dyptes = all_interpolated.dtypes.tolist()
+        cycles_interpolated_columns = all_interpolated.columns.tolist()
+        cycles_interpolated_dyptes = [str(dtyp) for dtyp in cycles_interpolated_dyptes]
+        for indx, col in enumerate(cycles_interpolated_columns):
+            self.assertEqual(cycles_interpolated_dyptes[indx], STRUCTURE_DTYPES['cycles_interpolated'][col])
+
+    def test_summary_dtypes(self):
+        cycler_run = RawCyclerRun.from_file(self.arbin_file)
+        all_summary = cycler_run.get_summary()
+        reg_dyptes = all_summary.dtypes.tolist()
+        reg_columns = all_summary.columns.tolist()
+        reg_dyptes = [str(dtyp) for dtyp in reg_dyptes]
+        for indx, col in enumerate(reg_columns):
+            self.assertEqual(reg_dyptes[indx], STRUCTURE_DTYPES['summary'][col])
+
+        cycler_run = RawCyclerRun.from_maccor_file(self.maccor_file_w_diagnostics, include_eis=False)
+        all_summary = cycler_run.get_summary()
+        reg_dyptes = all_summary.dtypes.tolist()
+        reg_columns = all_summary.columns.tolist()
+        reg_dyptes = [str(dtyp) for dtyp in reg_dyptes]
+        for indx, col in enumerate(reg_columns):
+            self.assertEqual(reg_dyptes[indx], STRUCTURE_DTYPES['summary'][col])
+
+
     @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_get_diagnostic(self):
         os.environ['BEEP_ROOT'] = TEST_FILE_DIR
@@ -181,6 +217,13 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertEqual(v_range, [2.7, 4.2])
         self.assertEqual(diagnostic_available['cycle_type'], ['reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C'])
         diag_summary = cycler_run.get_diagnostic_summary(diagnostic_available)
+
+        diag_dyptes = diag_summary.dtypes.tolist()
+        diag_columns = diag_summary.columns.tolist()
+        diag_dyptes = [str(dtyp) for dtyp in diag_dyptes]
+        for indx, col in enumerate(diag_columns):
+            self.assertEqual(diag_dyptes[indx], STRUCTURE_DTYPES['diagnostic_summary'][col])
+
         self.assertEqual(diag_summary.cycle_index.tolist(), [1, 2, 3, 4, 5,
                                                              36, 37, 38, 39, 40,
                                                              141, 142, 143, 144, 145,
@@ -193,6 +236,13 @@ class RawCyclerRunTest(unittest.TestCase):
                                                             ])
         self.assertEqual(diag_summary.paused.max(), 0)
         diag_interpolated = cycler_run.get_interpolated_diagnostic_cycles(diagnostic_available, resolution=1000)
+
+        diag_dyptes = diag_interpolated.dtypes.tolist()
+        diag_columns = diag_interpolated.columns.tolist()
+        diag_dyptes = [str(dtyp) for dtyp in diag_dyptes]
+        for indx, col in enumerate(diag_columns):
+            self.assertEqual(diag_dyptes[indx], STRUCTURE_DTYPES['diagnostic_interpolated'][col])
+
         diag_cycle = diag_interpolated[(diag_interpolated.cycle_type == 'rpt_0.2C')
                                        & (diag_interpolated.step_type == 1)]
         self.assertEqual(diag_cycle.cycle_index.unique().tolist(), [3, 38, 143])
@@ -212,7 +262,7 @@ class RawCyclerRunTest(unittest.TestCase):
                                          & (diag_interpolated.step_type == 2)
                                          & (diag_interpolated.step_index_counter == 3)
                                          & ~pd.isnull(diag_interpolated.current)]
-        print(hppc_dischg1)
+
         plt.figure()
         plt.plot(hppc_dischg1.test_time, hppc_dischg1.voltage)
         plt.savefig(os.path.join(TEST_FILE_DIR, "hppc_discharge_pulse_1.png"))
@@ -224,8 +274,21 @@ class RawCyclerRunTest(unittest.TestCase):
         dumpfn(processed_cycler_run, processed_cycler_run_loc)
         proc_size = os.path.getsize(processed_cycler_run_loc)
         self.assertLess(proc_size, 29000000)
+
         test = loadfn(processed_cycler_run_loc)
         self.assertIsInstance(test.diagnostic_summary, pd.DataFrame)
+        diag_dyptes = test.diagnostic_summary.dtypes.tolist()
+        diag_columns = test.diagnostic_summary.columns.tolist()
+        diag_dyptes = [str(dtyp) for dtyp in diag_dyptes]
+        for indx, col in enumerate(diag_columns):
+            self.assertEqual(diag_dyptes[indx], STRUCTURE_DTYPES['diagnostic_summary'][col])
+
+        diag_dyptes = test.diagnostic_interpolated.dtypes.tolist()
+        diag_columns = test.diagnostic_interpolated.columns.tolist()
+        diag_dyptes = [str(dtyp) for dtyp in diag_dyptes]
+        for indx, col in enumerate(diag_columns):
+            self.assertEqual(diag_dyptes[indx], STRUCTURE_DTYPES['diagnostic_interpolated'][col])
+
         os.remove(processed_cycler_run_loc)
 
     def test_get_interpolated_cycles_maccor(self):
@@ -238,7 +301,7 @@ class RawCyclerRunTest(unittest.TestCase):
 
         self.assertTrue(interp3.current.mean() > 0)
         self.assertEqual(len(interp3.voltage), 10000)
-        self.assertEqual(interp3.voltage.median(), 3.6)
+        self.assertEqual(interp3.voltage.median(), np.float32(3.6))
         np.testing.assert_almost_equal(interp3[interp3.voltage <= interp3.voltage.median()].current.iloc[0],
                                        2.4227011, decimal=6)
 
@@ -287,8 +350,8 @@ class RawCyclerRunTest(unittest.TestCase):
     def test_get_charge_throughput(self):
         cycler_run = RawCyclerRun.from_file(self.arbin_file)
         summary = cycler_run.get_summary(nominal_capacity=4.7, full_fast_charge=0.8)
-        self.assertEqual(summary['charge_throughput'][5], 6.7614094)
-        self.assertEqual(summary['energy_throughput'][5], 23.2752363)
+        self.assertEqual(summary['charge_throughput'][5], np.float32(6.7614093))
+        self.assertEqual(summary['energy_throughput'][5], np.float32(23.2752363))
 
     def test_ingestion_indigo(self):
 
@@ -518,6 +581,23 @@ class ProcessedCyclerRunTest(unittest.TestCase):
         pcycler_run = loadfn(self.pcycler_run_file)
         self.assertEqual(pcycler_run.get_cycle_life(30,0.99), 82)
         self.assertEqual(pcycler_run.get_cycle_life(),189)
+
+    def test_data_types_old_processed(self):
+        pcycler_run = loadfn(self.pcycler_run_file)
+
+        all_summary = pcycler_run.summary
+        reg_dyptes = all_summary.dtypes.tolist()
+        reg_columns = all_summary.columns.tolist()
+        reg_dyptes = [str(dtyp) for dtyp in reg_dyptes]
+        for indx, col in enumerate(reg_columns):
+            self.assertEqual(reg_dyptes[indx], STRUCTURE_DTYPES['summary'][col])
+
+        all_interpolated = pcycler_run.cycles_interpolated
+        cycles_interpolated_dyptes = all_interpolated.dtypes.tolist()
+        cycles_interpolated_columns = all_interpolated.columns.tolist()
+        cycles_interpolated_dyptes = [str(dtyp) for dtyp in cycles_interpolated_dyptes]
+        for indx, col in enumerate(cycles_interpolated_columns):
+            self.assertEqual(cycles_interpolated_dyptes[indx], STRUCTURE_DTYPES['cycles_interpolated'][col])
 
     def test_cycles_to_reach_set_capacities(self):
         pcycler_run = loadfn(self.pcycler_run_file)
