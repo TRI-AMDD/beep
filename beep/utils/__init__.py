@@ -1,9 +1,10 @@
 import os
 import hashlib
+import json
 from collections import OrderedDict
 from .events import Logger, KinesisEvents
 from .splice import MaccorSplice
-from pydash import get, set_with, unset
+from pydash import get, set_with, unset, merge
 
 
 class DashOrderedDict(OrderedDict):
@@ -17,7 +18,6 @@ class DashOrderedDict(OrderedDict):
     >>> print(dod['key1']['key2'])
     >>> 5
     """
-    # TODO: some better repr than the ordereddict mess
     def set(self, string, value):
         set_with(self, string, value, lambda x: OrderedDict())
 
@@ -26,6 +26,18 @@ class DashOrderedDict(OrderedDict):
 
     def unset(self, string):
         unset(self, string)
+
+    def merge(self, obj):
+        merge(self, obj)
+
+    def __str__(self):
+        return "{}:\n{}".format(
+            self.__class__.__name__,
+            json.dumps(self, indent=4)
+        )
+
+    def __repr__(self):
+        return self.__str__()
 
 
 def hash_file(filename):

@@ -472,7 +472,8 @@ class Procedure(DashOrderedDict):
 
         return self
 
-    def generate_procedure_regcyclev3(self, protocol_index, reg_param):
+    @classmethod
+    def generate_procedure_regcyclev3(cls, protocol_index, reg_param):
         """
         Generates a procedure according to the diagnosticV3 template.
 
@@ -494,47 +495,49 @@ class Procedure(DashOrderedDict):
                 diagnostic_interval (integer): cycles
 
         Returns:
-            dict: dictionary of procedure parameters.
+            (Procedure): dictionary invoked using template/parameters
         """
         assert reg_param['charge_cutoff_voltage'] > reg_param['discharge_cutoff_voltage']
         assert reg_param['charge_constant_current_1'] <= reg_param['charge_constant_current_2']
 
         rest_idx = 0
-        self.insert_initialrest_regcyclev3(rest_idx, protocol_index)
+
+        obj = cls.from_template("diagnosticV3")
+        obj.insert_initialrest_regcyclev3(rest_idx, protocol_index)
 
         dc_idx = 1
-        self.insert_resistance_regcyclev2(dc_idx, reg_param)
+        obj.insert_resistance_regcyclev2(dc_idx, reg_param)
 
         # Start of initial set of regular cycles
         reg_charge_idx = 27 + 1
-        self.insert_charge_regcyclev3(reg_charge_idx, reg_param)
+        obj.insert_charge_regcyclev3(reg_charge_idx, reg_param)
         reg_discharge_idx = 27 + 5
-        self.insert_discharge_regcyclev2(reg_discharge_idx, reg_param)
+        obj.insert_discharge_regcyclev2(reg_discharge_idx, reg_param)
 
         # Start of main loop of regular cycles
         reg_charge_idx = 59 + 1
-        self.insert_charge_regcyclev3(reg_charge_idx, reg_param)
+        obj.insert_charge_regcyclev3(reg_charge_idx, reg_param)
         reg_discharge_idx = 59 + 5
-        self.insert_discharge_regcyclev2(reg_discharge_idx, reg_param)
+        obj.insert_discharge_regcyclev2(reg_discharge_idx, reg_param)
 
         # Storage cycle
         reg_storage_idx = 93
-        self.insert_storage_regcyclev3(reg_storage_idx, reg_param)
+        obj.insert_storage_regcyclev3(reg_storage_idx, reg_param)
 
         # Check that the upper charge voltage is set the same for both charge current steps
         reg_charge_idx = 27 + 1
-        assert self['MaccorTestProcedure']['ProcSteps']['TestStep'][reg_charge_idx][
+        assert obj['MaccorTestProcedure']['ProcSteps']['TestStep'][reg_charge_idx][
                    'Ends']['EndEntry'][1]['Value'] \
-            == self['MaccorTestProcedure']['ProcSteps']['TestStep'][reg_charge_idx + 1
+            == obj['MaccorTestProcedure']['ProcSteps']['TestStep'][reg_charge_idx + 1
                ]['Ends']['EndEntry'][0]['Value']
 
         reg_charge_idx = 59 + 1
-        assert self['MaccorTestProcedure']['ProcSteps']['TestStep'][reg_charge_idx
+        assert obj['MaccorTestProcedure']['ProcSteps']['TestStep'][reg_charge_idx
                ]['Ends']['EndEntry'][1]['Value'] \
-               == self['MaccorTestProcedure']['ProcSteps']['TestStep'][reg_charge_idx + 1
+               == obj['MaccorTestProcedure']['ProcSteps']['TestStep'][reg_charge_idx + 1
                                                                        ]['Ends']['EndEntry'][0]['Value']
 
-        return self
+        return obj
 
     def insert_initialrest_regcyclev3(self, rest_idx, index):
         """
@@ -900,7 +903,7 @@ class Procedure(DashOrderedDict):
         return self
 
 
-def generate_protocol_files_from_csv(csv_filename, output_directory, **kwargs):
+def generate_protocol_files_from_csv(csv_filename, output_directory):
     """
     Generates a set of protocol files from csv filename input by
     reading protocol file input corresponding to each line of
@@ -909,12 +912,7 @@ def generate_protocol_files_from_csv(csv_filename, output_directory, **kwargs):
     Args:
         csv_filename (str): CSV containing protocol file parameters.
         output_directory (str): directory in which to place the output files
-        **kwargs: kwargs to Procedure, the object which does the protocol
-            file generation
     """
-    # Invoke ProcedureFile object from **kwargs
-    procedure_file_generator = Procedure.from_file(**kwargs)
-
     # Read csv file
     protocol_params_df = pd.read_csv(csv_filename)
 
@@ -925,57 +923,56 @@ def generate_protocol_files_from_csv(csv_filename, output_directory, **kwargs):
                'error': ''}
     for index, protocol_params in protocol_params_df.iterrows():
         template = protocol_params['template']
-        if template not in ["EXP.000", "diagnosticV1.000", "diagnosticV2.000",
-                            "diagnosticV3.000", "diagnosticV4.000"]:
+
+        # Switch for template invocation
+        if template == "EXP.000":
+            procedure = Procedure.from_exp(
+                **protocol_params[["cutoff_voltage", "charge_rate", "discharge_rate"]]
+            )
+        elif template == 'diagnosticV2.000':
+            diag_params_df = pd.read_csv(os.path.join(PROCEDURE_TEMPLATE_DIR,
+                                                      "PreDiag_parameters - DP.csv"))
+            diagnostic_params = diag_params_df[diag_params_df['diagnostic_parameter_set'] ==
+                                               protocol_params['diagnostic_parameter_set']].squeeze()
+
+            # TODO: should these be separated?
+            procedure = Procedure.generate_procedure_diagcyclev2(
+                protocol_params
+            )
+            procedure.merge(
+                Procedure.generate_procedure_diagcyclev2(
+                    protocol_params["capacity_nominal"], diagnostic_params
+                )
+            )
+        # TODO: how are these different?
+        elif template in ['diagnosticV3.000', 'diagnosticV4.000']:
+            diag_params_df = pd.read_csv(os.path.join(PROCEDURE_TEMPLATE_DIR,
+                                                      "PreDiag_parameters - DP.csv"))
+            diagnostic_params = diag_params_df[diag_params_df['diagnostic_parameter_set'] ==
+                                               protocol_params['diagnostic_parameter_set']].squeeze()
+
+            procedure = Procedure.generate_procedure_regcyclev3(index, protocol_params)
+            procedure.merge(
+                Procedure.generate_procedure_diagcyclev3(
+                    protocol_params["capacity_nominal"], diagnostic_params
+                )
+            )
+        else:
             warnings.warn("Unsupported file template {}, skipping.".format(template))
             result = "error"
             message = {'comment': 'Unable to find template: ' + template,
                        'error': 'Not Found'}
             continue
 
-        if ".000" in template:
-            # Generate primary procedure dictionary
-            proc_dict, sp = procedure_file_generator.to_dict(
-                os.path.join(PROCEDURE_TEMPLATE_DIR, "{}".format(template)),
-                os.path.join(PROCEDURE_TEMPLATE_DIR, "{}.json".format(template.split('.')[0]))
-            )
-
-            # Generate EXP-based proc_dict
-            if template == "EXP.000":
-                proc_dict = procedure_file_generator.generate_procedure_exp(
-                    proc_dict, **protocol_params[["cutoff_voltage", "charge_rate", "discharge_rate"]])
-            elif template == 'diagnosticV2.000':
-                diag_params_df = pd.read_csv(os.path.join(PROCEDURE_TEMPLATE_DIR,
-                                                          "PreDiag_parameters - DP.csv"))
-                diagnostic_params = diag_params_df[diag_params_df['diagnostic_parameter_set'] ==
-                                                   protocol_params['diagnostic_parameter_set']].squeeze()
-
-                proc_dict = procedure_file_generator.generate_procedure_regcyclev2(
-                    proc_dict, protocol_params)
-                proc_dict = procedure_file_generator.generate_procedure_diagcyclev2(
-                    proc_dict, protocol_params["capacity_nominal"], diagnostic_params)
-            elif template in ['diagnosticV3.000', 'diagnosticV4.000']:
-                diag_params_df = pd.read_csv(os.path.join(PROCEDURE_TEMPLATE_DIR,
-                                                          "PreDiag_parameters - DP.csv"))
-                diagnostic_params = diag_params_df[diag_params_df['diagnostic_parameter_set'] ==
-                                                   protocol_params['diagnostic_parameter_set']].squeeze()
-
-                proc_dict = procedure_file_generator.generate_procedure_regcyclev3(index,
-                    proc_dict, protocol_params)
-                proc_dict = procedure_file_generator.generate_procedure_diagcyclev3(
-                    proc_dict, protocol_params["capacity_nominal"], diagnostic_params)
-
-            filename_prefix = '_'.join(
-                [protocol_params["project_name"], '{:06d}'.format(protocol_params["seq_num"])])
-            filename = "{}.000".format(filename_prefix)
-            filename = os.path.join(output_directory, 'procedures', filename)
-            logger.info(filename, extra=s)
-            if not os.path.isfile(filename):
-                proc_dict = procedure_file_generator.maccor_format_dict(proc_dict)
-                procedure_file_generator.dict_to_xml(
-                    proc_dict=proc_dict, xml_file=filename, sp=sp)
-                new_files.append(filename)
-                names.append(filename_prefix + '_')
+        filename_prefix = '_'.join(
+            [protocol_params["project_name"], '{:06d}'.format(protocol_params["seq_num"])])
+        filename = "{}.000".format(filename_prefix)
+        filename = os.path.join(output_directory, 'procedures', filename)
+        logger.info(filename, extra=s)
+        if not os.path.isfile(filename):
+            procedure.to_file(filename)
+            new_files.append(filename)
+            names.append(filename_prefix + '_')
 
         elif '.sdu' in template:
             logger.warning('Schedule file generation not yet implemented', extra=s)
@@ -1002,7 +999,9 @@ def generate_protocol_files_from_csv(csv_filename, output_directory, **kwargs):
     return new_files, result, message
 
 
-def process_csv_file_list_from_json(file_list_json, processed_dir='data-share/protocols/'):
+def process_csv_file_list_from_json(
+        file_list_json,
+        processed_dir='data-share/protocols/'):
     """
 
     Args:
