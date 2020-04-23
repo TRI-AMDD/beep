@@ -66,43 +66,32 @@ class ProcedureTest(unittest.TestCase):
                     self.assertIsNotNone(line)
 
     def test_generate_proc_exp(self):
-        sdu = ProcedureFile(version='0.1')
-        templates = TEST_FILE_DIR
-        test_file = 'EXP.000'
-        json_file = 'EXP.json'
+        test_file = os.path.join(TEST_FILE_DIR, 'EXP.000')
+        json_file = os.path.join(TEST_FILE_DIR, 'EXP.json')
         test_out = 'test_EXP.000'
-        test_parameters = ["EXP", "4.2", "2.0C", "2.0C"]
-        test_dict, sp = sdu.to_dict(
-            os.path.join(templates, test_file),
-            os.path.join(templates, json_file)
-        )
-        test_dict = sdu.generate_procedure_exp(test_dict, *test_parameters[1:])
-        test_dict = sdu.maccor_format_dict(test_dict)
-        sdu.dict_to_xml(
-            test_dict, os.path.join(templates, test_out), sp)
-        hash1 = sdu.hash_file(os.path.join(templates, test_file))
-        hash2 = sdu.hash_file(os.path.join(templates, test_out))
-        if hash1 != hash2:
-            original = open(os.path.join(templates, test_file)).readlines()
-            parsed = open(os.path.join(templates, test_out)).readlines()
-            self.assertFalse(list(difflib.unified_diff(original, parsed)))
-            for line in difflib.unified_diff(original, parsed):
-                self.assertIsNotNone(line)
-        os.remove(os.path.join(templates, test_out))
+        test_parameters = ["4.2", "2.0C", "2.0C"]
+        procedure = Procedure.from_exp(*test_parameters)
+        with ScratchDir('.'):
+            dumpfn(procedure, json_file)
+            procedure.to_file(test_out)
+            hash1 = hash_file(test_file)
+            hash2 = hash_file(test_out)
+            if hash1 != hash2:
+                original = open(test_file).readlines()
+                parsed = open(test_out).readlines()
+                self.assertFalse(list(difflib.unified_diff(original, parsed)))
+                for line in difflib.unified_diff(original, parsed):
+                    self.assertIsNotNone(line)
 
     def test_missing(self):
-        sdu = ProcedureFile(version='0.1')
-        templates = TEST_FILE_DIR
-        test_file = 'EXP_missing.000'
-        json_file = 'EXP_missing.json'
         test_parameters = ["EXP", "4.2", "2.0C", "2.0C"]
-        test_dict, sp = sdu.to_dict(
-            os.path.join(templates, test_file),
-            os.path.join(templates, json_file)
-        )
-        test_dict = sdu.maccor_format_dict(test_dict)
-        self.assertRaises(UnboundLocalError,
-                          sdu.generate_procedure_exp, test_dict,
+        # TODO: okay to delete?
+        # test_dict, sp = sdu.to_dict(
+        #     os.path.join(templates, test_file),
+        #     os.path.join(templates, json_file)
+        # )
+        # test_dict = sdu.maccor_format_dict(test_dict)
+        self.assertRaises(UnboundLocalError, Procedure.from_exp,
                           *test_parameters[1:])
 
     def test_from_csv(self):
@@ -182,6 +171,7 @@ class ProcedureTest(unittest.TestCase):
             names_path = os.path.join("data-share", "protocols", "names")
             makedirs_p(procedures_path)
             makedirs_p(names_path)
+
             # Test the script
             json_input = json.dumps(
                 {"file_list": [csv_file],

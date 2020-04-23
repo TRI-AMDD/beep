@@ -228,7 +228,7 @@ class Procedure(DashOrderedDict):
             discharge_rate (float): discharging C-rate in 1/h.
 
         Returns:
-            dict: dictionary of procedure parameters.
+            (Procedure): dictionary of procedure parameters.
 
         """
         # Load EXP template
@@ -257,7 +257,7 @@ class Procedure(DashOrderedDict):
 
         return obj
 
-    # TODO: rename this diagnosticv2?
+    # TODO: rename this diagnosticv2 and merge
     @classmethod
     def from_regcyclev2(cls, reg_param):
         """
@@ -280,7 +280,7 @@ class Procedure(DashOrderedDict):
                 diagnostic_interval (integer): cycles
 
         Returns:
-            dict: dictionary of procedure parameters.
+            (Procedure): dictionary of procedure parameters.
         """
 
         assert reg_param['charge_cutoff_voltage'] > reg_param['discharge_cutoff_voltage']
@@ -309,6 +309,7 @@ class Procedure(DashOrderedDict):
 
         return obj
 
+    # TODO: These should probably all be private
     def insert_maccor_waveform_discharge(self, waveform_idx, waveform_filename):
         """
         Inserts a waveform into procedure dictionary at given id.
@@ -478,7 +479,8 @@ class Procedure(DashOrderedDict):
         Generates a procedure according to the diagnosticV3 template.
 
         Args:
-            protocol_index (int): number of the protocol file being generated from this file.
+            protocol_index (int): number of the protocol file being
+                generated from this file.
             reg_param (pandas.DataFrame): containing the following quantities
                 charge_constant_current_1 (float): C
                 charge_percent_limit_1 (float): % of nominal capacity
@@ -646,9 +648,10 @@ class Procedure(DashOrderedDict):
 
         return self
 
-    def generate_procedure_diagcyclev2(self, nominal_capacity, diagnostic_params):
+    # TODO: should this just be part of the general template?
+    def add_procedure_diagcyclev2(self, nominal_capacity, diagnostic_params):
         """
-        Generates a procedure according to the diagnosticV2 template.
+        Modifies a procedure according to the diagnosticV2 template.
 
         Args:
             nominal_capacity (float): Standard capacity for this cell.
@@ -675,10 +678,11 @@ class Procedure(DashOrderedDict):
 
         return self
 
-    @classmethod
-    def generate_procedure_diagcyclev3(cls, nominal_capacity, diagnostic_params):
+    # TODO: make private
+    def generate_procedure_diagcyclev3(self, nominal_capacity, diagnostic_params):
         """
-        Generates a procedure according to the diagnosticV3 template.
+        Generates a diagnostic procedure according
+        to the diagnosticV3 template.
 
         Args:
             nominal_capacity (float): Standard capacity for this cell.
@@ -689,29 +693,28 @@ class Procedure(DashOrderedDict):
             dict: dictionary of procedure parameters.
 
         """
-        obj = cls.from_template("diagnosticV3")
         start_reset_cycle_1 = 4
-        obj.insert_reset_cyclev2(start_reset_cycle_1, nominal_capacity, diagnostic_params)
+        self.insert_reset_cyclev2(start_reset_cycle_1, nominal_capacity, diagnostic_params)
         start_hppc_cycle_1 = 8
-        obj.insert_hppc_cyclev2(start_hppc_cycle_1, nominal_capacity, diagnostic_params)
+        self.insert_hppc_cyclev2(start_hppc_cycle_1, nominal_capacity, diagnostic_params)
         start_rpt_cycle_1 = 18
-        obj.insert_rpt_cyclev2(start_rpt_cycle_1, nominal_capacity, diagnostic_params)
+        self.insert_rpt_cyclev2(start_rpt_cycle_1, nominal_capacity, diagnostic_params)
 
         start_reset_cycle_2 = 37
-        obj.insert_reset_cyclev2(start_reset_cycle_2, nominal_capacity, diagnostic_params)
+        self.insert_reset_cyclev2(start_reset_cycle_2, nominal_capacity, diagnostic_params)
         start_hppc_cycle_2 = 40
-        obj.insert_hppc_cyclev2(start_hppc_cycle_2, nominal_capacity, diagnostic_params)
+        self.insert_hppc_cyclev2(start_hppc_cycle_2, nominal_capacity, diagnostic_params)
         start_rpt_cycle_2 = 50
-        obj.insert_rpt_cyclev2(start_rpt_cycle_2, nominal_capacity, diagnostic_params)
+        self.insert_rpt_cyclev2(start_rpt_cycle_2, nominal_capacity, diagnostic_params)
 
         start_reset_cycle_3 = 70
-        obj.insert_reset_cyclev2(start_reset_cycle_3, nominal_capacity, diagnostic_params)
+        self.insert_reset_cyclev2(start_reset_cycle_3, nominal_capacity, diagnostic_params)
         start_hppc_cycle_3 = 74
-        obj.insert_hppc_cyclev2(start_hppc_cycle_3, nominal_capacity, diagnostic_params)
+        self.insert_hppc_cyclev2(start_hppc_cycle_3, nominal_capacity, diagnostic_params)
         start_rpt_cycle_3 = 84
-        obj.insert_rpt_cyclev2(start_rpt_cycle_3, nominal_capacity, diagnostic_params)
+        self.insert_rpt_cyclev2(start_rpt_cycle_3, nominal_capacity, diagnostic_params)
 
-        return obj
+        return self
 
     def insert_reset_cyclev2(self, start, nominal_capacity, diagnostic_params):
         """
@@ -936,14 +939,13 @@ def generate_protocol_files_from_csv(csv_filename, output_directory):
                                                protocol_params['diagnostic_parameter_set']].squeeze()
 
             # TODO: should these be separated?
-            procedure = Procedure.generate_procedure_diagcyclev2(
+            procedure = Procedure.from_regcyclev2(
                 protocol_params
             )
-            procedure.merge(
-                Procedure.generate_procedure_diagcyclev2(
-                    protocol_params["capacity_nominal"], diagnostic_params
-                )
+            procedure.add_procedure_diagcyclev2(
+                protocol_params["capacity_nominal"], diagnostic_params
             )
+
         # TODO: how are these different?
         elif template in ['diagnosticV3.000', 'diagnosticV4.000']:
             diag_params_df = pd.read_csv(os.path.join(PROCEDURE_TEMPLATE_DIR,
@@ -952,10 +954,8 @@ def generate_protocol_files_from_csv(csv_filename, output_directory):
                                                protocol_params['diagnostic_parameter_set']].squeeze()
 
             procedure = Procedure.generate_procedure_regcyclev3(index, protocol_params)
-            procedure.merge(
-                Procedure.generate_procedure_diagcyclev3(
+            procedure.generate_procedure_diagcyclev3(
                     protocol_params["capacity_nominal"], diagnostic_params
-                )
             )
         else:
             warnings.warn("Unsupported file template {}, skipping.".format(template))
