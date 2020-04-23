@@ -104,10 +104,10 @@ class Schedule(DashOrderedDict):
         is CCCV.
 
         Args:
-            CC1 (float): Constant current value for charge section 1
-            CC1_capacity (float): Capacity to charge to for section 1
-            CC2 (float): Constant current value for charge section 2
-            template_filename (str): File path to pull the template schedule
+            CC1 (float): Constant current value for charge section 1 in Amps
+            CC1_capacity (float): Capacity to charge to for section 1 in Amp-hours
+            CC2 (float): Constant current value for charge section 2 in Amps
+            inputname (str): File path to pull the template schedule
                 file from
 
         """
@@ -231,12 +231,3 @@ def _get_headings(obj, delimiter='.'):
             headings.extend([delimiter.join([heading, sub_heading])
                              for sub_heading in sub_headings])
     return headings
-
-
-def main():
-    sdu = Schedule.from_fast_charge(
-        1.1*3.6, 0.086, 1.1*5, '20170630-3_6C_9per_5C.sdu')
-
-
-if __name__ == "__main__":
-    main()

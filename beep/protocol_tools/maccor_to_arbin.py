@@ -14,10 +14,21 @@ TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 
 class ProcedureToSchedule:
-    def __init__(self, procedure_dict_steps,
-                 version=None
+    """
+    This class is a set of methods to convert from a maccor procedure file to
+    an arbin schedule file. This is essentially a translation between two
+    different system languages. Since the two systems are not equivalent,
+    its not possible to perform an exact translation and some control methods
+    cannot be supported.
+
+    Args:
+        procedure_dict_steps (OrderedDict): A dictionary containing each of
+            the steps in the procedure
+
+    """
+    def __init__(self,
+                 procedure_dict_steps
                  ):
-        self.service = version
         self.procedure_dict_steps = procedure_dict_steps
 
     def create_sdu(self, sdu_input_name, sdu_output_name):
@@ -55,7 +66,9 @@ class ProcedureToSchedule:
 
         Returns:
             list: unique strings consisting of the step number and note
-            dict: key value pairs for the step that
+            dict: key value pairs for the loop control steps indicating
+                which step the Loop step should GOTO when the end condition
+                is not matched
 
         """
         step_name_list = []
@@ -88,6 +101,23 @@ class ProcedureToSchedule:
         the loop condition is met, while advancing the TC counter every time the Loop step is
         passed.
 
+        Arbin control values decoded: Arbin is using a 20-bit value for control and masking
+        off specific portions for each of the different actions (reset, increment, decrement)
+        and using different bits for each of the different counters
+        =====================================================================================================
+        Step Number	Name	    CtrlValue	Ext1	Ext2    Reset Increment
+        3	Loop (CI 0)	                0	   1	  0				    CI			                    00001
+        7	First Loop (Reset)	        0	   2	  0				    T1			                    00010
+        8	Loop (CI 1)	                0	   1	  0				    CI			                    00001
+        16	Loop 2 ( HPPC)	            0	   2	  0				    T1			                    00010
+        17	Loop (CI 2)	                0	   1	  0				    CI			                    00001
+        21	Loop (CI 3)     	        0	   1	  0				    CI			                    00001
+        25	Loop (CI 4)	                0	   1	  0				    CI			                    00001
+        29	Loop (CI 5)	                0	   1	  0				    CI			                    00001
+        35	Loop 3 (Cycling 30)	    65536	   13	  0			T1	    T2		00010 00000 00000 00000	01101
+        36	Loop 4 (Cycling 100)	    0	   16	  0				    T4			                    10000
+        37	Loop 5 (always true)	524288	   1	  0			T4	    CI		10000 00000 00000 00000	00001
+
         Args:
             step_abs (OrderedDict): A ordered dict of the maccor step to be converted
             step_index (int): The index of the step to be converted
@@ -102,7 +132,6 @@ class ProcedureToSchedule:
         Returns:
             OrderedDict: The arbin step resulting from the conversion of the
                 procedure step
-
         """
 
         ARBIN_SCHEMA = loadfn(os.path.join(PROTOCOL_SCHEMA_DIR, "arbin_schedule_schema.yaml"))
@@ -245,13 +274,13 @@ class ProcedureToSchedule:
                 report_index = 0
                 limit_start = len(step_abs['Ends']['EndEntry'])
                 limit_key = "[Schedule_Step{}_Limit{}]".format(str(step_index), str(report_index + limit_start))
-                blank_step[limit_key] = OrderedDict(self.convert_report_to_limit(report))
+                blank_step[limit_key] = OrderedDict(self.convert_report_to_logging_limit(report))
             elif isinstance(step_abs['Ends']['EndEntry'], list):
                 blank_step['m_uLimitNum'] = blank_step['m_uLimitNum'] + len(step_abs['Ends']['EndEntry'])
                 for report_index, report in enumerate(step_abs['Reports']['ReportEntry']):
                     limit_start = len(step_abs['Ends']['EndEntry'])
                     limit_key = "[Schedule_Step{}_Limit{}]".format(str(step_index), str(report_index + limit_start))
-                    blank_step[limit_key] = OrderedDict(self.convert_report_to_limit(report))
+                    blank_step[limit_key] = OrderedDict(self.convert_report_to_logging_limit(report))
 
         blank_step['m_uLimitNum'] = str(blank_step['m_uLimitNum'])
 
@@ -362,7 +391,7 @@ class ProcedureToSchedule:
 
         return limit
 
-    def convert_report_to_limit(self, report):
+    def convert_report_to_logging_limit(self, report):
         """
         Takes the reporting conditions for the maccor step and converts them to the logging
         limits for the arbin step.

@@ -20,6 +20,10 @@ class ArbinScheduleTest(unittest.TestCase):
         pass
 
     def test_dict_to_file(self):
+<<<<<<< HEAD
+=======
+        sdu = ScheduleFile()
+>>>>>>> pkherring/MAT-1404_add_methods_for_maccor_to_arbin
         filename = '20170630-3_6C_9per_5C.sdu'
         schedule = Schedule.from_file(os.path.join(SCHEDULE_TEMPLATE_DIR, filename))
         testname = 'test1.sdu'
@@ -36,6 +40,10 @@ class ArbinScheduleTest(unittest.TestCase):
                     print(line)
 
     def test_fastcharge(self):
+<<<<<<< HEAD
+=======
+        sdu = ScheduleFile()
+>>>>>>> pkherring/MAT-1404_add_methods_for_maccor_to_arbin
         filename = '20170630-3_6C_9per_5C.sdu'
         test_file = 'test.sdu'
         sdu = Schedule.from_fast_charge(1.1 * 3.6, 0.086, 1.1 * 5, os.path.join(SCHEDULE_TEMPLATE_DIR, filename))
