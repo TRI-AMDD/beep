@@ -7,20 +7,20 @@ import json
 import boto3
 import datetime
 from beep import PROCEDURE_TEMPLATE_DIR
-from beep.generate_protocol import ProcedureFile, \
+from beep.generate_protocol import Procedure, \
     generate_protocol_files_from_csv
 from monty.tempfile import ScratchDir
 from monty.serialization import dumpfn, loadfn
 from monty.os import makedirs_p
 from botocore.exceptions import NoRegionError, NoCredentialsError
-from beep.utils import os_format
+from beep.utils import os_format, hash_file
 import difflib
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 
-class GenerateProcedureTest(unittest.TestCase):
+class ProcedureTest(unittest.TestCase):
     def setUp(self):
         # Determine events mode for testing
         try:
@@ -30,52 +30,40 @@ class GenerateProcedureTest(unittest.TestCase):
         except NoRegionError or NoCredentialsError as e:
             self.events_mode = 'events_off'
 
-    def test_dict_to_file_1(self):
-        sdu = ProcedureFile(version='0.1')
-        templates = TEST_FILE_DIR
-        test_file = 'xTESLADIAG_000003_CH68.000'
-        json_file = 'xTESLADIAG_000003_CH68.json'
+    def test_io(self):
+        test_file = os.path.join(TEST_FILE_DIR, 'xTESLADIAG_000003_CH68.000')
+        json_file = os.path.join(TEST_FILE_DIR, 'xTESLADIAG_000003_CH68.json')
         test_out = 'test1.000'
-        test_dict, sp = sdu.to_dict(
-            os.path.join(templates, test_file),
-            os.path.join(templates, json_file)
-        )
-        test_dict = sdu.maccor_format_dict(test_dict)
-        sdu.dict_to_xml(
-            test_dict, os.path.join(templates, test_out), sp)
-        hash1 = sdu.hash_file(os.path.join(templates, test_file))
-        hash2 = sdu.hash_file(os.path.join(templates, test_out))
-        if hash1 != hash2:
-            original = open(os.path.join(templates, test_file)).readlines()
-            parsed = open(os.path.join(templates, test_out)).readlines()
-            self.assertFalse(list(difflib.unified_diff(original, parsed)))
-            for line in difflib.unified_diff(original, parsed):
-                self.assertIsNotNone(line)
-        os.remove(os.path.join(templates, test_out))
 
-    def test_dict_to_file_2(self):
-        sdu = ProcedureFile(version='0.1')
-        templates = TEST_FILE_DIR
-        test_file = 'xTESLADIAG_000004_CH69.000'
-        json_file = 'xTESLADIAG_000004_CH69.json'
+        procedure = Procedure.from_file(os.path.join(TEST_FILE_DIR, test_file))
+        with ScratchDir('.'):
+            dumpfn(procedure, json_file)
+            procedure.to_file(test_out)
+            hash1 = hash_file(test_file)
+            hash2 = hash_file(test_out)
+            if hash1 != hash2:
+                original = open(test_file).readlines()
+                parsed = open(test_out).readlines()
+                self.assertFalse(list(difflib.unified_diff(original, parsed)))
+                for line in difflib.unified_diff(original, parsed):
+                    self.assertIsNotNone(line)
+
+        test_file = os.path.join(TEST_FILE_DIR, 'xTESLADIAG_000004_CH69.000')
+        json_file = os.path.join(TEST_FILE_DIR, 'xTESLADIAG_000004_CH69.json')
         test_out = 'test2.000'
-        test_dict, sp = sdu.to_dict(
-            os.path.join(templates, test_file),
-            os.path.join(templates, json_file)
-        )
-        test_dict = sdu.maccor_format_dict(test_dict)
-        sdu.dict_to_xml(
-            test_dict, os.path.join(templates, test_out), sp)
-        hash1 = sdu.hash_file(os.path.join(templates, test_file))
-        hash2 = sdu.hash_file(os.path.join(templates, test_out))
-        if hash1 != hash2:
-            original = open(os.path.join(templates, test_file)).readlines()
-            parsed = open(os.path.join(templates, test_out)).readlines()
-            self.assertFalse(list(difflib.unified_diff(original, parsed)))
-            for line in difflib.unified_diff(original, parsed):
-                self.assertIsNotNone(line)
 
-        os.remove(os.path.join(templates, test_out))
+        procedure = Procedure.from_file(os.path.join(TEST_FILE_DIR, test_file))
+        with ScratchDir('.'):
+            dumpfn(procedure, json_file)
+            procedure.to_file(test_out)
+            hash1 = hash_file(test_file)
+            hash2 = hash_file(test_out)
+            if hash1 != hash2:
+                original = open(test_file).readlines()
+                parsed = open(test_out).readlines()
+                self.assertFalse(list(difflib.unified_diff(original, parsed)))
+                for line in difflib.unified_diff(original, parsed):
+                    self.assertIsNotNone(line)
 
     def test_generate_proc_exp(self):
         sdu = ProcedureFile(version='0.1')

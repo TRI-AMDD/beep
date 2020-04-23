@@ -39,7 +39,6 @@ $ generate_protocol '{"file_list": ["/data-share/raw/parameters/procedure_params
 
 import os
 import warnings
-import re
 import json
 import time
 import datetime
@@ -57,17 +56,14 @@ s = {'service': 'ProtocolGenerator'}
 
 class Procedure(DashOrderedDict):
     """
-    Procedure file utility. Provides the ability to read a
-    Maccor-type procedure file
+    Procedure file object. Provides factory methods
+    to read a Maccor-type procedure file and invoke
+    from templates for specific experimental
+    procedure parameters
 
-    Attributes:
-        version (str): version. Defaults to '0.1'
-        sp_num (int):
     """
-    # TODO: versioning? - Comments in maccor/arbin files?
-    # TODO: sp_num resolved?
     @classmethod
-    def from_file(cls, filename, encoding='latin-1'):
+    def from_file(cls, filename, encoding='UTF-8'):
         """
         Procedure file ingestion. Invokes Procedure object
         from standard Maccor xml file.
@@ -85,15 +81,12 @@ class Procedure(DashOrderedDict):
         data = xmltodict.parse(text, process_namespaces=False, strip_whitespace=True)
         return cls(data)
 
+    # TODO: check on the necessity of this with MACCOR instrument
     def _format_maccor(self):
         """
         Dictionary reformatting of the entries in the procedure in
         order to match the maccor formats. Mainly re-adding whitespace
         to entries that were stripped on injestion.
-
-        Args:
-            proc_dict (dict): dictionary of the procedure file as converted by
-                xmltodict package.
 
         Returns:
             dict: Ordered dictionary with reformatted entries to match the
@@ -148,33 +141,32 @@ class Procedure(DashOrderedDict):
         Writes object to maccor-formatted xml file using xmltodict
         unparse function.
 
+        encoding (str): text encoding of output file
+
         Args:
             filename (str):file name to save xml to.
         """
+        formatted = self._format_maccor()
+        contents = xmltodict.unparse(
+            input_dict=formatted,
+            output=None,
+            encoding=encoding,
+            short_empty_elements=False,
+            pretty=True,
+            newl="\n",
+            indent="  ")
+
+        # Manually inject processing instructions on line 2
+        line0, remainder = contents.split('\n', 1)
+        line1 = "<?maccor-application progid=\"Maccor Procedure File\"?>"
+        contents = "\n".join([line0, line1, remainder])
+        contents = self._fixup_empty_elements(contents)
+        contents += "\n"
         with open(filename, 'w') as f:
-            contents = xmltodict.unparse(
-                input_dict=self,
-                output=None,
-                encoding='UTF-8',
-                short_empty_elements=False,
-                pretty=True,
-                newl="\n",
-                indent="  ")
             f.write(contents)
 
-        # Need to insert line that is dropped
-        f = open(xml_file, 'r')
-        contents = f.readlines()
-        f.close()
-        contents.insert(self.sp_num, sp)
-        f = open(xml_file, 'w')
-        contents = "".join(contents)
-        f.write(contents)
-        f.close()
-        self.fixup_empty_elements(xml_file)
-
     @staticmethod
-    def fixup_empty_elements(file):
+    def _fixup_empty_elements(text):
         """
         xml reformatting to match the empty elements that are used
         in the maccor procedure format. Writes directly back to the file
@@ -182,32 +174,19 @@ class Procedure(DashOrderedDict):
         single line.
 
         Args:
-            file (str): xml file output by xmltodict.
-                Defaults to 0.1.
-        """
-        f = open(file, 'r')
-        lines = f.readlines()
-        f.close()
-        for line_num, line in enumerate(lines):
-            if re.search(r"<Limits></Limits>", line) is not None:
-                lines[line_num] = line.replace("<Limits></Limits>", "<Limits/>")
-            if re.search(r"<Reports></Reports>", line) is not None:
-                lines[line_num] = line.replace("<Reports></Reports>", "<Reports/>")
-            if re.search(r"<Ends></Ends>", line) is not None:
-                lines[line_num] = line.replace("<Ends></Ends>", "<Ends/>")
-        f = open(file, 'w')
-        f.writelines(lines)
-        f.writelines('\n')
-        f.close()
+            text (str): xml file raw text to be formatted
 
-    @staticmethod
-    def generate_procedure(proc_dict, step_num, step_type, step_value):
+        """
+        text = text.replace(r"<Limits></Limits>", "<Limits/>")
+        text = text.replace(r"<Reports></Reports>", "<Reports/>")
+        text = text.replace(r"<Ends></Ends>", "<Ends/>")
+        return text
+
+    def modify_step_value(self, step_num, step_type, step_value):
         """
         Modifies the procedure parameters to set a step value at at given step num and type.
 
         Args:
-            proc_dict (dict): dictionary of procedure parameters associated
-                with a procedure template file.
             step_num (int): step id at which to set value
             step_type (str): step type at which to set value
             step_value (str): value to set
@@ -215,28 +194,49 @@ class Procedure(DashOrderedDict):
         Returns:
             dict: modified proc_dict with set value
         """
-        for step_idx, step in enumerate(proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep']):
+        for step_idx, step in enumerate(self['MaccorTestProcedure']['ProcSteps']['TestStep']):
             if step_idx == step_num and step['StepType'] == step_type:
                 step['StepValue'] = step_value
-        return proc_dict
+        return self
 
-    def generate_procedure_exp(self, proc_dict, cutoff_voltage,
-                               charge_rate, discharge_rate):
+    @classmethod
+    def from_template(cls, template_name):
+        """
+        Utility method to load procedures from
+        beep template directory
+
+        Args:
+            template_name (str): template name, e. g.
+                'EXP', 'diagnosticV2'
+
+        Returns:
+            (Procedure): procedure loaded from template
+
+        """
+        template_filename = "{}.000".format(template_name)
+        template_filename = os.path.join(PROCEDURE_TEMPLATE_DIR, template_filename)
+        return cls.from_file(template_filename)
+
+    @classmethod
+    def from_exp(cls, cutoff_voltage, charge_rate, discharge_rate):
         """
         Generates a procedure according to the EXP-style template.
 
         Args:
-            proc_dict (dict): dictionary of procedure parameters associated
-                with a procedure template file.
             cutoff_voltage (float): cutoff voltage for.
             charge_rate (float): charging C-rate in 1/h.
             discharge_rate (float): discharging C-rate in 1/h.
 
         Returns:
             dict: dictionary of procedure parameters.
+
         """
+        # Load EXP template
+        obj = cls.from_template("EXP")
+
+        # Modify according to params
         loop_idx_start, loop_idx_end = None, None
-        for step_idx, step in enumerate(proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep']):
+        for step_idx, step in enumerate(obj['MaccorTestProcedure']['ProcSteps']['TestStep']):
             if step['StepType'] == "Do 1":
                 loop_idx_start = step_idx
             if step['StepType'] == "Loop 1":
@@ -245,25 +245,25 @@ class Procedure(DashOrderedDict):
         if loop_idx_start is None or loop_idx_end is None:
             raise UnboundLocalError("Loop index is not set")
 
-        for step_idx, step in enumerate(proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep']):
+        for step_idx, step in enumerate(obj['MaccorTestProcedure']['ProcSteps']['TestStep']):
             if step['StepType'] == 'Charge':
                 if step['Limits'] is not None and 'Voltage' in step['Limits']:
                     step['Limits']['Voltage'] = cutoff_voltage
-                if step['StepMode'] == 'Current' and step_idx > loop_idx_start and step_idx < loop_idx_end:
+                if step['StepMode'] == 'Current' and loop_idx_start < step_idx < loop_idx_end:
                     step['StepValue'] = charge_rate
             if step['StepType'] == "Dischrge" and step['StepMode'] == 'Current' \
                     and loop_idx_start < step_idx < loop_idx_end:
                 step['StepValue'] = discharge_rate
 
-        return proc_dict
+        return obj
 
-    def generate_procedure_regcyclev2(self, proc_dict, reg_param):
+    # TODO: rename this diagnosticv2?
+    @classmethod
+    def from_regcyclev2(cls, reg_param):
         """
         Generates a procedure according to the diagnosticV2 template.
 
         Args:
-            proc_dict (dict): dictionary of procedure parameters associated
-                with a procedure template file
             reg_param (pandas.Dataframe): containing the following quantities
                 charge_constant_current_1 (float): C
                 charge_percent_limit_1 (float): % of nominal capacity
@@ -286,98 +286,99 @@ class Procedure(DashOrderedDict):
         assert reg_param['charge_cutoff_voltage'] > reg_param['discharge_cutoff_voltage']
 
         dc_idx = 1
-        proc_dict = self.insert_resistance_regcyclev2(proc_dict, dc_idx, reg_param)
+
+        # Load template
+        obj = cls.from_template("diagnosticV2")
+        obj.insert_resistance_regcyclev2(dc_idx, reg_param)
 
         # Start of initial set of regular cycles
         reg_charge_idx = 27 + 1
-        proc_dict = self.insert_charge_regcyclev2(proc_dict, reg_charge_idx, reg_param)
+        obj.insert_charge_regcyclev2(reg_charge_idx, reg_param)
         reg_discharge_idx = 27 + 5
-        proc_dict = self.insert_discharge_regcyclev2(proc_dict, reg_discharge_idx, reg_param)
+        obj.insert_discharge_regcyclev2(reg_discharge_idx, reg_param)
 
         # Start of main loop of regular cycles
         reg_charge_idx = 59 + 1
-        proc_dict = self.insert_charge_regcyclev2(proc_dict, reg_charge_idx, reg_param)
+        obj.insert_charge_regcyclev2(reg_charge_idx, reg_param)
         reg_discharge_idx = 59 + 5
-        proc_dict = self.insert_discharge_regcyclev2(proc_dict, reg_discharge_idx, reg_param)
+        obj.insert_discharge_regcyclev2(reg_discharge_idx, reg_param)
 
         # Storage cycle
         reg_storage_idx = 69
-        proc_dict = self.insert_storage_regcyclev2(proc_dict, reg_storage_idx, reg_param)
+        obj.insert_storage_regcyclev2(reg_storage_idx, reg_param)
 
-        return proc_dict
+        return obj
 
-    def insert_maccor_waveform_discharge(self, proc_dict, waveform_idx, waveform_filename):
+    def insert_maccor_waveform_discharge(self, waveform_idx, waveform_filename):
         """
         Inserts a waveform into procedure dictionary at given id.
 
         Args:
-            proc_dict (dict): dictionary of procedure parameters associated
-                with a procedure template file
-            waveform_idx (int): Step in the procedure file to insert waveform at
-            waveform_filename (str): Path to .MWF waveform file. Waveform needs to be pre-scaled for
-            current/power capabilities of the cell and cycler
+            waveform_idx (int): Step in the procedure file to
+                insert waveform at
+            waveform_filename (str): Path to .MWF waveform file.
+                Waveform needs to be pre-scaled for current/power
+                capabilities of the cell and cycler
 
-        Returns:
-            dict:
         """
-        steps = proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep']
+        steps = self['MaccorTestProcedure']['ProcSteps']['TestStep']
         assert steps[waveform_idx]['StepType'] == "FastWave"
 
         steps[waveform_idx]['StepValue'] = waveform_filename.split('.MWF')[0]
 
-        return proc_dict
+        return self
 
-    def insert_resistance_regcyclev2(self, proc_dict, resist_idx, reg_param):
+    def insert_resistance_regcyclev2(self, resist_idx, reg_param):
         """
         Inserts resistance into procedure dictionary at given id.
 
         Args:
-            proc_dict (dict):
             resist_idx (int):
             reg_param (pandas.DataFrame):
 
         Returns:
             dict:
         """
-        steps = proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep']
+        steps = self['MaccorTestProcedure']['ProcSteps']['TestStep']
+
         # Initial resistance check
         assert steps[resist_idx]['StepType'] == "Charge"
         assert steps[resist_idx]['StepMode'] == "Current"
         steps[resist_idx]['StepValue'] = float(round(1.0 * reg_param['capacity_nominal'], 3))
 
-        return proc_dict
+        return self
 
-    def insert_charge_regcyclev2(self, proc_dict, charge_idx, reg_param):
+    def insert_charge_regcyclev2(self, charge_idx, reg_param):
         """
         Inserts charge into procedure dictionary at given id.
 
         Args:
-            proc_dict (dict):
-            resist_idx (int):
+            charge_idx (int)
             reg_param (pandas.DataFrame):
 
         Returns:
             dict:
         """
-        steps = proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep']
+        steps = self['MaccorTestProcedure']['ProcSteps']['TestStep']
 
         # Regular cycle constant current charge part 1
         step_idx = charge_idx
         assert steps[step_idx]['StepType'] == "Charge"
         assert steps[step_idx]['StepMode'] == "Current"
         steps[step_idx]['StepValue'] = float(round(reg_param['charge_constant_current_1']
-                                                     * reg_param['capacity_nominal'], 3))
+                                                   * reg_param['capacity_nominal'], 3))
         assert steps[step_idx]['Ends']['EndEntry'][0]['EndType'] == "StepTime"
         time_s = int(round(3600 * (reg_param['charge_percent_limit_1'] / 100)
                            / reg_param['charge_constant_current_1']))
-        steps[step_idx]['Ends']['EndEntry'][0]['Value'] = time.strftime('%H:%M:%S', time.gmtime(time_s))
+        steps[step_idx]['Ends']['EndEntry'][0]['Value'] = time.strftime(
+            '%H:%M:%S', time.gmtime(time_s))
 
         # Regular cycle constant current charge part 2
         step_idx = charge_idx + 1
         assert steps[step_idx]['StepType'] == "Charge"
         assert steps[step_idx]['StepMode'] == "Current"
         steps[step_idx]['StepValue'] = float(round(reg_param['charge_constant_current_2']
-                                                         * reg_param['capacity_nominal'], 3))
+                                                   * reg_param['capacity_nominal'], 3))
         assert steps[step_idx]['Ends']['EndEntry'][0]['EndType'] == "Voltage"
         steps[step_idx]['Ends']['EndEntry'][0]['Value'] = float(round(reg_param['charge_cutoff_voltage'], 3))
 
@@ -397,28 +398,27 @@ class Procedure(DashOrderedDict):
         time_s = int(round(60 * reg_param['charge_rest_time']))
         steps[step_idx]['Ends']['EndEntry'][0]['Value'] = time.strftime('%H:%M:%S', time.gmtime(time_s))
 
-        return proc_dict
+        return self
 
-    def insert_discharge_regcyclev2(self, proc_dict, discharge_idx, reg_param):
+    def insert_discharge_regcyclev2(self, discharge_idx, reg_param):
         """
         Inserts discharge into procedure dictionary at given id.
 
         Args:
-            proc_dict (dict):
-            resist_idx (int):
+            discharge_idx (int):
             reg_param (pandas.DataFrame):
 
         Returns:
             dict:
         """
-        steps = proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep']
+        steps = self['MaccorTestProcedure']['ProcSteps']['TestStep']
 
         # Regular cycle constant current discharge part 1
         step_idx = discharge_idx
         assert steps[step_idx]['StepType'] == "Dischrge"
         assert steps[step_idx]['StepMode'] == "Current"
         steps[step_idx]['StepValue'] = float(round(reg_param['discharge_constant_current']
-                                                        * reg_param['capacity_nominal'], 3))
+                                                   * reg_param['capacity_nominal'], 3))
         assert steps[step_idx]['Ends']['EndEntry'][0]['EndType'] == "Voltage"
         steps[step_idx]['Ends']['EndEntry'][0]['Value'] = float(round(reg_param['discharge_cutoff_voltage'], 3))
 
@@ -439,21 +439,20 @@ class Procedure(DashOrderedDict):
             assert steps[step_idx]['Ends']['EndEntry']['EndType'] == "Loop Cnt"
             steps[step_idx]['Ends']['EndEntry']['Value'] = reg_param['diagnostic_interval']
 
-        return proc_dict
+        return self
 
-    def insert_storage_regcyclev2(self, proc_dict, storage_idx, reg_param):
+    def insert_storage_regcyclev2(self, storage_idx, reg_param):
         """
         Inserts storage into procedure dictionary at given id.
 
         Args:
-            proc_dict (dict):
-            resist_idx (int):
+            storage_idx (int):
             reg_param (pandas.DataFrame):
 
         Returns:
             dict:
         """
-        steps = proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep']
+        steps = self['MaccorTestProcedure']['ProcSteps']['TestStep']
 
         # Storage condition
         step_idx = storage_idx
@@ -471,16 +470,14 @@ class Procedure(DashOrderedDict):
         time_s = int(round(60 * 12))
         steps[step_idx]['Ends']['EndEntry'][0]['Value'] = time.strftime('%H:%M:%S', time.gmtime(time_s))
 
-        return proc_dict
+        return self
 
-    def generate_procedure_regcyclev3(self, protocol_index, proc_dict, reg_param):
+    def generate_procedure_regcyclev3(self, protocol_index, reg_param):
         """
         Generates a procedure according to the diagnosticV3 template.
 
         Args:
             protocol_index (int): number of the protocol file being generated from this file.
-            proc_dict (dict): dictionary of procedure parameters associated
-                with a procedure template file.
             reg_param (pandas.DataFrame): containing the following quantities
                 charge_constant_current_1 (float): C
                 charge_percent_limit_1 (float): % of nominal capacity
@@ -503,48 +500,47 @@ class Procedure(DashOrderedDict):
         assert reg_param['charge_constant_current_1'] <= reg_param['charge_constant_current_2']
 
         rest_idx = 0
-        proc_dict = self.insert_initialrest_regcyclev3(proc_dict, rest_idx, protocol_index)
+        self.insert_initialrest_regcyclev3(rest_idx, protocol_index)
 
         dc_idx = 1
-        proc_dict = self.insert_resistance_regcyclev2(proc_dict, dc_idx, reg_param)
+        self.insert_resistance_regcyclev2(dc_idx, reg_param)
 
         # Start of initial set of regular cycles
         reg_charge_idx = 27 + 1
-        proc_dict = self.insert_charge_regcyclev3(proc_dict, reg_charge_idx, reg_param)
+        self.insert_charge_regcyclev3(reg_charge_idx, reg_param)
         reg_discharge_idx = 27 + 5
-        proc_dict = self.insert_discharge_regcyclev2(proc_dict, reg_discharge_idx, reg_param)
+        self.insert_discharge_regcyclev2(reg_discharge_idx, reg_param)
 
         # Start of main loop of regular cycles
         reg_charge_idx = 59 + 1
-        proc_dict = self.insert_charge_regcyclev3(proc_dict, reg_charge_idx, reg_param)
+        self.insert_charge_regcyclev3(reg_charge_idx, reg_param)
         reg_discharge_idx = 59 + 5
-        proc_dict = self.insert_discharge_regcyclev2(proc_dict, reg_discharge_idx, reg_param)
+        self.insert_discharge_regcyclev2(reg_discharge_idx, reg_param)
 
         # Storage cycle
         reg_storage_idx = 93
-        proc_dict = self.insert_storage_regcyclev3(proc_dict, reg_storage_idx, reg_param)
+        self.insert_storage_regcyclev3(reg_storage_idx, reg_param)
 
         # Check that the upper charge voltage is set the same for both charge current steps
         reg_charge_idx = 27 + 1
-        assert proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep'][reg_charge_idx
-               ]['Ends']['EndEntry'][1]['Value'] \
-               == proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep'][reg_charge_idx + 1
+        assert self['MaccorTestProcedure']['ProcSteps']['TestStep'][reg_charge_idx][
+                   'Ends']['EndEntry'][1]['Value'] \
+            == self['MaccorTestProcedure']['ProcSteps']['TestStep'][reg_charge_idx + 1
                ]['Ends']['EndEntry'][0]['Value']
 
         reg_charge_idx = 59 + 1
-        assert proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep'][reg_charge_idx
+        assert self['MaccorTestProcedure']['ProcSteps']['TestStep'][reg_charge_idx
                ]['Ends']['EndEntry'][1]['Value'] \
-               == proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep'][reg_charge_idx + 1
-               ]['Ends']['EndEntry'][0]['Value']
+               == self['MaccorTestProcedure']['ProcSteps']['TestStep'][reg_charge_idx + 1
+                                                                       ]['Ends']['EndEntry'][0]['Value']
 
-        return proc_dict
+        return self
 
-    def insert_initialrest_regcyclev3(self, proc_dict, rest_idx, index):
+    def insert_initialrest_regcyclev3(self, rest_idx, index):
         """
         Inserts initial rest into procedure dictionary at given id.
 
         Args:
-            proc_dict (dict):
             rest_idx (int):
             index (int):
 
@@ -552,7 +548,7 @@ class Procedure(DashOrderedDict):
             dict:
 
         """
-        steps = proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep']
+        steps = self['MaccorTestProcedure']['ProcSteps']['TestStep']
         # Initial rest
         offset_seconds = 720
         assert steps[rest_idx]['StepType'] == "Rest"
@@ -560,21 +556,20 @@ class Procedure(DashOrderedDict):
         time_s = int(round(3 * 3600 + offset_seconds * (index % 96)))
         steps[rest_idx]['Ends']['EndEntry'][0]['Value'] = time.strftime('%H:%M:%S', time.gmtime(time_s))
 
-        return proc_dict
+        return self
 
-    def insert_charge_regcyclev3(self, proc_dict, charge_idx, reg_param):
+    def insert_charge_regcyclev3(self, charge_idx, reg_param):
         """
         Inserts charge into procedure dictionary at given id.
 
         Args:
-            proc_dict (dict):
             charge_idx (int):
             reg_param (pandas.DataFrame):
 
         Returns:
             dict:
         """
-        steps = proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep']
+        steps = self['MaccorTestProcedure']['ProcSteps']['TestStep']
 
         # Regular cycle constant current charge part 1
         step_idx = charge_idx
@@ -614,14 +609,14 @@ class Procedure(DashOrderedDict):
         time_s = int(round(60 * reg_param['charge_rest_time']))
         steps[step_idx]['Ends']['EndEntry'][0]['Value'] = time.strftime('%H:%M:%S', time.gmtime(time_s))
 
-        return proc_dict
+        return self
 
-    def insert_storage_regcyclev3(self, proc_dict, storage_idx, reg_param):
+    def insert_storage_regcyclev3(self, storage_idx, reg_param):
         """
         Inserts storage into procedure dictionary at given id.
 
         Args:
-            proc_dict (dict):
+            self (dict):
             storage_idx (int):
             reg_param (pandas.DataFrame):
 
@@ -629,7 +624,7 @@ class Procedure(DashOrderedDict):
             dict:
 
         """
-        steps = proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep']
+        steps = self['MaccorTestProcedure']['ProcSteps']['TestStep']
         # Storage condition
         step_idx = storage_idx
         assert steps[step_idx]['StepType'] == "Dischrge"
@@ -646,15 +641,13 @@ class Procedure(DashOrderedDict):
         time_s = int(round(60 * 12))
         steps[step_idx]['Ends']['EndEntry'][0]['Value'] = time.strftime('%H:%M:%S', time.gmtime(time_s))
 
-        return proc_dict
+        return self
 
-    def generate_procedure_diagcyclev2(self, proc_dict, nominal_capacity, diagnostic_params):
+    def generate_procedure_diagcyclev2(self, nominal_capacity, diagnostic_params):
         """
         Generates a procedure according to the diagnosticV2 template.
 
         Args:
-            proc_dict (dict): dictionary of procedure parameters associated
-                with a procedure template file.
             nominal_capacity (float): Standard capacity for this cell.
             diagnostic_params (pandas.Series): Series containing all of the
                 diagnostic parameters.
@@ -664,28 +657,27 @@ class Procedure(DashOrderedDict):
 
         """
         start_reset_cycle_1 = 4
-        proc_dict = self.insert_reset_cyclev2(proc_dict, start_reset_cycle_1, nominal_capacity, diagnostic_params)
+        self.insert_reset_cyclev2(start_reset_cycle_1, nominal_capacity, diagnostic_params)
         start_hppc_cycle_1 = 8
-        proc_dict = self.insert_hppc_cyclev2(proc_dict, start_hppc_cycle_1, nominal_capacity, diagnostic_params)
+        self.insert_hppc_cyclev2(start_hppc_cycle_1, nominal_capacity, diagnostic_params)
         start_rpt_cycle_1 = 18
-        proc_dict = self.insert_rpt_cyclev2(proc_dict, start_rpt_cycle_1, nominal_capacity, diagnostic_params)
+        self.insert_rpt_cyclev2(start_rpt_cycle_1, nominal_capacity, diagnostic_params)
 
         start_reset_cycle_2 = 37
-        proc_dict = self.insert_reset_cyclev2(proc_dict, start_reset_cycle_2, nominal_capacity, diagnostic_params)
+        self.insert_reset_cyclev2(start_reset_cycle_2, nominal_capacity, diagnostic_params)
         start_hppc_cycle_2 = 40
-        proc_dict = self.insert_hppc_cyclev2(proc_dict, start_hppc_cycle_2, nominal_capacity, diagnostic_params)
+        self.insert_hppc_cyclev2(start_hppc_cycle_2, nominal_capacity, diagnostic_params)
         start_rpt_cycle_2 = 50
-        proc_dict = self.insert_rpt_cyclev2(proc_dict, start_rpt_cycle_2, nominal_capacity, diagnostic_params)
+        self.insert_rpt_cyclev2(start_rpt_cycle_2, nominal_capacity, diagnostic_params)
 
-        return proc_dict
+        return self
 
-    def generate_procedure_diagcyclev3(self, proc_dict, nominal_capacity, diagnostic_params):
+    @classmethod
+    def generate_procedure_diagcyclev3(cls, nominal_capacity, diagnostic_params):
         """
         Generates a procedure according to the diagnosticV3 template.
 
         Args:
-            proc_dict (dict): dictionary of procedure parameters associated
-                with a procedure template file.
             nominal_capacity (float): Standard capacity for this cell.
             diagnostic_params (pandas.Series): Series containing all of the
                 diagnostic parameters.
@@ -694,35 +686,35 @@ class Procedure(DashOrderedDict):
             dict: dictionary of procedure parameters.
 
         """
+        obj = cls.from_template("diagnosticV3")
         start_reset_cycle_1 = 4
-        proc_dict = self.insert_reset_cyclev2(proc_dict, start_reset_cycle_1, nominal_capacity, diagnostic_params)
+        obj.insert_reset_cyclev2(start_reset_cycle_1, nominal_capacity, diagnostic_params)
         start_hppc_cycle_1 = 8
-        proc_dict = self.insert_hppc_cyclev2(proc_dict, start_hppc_cycle_1, nominal_capacity, diagnostic_params)
+        obj.insert_hppc_cyclev2(start_hppc_cycle_1, nominal_capacity, diagnostic_params)
         start_rpt_cycle_1 = 18
-        proc_dict = self.insert_rpt_cyclev2(proc_dict, start_rpt_cycle_1, nominal_capacity, diagnostic_params)
+        obj.insert_rpt_cyclev2(start_rpt_cycle_1, nominal_capacity, diagnostic_params)
 
         start_reset_cycle_2 = 37
-        proc_dict = self.insert_reset_cyclev2(proc_dict, start_reset_cycle_2, nominal_capacity, diagnostic_params)
+        obj.insert_reset_cyclev2(start_reset_cycle_2, nominal_capacity, diagnostic_params)
         start_hppc_cycle_2 = 40
-        proc_dict = self.insert_hppc_cyclev2(proc_dict, start_hppc_cycle_2, nominal_capacity, diagnostic_params)
+        obj.insert_hppc_cyclev2(start_hppc_cycle_2, nominal_capacity, diagnostic_params)
         start_rpt_cycle_2 = 50
-        proc_dict = self.insert_rpt_cyclev2(proc_dict, start_rpt_cycle_2, nominal_capacity, diagnostic_params)
+        obj.insert_rpt_cyclev2(start_rpt_cycle_2, nominal_capacity, diagnostic_params)
 
         start_reset_cycle_3 = 70
-        proc_dict = self.insert_reset_cyclev2(proc_dict, start_reset_cycle_3, nominal_capacity, diagnostic_params)
+        obj.insert_reset_cyclev2(start_reset_cycle_3, nominal_capacity, diagnostic_params)
         start_hppc_cycle_3 = 74
-        proc_dict = self.insert_hppc_cyclev2(proc_dict, start_hppc_cycle_3, nominal_capacity, diagnostic_params)
+        obj.insert_hppc_cyclev2(start_hppc_cycle_3, nominal_capacity, diagnostic_params)
         start_rpt_cycle_3 = 84
-        proc_dict = self.insert_rpt_cyclev2(proc_dict, start_rpt_cycle_3, nominal_capacity, diagnostic_params)
+        obj.insert_rpt_cyclev2(start_rpt_cycle_3, nominal_capacity, diagnostic_params)
 
-        return proc_dict
+        return obj
 
-    def insert_reset_cyclev2(self, proc_dict, start, nominal_capacity, diagnostic_params):
+    def insert_reset_cyclev2(self, start, nominal_capacity, diagnostic_params):
         """
         Helper function for parameterizing the reset cycle.
 
         Args:
-            proc_dict (dict):
             start:
             nominal_capacity:
             diagnostic_params:
@@ -730,7 +722,7 @@ class Procedure(DashOrderedDict):
         Returns:
             dict:
         """
-        steps = proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep']
+        steps = self['MaccorTestProcedure']['ProcSteps']['TestStep']
         # Charge step for reset cycle
         assert steps[start]['StepType'] == 'Charge'
         assert steps[start]['StepMode'] == 'Current'
@@ -748,14 +740,13 @@ class Procedure(DashOrderedDict):
         steps[start+1]['Ends']['EndEntry'][0]['Value'] = \
             float(round(diagnostic_params['diagnostic_discharge_cutoff_voltage'], 3))
 
-        return proc_dict
+        return self
 
-    def insert_hppc_cyclev2(self, proc_dict, start, nominal_capacity, diagnostic_params):
+    def insert_hppc_cyclev2(self, start, nominal_capacity, diagnostic_params):
         """
         Helper function for parameterizing the hybrid pulse power cycle
 
         Args:
-            proc_dict:
             start:
             nominal_capacity:
             diagnostic_params:
@@ -763,7 +754,7 @@ class Procedure(DashOrderedDict):
         Returns:
             dict:
         """
-        steps = proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep']
+        steps = self['MaccorTestProcedure']['ProcSteps']['TestStep']
         # Initial charge step for hppc cycle
         assert steps[start]['StepType'] == 'Charge'
         assert steps[start]['StepMode'] == 'Current'
@@ -833,14 +824,13 @@ class Procedure(DashOrderedDict):
         steps[start+8]['Ends']['EndEntry'][0]['Value'] = float(round(nominal_capacity *
                                                        diagnostic_params['diagnostic_cutoff_current'], 3))
 
-        return proc_dict
+        return self
 
-    def insert_rpt_cyclev2(self, proc_dict, start, nominal_capacity, diagnostic_params):
+    def insert_rpt_cyclev2(self, start, nominal_capacity, diagnostic_params):
         """
         Helper function for parameterizing the Rate Performance Test cycle
 
         Args:
-            proc_dict (dict):
             start:
             nominal_capacity:
             diagnostic_params:
@@ -848,7 +838,7 @@ class Procedure(DashOrderedDict):
         Returns:
             dict
         """
-        steps = proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep']
+        steps = self['MaccorTestProcedure']['ProcSteps']['TestStep']
 
         # First charge step for rpt cycle
         assert steps[start]['StepType'] == 'Charge'
@@ -907,7 +897,7 @@ class Procedure(DashOrderedDict):
         steps[start+7]['Ends']['EndEntry'][0]['Value'] = \
             float(round(diagnostic_params['diagnostic_discharge_cutoff_voltage'], 3))
 
-        return proc_dict
+        return self
 
 
 def generate_protocol_files_from_csv(csv_filename, output_directory, **kwargs):
@@ -919,11 +909,11 @@ def generate_protocol_files_from_csv(csv_filename, output_directory, **kwargs):
     Args:
         csv_filename (str): CSV containing protocol file parameters.
         output_directory (str): directory in which to place the output files
-        **kwargs: kwargs to ProcedureFile, the object which does the protocol
+        **kwargs: kwargs to Procedure, the object which does the protocol
             file generation
     """
     # Invoke ProcedureFile object from **kwargs
-    procedure_file_generator = ProcedureFile(**kwargs)
+    procedure_file_generator = Procedure.from_file(**kwargs)
 
     # Read csv file
     protocol_params_df = pd.read_csv(csv_filename)
