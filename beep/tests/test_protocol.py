@@ -91,8 +91,9 @@ class ProcedureTest(unittest.TestCase):
         #     os.path.join(templates, json_file)
         # )
         # test_dict = sdu.maccor_format_dict(test_dict)
+        template = os.path.join(TEST_FILE_DIR, "EXP_missing.000")
         self.assertRaises(UnboundLocalError, Procedure.from_exp,
-                          *test_parameters[1:])
+                          *test_parameters[1:]+[template])
 
     def test_from_csv(self):
         csv_file = os.path.join(TEST_FILE_DIR, "parameter_test.csv")

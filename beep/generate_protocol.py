@@ -200,25 +200,8 @@ class Procedure(DashOrderedDict):
         return self
 
     @classmethod
-    def from_template(cls, template_name):
-        """
-        Utility method to load procedures from
-        beep template directory
-
-        Args:
-            template_name (str): template name, e. g.
-                'EXP', 'diagnosticV2'
-
-        Returns:
-            (Procedure): procedure loaded from template
-
-        """
-        template_filename = "{}.000".format(template_name)
-        template_filename = os.path.join(PROCEDURE_TEMPLATE_DIR, template_filename)
-        return cls.from_file(template_filename)
-
-    @classmethod
-    def from_exp(cls, cutoff_voltage, charge_rate, discharge_rate):
+    def from_exp(cls, cutoff_voltage, charge_rate, discharge_rate,
+                 template=None):
         """
         Generates a procedure according to the EXP-style template.
 
@@ -226,13 +209,15 @@ class Procedure(DashOrderedDict):
             cutoff_voltage (float): cutoff voltage for.
             charge_rate (float): charging C-rate in 1/h.
             discharge_rate (float): discharging C-rate in 1/h.
+            template (str): template name, defaults to EXP in template dir
 
         Returns:
             (Procedure): dictionary of procedure parameters.
 
         """
         # Load EXP template
-        obj = cls.from_template("EXP")
+        template = template or os.path.join(PROCEDURE_TEMPLATE_DIR, "EXP.000")
+        obj = cls.from_file(template)
 
         # Modify according to params
         loop_idx_start, loop_idx_end = None, None
@@ -259,7 +244,7 @@ class Procedure(DashOrderedDict):
 
     # TODO: rename this diagnosticv2 and merge
     @classmethod
-    def from_regcyclev2(cls, reg_param):
+    def from_regcyclev2(cls, reg_param, template=None):
         """
         Generates a procedure according to the diagnosticV2 template.
 
@@ -288,7 +273,9 @@ class Procedure(DashOrderedDict):
         dc_idx = 1
 
         # Load template
-        obj = cls.from_template("diagnosticV2")
+        template = template or os.path.join(
+            PROCEDURE_TEMPLATE_DIR, "diagnosticV2.000")
+        obj = cls.from_file(template)
         obj.insert_resistance_regcyclev2(dc_idx, reg_param)
 
         # Start of initial set of regular cycles
@@ -474,7 +461,7 @@ class Procedure(DashOrderedDict):
         return self
 
     @classmethod
-    def generate_procedure_regcyclev3(cls, protocol_index, reg_param):
+    def generate_procedure_regcyclev3(cls, protocol_index, reg_param, template=None):
         """
         Generates a procedure according to the diagnosticV3 template.
 
@@ -495,6 +482,8 @@ class Procedure(DashOrderedDict):
                 capacity_nominal (float): Ah
                 diagnostic_start_cycle (integer): cycles
                 diagnostic_interval (integer): cycles
+            template (str): template for invocation, defaults to
+                the diagnosticV3.000 template
 
         Returns:
             (Procedure): dictionary invoked using template/parameters
@@ -504,7 +493,8 @@ class Procedure(DashOrderedDict):
 
         rest_idx = 0
 
-        obj = cls.from_template("diagnosticV3")
+        template = template or os.path.join(PROCEDURE_TEMPLATE_DIR, "diagnosticV3.000")
+        obj = cls.from_file(template)
         obj.insert_initialrest_regcyclev3(rest_idx, protocol_index)
 
         dc_idx = 1
