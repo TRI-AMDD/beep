@@ -1,5 +1,13 @@
 
 
+v2020.4.25
+----------
+* Add retry logic for logger when NoCredentialsError is encountered
+* Change logging to stdout to cleaner method
+* Add typing for reloading of the structured file
+* Add .yaml file with the data types for each of the data frames
+* Cast data types for all data frames in the structure
+
 v2020.4.20
 ----------
 * Add newline to put_record data
