@@ -39,7 +39,7 @@ config = {
     'stage': {
         'logging': {
             'container': 'BEEP_EP',
-            'streams': ['CloudWatch']
+            'streams': ['CloudWatch', 'stdout']
         },
         'kinesis': {
             'stream': 'stage/beep/eventstream/stage'

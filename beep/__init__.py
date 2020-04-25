@@ -9,6 +9,8 @@ import sys
 from functools import partial
 import numpy as np
 import watchtower
+import time
+from botocore.exceptions import NoCredentialsError
 from tqdm import tqdm as _tqdm
 
 from .config import config
@@ -30,6 +32,7 @@ if VERSION_TAG is not None:
 tqdm = partial(_tqdm, disable=bool(os.environ.get("TQDM_OFF")))
 
 ENV_VAR = 'BEEP_ENV'
+MAX_RETRIES = 5
 
 # environment
 ENVIRONMENT = os.getenv(ENV_VAR)
@@ -72,7 +75,16 @@ formatter = logging.Formatter(fmt_str)
 # output and format
 if 'CloudWatch' in config[ENVIRONMENT]['logging']['streams']:
     if ENVIRONMENT == "stage":
-        hdlr = watchtower.CloudWatchLogHandler(log_group='/stage/beep/services')
+        for _ in range(MAX_RETRIES):
+            try:
+                hdlr = watchtower.CloudWatchLogHandler(log_group='/stage/beep/services')
+            except NoCredentialsError:
+                time.sleep(10)
+                continue
+            else:
+                break
+        else:
+            raise NoCredentialsError
     else:
         hdlr = watchtower.CloudWatchLogHandler(log_group='Worker')
     hdlr.setFormatter(formatter)
