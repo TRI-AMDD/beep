@@ -32,7 +32,7 @@ if VERSION_TAG is not None:
 tqdm = partial(_tqdm, disable=bool(os.environ.get("TQDM_OFF")))
 
 ENV_VAR = 'BEEP_ENV'
-MAX_RETRIES = 5
+MAX_RETRIES = 12
 
 # environment
 ENVIRONMENT = os.getenv(ENV_VAR)
