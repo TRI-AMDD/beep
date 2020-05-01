@@ -41,9 +41,7 @@ if ENVIRONMENT is None or ENVIRONMENT not in config.keys():
 MODULE_DIR = os.path.dirname(__file__)
 CONVERSION_SCHEMA_DIR = os.path.join(MODULE_DIR, "conversion_schemas")
 VALIDATION_SCHEMA_DIR = os.path.join(MODULE_DIR, "validation_schemas")
-PROCEDURE_TEMPLATE_DIR = os.path.join(MODULE_DIR, "procedure_templates")
-SCHEDULE_TEMPLATE_DIR = os.path.join(MODULE_DIR, "schedule_templates")
-PROTOCOL_SCHEMA_DIR = os.path.join(MODULE_DIR, "protocol_schemas")
+
 MODEL_DIR = os.path.join(MODULE_DIR, "models")
 
 LOG_DIR = os.path.join(MODULE_DIR, "logs")

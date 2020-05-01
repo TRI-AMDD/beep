@@ -85,12 +85,6 @@ class ProcedureTest(unittest.TestCase):
 
     def test_missing(self):
         test_parameters = ["EXP", "4.2", "2.0C", "2.0C"]
-        # TODO: okay to delete?
-        # test_dict, sp = sdu.to_dict(
-        #     os.path.join(templates, test_file),
-        #     os.path.join(templates, json_file)
-        # )
-        # test_dict = sdu.maccor_format_dict(test_dict)
         template = os.path.join(TEST_FILE_DIR, "EXP_missing.000")
         self.assertRaises(UnboundLocalError, Procedure.from_exp,
                           *test_parameters[1:]+[template])

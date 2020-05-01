@@ -5,7 +5,7 @@ import os
 import unittest
 from beep import PROCEDURE_TEMPLATE_DIR, SCHEDULE_TEMPLATE_DIR
 from beep.generate_protocol import ProcedureFile
-from beep.protocol_tools.maccor_to_arbin import ProcedureToSchedule
+from beep.protocol.maccor_to_arbin import ProcedureToSchedule
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")

@@ -1,5 +1,8 @@
 # Copyright 2019 Toyota Research Institute. All rights reserved.
-""" Schedule file parsing and parameter insertion"""
+"""
+Module for Arbin-compatible schedule file
+parsing and parameter insertion
+"""
 import re
 import warnings
 from copy import deepcopy
@@ -107,7 +110,7 @@ class Schedule(DashOrderedDict):
             CC1 (float): Constant current value for charge section 1 in Amps
             CC1_capacity (float): Capacity to charge to for section 1 in Amp-hours
             CC2 (float): Constant current value for charge section 2 in Amps
-            inputname (str): File path to pull the template schedule
+            template_filename (str): File path to pull the template schedule
                 file from
 
         """
