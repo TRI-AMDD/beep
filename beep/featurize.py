@@ -388,8 +388,8 @@ def process_file_list_from_json(file_list_json, processed_dir='data-share/featur
             processed_paths_list.append(path)
             processed_run_list.append(run_id)
             processed_result_list.append("incomplete")
-            processed_message_list.append({'comment':'Insufficient data for featurization',
-                                            'error': ''})
+            processed_message_list.append({'comment': 'Insufficient data for featurization',
+                                           'error': ''})
 
         else:
             processed_data = DegradationPredictor.from_processed_cycler_run_file(
@@ -409,7 +409,7 @@ def process_file_list_from_json(file_list_json, processed_dir='data-share/featur
             processed_run_list.append(run_id)
             processed_result_list.append("success")
             processed_message_list.append({'comment': '',
-                                            'error': ''})
+                                           'error': ''})
 
     output_data = {"file_list": processed_paths_list,
                    "run_list": processed_run_list,
