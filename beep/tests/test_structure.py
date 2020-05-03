@@ -218,6 +218,7 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertEqual(diagnostic_available['cycle_type'], ['reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C'])
         diag_summary = cycler_run.get_diagnostic_summary(diagnostic_available)
 
+        # Check data types are being set correctly for diagnostic summary
         diag_dyptes = diag_summary.dtypes.tolist()
         diag_columns = diag_summary.columns.tolist()
         diag_dyptes = [str(dtyp) for dtyp in diag_dyptes]
@@ -237,12 +238,14 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertEqual(diag_summary.paused.max(), 0)
         diag_interpolated = cycler_run.get_interpolated_diagnostic_cycles(diagnostic_available, resolution=1000)
 
+        # Check data types are being set correctly for interpolated data
         diag_dyptes = diag_interpolated.dtypes.tolist()
         diag_columns = diag_interpolated.columns.tolist()
         diag_dyptes = [str(dtyp) for dtyp in diag_dyptes]
         for indx, col in enumerate(diag_columns):
             self.assertEqual(diag_dyptes[indx], STRUCTURE_DTYPES['diagnostic_interpolated'][col])
 
+        # Provide visual inspection to ensure that diagnostic interpolation is being done correctly
         diag_cycle = diag_interpolated[(diag_interpolated.cycle_type == 'rpt_0.2C')
                                        & (diag_interpolated.step_type == 1)]
         self.assertEqual(diag_cycle.cycle_index.unique().tolist(), [3, 38, 143])
@@ -270,10 +273,11 @@ class RawCyclerRunTest(unittest.TestCase):
 
         processed_cycler_run = cycler_run.to_processed_cycler_run()
         self.assertNotIn(diag_summary.index.tolist(), processed_cycler_run.cycles_interpolated.cycle_index.unique())
+
         processed_cycler_run_loc = os.path.join(TEST_FILE_DIR, 'processed_diagnostic.json')
         dumpfn(processed_cycler_run, processed_cycler_run_loc)
         proc_size = os.path.getsize(processed_cycler_run_loc)
-        self.assertLess(proc_size, 29000000)
+        self.assertLess(proc_size, 47000000)
 
         test = loadfn(processed_cycler_run_loc)
         self.assertIsInstance(test.diagnostic_summary, pd.DataFrame)
@@ -289,6 +293,13 @@ class RawCyclerRunTest(unittest.TestCase):
         for indx, col in enumerate(diag_columns):
             self.assertEqual(diag_dyptes[indx], STRUCTURE_DTYPES['diagnostic_interpolated'][col])
 
+        plt.figure()
+        single_charge = test.cycles_interpolated[(test.cycles_interpolated.step_type == 'charge') &
+                                                 (test.cycles_interpolated.cycle_index == 25)]
+        self.assertEqual(len(single_charge.index), 1000)
+        plt.plot(single_charge.charge_capacity, single_charge.voltage)
+        plt.savefig(os.path.join(TEST_FILE_DIR, "charge_capacity_interpolation_regular_cycle.png"))
+
         os.remove(processed_cycler_run_loc)
 
     def test_get_interpolated_cycles_maccor(self):
@@ -301,9 +312,10 @@ class RawCyclerRunTest(unittest.TestCase):
 
         self.assertTrue(interp3.current.mean() > 0)
         self.assertEqual(len(interp3.voltage), 10000)
-        self.assertEqual(interp3.voltage.median(), np.float32(3.6))
-        np.testing.assert_almost_equal(interp3[interp3.voltage <= interp3.voltage.median()].current.iloc[0],
-                                       2.4227011, decimal=6)
+        self.assertEqual(interp3.voltage.max(), np.float32(4.100838))
+        self.assertEqual(interp3.voltage.min(), np.float32(3.3334765))
+        np.testing.assert_almost_equal(interp3[interp3.charge_capacity <=
+                                               interp3.charge_capacity.median()].current.iloc[0], 2.423209, decimal=6)
 
         cycle_2 = cycler_run.data[cycler_run.data['cycle_index'] == 2]
         discharge = cycle_2[cycle_2.step_index == 12]
@@ -567,6 +579,23 @@ class ProcessedCyclerRunTest(unittest.TestCase):
         # Ensure barcode/protocol are passed
         self.assertEqual(pcycler_run.barcode, "EXP")
         self.assertEqual(pcycler_run.protocol, "xTESLADIAG_000020_CH71.000")
+        steps = pcycler_run.cycles_interpolated.step_type.unique().tolist()
+        # Ensure that charge and discharge steps are processed
+        self.assertEqual(steps, ['discharge', 'charge'])
+
+        min_index = pcycler_run.cycles_interpolated.cycle_index.min()
+        if 'step_type' in pcycler_run.cycles_interpolated.columns:
+            discharge_interpolated = pcycler_run.cycles_interpolated[
+                (pcycler_run.cycles_interpolated.step_type == 'discharge')]
+            min_index_df = pcycler_run.cycles_interpolated[(pcycler_run.cycles_interpolated.cycle_index == min_index) &
+                                                           (pcycler_run.cycles_interpolated.step_type == 'discharge')]
+        else:
+            discharge_interpolated = pcycler_run.cycles_interpolated
+            min_index_df = pcycler_run.cycles_interpolated[(pcycler_run.cycles_interpolated.cycle_index == min_index)]
+        matches = discharge_interpolated.groupby("cycle_index").apply(
+            lambda x: np.allclose(x.voltage.values, min_index_df.voltage.values))
+        if not np.all(matches):
+            raise ValueError("cycles_interpolated are not uniform")
 
     def test_from_raw_cycler_run_parameters(self):
         rcycler_run = RawCyclerRun.from_file(self.maccor_file_w_parameters)
