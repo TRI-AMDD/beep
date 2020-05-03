@@ -17,9 +17,9 @@ from beep.config import config
 
 
 def secret_accessible(environment):
-    pg_config = config[environment]['postgres']
-    if 'secret' in pg_config:
-        secret_name = pg_config['secret']
+    event_config = config[environment]['kinesis']
+    if 'stream' in event_config:
+        secret_name = event_config['stream']
         try:
             _ = get_secret(secret_name)
         except Exception as e:
