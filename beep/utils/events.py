@@ -12,7 +12,9 @@ import watchtower
 import numpy as np
 import boto3
 import pytz
-from beep import LOG_DIR, ENVIRONMENT
+import time
+from botocore.exceptions import NoCredentialsError
+from beep import LOG_DIR, ENVIRONMENT, MAX_RETRIES
 from beep.config import config
 from beep.utils.secrets_manager import get_secret
 
@@ -65,7 +67,18 @@ class KinesisEvents:
         self.mode = mode
 
         if self.mode == 'run':
-            self.stream = get_secret(config[ENVIRONMENT]['kinesis']['stream'])['streamName']
+            for i in range(MAX_RETRIES):
+                try:
+                    self.stream = get_secret(config[ENVIRONMENT]['kinesis']['stream'])['streamName']
+                except NoCredentialsError:
+                    print('Credential retry:' + str(i))
+                    time.sleep(10)
+                    continue
+                else:
+                    break
+            else:
+                raise NoCredentialsError("Unable to get credentials in specified number of retries")
+
             self.kinesis = boto3.client('kinesis', region_name='us-west-2')
 
         if self.mode == 'test':
