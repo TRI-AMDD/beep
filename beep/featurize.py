@@ -137,6 +137,7 @@ class DegradationPredictor(MSONable):
         assert len(processed_cycler_run.summary) > final_pred_cycle, 'cycle count must exceed final_pred_cycle'
         cycles_to_average_over = 40  # For nominal capacity, use median discharge capacity of first n cycles
 
+        # Features in "nature energy" set only use discharge portion of the cycle
         if 'step_type' in processed_cycler_run.cycles_interpolated.columns:
             interpolated_df = processed_cycler_run.cycles_interpolated[
                 processed_cycler_run.cycles_interpolated.step_type == 'discharge']

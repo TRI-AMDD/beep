@@ -169,13 +169,15 @@ class RawCyclerRun(MSONable):
             new_df = self.data.loc[self.data["cycle_index"] == cycle_index].groupby("step_index").filter(step_filter)
             if new_df.size == 0:
                 continue
-            if axis != 'voltage':
+            if axis in ['charge_capacity', 'discharge_capacity', 'test_time']:
                 axis_range = [new_df[axis].min(), new_df[axis].max()]
                 new_df = get_interpolated_data(new_df, axis, field_range=axis_range,
                                                columns=incl_columns, resolution=resolution)
-            else:
+            elif axis == 'voltage':
                 new_df = get_interpolated_data(new_df, axis, field_range=v_range,
                                                columns=incl_columns, resolution=resolution)
+            else:
+                raise NotImplementedError
             new_df['cycle_index'] = cycle_index
             new_df['step_type'] = step_type
             new_df['step_type'] = new_df['step_type'].astype('category')
