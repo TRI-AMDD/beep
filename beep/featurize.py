@@ -47,6 +47,80 @@ from beep import logger, ENVIRONMENT, __version__
 s = {'service': 'DataAnalyzer'}
 
 
+class BeepFeatures(MSONable):
+    """
+    Class corresponding to feature baseline feature object.
+
+    Attributes:
+        name (str): predictor object name.
+        path (str): path to the structure object
+
+    """
+    def __init__(self, name, path):
+        self.name = name
+        self.structured_data = loadfn(path)
+
+    def launch(self):
+        if self.decision_logic():
+            self.features_from_processed_cycler_run()
+            self.outcomes_from_processed_cycler_run()
+            self.save()
+
+    def decision_logic(self):
+        raise NotImplementedError
+
+    def features_from_processed_cycler_run(self):
+        pass
+
+    def outcomes_from_processed_cycler_run(self):
+        pass
+
+    def as_dict(self):
+        """
+        Method for dictionary serialization
+
+        Returns:
+            dict: corresponding to dictionary for serialization
+
+        """
+        obj = {"@module": self.__class__.__module__,
+               "@class": self.__class__.__name__,
+               "name": self.name,
+               "X": self.X.to_dict("list"),
+               "feature_labels": self.feature_labels,
+               "predict_only": self.predict_only,
+               "prediction_type": self.prediction_type,
+               "nominal_capacity":self.nominal_capacity
+               }
+        if isinstance(self.y, pd.DataFrame):
+            obj["y"] = self.y.to_dict("list")
+        else:
+            obj["y"] = self.y
+        return obj
+
+    @classmethod
+    def from_dict(cls, d):
+        """MSONable deserialization method"""
+        d['X'] = pd.DataFrame(d['X'])
+        return cls(**d)
+
+
+class DeltaQFeatures(BeepFeatures):
+
+    def __init__(self, name, path):
+        super().__init__(name, path)
+        self.mid_pred_cycle = 91
+        self.final_pred_cycle = 100
+
+    def decision_logic(self):
+        conditions = []
+        conditions.append(self.mid_pred_cycle > 10)  # Sufficient cycles for analysis
+        conditions.append(self.final_pred_cycle > self.mid_pred_cycle) # Must have final_pred_cycle > mid_pred_cycle
+        conditions.append(len(self.structured_data.summary.index) > 100)
+        conditions.append(len(self.structured_data.summary.index) <= 1)
+        return all(conditions)
+
+
 class DegradationPredictor(MSONable):
     """
     Object corresponding to feature matrix. Includes constructors

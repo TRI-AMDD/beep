@@ -10,7 +10,8 @@ import numpy as np
 from botocore.exceptions import NoRegionError, NoCredentialsError
 
 from beep.structure import RawCyclerRun, ProcessedCyclerRun
-from beep.featurize import DegradationPredictor, process_file_list_from_json
+from beep.featurize import DegradationPredictor, process_file_list_from_json, \
+    BeepFeatures, DeltaQFeatures
 from monty.serialization import dumpfn, loadfn
 
 TEST_DIR = os.path.dirname(__file__)
@@ -87,6 +88,22 @@ class TestFeaturizer(unittest.TestCase):
         diagnostic_feature_label = predictor.feature_labels[-1]
         self.assertEqual(diagnostic_feature_label, "median_diagnostic_cycles_discharge_capacity")
         np.testing.assert_almost_equal(predictor.X[diagnostic_feature_label][0], 4.481564593, decimal=8)
+
+    def test_feature_class(self):
+        os.environ['BEEP_ROOT'] = TEST_FILE_DIR
+        # maccor_file_w_parameters = os.path.join(TEST_FILE_DIR, "PreDiag_000287_000128.092")
+        # raw_run = RawCyclerRun.from_file(maccor_file_w_parameters)
+        # v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \
+        #     raw_run.determine_structuring_parameters()
+        # pcycler_run = ProcessedCyclerRun.from_raw_cycler_run(raw_run,
+        #                                                      diagnostic_available=diagnostic_available)
+        # pcycler_run_loc = os.path.join(TEST_FILE_DIR, 'PreDiag_000287_000128_structure.json')
+        # dumpfn(pcycler_run, pcycler_run_loc)
+
+        pcycler_run_loc = os.path.join(TEST_FILE_DIR, '2017-06-30_2C-10per_6C_CH10_structure.json')
+        featurizer = DeltaQFeatures('FastCharge', pcycler_run_loc)
+        featurizer.launch()
+
 
     def test_feature_generation_list_to_json(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
