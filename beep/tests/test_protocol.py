@@ -6,9 +6,10 @@ import unittest
 import json
 import boto3
 import datetime
+import pandas as pd
 from beep import PROCEDURE_TEMPLATE_DIR
 from beep.generate_protocol import ProcedureFile, \
-    generate_protocol_files_from_csv
+    generate_protocol_files_from_csv, convert_velocity_to_power_waveform
 from monty.tempfile import ScratchDir
 from monty.serialization import dumpfn, loadfn
 from monty.os import makedirs_p
@@ -200,3 +201,14 @@ class GenerateProcedureTest(unittest.TestCase):
                  "mode": self.events_mode})
             os.system("generate_protocol {}".format(os_format(json_input)))
             self.assertEqual(len(os.listdir(procedures_path)), 3)
+
+    def test_convert_velocity_to_power_waveform(self):
+        velocity_waveform_file = os.path.join(TEST_FILE_DIR, "LA4_velocity_waveform.txt")
+
+        velocity_df = pd.read_csv(velocity_waveform_file, sep="\t", header=0)
+        power_df = convert_velocity_to_power_waveform(velocity_waveform_file,'mph')
+        #Check input and output sizes
+        self.assertEqual(len(velocity_df), len(power_df))
+        self.assertTrue(any(power_df['power_scaled']<0))
+        self.assertEqual(max(abs(power_df['power_scaled'])),1)
+
