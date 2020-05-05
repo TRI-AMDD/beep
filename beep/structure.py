@@ -137,7 +137,7 @@ class RawCyclerRun(MSONable):
         else:
             raise ValueError("{} does not match any known file pattern".format(path))
 
-    def get_interpolated_steps(self, v_range, resolution, step_type='discharge', reg_cycles=None):
+    def get_interpolated_steps(self, v_range, resolution, step_type='discharge', reg_cycles=None, axis='voltage'):
         """
         Gets interpolated cycles for the step specified, charge or discharge.
 
@@ -146,7 +146,8 @@ class RawCyclerRun(MSONable):
                 the voltage interpolation range endpoints.
             resolution (int): resolution of interpolated data.
             step_type (str): which step to interpolate i.e. 'charge' or 'discharge'
-            reg_cycles (dict): list containing cycle indicies of regular cycles
+            reg_cycles (list): list containing cycle indicies of regular cycles
+            axis (str): which column to use for interpolation
 
         Returns:
             pandas.DataFrame: DataFrame corresponding to interpolated values.
@@ -157,7 +158,7 @@ class RawCyclerRun(MSONable):
             step_filter = determine_whether_step_is_charging
         else:
             raise ValueError("{} is not a recognized step type")
-        incl_columns = ["current", "charge_capacity", "discharge_capacity",
+        incl_columns = ["voltage", "current", "charge_capacity", "discharge_capacity",
                         "internal_resistance", "temperature"]
         all_dfs = []
         cycle_indices = self.data.cycle_index.unique()
@@ -168,8 +169,15 @@ class RawCyclerRun(MSONable):
             new_df = self.data.loc[self.data["cycle_index"] == cycle_index].groupby("step_index").filter(step_filter)
             if new_df.size == 0:
                 continue
-            new_df = get_interpolated_data(new_df, "voltage", field_range=v_range,
-                                           columns=incl_columns, resolution=resolution)
+            if axis in ['charge_capacity', 'discharge_capacity', 'test_time']:
+                axis_range = [new_df[axis].min(), new_df[axis].max()]
+                new_df = get_interpolated_data(new_df, axis, field_range=axis_range,
+                                               columns=incl_columns, resolution=resolution)
+            elif axis == 'voltage':
+                new_df = get_interpolated_data(new_df, axis, field_range=v_range,
+                                               columns=incl_columns, resolution=resolution)
+            else:
+                raise NotImplementedError
             new_df['cycle_index'] = cycle_index
             new_df['step_type'] = step_type
             new_df['step_type'] = new_df['step_type'].astype('category')
@@ -210,11 +218,13 @@ class RawCyclerRun(MSONable):
         interpolated_discharge = self.get_interpolated_steps(v_range,
                                                              resolution,
                                                              step_type='discharge',
-                                                             reg_cycles=reg_cycles)
+                                                             reg_cycles=reg_cycles,
+                                                             axis='voltage')
         interpolated_charge = self.get_interpolated_steps(v_range,
                                                           resolution,
                                                           step_type='charge',
-                                                          reg_cycles=reg_cycles)
+                                                          reg_cycles=reg_cycles,
+                                                          axis='charge_capacity')
         result = pd.concat([interpolated_discharge, interpolated_charge], ignore_index=True)
         result = result.astype(STRUCTURE_DTYPES['cycles_interpolated'])
 
@@ -852,7 +862,7 @@ class ProcessedCyclerRun(MSONable):
             channel_id (int): id for the channel for the experiment
             summary (pandas.DataFrame): data of summary data for each cycle
             cycles_interpolated (pandas.DataFrame): interpolated data for
-                discharge over 2.8-3.5
+                regular cycles
         """
         self.barcode = barcode
         self.protocol = protocol
@@ -862,12 +872,10 @@ class ProcessedCyclerRun(MSONable):
         # We can drop this restriction later if we don't need it
         min_index = cycles_interpolated.cycle_index.min()
         if 'step_type' in cycles_interpolated.columns:
-            cycles_interpolated = cycles_interpolated[(cycles_interpolated.step_type == 'discharge')]
-        min_index_df = cycles_interpolated[(cycles_interpolated.cycle_index == min_index)]
-        matches = cycles_interpolated.groupby("cycle_index").apply(
-            lambda x: np.allclose(x.voltage.values, min_index_df.voltage.values))
-        if not np.all(matches):
-            raise ValueError("cycles_interpolated are not uniform")
+            min_index_df = cycles_interpolated[(cycles_interpolated.cycle_index == min_index) &
+                                               (cycles_interpolated.step_type == 'discharge')]
+        else:
+            min_index_df = cycles_interpolated[(cycles_interpolated.cycle_index == min_index)]
         self.v_interpolated = min_index_df.voltage.values
 
         self.cycles_interpolated = cycles_interpolated

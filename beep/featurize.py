@@ -137,7 +137,13 @@ class DegradationPredictor(MSONable):
         assert len(processed_cycler_run.summary) > final_pred_cycle, 'cycle count must exceed final_pred_cycle'
         cycles_to_average_over = 40  # For nominal capacity, use median discharge capacity of first n cycles
 
-        interpolated_df = processed_cycler_run.cycles_interpolated
+        # Features in "nature energy" set only use discharge portion of the cycle
+        if 'step_type' in processed_cycler_run.cycles_interpolated.columns:
+            interpolated_df = processed_cycler_run.cycles_interpolated[
+                processed_cycler_run.cycles_interpolated.step_type == 'discharge']
+        else:
+            interpolated_df = processed_cycler_run.cycles_interpolated
+
         X = pd.DataFrame(np.zeros((1, 20)))
         labels = []
         # Discharge capacity, cycle 2 = Q(n=2)
@@ -383,8 +389,8 @@ def process_file_list_from_json(file_list_json, processed_dir='data-share/featur
             processed_paths_list.append(path)
             processed_run_list.append(run_id)
             processed_result_list.append("incomplete")
-            processed_message_list.append({'comment':'Insufficient data for featurization',
-                                            'error': ''})
+            processed_message_list.append({'comment': 'Insufficient data for featurization',
+                                           'error': ''})
 
         else:
             processed_data = DegradationPredictor.from_processed_cycler_run_file(
@@ -404,7 +410,7 @@ def process_file_list_from_json(file_list_json, processed_dir='data-share/featur
             processed_run_list.append(run_id)
             processed_result_list.append("success")
             processed_message_list.append({'comment': '',
-                                            'error': ''})
+                                           'error': ''})
 
     output_data = {"file_list": processed_paths_list,
                    "run_list": processed_run_list,
