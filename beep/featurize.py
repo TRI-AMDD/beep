@@ -56,20 +56,23 @@ class BeepFeatures(MSONable):
         path (str): path to the structure object
 
     """
-    def __init__(self, name, path):
+    def __init__(self, name, feature_object):
         self.name = name
-        self.structured_data = loadfn(path)
+        self.X = feature_object
 
-    def launch(self):
-        if self.decision_logic():
-            self.features_from_processed_cycler_run()
-            self.outcomes_from_processed_cycler_run()
-            self.save()
+    @classmethod
+    def launch(cls, name, processed_cycler_run):
+        if cls.decision_logic(processed_cycler_run):
+            print('passed')
+            feature_object = cls.features_from_processed_cycler_run(processed_cycler_run)
+            outcome_object = cls.outcomes_from_processed_cycler_run()
+            # self.save()
+            return cls(name, feature_object)
 
-    def decision_logic(self):
+    def decision_logic(self, processed_cycler_run):
         raise NotImplementedError
 
-    def features_from_processed_cycler_run(self):
+    def features_from_processed_cycler_run(cls, processed_cycler_run):
         pass
 
     def outcomes_from_processed_cycler_run(self):
@@ -86,16 +89,8 @@ class BeepFeatures(MSONable):
         obj = {"@module": self.__class__.__module__,
                "@class": self.__class__.__name__,
                "name": self.name,
-               "X": self.X.to_dict("list"),
-               "feature_labels": self.feature_labels,
-               "predict_only": self.predict_only,
-               "prediction_type": self.prediction_type,
-               "nominal_capacity":self.nominal_capacity
+               "X": self.X.to_dict("list")
                }
-        if isinstance(self.y, pd.DataFrame):
-            obj["y"] = self.y.to_dict("list")
-        else:
-            obj["y"] = self.y
         return obj
 
     @classmethod
@@ -107,18 +102,129 @@ class BeepFeatures(MSONable):
 
 class DeltaQFeatures(BeepFeatures):
 
-    def __init__(self, name, path):
-        super().__init__(name, path)
-        self.mid_pred_cycle = 91
-        self.final_pred_cycle = 100
+    def __init__(self, name, feature_object):
+        super().__init__(name, feature_object)
+        self.name = name
+        self.X = feature_object
 
-    def decision_logic(self):
+    @classmethod
+    def decision_logic(cls, processed_cycler_run):
         conditions = []
-        conditions.append(self.mid_pred_cycle > 10)  # Sufficient cycles for analysis
-        conditions.append(self.final_pred_cycle > self.mid_pred_cycle) # Must have final_pred_cycle > mid_pred_cycle
-        conditions.append(len(self.structured_data.summary.index) > 100)
-        conditions.append(len(self.structured_data.summary.index) <= 1)
+        if 'cycle_index' in processed_cycler_run.summary.columns:
+            conditions.append(processed_cycler_run.summary.cycle_index.max() > 100)
+            conditions.append(processed_cycler_run.summary.cycle_index.min() <= 1)
+        else:
+            conditions.append(len(processed_cycler_run.summary.index) > 100)
+
         return all(conditions)
+
+    @classmethod
+    def features_from_processed_cycler_run(cls, processed_cycler_run):
+
+        init_pred_cycle = 10
+        mid_pred_cycle = 91
+        final_pred_cycle = 100
+
+        assert mid_pred_cycle > 10  # Sufficient cycles for analysis
+        assert final_pred_cycle > mid_pred_cycle # Must have final_pred_cycle > mid_pred_cycle
+        ifinal = final_pred_cycle - 1  # python indexing
+        imid = mid_pred_cycle - 1
+        iini = init_pred_cycle - 1
+        summary = processed_cycler_run.summary
+        cycles_to_average_over = 40  # For nominal capacity, use median discharge capacity of first n cycles
+
+        if 'step_type' in processed_cycler_run.cycles_interpolated.columns:
+            interpolated_df = processed_cycler_run.cycles_interpolated[
+                processed_cycler_run.cycles_interpolated.step_type == 'discharge']
+        else:
+            interpolated_df = processed_cycler_run.cycles_interpolated
+        X = pd.DataFrame(np.zeros((1, 20)))
+        labels = []
+        # Discharge capacity, cycle 2 = Q(n=2)
+        X[0] = summary.discharge_capacity[1]
+        labels.append("discharge_capacity_cycle_2")
+
+        # Max discharge capacity - discharge capacity, cycle 2 = max_n(Q(n)) - Q(n=2)
+        X[1] = max(summary.discharge_capacity[np.arange(final_pred_cycle)] - summary.discharge_capacity[1])
+        labels.append("max_discharge_capacity_difference")
+
+        # Discharge capacity, cycle 100 = Q(n=100)
+        X[2] = summary.discharge_capacity[ifinal]
+        labels.append("discharge_capacity_cycle_100")
+
+        # Feature representing time-temperature integral over cycles 2 to 100
+        X[3] = np.nansum(summary.time_temperature_integrated[np.arange(final_pred_cycle)])
+        labels.append("integrated_time_temperature_cycles_1:100")
+
+        # Mean of charge times of first 5 cycles
+        X[4] = np.nanmean(summary.charge_duration[1:6])
+        labels.append("charge_time_cycles_1:5")
+
+        # Descriptors based on capacity loss between cycles 10 and 100.
+        Qd_final = interpolated_df.discharge_capacity[interpolated_df.cycle_index == ifinal]
+        Qd_10 = interpolated_df.discharge_capacity[interpolated_df.cycle_index == 9]
+
+        Vd = interpolated_df.voltage[interpolated_df.cycle_index == iini]
+        Qd_diff = Qd_final.values - Qd_10.values
+
+        X[5] = np.log10(np.abs(np.min(Qd_diff)))   # Minimum
+        labels.append("abs_min_discharge_capacity_difference_cycles_2:100")
+
+        X[6] = np.log10(np.abs(np.mean(Qd_diff)))  # Mean
+        labels.append("abs_mean_discharge_capacity_difference_cycles_2:100")
+
+        X[7] = np.log10(np.abs(np.var(Qd_diff)))   # Variance
+        labels.append("abs_variance_discharge_capacity_difference_cycles_2:100")
+
+        X[8] = np.log10(np.abs(skew(Qd_diff)))    # Skewness
+        labels.append("abs_skew_discharge_capacity_difference_cycles_2:100")
+
+        X[9] = np.log10(np.abs(kurtosis(Qd_diff)))  # Kurtosis
+        labels.append("abs_kurtosis_discharge_capacity_difference_cycles_2:100")
+
+        X[10] = np.log10(np.abs(Qd_diff[0]))       # First difference
+        labels.append("abs_first_discharge_capacity_difference_cycles_2:100")
+
+        X[11] = max(summary.temperature_maximum[list(range(1, final_pred_cycle))])  # Max T
+        labels.append("max_temperature_cycles_1:100")
+
+        X[12] = min(summary.temperature_minimum[list(range(1, final_pred_cycle))])  # Min T
+        labels.append("min_temperature_cycles_1:100")
+
+        # Slope and intercept of linear fit to discharge capacity as a fn of cycle #, cycles 2 to 100
+
+        X[13], X[14] = np.polyfit(
+            list(range(1, final_pred_cycle)),
+            summary.discharge_capacity[list(range(1, final_pred_cycle))], 1)
+
+        labels.append("slope_discharge_capacity_cycle_number_2:100")
+        labels.append("intercept_discharge_capacity_cycle_number_2:100")
+
+        # Slope and intercept of linear fit to discharge capacity as a fn of cycle #, cycles 91 to 100
+        X[15], X[16] = np.polyfit(
+            list(range(imid, final_pred_cycle)),
+            summary.discharge_capacity[list(range(imid, final_pred_cycle))], 1)
+        labels.append("slope_discharge_capacity_cycle_number_91:100")
+        labels.append("intercept_discharge_capacity_cycle_number_91:100")
+
+        IR_trend = summary.dc_internal_resistance[list(range(1, final_pred_cycle))]
+        if any(v == 0 for v in IR_trend):
+            IR_trend[IR_trend == 0] = np.nan
+
+        # Internal resistance minimum
+        X[17] = np.nanmin(IR_trend)
+        labels.append("min_internal_resistance_cycles_2:100")
+
+        # Internal resistance at cycle 2
+        X[18] = summary.dc_internal_resistance[1]
+        labels.append("internal_resistance_cycle_2")
+
+        # Internal resistance at cycle 100 - cycle 2
+        X[19] = summary.dc_internal_resistance[ifinal] - summary.dc_internal_resistance[1]
+        labels.append("internal_resistance_difference_cycles_2:100")
+
+        X.columns = labels
+        return X
 
 
 class DegradationPredictor(MSONable):

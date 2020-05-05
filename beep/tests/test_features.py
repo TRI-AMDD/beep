@@ -91,18 +91,17 @@ class TestFeaturizer(unittest.TestCase):
 
     def test_feature_class(self):
         os.environ['BEEP_ROOT'] = TEST_FILE_DIR
-        # maccor_file_w_parameters = os.path.join(TEST_FILE_DIR, "PreDiag_000287_000128.092")
-        # raw_run = RawCyclerRun.from_file(maccor_file_w_parameters)
-        # v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \
-        #     raw_run.determine_structuring_parameters()
-        # pcycler_run = ProcessedCyclerRun.from_raw_cycler_run(raw_run,
-        #                                                      diagnostic_available=diagnostic_available)
-        # pcycler_run_loc = os.path.join(TEST_FILE_DIR, 'PreDiag_000287_000128_structure.json')
-        # dumpfn(pcycler_run, pcycler_run_loc)
 
         pcycler_run_loc = os.path.join(TEST_FILE_DIR, '2017-06-30_2C-10per_6C_CH10_structure.json')
-        featurizer = DeltaQFeatures('FastCharge', pcycler_run_loc)
-        featurizer.launch()
+        pcycler_run = loadfn(pcycler_run_loc)
+        featurizer = DeltaQFeatures.launch('fastcharge', pcycler_run)
+        self.assertEqual(featurizer.name, 'fastcharge')
+
+        pcycler_run_loc = os.path.join(TEST_FILE_DIR, 'PreDiag_000287_000128_structure.json')
+        pcycler_run = loadfn(pcycler_run_loc)
+        featurizer = DeltaQFeatures.launch('fastcharge', pcycler_run)
+        self.assertEqual(featurizer.name, 'fastcharge')
+        dumpfn(featurizer, os.path.join(TEST_FILE_DIR, "test_class_features.json"))
 
 
     def test_feature_generation_list_to_json(self):
