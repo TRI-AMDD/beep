@@ -1,5 +1,12 @@
 
 
+v2020.5.5
+---------
+* Remove code that was deleting the charge interpolation and interpolate on capacity
+* Increasing the number of retries
+* Adding retry wrapper to get secret for events
+* power waveform generation from velocity profiles - Thanks to Chirru!
+
 v2020.4.25
 ----------
 * Add retry logic for logger when NoCredentialsError is encountered
