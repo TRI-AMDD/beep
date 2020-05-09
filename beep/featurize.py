@@ -53,30 +53,93 @@ class BeepFeatures(MSONable):
 
     Attributes:
         name (str): predictor object name.
-        path (str): path to the structure object
-
+        X (pandas.DataFrame): features in DataFrame format.
+        y (pandas.DataFrame): targets for training
+        metadata (dict): information about the conditions, data
+            and code used to produce features
     """
-    def __init__(self, name, feature_object):
+    class_feature_name = 'Base'
+
+    def __init__(self, name, feature_object, outcome_object, metadata):
         self.name = name
         self.X = feature_object
+        self.y = outcome_object
+        self.metadata = metadata
 
     @classmethod
-    def launch(cls, name, processed_cycler_run):
-        if cls.decision_logic(processed_cycler_run):
-            print('passed')
-            feature_object = cls.features_from_processed_cycler_run(processed_cycler_run)
-            outcome_object = cls.outcomes_from_processed_cycler_run()
-            # self.save()
-            return cls(name, feature_object)
+    def from_run(cls, input_filename, feature_dir, processed_cycler_run):
+        """
+        This method contains the workflow for the creation of the feature class
+        Since the workflow should be the same for all of the feature classed this
+        method should not be overridden in any of the derived classes. If the class
+        can be created (feature generation succeeds, etc.) then the class is returned.
+        Otherwise the return value is False
 
-    def decision_logic(self, processed_cycler_run):
+        Args:
+            input_filename (str): path to the input data from processed cycler run
+            feature_dir (str): path to the base directory for the feature sets.
+            processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
+
+        Returns:
+            (beep.featurize.BeepFeatures): class object for the feature set
+        """
+        if cls.decision_logic(processed_cycler_run):
+            output_filename = cls.get_feature_object_name_and_path(input_filename, feature_dir)
+            feature_object = cls.features_from_processed_cycler_run(processed_cycler_run)
+            outcome_object = cls.outcomes_from_processed_cycler_run(processed_cycler_run)
+            metadata = cls.metadata_from_processed_cycler_run(processed_cycler_run)
+            return cls(output_filename, feature_object, outcome_object, metadata)
+        else:
+            return False
+
+    @classmethod
+    def decision_logic(cls, processed_cycler_run):
         raise NotImplementedError
 
-    def features_from_processed_cycler_run(cls, processed_cycler_run):
-        pass
+    @classmethod
+    def get_feature_object_name_and_path(cls, input_path, feature_dir):
+        """
+        This function determines how to name the object for a specific feature class
+        and creates the full path to save the object. This full path is also used as
+        the feature name attribute
 
-    def outcomes_from_processed_cycler_run(self):
-        pass
+        Args:
+            input_path (str): path to the input data from processed cycler run
+            feature_dir (str): path to the base directory for the feature sets.
+
+        Returns:
+            str: the full path (including filename) to use for saving the feature
+                object
+        """
+        new_filename = os.path.basename(input_path)
+        new_filename = scrub_underscore_suffix(new_filename)
+
+        # Append model_name along with "features" to demarcate
+        # different models when saving the feature vectors.
+        new_filename = add_suffix_to_filename(new_filename,
+                                              "_features" + "_" + cls.class_feature_name)
+        if not os.path.isdir(os.path.join(feature_dir, cls.class_feature_name)):
+            os.makedirs(os.path.join(feature_dir, cls.class_feature_name))
+        feature_path = os.path.join(feature_dir, cls.class_feature_name, new_filename)
+        feature_path = os.path.abspath(feature_path)
+        return feature_path
+
+    @classmethod
+    def features_from_processed_cycler_run(cls, processed_cycler_run):
+        raise NotImplementedError
+
+    @classmethod
+    def outcomes_from_processed_cycler_run(cls, processed_cycler_run):
+        raise NotImplementedError
+
+    @classmethod
+    def metadata_from_processed_cycler_run(cls, processed_cycler_run):
+        metadata = {
+            'barcode': processed_cycler_run.barcode,
+            'protocol': processed_cycler_run.protocol,
+            'channel_id': processed_cycler_run.channel_id
+                }
+        return metadata
 
     def as_dict(self):
         """
@@ -89,7 +152,9 @@ class BeepFeatures(MSONable):
         obj = {"@module": self.__class__.__module__,
                "@class": self.__class__.__name__,
                "name": self.name,
-               "X": self.X.to_dict("list")
+               "X": self.X.to_dict("list"),
+               "y": self.y.to_dict("list"),
+               "metadata": self.metadata
                }
         return obj
 
@@ -97,39 +162,84 @@ class BeepFeatures(MSONable):
     def from_dict(cls, d):
         """MSONable deserialization method"""
         d['X'] = pd.DataFrame(d['X'])
+        d['y'] = pd.DataFrame(d['y'])
         return cls(**d)
 
 
 class DeltaQFeatures(BeepFeatures):
+    """
+    Object corresponding to feature object. Includes constructors
+    to create the features, outcomes and metadata attributes in the
+    object
 
-    def __init__(self, name, feature_object):
-        super().__init__(name, feature_object)
+        name (str): predictor object name.
+        X (pandas.DataFrame): features in DataFrame format.
+        y (pandas.DataFrame): targets for training
+        metadata (dict): information about the conditions, data
+            and code used to produce features
+    """
+    # Class name for the feature object
+    class_feature_name = 'DeltaQMultiCycleLife'
+
+    # Class variables
+    init_pred_cycle = 10
+    mid_pred_cycle = 91
+    final_pred_cycle = 100
+
+    def __init__(self, name, feature_object, outcome_object, metadata):
+        """
+        Args:
+            name (str): predictor object name
+            feature_object (pandas.DataFrame): features in DataFrame format.
+            outcome_object (pandas.Dataframe or float): one or more outcomes.
+            metadata (dict): information about the data and code used to produce features
+        """
+        super().__init__(name, feature_object, outcome_object, metadata)
         self.name = name
         self.X = feature_object
+        self.y = outcome_object
+        self.metadata = metadata
 
     @classmethod
     def decision_logic(cls, processed_cycler_run):
+        """
+        This function determines if the input data has the necessary attributes for
+        creation of this feature class. It should test for all of the possible reasons
+        that feature generation would fail for this particular input data.
+
+        Args:
+            processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
+
+        Returns:
+            bool: True/False indication of ability to proceed with feature generation
+        """
         conditions = []
         if 'cycle_index' in processed_cycler_run.summary.columns:
-            conditions.append(processed_cycler_run.summary.cycle_index.max() > 100)
-            conditions.append(processed_cycler_run.summary.cycle_index.min() <= 1)
+            conditions.append(processed_cycler_run.summary.cycle_index.max() > cls.final_pred_cycle)
+            conditions.append(processed_cycler_run.summary.cycle_index.min() <= cls.init_pred_cycle)
         else:
-            conditions.append(len(processed_cycler_run.summary.index) > 100)
+            conditions.append(len(processed_cycler_run.summary.index) > cls.final_pred_cycle)
 
         return all(conditions)
 
     @classmethod
     def features_from_processed_cycler_run(cls, processed_cycler_run):
+        """
+        Generate features listed in early prediction manuscript, primarily related to the
+        so called delta Q feature
 
-        init_pred_cycle = 10
-        mid_pred_cycle = 91
-        final_pred_cycle = 100
+        Args:
+            processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
 
-        assert mid_pred_cycle > 10  # Sufficient cycles for analysis
-        assert final_pred_cycle > mid_pred_cycle # Must have final_pred_cycle > mid_pred_cycle
-        ifinal = final_pred_cycle - 1  # python indexing
-        imid = mid_pred_cycle - 1
-        iini = init_pred_cycle - 1
+        Returns:
+            pd.DataFrame: features indicative of degradation, derived from the input data
+        """
+
+        assert cls.mid_pred_cycle > 10  # Sufficient cycles for analysis
+        assert cls.final_pred_cycle > cls.mid_pred_cycle # Must have final_pred_cycle > mid_pred_cycle
+        ifinal = cls.final_pred_cycle - 1  # python indexing
+        imid = cls.mid_pred_cycle - 1
+        iini = cls.init_pred_cycle - 1
         summary = processed_cycler_run.summary
         cycles_to_average_over = 40  # For nominal capacity, use median discharge capacity of first n cycles
 
@@ -145,7 +255,7 @@ class DeltaQFeatures(BeepFeatures):
         labels.append("discharge_capacity_cycle_2")
 
         # Max discharge capacity - discharge capacity, cycle 2 = max_n(Q(n)) - Q(n=2)
-        X[1] = max(summary.discharge_capacity[np.arange(final_pred_cycle)] - summary.discharge_capacity[1])
+        X[1] = max(summary.discharge_capacity[np.arange(cls.final_pred_cycle)] - summary.discharge_capacity[1])
         labels.append("max_discharge_capacity_difference")
 
         # Discharge capacity, cycle 100 = Q(n=100)
@@ -153,7 +263,7 @@ class DeltaQFeatures(BeepFeatures):
         labels.append("discharge_capacity_cycle_100")
 
         # Feature representing time-temperature integral over cycles 2 to 100
-        X[3] = np.nansum(summary.time_temperature_integrated[np.arange(final_pred_cycle)])
+        X[3] = np.nansum(summary.time_temperature_integrated[np.arange(cls.final_pred_cycle)])
         labels.append("integrated_time_temperature_cycles_1:100")
 
         # Mean of charge times of first 5 cycles
@@ -185,29 +295,29 @@ class DeltaQFeatures(BeepFeatures):
         X[10] = np.log10(np.abs(Qd_diff[0]))       # First difference
         labels.append("abs_first_discharge_capacity_difference_cycles_2:100")
 
-        X[11] = max(summary.temperature_maximum[list(range(1, final_pred_cycle))])  # Max T
+        X[11] = max(summary.temperature_maximum[list(range(1, cls.final_pred_cycle))])  # Max T
         labels.append("max_temperature_cycles_1:100")
 
-        X[12] = min(summary.temperature_minimum[list(range(1, final_pred_cycle))])  # Min T
+        X[12] = min(summary.temperature_minimum[list(range(1, cls.final_pred_cycle))])  # Min T
         labels.append("min_temperature_cycles_1:100")
 
         # Slope and intercept of linear fit to discharge capacity as a fn of cycle #, cycles 2 to 100
 
         X[13], X[14] = np.polyfit(
-            list(range(1, final_pred_cycle)),
-            summary.discharge_capacity[list(range(1, final_pred_cycle))], 1)
+            list(range(1, cls.final_pred_cycle)),
+            summary.discharge_capacity[list(range(1, cls.final_pred_cycle))], 1)
 
         labels.append("slope_discharge_capacity_cycle_number_2:100")
         labels.append("intercept_discharge_capacity_cycle_number_2:100")
 
         # Slope and intercept of linear fit to discharge capacity as a fn of cycle #, cycles 91 to 100
         X[15], X[16] = np.polyfit(
-            list(range(imid, final_pred_cycle)),
-            summary.discharge_capacity[list(range(imid, final_pred_cycle))], 1)
+            list(range(imid, cls.final_pred_cycle)),
+            summary.discharge_capacity[list(range(imid, cls.final_pred_cycle))], 1)
         labels.append("slope_discharge_capacity_cycle_number_91:100")
         labels.append("intercept_discharge_capacity_cycle_number_91:100")
 
-        IR_trend = summary.dc_internal_resistance[list(range(1, final_pred_cycle))]
+        IR_trend = summary.dc_internal_resistance[list(range(1, cls.final_pred_cycle))]
         if any(v == 0 for v in IR_trend):
             IR_trend[IR_trend == 0] = np.nan
 
@@ -223,8 +333,69 @@ class DeltaQFeatures(BeepFeatures):
         X[19] = summary.dc_internal_resistance[ifinal] - summary.dc_internal_resistance[1]
         labels.append("internal_resistance_difference_cycles_2:100")
 
+        # Nominal capacity
+        X[20] = np.median(summary.discharge_capacity.iloc[0:cycles_to_average_over])
+        labels.append("nominal_capacity_by_median")
+
         X.columns = labels
         return X
+
+    @classmethod
+    def outcomes_from_processed_cycler_run(cls, processed_cycler_run):
+        """
+        Calculate the outcomes from the input data. In particular, the number of cycles
+        where we expect to reach certain thresholds of capacity loss
+
+        Args:
+            processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
+
+        Returns:
+            pd.DataFrame: cycles at which capacity degradation exceeds thresholds
+        """
+        y = processed_cycler_run.cycles_to_reach_set_capacities(
+            thresh_max_cap=0.98, thresh_min_cap=0.78, interval_cap=0.03)
+        return y
+
+    @classmethod
+    def metadata_from_processed_cycler_run(cls, processed_cycler_run):
+        """
+        Gather and generate information useful for filtering or subsetting the
+        training feature objects for subsequent models
+
+        Args:
+            processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
+
+        Returns:
+            dict: information about the data source, conditions under which the run was
+                performed, and other information useful for modeling and prediction
+        """
+        metadata = {
+            'barcode': processed_cycler_run.barcode,
+            'protocol': processed_cycler_run.protocol,
+            'channel_id': processed_cycler_run.channel_id
+                }
+        return metadata
+
+
+class DeltaQFeaturesSingle(DeltaQFeatures):
+
+    class_feature_name = 'DeltaQSingleCycleLife'
+
+    def __init__(self, name, feature_object, outcome_object, metadata):
+        super().__init__(name, feature_object, outcome_object, metadata)
+        self.name = name
+        self.X = feature_object
+        self.y = outcome_object
+        self.metadata = metadata
+
+    @classmethod
+    def decision_logic(cls, processed_cycler_run):
+        return False
+
+    @classmethod
+    def outcomes_from_processed_cycler_run(cls, processed_cycler_run):
+        y = processed_cycler_run.get_cycle_life()
+        return y
 
 
 class DegradationPredictor(MSONable):

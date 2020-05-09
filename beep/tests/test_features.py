@@ -11,8 +11,9 @@ from botocore.exceptions import NoRegionError, NoCredentialsError
 
 from beep.structure import RawCyclerRun, ProcessedCyclerRun
 from beep.featurize import DegradationPredictor, process_file_list_from_json, \
-    BeepFeatures, DeltaQFeatures
+    BeepFeatures, DeltaQFeatures, DeltaQFeaturesSingle
 from monty.serialization import dumpfn, loadfn
+from monty.tempfile import ScratchDir
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
@@ -90,18 +91,47 @@ class TestFeaturizer(unittest.TestCase):
         np.testing.assert_almost_equal(predictor.X[diagnostic_feature_label][0], 4.481564593, decimal=8)
 
     def test_feature_class(self):
-        os.environ['BEEP_ROOT'] = TEST_FILE_DIR
+        with ScratchDir('.'):
+            os.environ['BEEP_ROOT'] = os.getcwd()
 
-        pcycler_run_loc = os.path.join(TEST_FILE_DIR, '2017-06-30_2C-10per_6C_CH10_structure.json')
-        pcycler_run = loadfn(pcycler_run_loc)
-        featurizer = DeltaQFeatures.launch('fastcharge', pcycler_run)
-        self.assertEqual(featurizer.name, 'fastcharge')
+            pcycler_run_loc = os.path.join(TEST_FILE_DIR, '2017-06-30_2C-10per_6C_CH10_structure.json')
+            pcycler_run = loadfn(pcycler_run_loc)
+            featurizer = DeltaQFeatures.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
+            self.assertEqual(os.path.split(featurizer.name)[-1],
+                             '2017-06-30_2C-10per_6C_CH10_features_DeltaQMultiCycleLife.json')
 
-        pcycler_run_loc = os.path.join(TEST_FILE_DIR, 'PreDiag_000287_000128_structure.json')
-        pcycler_run = loadfn(pcycler_run_loc)
-        featurizer = DeltaQFeatures.launch('fastcharge', pcycler_run)
-        self.assertEqual(featurizer.name, 'fastcharge')
-        dumpfn(featurizer, os.path.join(TEST_FILE_DIR, "test_class_features.json"))
+            pcycler_run_loc = os.path.join(TEST_FILE_DIR, 'PreDiag_000287_000128_structure.json')
+            pcycler_run = loadfn(pcycler_run_loc)
+            featurizer = DeltaQFeatures.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
+            self.assertEqual(os.path.split(featurizer.name)[-1],
+                             'PreDiag_000287_000128_features_DeltaQMultiCycleLife.json')
+            dumpfn(featurizer, featurizer.name)
+
+            processed_run_list = []
+            processed_result_list = []
+            processed_message_list = []
+            processed_paths_list = []
+            run_id = 1
+
+            featurizer_classes = [DeltaQFeatures, DeltaQFeaturesSingle]
+            for featurizer_class in featurizer_classes:
+                featurizer = featurizer_class.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
+                if featurizer:
+                    self.assertEqual(featurizer.metadata['protocol'], 'PreDiag_000287.000')
+                    dumpfn(featurizer, featurizer.name)
+                    processed_paths_list.append(featurizer.name)
+                    processed_run_list.append(run_id)
+                    processed_result_list.append("success")
+                    processed_message_list.append({'comment': '',
+                                                   'error': ''})
+                else:
+                    processed_paths_list.append(pcycler_run_loc)
+                    processed_run_list.append(run_id)
+                    processed_result_list.append("incomplete")
+                    processed_message_list.append({'comment': 'Insufficient data for featurization',
+                                                   'error': ''})
+
+            self.assertEqual(processed_result_list, ["success", "incomplete"])
 
 
     def test_feature_generation_list_to_json(self):
