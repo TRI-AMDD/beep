@@ -350,7 +350,7 @@ class DeltaQFeatures(BeepFeatures):
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
 
         Returns:
-            pd.DataFrame: cycles at which capacity degradation exceeds thresholds
+            pd.DataFrame: cycles at which capacity/energy degradation exceeds thresholds
         """
         y = processed_cycler_run.cycles_to_reach_set_capacities(
             thresh_max_cap=0.98, thresh_min_cap=0.78, interval_cap=0.03)

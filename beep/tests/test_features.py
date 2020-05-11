@@ -100,11 +100,6 @@ class TestFeaturizer(unittest.TestCase):
             self.assertEqual(os.path.split(featurizer.name)[-1],
                              '2017-06-30_2C-10per_6C_CH10_features_DeltaQMultiCycleLife.json')
 
-            pcycler_run_loc = os.path.join(TEST_FILE_DIR, 'PreDiag_000287_000128_structure.json')
-            pcycler_run = loadfn(pcycler_run_loc)
-            featurizer = DeltaQFeatures.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
-            self.assertEqual(os.path.split(featurizer.name)[-1],
-                             'PreDiag_000287_000128_features_DeltaQMultiCycleLife.json')
             dumpfn(featurizer, featurizer.name)
 
             processed_run_list = []
@@ -117,7 +112,9 @@ class TestFeaturizer(unittest.TestCase):
             for featurizer_class in featurizer_classes:
                 featurizer = featurizer_class.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
                 if featurizer:
-                    self.assertEqual(featurizer.metadata['protocol'], 'PreDiag_000287.000')
+                    self.assertEqual(featurizer.metadata['channel_id'], 9)
+                    self.assertEqual(featurizer.metadata['protocol'], None)
+                    self.assertEqual(featurizer.metadata['barcode'], None)
                     dumpfn(featurizer, featurizer.name)
                     processed_paths_list.append(featurizer.name)
                     processed_run_list.append(run_id)
@@ -128,11 +125,10 @@ class TestFeaturizer(unittest.TestCase):
                     processed_paths_list.append(pcycler_run_loc)
                     processed_run_list.append(run_id)
                     processed_result_list.append("incomplete")
-                    processed_message_list.append({'comment': 'Insufficient data for featurization',
+                    processed_message_list.append({'comment': 'Insufficient or incorrect data for featurization',
                                                    'error': ''})
 
             self.assertEqual(processed_result_list, ["success", "incomplete"])
-
 
     def test_feature_generation_list_to_json(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
