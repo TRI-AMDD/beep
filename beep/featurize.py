@@ -36,6 +36,7 @@ import os
 import json
 import numpy as np
 import pandas as pd
+from abc import ABCMeta, abstractmethod
 from docopt import docopt
 from monty.json import MSONable
 from monty.serialization import loadfn, dumpfn
@@ -47,7 +48,7 @@ from beep import logger, ENVIRONMENT, __version__
 s = {'service': 'DataAnalyzer'}
 
 
-class BeepFeatures(MSONable):
+class BeepFeatures(MSONable, metaclass=ABCMeta):
     """
     Class corresponding to feature baseline feature object.
     Attributes:
@@ -90,6 +91,7 @@ class BeepFeatures(MSONable):
             return False
 
     @classmethod
+    @abstractmethod
     def decision_logic(cls, processed_cycler_run):
         raise NotImplementedError
 
@@ -120,10 +122,12 @@ class BeepFeatures(MSONable):
         return feature_path
 
     @classmethod
+    @abstractmethod
     def features_from_processed_cycler_run(cls, processed_cycler_run):
         raise NotImplementedError
 
     @classmethod
+    @abstractmethod
     def outcomes_from_processed_cycler_run(cls, processed_cycler_run):
         raise NotImplementedError
 
@@ -380,6 +384,7 @@ class DeltaQFeaturesSingle(DeltaQFeatures):
     def outcomes_from_processed_cycler_run(cls, processed_cycler_run):
         y = processed_cycler_run.get_cycle_life()
         return y
+
 
 class DegradationPredictor(MSONable):
     """
