@@ -11,7 +11,7 @@ from botocore.exceptions import NoRegionError, NoCredentialsError
 
 from beep.structure import RawCyclerRun, ProcessedCyclerRun
 from beep.featurize import DegradationPredictor, process_file_list_from_json, \
-    DeltaQFeatures, DeltaQFeaturesSingle
+    DeltaQFastCharge, TrajectoryFastCharge, DeltaQFeaturesSingle
 from monty.serialization import dumpfn, loadfn
 from monty.tempfile import ScratchDir
 
@@ -96,9 +96,12 @@ class TestFeaturizer(unittest.TestCase):
 
             pcycler_run_loc = os.path.join(TEST_FILE_DIR, '2017-06-30_2C-10per_6C_CH10_structure.json')
             pcycler_run = loadfn(pcycler_run_loc)
-            featurizer = DeltaQFeatures.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
-            self.assertEqual(os.path.split(featurizer.name)[-1],
-                             '2017-06-30_2C-10per_6C_CH10_features_DeltaQMultiCycleLife.json')
+            featurizer = DeltaQFastCharge.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
+            path, local_filename = os.path.split(featurizer.name)
+            folder = os.path.split(path)[-1]
+            self.assertEqual(local_filename,
+                             '2017-06-30_2C-10per_6C_CH10_features_DeltaQFastCharge.json')
+            self.assertEqual(folder, 'DeltaQFastCharge')
             dumpfn(featurizer, featurizer.name)
 
             processed_run_list = []
@@ -107,7 +110,7 @@ class TestFeaturizer(unittest.TestCase):
             processed_paths_list = []
             run_id = 1
 
-            featurizer_classes = [DeltaQFeatures, DeltaQFeaturesSingle]
+            featurizer_classes = [DeltaQFastCharge, TrajectoryFastCharge, DeltaQFeaturesSingle]
             for featurizer_class in featurizer_classes:
                 featurizer = featurizer_class.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
                 if featurizer:
@@ -127,7 +130,10 @@ class TestFeaturizer(unittest.TestCase):
                     processed_message_list.append({'comment': 'Insufficient or incorrect data for featurization',
                                                    'error': ''})
 
-            self.assertEqual(processed_result_list, ["success", "incomplete"])
+            self.assertEqual(processed_result_list, ["success", "success", "incomplete"])
+            trajectory = loadfn(os.path.join('TrajectoryFastCharge',
+                                             '2017-06-30_2C-10per_6C_CH10_features_TrajectoryFastCharge.json'))
+            self.assertEqual(trajectory.X.loc[0, 'capacity_0.8'], 161)
 
     def test_feature_generation_list_to_json(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
