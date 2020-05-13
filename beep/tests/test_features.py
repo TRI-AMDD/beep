@@ -119,7 +119,7 @@ class TestFeaturizer(unittest.TestCase):
                     processed_message_list.append({'comment': 'Insufficient or incorrect data for featurization',
                                                    'error': ''})
 
-            self.assertEqual(processed_result_list, ["success", "success", "incomplete"])
+            self.assertEqual(processed_result_list, ["success", "success"])
             trajectory = loadfn(os.path.join('TrajectoryFastCharge',
                                              '2017-06-30_2C-10per_6C_CH10_features_TrajectoryFastCharge.json'))
             self.assertEqual(trajectory.X.loc[0, 'capacity_0.8'], 161)
