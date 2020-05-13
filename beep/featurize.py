@@ -572,11 +572,6 @@ class DegradationPredictor(MSONable):
         X[19] = summary.dc_internal_resistance[ifinal] - summary.dc_internal_resistance[1]
         labels.append("internal_resistance_difference_cycles_2:100")
 
-        if diagnostic_features:
-            X_diagnostic, labels_diagnostic = init_diagnostic_features(processed_cycler_run)
-            X = pd.concat([X, X_diagnostic], axis=1, sort=False)
-            labels = labels + labels_diagnostic
-
         X.columns = labels
         if predict_only:
             y = None
