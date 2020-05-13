@@ -110,7 +110,6 @@ class TestRunModel(unittest.TestCase):
                          np.around(np.arange(.98, 0.78, -0.03), 2) * features.nominal_capacity).any())
         os.remove(os.path.join(TEST_FILE_DIR, '2017-06-30_2C-10per_6C_CH10_full_model_multi_predictions.json'))
 
-
     def test_single_task_prediction_list_to_json(self):
         featurized_jsons = glob(os.path.join(SINGLE_TASK_FEATURES_PATH, "*features.json"))
         json_obj = {

@@ -107,8 +107,8 @@ class EndToEndTest(unittest.TestCase):
         featurized = json.dumps(featurized_output)
 
         # Prediction
-        predictions = run_model.process_file_list_from_json(
-            featurized, model_dir=MODEL_DIR)
+        # predictions = run_model.process_file_list_from_json(
+        #     featurized, model_dir=MODEL_DIR)
 
         # Validate output files
         self._check_result_file_validity()
@@ -157,15 +157,15 @@ class EndToEndTest(unittest.TestCase):
                                                  shell=True).decode('utf-8')
 
         # Fitting console test
-        feature_output = json.loads(feature_output)
-        fitting_input = {
-            "mode": self.events_mode,  # mode run|test|events_off
-            "file_list": feature_output['file_list'],  # list of file paths ['path/test1.json', 'path/test2.json']
-            'run_list': list(range(len(feature_output['file_list'])))  # list of run_ids [0, 1]
-            }
-        fitting_input = os_format(json.dumps(fitting_input))
-        model_output = subprocess.check_output("run_model {}".format(fitting_input),
-                                               shell=True).decode('utf-8')
+        # feature_output = json.loads(feature_output)
+        # fitting_input = {
+        #     "mode": self.events_mode,  # mode run|test|events_off
+        #     "file_list": feature_output['file_list'],  # list of file paths ['path/test1.json', 'path/test2.json']
+        #     'run_list': list(range(len(feature_output['file_list'])))  # list of run_ids [0, 1]
+        #     }
+        # fitting_input = os_format(json.dumps(fitting_input))
+        # model_output = subprocess.check_output("run_model {}".format(fitting_input),
+        #                                        shell=True).decode('utf-8')
 
         # Validate output files
         self._check_result_file_validity()
@@ -183,12 +183,13 @@ class EndToEndTest(unittest.TestCase):
         self.assertIsInstance(loaded_structure, structure.ProcessedCyclerRun)
 
         loaded_features = loadfn(
-            os.path.join("data-share", "features", "FastCharge_000002_CH29_full_model_multi_features.json"))
-        self.assertIsInstance(loaded_features, featurize.DegradationPredictor)
+            os.path.join("data-share", "features", "DeltaQFastCharge",
+                         "FastCharge_000002_CH29_features_DeltaQFastCharge.json"))
+        self.assertIsInstance(loaded_features, featurize.DeltaQFastCharge)
 
-        loaded_prediction = loadfn(
-            os.path.join("data-share", "predictions", "FastCharge_000002_CH29_full_model_multi_predictions.json"))
-        self.assertAlmostEqual(np.floor(loaded_prediction['cycle_number'][0]), 121)
+        # loaded_prediction = loadfn(
+        #     os.path.join("data-share", "predictions", "FastCharge_000002_CH29_full_model_multi_predictions.json"))
+        # self.assertAlmostEqual(np.floor(loaded_prediction['cycle_number'][0]), 121)
 
 
 if __name__ == "__main__":

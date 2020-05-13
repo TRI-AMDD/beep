@@ -5,13 +5,16 @@ import unittest
 import os
 import json
 import boto3
+import shutil
 
 import numpy as np
 from botocore.exceptions import NoRegionError, NoCredentialsError
 
 from beep.structure import RawCyclerRun, ProcessedCyclerRun
-from beep.featurize import DegradationPredictor, process_file_list_from_json
+from beep.featurize import process_file_list_from_json, \
+    DeltaQFastCharge, TrajectoryFastCharge, DegradationPredictor
 from monty.serialization import dumpfn, loadfn
+from monty.tempfile import ScratchDir
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
@@ -34,92 +37,139 @@ class TestFeaturizer(unittest.TestCase):
 
     def test_feature_generation_full_model(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
-        predictor = DegradationPredictor.from_processed_cycler_run_file(processed_cycler_run_path,
-                                                                        features_label='full_model')
-        self.assertEqual(len(predictor.X), 1)  # just test if works for now
-        # Ensure no NaN values
-        self.assertFalse(np.any(predictor.X.isnull()))
+        with ScratchDir('.'):
+            os.environ['BEEP_ROOT'] = os.getcwd()
+            pcycler_run = loadfn(processed_cycler_run_path)
+            featurizer = DeltaQFastCharge.from_run(processed_cycler_run_path, os.getcwd(), pcycler_run)
+
+            self.assertEqual(len(featurizer.X), 1)  # just test if works for now
+            # Ensure no NaN values
+            self.assertFalse(np.any(featurizer.X.isnull()))
+
+    def test_feature_old_class(self):
+        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
+        with ScratchDir('.'):
+            os.environ['BEEP_ROOT'] = os.getcwd()
+            predictor = DegradationPredictor.from_processed_cycler_run_file(processed_cycler_run_path,
+                                                                            features_label='full_model')
+            self.assertEqual(predictor.feature_labels[4], "charge_time_cycles_1:5")
 
     def test_feature_label_full_model(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
-        predictor = DegradationPredictor.from_processed_cycler_run_file(processed_cycler_run_path,
-                                                                        features_label='full_model')
-        self.assertEqual(predictor.feature_labels[4], "charge_time_cycles_1:5")  
+        with ScratchDir('.'):
+            os.environ['BEEP_ROOT'] = os.getcwd()
+            pcycler_run = loadfn(processed_cycler_run_path)
+            featurizer = DeltaQFastCharge.from_run(processed_cycler_run_path, os.getcwd(), pcycler_run)
+
+            self.assertEqual(featurizer.X.columns.tolist()[4], "charge_time_cycles_1:5")
 
     def test_feature_serialization(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
-        predictor = DegradationPredictor.from_processed_cycler_run_file(processed_cycler_run_path,
-                                                                        prediction_type = 'multi',
-                                                                        features_label='full_model')
-        #    import nose
-    #    nose.tools.set_trace()
-        dumpfn(predictor, os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_features_predict_only.json"))
-        predictor_reloaded = loadfn(os.path.join(TEST_FILE_DIR,
-                                                 "2017-12-04_4_65C-69per_6C_CH29_features_predict_only.json"))
-        self.assertIsInstance(predictor_reloaded, DegradationPredictor)
-        # test nominal capacity is being generated
-        self.assertEqual(predictor_reloaded.nominal_capacity, 1.0628421000000001)
-        os.remove(os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_features_predict_only.json"))
+        with ScratchDir('.'):
+            os.environ['BEEP_ROOT'] = os.getcwd()
+            pcycler_run = loadfn(processed_cycler_run_path)
+            featurizer = DeltaQFastCharge.from_run(processed_cycler_run_path, os.getcwd(), pcycler_run)
+
+            dumpfn(featurizer, featurizer.name)
+            features_reloaded = loadfn(featurizer.name)
+            self.assertIsInstance(features_reloaded, DeltaQFastCharge)
+            # test nominal capacity is being generated
+            self.assertEqual(features_reloaded.X.loc[0, 'nominal_capacity_by_median'], 1.0628421000000001)
 
     def test_feature_serialization_for_training(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
-        predictor = DegradationPredictor.from_processed_cycler_run_file(processed_cycler_run_path,
-                                                                        features_label='full_model', predict_only=False)
-        dumpfn(predictor, os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_features.json"))
-        predictor_reloaded = loadfn(os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_features.json"))
-        self.assertIsInstance(predictor_reloaded, DegradationPredictor)
-        os.remove(os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_features.json"))
+        with ScratchDir('.'):
+            os.environ['BEEP_ROOT'] = os.getcwd()
+            pcycler_run = loadfn(processed_cycler_run_path)
+            featurizer = DeltaQFastCharge.from_run(processed_cycler_run_path, os.getcwd(), pcycler_run)
 
-    @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
-    def test_diagnostic_feature_generation(self):
-        os.environ['BEEP_ROOT'] = TEST_FILE_DIR
-        maccor_file_w_parameters = os.path.join(TEST_FILE_DIR, "PreDiag_000287_000128.092")
-        raw_run = RawCyclerRun.from_file(maccor_file_w_parameters)
-        v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \
-            raw_run.determine_structuring_parameters()
-        pcycler_run = ProcessedCyclerRun.from_raw_cycler_run(raw_run,
-                                                             diagnostic_available=diagnostic_available)
-        predictor = DegradationPredictor.init_full_model(pcycler_run,
-                                                         predict_only=False,
-                                                         mid_pred_cycle=11,
-                                                         final_pred_cycle=12,
-                                                         diagnostic_features=True)
-        diagnostic_feature_label = predictor.feature_labels[-1]
-        self.assertEqual(diagnostic_feature_label, "median_diagnostic_cycles_discharge_capacity")
-        np.testing.assert_almost_equal(predictor.X[diagnostic_feature_label][0], 4.481564593, decimal=8)
+            dumpfn(featurizer, featurizer.name)
+            features_reloaded = loadfn(featurizer.name)
+            self.assertIsInstance(features_reloaded, DeltaQFastCharge)
+
+    def test_feature_class(self):
+        with ScratchDir('.'):
+            os.environ['BEEP_ROOT'] = os.getcwd()
+
+            pcycler_run_loc = os.path.join(TEST_FILE_DIR, '2017-06-30_2C-10per_6C_CH10_structure.json')
+            pcycler_run = loadfn(pcycler_run_loc)
+            featurizer = DeltaQFastCharge.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
+            path, local_filename = os.path.split(featurizer.name)
+            folder = os.path.split(path)[-1]
+            self.assertEqual(local_filename,
+                             '2017-06-30_2C-10per_6C_CH10_features_DeltaQFastCharge.json')
+            self.assertEqual(folder, 'DeltaQFastCharge')
+            dumpfn(featurizer, featurizer.name)
+
+            processed_run_list = []
+            processed_result_list = []
+            processed_message_list = []
+            processed_paths_list = []
+            run_id = 1
+
+            featurizer_classes = [DeltaQFastCharge, TrajectoryFastCharge]
+            for featurizer_class in featurizer_classes:
+                featurizer = featurizer_class.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
+                if featurizer:
+                    self.assertEqual(featurizer.metadata['channel_id'], 9)
+                    self.assertEqual(featurizer.metadata['protocol'], None)
+                    self.assertEqual(featurizer.metadata['barcode'], None)
+                    dumpfn(featurizer, featurizer.name)
+                    processed_paths_list.append(featurizer.name)
+                    processed_run_list.append(run_id)
+                    processed_result_list.append("success")
+                    processed_message_list.append({'comment': '',
+                                                   'error': ''})
+                else:
+                    processed_paths_list.append(pcycler_run_loc)
+                    processed_run_list.append(run_id)
+                    processed_result_list.append("incomplete")
+                    processed_message_list.append({'comment': 'Insufficient or incorrect data for featurization',
+                                                   'error': ''})
+
+            self.assertEqual(processed_result_list, ["success", "success"])
+            trajectory = loadfn(os.path.join('TrajectoryFastCharge',
+                                             '2017-06-30_2C-10per_6C_CH10_features_TrajectoryFastCharge.json'))
+            self.assertEqual(trajectory.X.loc[0, 'capacity_0.8'], 161)
 
     def test_feature_generation_list_to_json(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
-        # Create dummy json obj
-        json_obj = {
-                    "mode": self.events_mode,
-                    "file_list": [processed_cycler_run_path, processed_cycler_run_path],
-                    'run_list': [0, 1]
-                    }
-        json_string = json.dumps(json_obj)
+        with ScratchDir('.'):
+            os.environ['BEEP_ROOT'] = os.getcwd()
 
-        newjsonpaths = process_file_list_from_json(json_string, processed_dir=TEST_FILE_DIR)
-        reloaded = json.loads(newjsonpaths)
+            # Create dummy json obj
+            json_obj = {
+                        "mode": self.events_mode,
+                        "file_list": [processed_cycler_run_path, processed_cycler_run_path],
+                        'run_list': [0, 1]
+                        }
+            json_string = json.dumps(json_obj)
 
-        # Check that at least strings are output
-        self.assertIsInstance(reloaded['file_list'][-1], str)
+            newjsonpaths = process_file_list_from_json(json_string, processed_dir=os.getcwd())
+            reloaded = json.loads(newjsonpaths)
 
-        # Ensure first is correct
-        predictor_reloaded = loadfn(reloaded['file_list'][0])
-        self.assertIsInstance(predictor_reloaded, DegradationPredictor)
-        self.assertEqual(predictor_reloaded.nominal_capacity, 1.0628421000000001)
+            # Check that at least strings are output
+            self.assertIsInstance(reloaded['file_list'][-1], str)
+
+            # Ensure first is correct
+            features_reloaded = loadfn(reloaded['file_list'][0])
+            self.assertIsInstance(features_reloaded, DeltaQFastCharge)
+            self.assertEqual(features_reloaded.X.loc[0, 'nominal_capacity_by_median'], 1.0628421000000001)
 
     def test_insufficient_data_file(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE_INSUF)
+        with ScratchDir('.'):
+            os.environ['BEEP_ROOT'] = os.getcwd()
 
-        json_obj = {
-                    "mode": self.events_mode,
-                    "file_list": [processed_cycler_run_path],
-                    'run_list': [1]
-                    }
-        json_string = json.dumps(json_obj)
+            json_obj = {
+                        "mode": self.events_mode,
+                        "file_list": [processed_cycler_run_path],
+                        'run_list': [1]
+                        }
+            json_string = json.dumps(json_obj)
 
-        json_path = process_file_list_from_json(json_string, processed_dir=TEST_FILE_DIR)
-        output_obj = json.loads(json_path)
-        self.assertEqual(output_obj['result_list'][0],'incomplete')
-        self.assertEqual(output_obj['message_list'][0]['comment'], 'Insufficient data for featurization')
+            json_path = process_file_list_from_json(json_string, processed_dir=os.getcwd())
+            output_obj = json.loads(json_path)
+            self.assertEqual(output_obj['result_list'][0], 'incomplete')
+            self.assertEqual(output_obj['message_list'][0]['comment'],
+                             'Insufficient or incorrect data for featurization')

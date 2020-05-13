@@ -35,6 +35,7 @@ class ProjectTransfer:
             prefix (str): Prefix of the input and output project in the S3 bucket.
             mode (str): mode to run in, if 'test' the output bucket is the 'beep-sync-test' bucket.
         """
+
         self.input_project = input_project
         self.output_project = output_project
         self.bucket = bucket

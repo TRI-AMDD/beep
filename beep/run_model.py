@@ -539,8 +539,6 @@ def process_file_list_from_json(file_list_json, model_dir="/data-share/models/",
             model = DegradationModel.from_serialized_model(model_dir=model_dir,
                                                            serialized_model=model_name)
 
-
-
     else:
         if hyperparameters is None:
             hyperparameters = {'random_state': 1,
