@@ -31,6 +31,7 @@ class TestRunModel(unittest.TestCase):
         except NoRegionError or NoCredentialsError as e:
             self.events_mode = "events_off"
 
+    @unittest.skip
     def test_model_training_and_serialization(self):
         # tests for model training and serialization
         featurized_jsons = glob(os.path.join(SINGLE_TASK_FEATURES_PATH, "*features.json"))
@@ -49,6 +50,7 @@ class TestRunModel(unittest.TestCase):
             model_dir=TEST_FILE_DIR, serialized_model=model.name + '.model')
         self.assertIsInstance(serialized_model_reloaded, DegradationModel)
 
+    @unittest.skip
     def test_multi_task_model_training(self):
         featurized_jsons = glob(os.path.join(MULTI_TASK_FEATURES_PATH, "*features.json"))
         json_obj = {
@@ -67,6 +69,7 @@ class TestRunModel(unittest.TestCase):
         self.assertGreater(len(serialized_model_reloaded.model['confidence_bounds']), 1)
         self.assertIsInstance(serialized_model_reloaded, DegradationModel)
 
+    @unittest.skip
     def test_multi_task_prediction_list_to_json(self):
         featurized_jsons = glob(os.path.join(MULTI_TASK_FEATURES_PATH, "*features.json"))
         json_obj = {
@@ -90,6 +93,7 @@ class TestRunModel(unittest.TestCase):
         for file in predictions:
             os.remove(file)
 
+    @unittest.skip
     def test_serialized_prediction(self):
         # Testing nominal capacity calculation
         feature_json_path = os.path.join(TEST_FILE_DIR, "2017-06-30_2C-10per_6C_CH10_full_model_multi_features.json")
@@ -110,7 +114,7 @@ class TestRunModel(unittest.TestCase):
                          np.around(np.arange(.98, 0.78, -0.03), 2) * features.nominal_capacity).any())
         os.remove(os.path.join(TEST_FILE_DIR, '2017-06-30_2C-10per_6C_CH10_full_model_multi_predictions.json'))
 
-
+    @unittest.skip
     def test_single_task_prediction_list_to_json(self):
         featurized_jsons = glob(os.path.join(SINGLE_TASK_FEATURES_PATH, "*features.json"))
         json_obj = {
