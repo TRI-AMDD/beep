@@ -12,7 +12,7 @@ from botocore.exceptions import NoRegionError, NoCredentialsError
 
 from beep.structure import RawCyclerRun, ProcessedCyclerRun
 from beep.featurize import process_file_list_from_json, \
-    DeltaQFastCharge, TrajectoryFastCharge
+    DeltaQFastCharge, TrajectoryFastCharge, DegradationPredictor
 from monty.serialization import dumpfn, loadfn
 from monty.tempfile import ScratchDir
 
@@ -45,6 +45,14 @@ class TestFeaturizer(unittest.TestCase):
             self.assertEqual(len(featurizer.X), 1)  # just test if works for now
             # Ensure no NaN values
             self.assertFalse(np.any(featurizer.X.isnull()))
+
+    def test_feature_old_class(self):
+        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
+        with ScratchDir('.'):
+            os.environ['BEEP_ROOT'] = os.getcwd()
+            predictor = DegradationPredictor.from_processed_cycler_run_file(processed_cycler_run_path,
+                                                                            features_label='full_model')
+            self.assertEqual(predictor.feature_labels[4], "charge_time_cycles_1:5")
 
     def test_feature_label_full_model(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
