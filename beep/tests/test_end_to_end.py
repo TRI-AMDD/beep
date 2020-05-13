@@ -183,8 +183,9 @@ class EndToEndTest(unittest.TestCase):
         self.assertIsInstance(loaded_structure, structure.ProcessedCyclerRun)
 
         loaded_features = loadfn(
-            os.path.join("data-share", "features", "FastCharge_000002_CH29_full_model_multi_features.json"))
-        self.assertIsInstance(loaded_features, featurize.DegradationPredictor)
+            os.path.join("data-share", "features", "DeltaQFastCharge",
+                         "FastCharge_000002_CH29_features_DeltaQFastCharge.json"))
+        self.assertIsInstance(loaded_features, featurize.DeltaQFastCharge)
 
         # loaded_prediction = loadfn(
         #     os.path.join("data-share", "predictions", "FastCharge_000002_CH29_full_model_multi_predictions.json"))

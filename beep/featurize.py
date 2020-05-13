@@ -492,7 +492,7 @@ def process_file_list_from_json(file_list_json, processed_dir='data-share/featur
 
         featurizer_classes = [DeltaQFastCharge, TrajectoryFastCharge]
         for featurizer_class in featurizer_classes:
-            featurizer = featurizer_class.from_run(path, os.getcwd(), processed_cycler_run)
+            featurizer = featurizer_class.from_run(path, processed_dir, processed_cycler_run)
             if featurizer:
                 dumpfn(featurizer, featurizer.name)
                 processed_paths_list.append(featurizer.name)
