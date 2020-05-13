@@ -374,26 +374,6 @@ class TrajectoryFastCharge(DeltaQFastCharge):
         return y
 
 
-class DeltaQFeaturesSingle(DeltaQFastCharge):
-
-    class_feature_name = 'DeltaQSingleCycleLife'
-
-    def __init__(self, name, X, metadata):
-        super().__init__(name, X, metadata)
-        self.name = name
-        self.X = X
-        self.metadata = metadata
-
-    @classmethod
-    def decision_logic(cls, processed_cycler_run):
-        return False
-
-    @classmethod
-    def features_from_processed_cycler_run(cls, processed_cycler_run):
-        y = processed_cycler_run.get_cycle_life()
-        return y
-
-
 class DegradationPredictor(MSONable):
     """
     Object corresponding to feature matrix. Includes constructors

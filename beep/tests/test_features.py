@@ -12,7 +12,7 @@ from botocore.exceptions import NoRegionError, NoCredentialsError
 
 from beep.structure import RawCyclerRun, ProcessedCyclerRun
 from beep.featurize import process_file_list_from_json, \
-    DeltaQFastCharge, TrajectoryFastCharge, DeltaQFeaturesSingle
+    DeltaQFastCharge, TrajectoryFastCharge
 from monty.serialization import dumpfn, loadfn
 from monty.tempfile import ScratchDir
 
@@ -99,7 +99,7 @@ class TestFeaturizer(unittest.TestCase):
             processed_paths_list = []
             run_id = 1
 
-            featurizer_classes = [DeltaQFastCharge, TrajectoryFastCharge, DeltaQFeaturesSingle]
+            featurizer_classes = [DeltaQFastCharge, TrajectoryFastCharge]
             for featurizer_class in featurizer_classes:
                 featurizer = featurizer_class.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
                 if featurizer:
