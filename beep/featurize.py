@@ -79,7 +79,7 @@ class BeepFeatures(MSONable, metaclass=ABCMeta):
         Returns:
             (beep.featurize.BeepFeatures): class object for the feature set
         """
-        if cls.decision_logic(processed_cycler_run):
+        if cls.validate_data(processed_cycler_run):
             output_filename = cls.get_feature_object_name_and_path(input_filename, feature_dir)
             feature_object = cls.features_from_processed_cycler_run(processed_cycler_run)
             metadata = cls.metadata_from_processed_cycler_run(processed_cycler_run)
@@ -89,7 +89,7 @@ class BeepFeatures(MSONable, metaclass=ABCMeta):
 
     @classmethod
     @abstractmethod
-    def decision_logic(cls, processed_cycler_run):
+    def validate_data(cls, processed_cycler_run):
         raise NotImplementedError
 
     @classmethod
@@ -184,7 +184,7 @@ class DeltaQFastCharge(BeepFeatures):
         self.metadata = metadata
 
     @classmethod
-    def decision_logic(cls, processed_cycler_run):
+    def validate_data(cls, processed_cycler_run):
         """
         This function determines if the input data has the necessary attributes for
         creation of this feature class. It should test for all of the possible reasons
