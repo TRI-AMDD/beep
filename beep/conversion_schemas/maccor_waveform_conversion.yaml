@@ -1,0 +1,15 @@
+control_mode: 'P'
+value_scale: 1
+charge_limit_mode: ''
+charge_limit_value: ''
+discharge_limit_mode: ''
+discharge_limit_value: ''
+charge_end_mode: 'V'
+charge_end_operation: '>='
+charge_end_mode_value: 4.2
+discharge_end_mode: 'V'
+discharge_end_operation: '<='
+discharge_end_mode_value: 3
+report_mode: 'T'
+report_value: 1
+range: 'A'
