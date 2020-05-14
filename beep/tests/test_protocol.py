@@ -230,7 +230,7 @@ class GenerateProcedureTest(unittest.TestCase):
         #Check that sum of durations equals length of the power timeseries
         self.assertEqual(df_MWF.iloc[:,5].sum(), len(df_power))
 
-        #check that charge/discharge steps are identical
+        #Check that charge/discharge steps are identical
         self.assertTrue((df_MWF.iloc[:,0] == df_MWF_ref.iloc[:,0]).all())
 
         #Check that power values are close to each other (col 2)
@@ -263,7 +263,7 @@ class GenerateProcedureTest(unittest.TestCase):
         #Check dimensions with the reference mwf file
         self.assertEqual(df_MWF.shape, df_MWF_ref.shape)
 
-        # check that control_mode, state, limit and limit_value columns are identical.
+        #Check that control_mode, charge/discharge state, limit and limit_value columns are identical.
         self.assertTrue((df_MWF.iloc[:, [0,1,3,4]] == df_MWF_ref.iloc[:, [0,1,3,4]]).all().all())
 
         #Check that power values are close to each other (col 2)
