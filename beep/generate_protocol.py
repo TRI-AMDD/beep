@@ -1021,11 +1021,6 @@ def generate_maccor_waveform_file(df, file_prefix, file_directory, mwf_config=No
 
     df.rename(columns={'time': 'duration'}, inplace=True)
 
-    mask = df['power'] <= 0
-
-    df['state'] = 'C'
-    df.loc[mask, 'state'] = 'D'
-
     df['control_mode'] = mwf_config['control_mode']
 
     if mwf_config['control_mode'] == 'P':
@@ -1033,20 +1028,19 @@ def generate_maccor_waveform_file(df, file_prefix, file_directory, mwf_config=No
 
     df['value'] = np.round(abs(df['power']), 5)
 
-    df['limit_mode'] = mwf_config['charge_limit_mode']
-    df.loc[mask, 'limit_mode'] = mwf_config['discharge_limit_mode']
+    mask = df['power'] <= 0
+    df = df.assign(**{'state': 'C',
+                      'limit_mode': mwf_config['charge_limit_mode'],
+                      'limit_value': mwf_config['charge_limit_value'],
+                      'end_mode': mwf_config['charge_end_mode'],
+                      'operation':  mwf_config['charge_end_operation'],
+                      'end_mode_value': mwf_config['charge_end_mode_value']
+                      })
 
-    df['limit_value'] = mwf_config['charge_limit_value']
-    df.loc[mask, 'limit_value'] = mwf_config['discharge_limit_value']
-
-    df['end_mode'] = mwf_config['charge_end_mode']
-    df.loc[mask, 'end_mode'] = mwf_config['discharge_end_mode']
-
-    df['operation'] = mwf_config['charge_end_operation']
-    df.loc[mask, 'operation'] = mwf_config['discharge_end_operation']
-
-    df['end_mode_value'] = mwf_config['charge_end_mode_value']
-    df.loc[mask, 'end_mode_value'] = mwf_config['discharge_end_mode_value']
+    df.loc[mask, ['state', 'limit_mode', 'limit_value', 'end_mode', 'operation', 'end_mode_value']] =\
+        ['D', mwf_config['discharge_limit_mode'], mwf_config['discharge_limit_value'],
+         mwf_config['discharge_end_mode'], mwf_config['discharge_end_operation'],
+         mwf_config['discharge_end_mode_value']]
 
     df['report_mode'] = mwf_config['report_mode']
     df['report_value'] = mwf_config['report_value']
