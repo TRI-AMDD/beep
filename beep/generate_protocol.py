@@ -1003,8 +1003,8 @@ def generate_maccor_waveform_file(df, file_prefix, file_directory, mwf_config=No
     Args:
         df (pd.DataFrame): power waveform containing two columns "time" and "power", in sec and W respectively.
         file_prefix (str): prefix for the filename (extension is .MWF by default)
-        file_directory (str)
-        mwf_config (dict):
+        file_directory (str): folder to store the mwf file
+        mwf_config (dict): dictionary of instrument control parameters for generating the waveform
 
     Returns:
          path to the maccor waveform file generated
