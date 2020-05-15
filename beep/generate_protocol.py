@@ -51,6 +51,7 @@ import xmltodict
 from docopt import docopt
 from monty.serialization import loadfn
 from beep import logger, __version__, PROCEDURE_TEMPLATE_DIR
+from beep.conversion_schemas import MACCOR_WAVEFORM_CONFIG
 from beep.utils import KinesisEvents
 s = {'service': 'ProtocolGenerator'}
 
@@ -953,9 +954,9 @@ def convert_velocity_to_power_waveform(waveform_file, velocity_units):
         velocity_units (str): units of velocity. Accept 'mph' or 'kmph' or 'mps'
 
     returns
-    pd.DataFrame containing time, power and scaled power(between 0 and 1)
+    pd.DataFrame with two columns: time (sec) and power (W). Negative = Discharge
     """
-    df = pd.read_csv(waveform_file, sep="\t", header=0)
+    df = pd.read_csv(waveform_file, sep='\t', header=0)
     df.columns = ['t', 'v']
 
     if velocity_units == 'mph':
@@ -988,9 +989,70 @@ def convert_velocity_to_power_waveform(waveform_file, velocity_units):
 
     power = -power * df.v  # positive power = charge
 
-    return pd.DataFrame({'time(s)': df.t,
-                         'power_unscaled(W)': power,
-                         'power_scaled': power / max(abs(power))})
+    return pd.DataFrame({'time': df.t,
+                         'power': power})
+
+
+def generate_maccor_waveform_file(df, file_prefix, file_directory, mwf_config=None):
+    """
+    Helper function that takes in a variable power waveform and outputs a maccor waveform file (.MWF), which is read by
+    the cycler when the procedure file has a "fast-wave" step.
+    Relevant parameters to generate the .mwf files governing the input mode, charge/discharge limits, end conditions
+    and scaling are stored in /conversion_schemas/maccor_waveform_conversion.yaml
+
+    Args:
+        df (pd.DataFrame): power waveform containing two columns "time" and "power", in sec and W respectively.
+        file_prefix (str): prefix for the filename (extension is .MWF by default)
+        file_directory (str): folder to store the mwf file
+        mwf_config (dict): dictionary of instrument control parameters for generating the waveform
+
+    Returns:
+         path to the maccor waveform file generated
+    """
+
+    if mwf_config is None:
+        mwf_config = MACCOR_WAVEFORM_CONFIG
+
+    df['power'] = df['power'] / max(abs(df['power'])) * mwf_config['value_scale']
+
+    df['step_counter'] = df['power'].diff().fillna(0).ne(0).cumsum()
+    df = df.groupby('step_counter').agg({'time': 'count',
+                                         'power': 'first'})
+
+    df.rename(columns={'time': 'duration'}, inplace=True)
+
+    df['control_mode'] = mwf_config['control_mode']
+
+    if mwf_config['control_mode'] == 'P':
+        df.loc[df['power'] == 0, 'control_mode'] = 'I'
+
+    df['value'] = np.round(abs(df['power']), 5)
+
+    mask = df['power'] <= 0
+    df = df.assign(**{'state': 'C',
+                      'limit_mode': mwf_config['charge_limit_mode'],
+                      'limit_value': mwf_config['charge_limit_value'],
+                      'end_mode': mwf_config['charge_end_mode'],
+                      'operation':  mwf_config['charge_end_operation'],
+                      'end_mode_value': mwf_config['charge_end_mode_value']
+                      })
+
+    df.loc[mask, ['state', 'limit_mode', 'limit_value', 'end_mode', 'operation', 'end_mode_value']] =\
+        ['D', mwf_config['discharge_limit_mode'], mwf_config['discharge_limit_value'],
+         mwf_config['discharge_end_mode'], mwf_config['discharge_end_operation'],
+         mwf_config['discharge_end_mode_value']]
+
+    df['report_mode'] = mwf_config['report_mode']
+    df['report_value'] = mwf_config['report_value']
+    df['range'] = mwf_config['range']
+
+    MWF_file_path = os.path.join(file_directory, file_prefix + ".MWF")
+
+    df[['state', 'control_mode', 'value', 'limit_mode', 'limit_value', 'duration', 'end_mode',
+        'operation', 'end_mode_value', 'report_mode', 'report_value', 'range']].\
+        to_csv(MWF_file_path, sep='\t', header=None, index=None)
+
+    return MWF_file_path
 
 
 def generate_protocol_files_from_csv(csv_filename, output_directory, **kwargs):
