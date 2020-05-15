@@ -170,7 +170,7 @@ class RawCyclerRun(MSONable):
             if new_df.size == 0:
                 continue
             if axis in ['charge_capacity', 'discharge_capacity', 'test_time']:
-                axis_range = [new_df[axis].min(), new_df[axis].max()]
+                axis_range = [self.data[axis].min(), self.data[axis].max()]
                 new_df = get_interpolated_data(new_df, axis, field_range=axis_range,
                                                columns=incl_columns, resolution=resolution)
             elif axis == 'voltage':
