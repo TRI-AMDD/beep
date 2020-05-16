@@ -36,3 +36,19 @@ data_columns:
   dv/dt: _dv/dt
   internal_resistance: internal_resistance
   Temperature: temperature
+data_types:
+  data_point: 'int32'
+  test_time: 'float32'
+  datetime: 'float32'
+  step_time: 'float32'
+  step_index: 'int16'
+  cycle_index: 'int32'
+  current: 'float32'
+  voltage: 'float32'
+  charge_capacity: 'float64'
+  discharge_capacity: 'float64'
+  charge_energy: 'float64'
+  discharge_energy: 'float64'
+  dv/dt: 'float32'
+  internal_resistance: 'float32'
+  temperature: 'float32'

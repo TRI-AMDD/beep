@@ -527,6 +527,7 @@ class RawCyclerRun(MSONable):
         metadata_path = path.replace(".csv", "_Metadata.csv")
         data = pd.read_csv(path)
         data.rename(str.lower, axis='columns', inplace=True)
+        data = data.astype(ARBIN_CONFIG['data_types'])
         data.rename(ARBIN_CONFIG['data_columns'], axis='columns', inplace=True)
         metadata = pd.read_csv(metadata_path)
         metadata.rename(str.lower, axis='columns', inplace=True)
