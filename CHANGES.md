@@ -1,5 +1,16 @@
 
 
+v2020.5.16
+----------
+* Adding test for time base interpolation
+* Add check to ensure that charge cycle interpolation on charge capacity is uniform
+* Change the interpolation axis to be the max range across the run
+* generate maccor waveform file from power waveforms
+* Change to single feature object for better generalization
+* Use ABC abstract class for more explicit rules
+* Refactor featurization into class objects
+
+
 v2020.5.5
 ---------
 * Remove code that was deleting the charge interpolation and interpolate on capacity
