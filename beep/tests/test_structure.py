@@ -167,6 +167,9 @@ class RawCyclerRunTest(unittest.TestCase):
         all_interpolated = cycler_run.get_interpolated_cycles()
         all_interpolated = all_interpolated[(all_interpolated.step_type == 'charge')]
         lengths = [len(df) for index, df in all_interpolated.groupby("cycle_index")]
+        axis_1 = all_interpolated[all_interpolated.cycle_index == 5].charge_capacity.to_list()
+        axis_2 = all_interpolated[all_interpolated.cycle_index == 10].charge_capacity.to_list()
+        self.assertEqual(axis_1, axis_2)
         self.assertTrue(np.all(np.array(lengths) == 1000))
         self.assertTrue(all_interpolated['current'].mean() > 0)
 
