@@ -162,11 +162,31 @@ class RawCyclerRunTest(unittest.TestCase):
         for col_name in y_at_point.columns:
             self.assertAlmostEqual(pred[col_name].iloc[0], y_at_point[col_name].iloc[0], places=5)
 
+    def test_get_interpolated_charge_step(self):
+        cycler_run = RawCyclerRun.from_file(self.arbin_file)
+        reg_cycles = [i for i in cycler_run.data.cycle_index.unique()]
+        v_range = [2.8, 3.5]
+        resolution = 1000
+        interpolated_charge = cycler_run.get_interpolated_steps(v_range,
+                                                                resolution,
+                                                                step_type='charge',
+                                                                reg_cycles=reg_cycles,
+                                                                axis='test_time')
+        lengths = [len(df) for index, df in interpolated_charge.groupby("cycle_index")]
+        axis_1 = interpolated_charge[interpolated_charge.cycle_index == 5].charge_capacity.to_list()
+        axis_2 = interpolated_charge[interpolated_charge.cycle_index == 10].charge_capacity.to_list()
+        self.assertGreater(max(axis_1), max(axis_2))
+        self.assertTrue(np.all(np.array(lengths) == 1000))
+        self.assertTrue(interpolated_charge['current'].mean() > 0)
+
     def test_get_interpolated_charge_cycles(self):
         cycler_run = RawCyclerRun.from_file(self.arbin_file)
         all_interpolated = cycler_run.get_interpolated_cycles()
         all_interpolated = all_interpolated[(all_interpolated.step_type == 'charge')]
         lengths = [len(df) for index, df in all_interpolated.groupby("cycle_index")]
+        axis_1 = all_interpolated[all_interpolated.cycle_index == 5].charge_capacity.to_list()
+        axis_2 = all_interpolated[all_interpolated.cycle_index == 10].charge_capacity.to_list()
+        self.assertEqual(axis_1, axis_2)
         self.assertTrue(np.all(np.array(lengths) == 1000))
         self.assertTrue(all_interpolated['current'].mean() > 0)
 
