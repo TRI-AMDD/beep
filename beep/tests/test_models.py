@@ -11,7 +11,6 @@ from beep.run_model import DegradationModel, process_file_list_from_json, get_pr
 from monty.serialization import loadfn
 
 import boto3
-from botocore.exceptions import NoRegionError, NoCredentialsError
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
@@ -28,7 +27,7 @@ class TestRunModel(unittest.TestCase):
             kinesis = boto3.client('kinesis')
             response = kinesis.list_streams()
             self.events_mode = "test"
-        except NoRegionError or NoCredentialsError as e:
+        except Exception as e:
             self.events_mode = "events_off"
 
     def test_model_training_and_serialization(self):
@@ -140,7 +139,7 @@ class TestHelperFunctions(unittest.TestCase):
             kinesis = boto3.client('kinesis')
             response = kinesis.list_streams()
             self.events_mode = "test"
-        except NoRegionError or NoCredentialsError as e:
+        except Exception as e:
             self.events_mode = "events_off"
 
     def test_get_project_name_from_list(self):

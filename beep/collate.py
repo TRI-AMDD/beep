@@ -229,6 +229,10 @@ def process_files_json():
     # chdir into beep root
     pwd = os.getcwd()
     os.chdir(os.environ.get("BEEP_ROOT", "/"))
+    if not os.path.exists(SRC_DIR):
+        os.makedirs(SRC_DIR)
+    if not os.path.exists(DEST_DIR):
+        os.makedirs(DEST_DIR)
 
     meta_list = list(filter(lambda x: '_Metadata.csv' in x, os.listdir(SRC_DIR)))
     file_list = list(filter(lambda x: '.csv' in x if x not in meta_list else None, os.listdir(SRC_DIR)))

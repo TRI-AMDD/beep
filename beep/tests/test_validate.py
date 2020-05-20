@@ -9,7 +9,6 @@ import pandas as pd
 import numpy as np
 import boto3
 
-from botocore.exceptions import NoRegionError, NoCredentialsError
 from monty.tempfile import ScratchDir
 from beep.validate import ValidatorBeep, validate_file_list_from_json, \
     SimpleValidator
@@ -27,7 +26,7 @@ class ValidationArbinTest(unittest.TestCase):
             kinesis = boto3.client('kinesis')
             response = kinesis.list_streams()
             self.events_mode = "test"
-        except NoRegionError or NoCredentialsError as e:
+        except Exception as e:
             self.events_mode = "events_off"
 
     def test_validation_arbin_bad_index(self):
@@ -142,7 +141,7 @@ class ValidationMaccorTest(unittest.TestCase):
             kinesis = boto3.client('kinesis')
             response = kinesis.list_streams()
             self.events_mode = "test"
-        except NoRegionError or NoCredentialsError as e:
+        except Exception as e:
             self.events_mode = "events_off"
 
     def test_validation_maccor(self):
@@ -200,7 +199,7 @@ class SimpleValidatorTest(unittest.TestCase):
             kinesis = boto3.client('kinesis')
             response = kinesis.list_streams()
             self.events_mode = "test"
-        except NoRegionError or NoCredentialsError as e:
+        except Exception as e:
             self.events_mode = "events_off"
 
     def test_file_incomplete(self):

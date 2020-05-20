@@ -1533,6 +1533,8 @@ def process_file_list_from_json(file_list_json, processed_dir='data-share/struct
 
     # Prepend optional root to output directory
     processed_dir = os.path.join(os.environ.get("BEEP_ROOT", "/"), processed_dir)
+    if not os.path.exists(processed_dir):
+        os.makedirs(processed_dir)
 
     file_list = file_list_data['file_list']
     validities = file_list_data['validity']

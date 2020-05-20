@@ -24,12 +24,23 @@ pip (or `python setup.py develop`)  for an editable install:
 git clone git@github.com:ToyotaResearchInstitute/BEEP.git
 cd BEEP
 pip install -e .
+
+```
+## Environment
+To configure the use of AWS resources its necessary to set the environment variable `BEEP_ENV`. For most users `'dev'`
+is the appropriate choice since it assumes that no AWS resources are available. 
+```.env
+export BEEP_ENV='dev'
+```
+For processing file locally its necessary to configure the folder structure 
+```.env
+export BEEP_ROOT='/path/to/beep/data/'
 ```
 
 ## Testing
 You can use nose or pytests for running unittests (use `pip install nose` 
 to install nose if not installed). In order to run tests the environment variable
-needs to be set (ie. export BEEP_ENV='local')
+needs to be set (ie. export BEEP_ENV='dev')
 
 ```bash
 nosetests beep
@@ -69,7 +80,7 @@ $ collate
 ```
 ```json
 {
-    "mode": "run",
+    "mode": "events_off",
     "fid": [0, 
             1, 
             2],
@@ -113,7 +124,7 @@ The output json will have the following fields:
 Example:
 ```bash
 $ validate '{
-    "mode": "run",
+    "mode": "events_off",
     "run_list": [1, 20, 34],
     "strname": ["2017-05-09_test-TC-contact", 
                 "2017-08-14_8C-5per_3_47C", 
@@ -164,7 +175,7 @@ The output json contains the following fields:
 Example:
 ```bash
 $ structure '{
-    "mode": "run",
+    "mode": "events_off",
     "run_list": [1, 20, 34],
     "validity": ["invalid", "invalid", "valid"], 
     "file_list": ["/data-share/renamed_cycler_files/FastCharge/FastCharge_0_CH33.csv", 
@@ -197,7 +208,7 @@ The output json file will contain the following:
 Example:
 ```bash
 $ featurize '{
-    "mode": "run",
+    "mode": "events_off",
     "run_list": [1, 20, 34],
     "invalid_file_list": ["/data-share/renamed_cycler_files/FastCharge/FastCharge_0_CH33.csv", 
                           "/data-share/renamed_cycler_files/FastCharge/FastCharge_1_CH44.csv"], 
@@ -225,7 +236,7 @@ The output json will contain the following fields
 Example:
 ```bash
 $ run_model '{
-    "mode": "run",
+    "mode": "events_off",
     "run_list": [34],
     "file_list": ["/data-share/features/FastCharge_2_CH29_full_model_features.json"]
 }'
