@@ -12,7 +12,7 @@ from botocore.exceptions import NoRegionError, NoCredentialsError
 
 from beep.structure import RawCyclerRun, ProcessedCyclerRun
 from beep.featurize import process_file_list_from_json, \
-    DeltaQFastCharge, TrajectoryFastCharge, DegradationPredictor
+    DeltaQFastCharge, TrajectoryFastCharge, DegradationPredictor, DiagnosticCyclesFeatures
 from monty.serialization import dumpfn, loadfn
 from monty.tempfile import ScratchDir
 
@@ -173,3 +173,20 @@ class TestFeaturizer(unittest.TestCase):
             self.assertEqual(output_obj['result_list'][0], 'incomplete')
             self.assertEqual(output_obj['message_list'][0]['comment'],
                              'Insufficient or incorrect data for featurization')
+
+    def test_DiagnosticCyclesFeatures_class(self):
+        with ScratchDir('.'):
+            os.environ['BEEP_ROOT'] = os.getcwd()
+            pcycler_run_loc = os.path.join(TEST_FILE_DIR, 'PreDiag_000240_000227_structure.json')
+            pcycler_run = loadfn(pcycler_run_loc)
+            featurizer = DiagnosticCyclesFeatures.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
+            path, local_filename = os.path.split(featurizer.name)
+            folder = os.path.split(path)[-1]
+            self.assertEqual(local_filename,
+                             'PreDiag_000240_000227_features_DiagnosticCyclesFeatures.json')
+            self.assertEqual(folder, 'DiagnosticCyclesFeatures')
+            dumpfn(featurizer, featurizer.name)
+            self.assertEqual(featurizer.X.shape[1], 60)
+            self.assertTrue(all(x in featurizer.X.columns for x in ['m0_Mu','var(ocv)','var_charging_dQdV'])
+
+)
