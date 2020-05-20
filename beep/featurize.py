@@ -46,6 +46,7 @@ from beep.collate import scrub_underscore_suffix, add_suffix_to_filename
 from beep.utils import KinesisEvents
 from beep.helpers import featurizer_helpers
 from beep import logger, ENVIRONMENT, __version__
+from beep.structure import get_protocol_parameters
 
 s = {'service': 'DataAnalyzer'}
 
@@ -167,11 +168,9 @@ class DiagnosticCyclesFeatures(BeepFeatures):
     """
     # Class name for the feature object
     class_feature_name = 'DiagnosticCyclesFeatures'
-
-    # Class variables
-    init_pred_cycle = 10
-    mid_pred_cycle = 91
-    final_pred_cycle = 100
+    diagnostic_cycle_types = ['reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C']
+    parameters_path = '/data-share/raw/parameters' if os.path.isdir(
+        '/data-share/raw/parameters') else os.path.join(os.path.dirname(__file__),'tests/test_files/data-share/raw/parameters')
 
     def __init__(self, name, X, metadata):
         """
@@ -200,6 +199,8 @@ class DiagnosticCyclesFeatures(BeepFeatures):
         conditions = []
         conditions.append(hasattr(processed_cycler_run, 'diagnostic_summary'))
         conditions.append(hasattr(processed_cycler_run, 'diagnostic_interpolated'))
+        conditions.append(set(cls.diagnostic_cycle_types) ==
+                          set(processed_cycler_run.diagnostic_summary.cycle_type.unique()))
 
         return all(conditions)
 
@@ -215,17 +216,13 @@ class DiagnosticCyclesFeatures(BeepFeatures):
         """
 
         rpt_dQdV_features = DiagnosticCyclesFeatures.get_rpt_dQdV_features(processed_cycler_run, diag_ref=0, diag_nr=1,
-                                                                           charge_y_n=1,
-                                                                           rpt_type='rpt_0.2C')
-
-        hppc_features = DiagnosticCyclesFeatures.get_hppc_features(processed_cycler_run,
-                                                                   parameter_file='procedure_templates/PreDiag_parameters - DP.csv')
-
+                                                                           charge_y_n=1, rpt_type='rpt_0.2C')
+        hppc_features = DiagnosticCyclesFeatures.get_hppc_features(processed_cycler_run)
         fast_charge_features = DiagnosticCyclesFeatures.get_fast_charge_features(processed_cycler_run,
                                                                                  diagnostic_cycle_type='rpt_0.2C',
                                                                                  cycle_comp_num=[0, 1], Q_seg=500)
 
-        X = pd.concat([rpt_dQdV_features, fast_charge_features, hppc_features], axis=1)
+        X = pd.concat([rpt_dQdV_features, hppc_features, fast_charge_features], axis=1)
 
         return X
 
@@ -293,57 +290,47 @@ class DiagnosticCyclesFeatures(BeepFeatures):
                                                                      charge_y_n=charge_y_n,
                                                                      rpt_type=rpt_type, plotting_y_n=plotting_y_n,
                                                                      max_nr_peaks=max_nr_peaks)
-        peak_fit_df = featurizer_helpers.generate_dQdV_peak_fits(processed_cycler_run, diag_nr=diag_nr, charge_y_n=charge_y_n,
-                                              rpt_type=rpt_type, plotting_y_n=plotting_y_n, max_nr_peaks=max_nr_peaks)
+        peak_fit_df = featurizer_helpers.generate_dQdV_peak_fits(processed_cycler_run, diag_nr=diag_nr,
+                                                                 charge_y_n=charge_y_n,
+                                                                 rpt_type=rpt_type, plotting_y_n=plotting_y_n,
+                                                                 max_nr_peaks=max_nr_peaks)
 
         return 1 + (peak_fit_df - peak_fit_df_ref) / peak_fit_df_ref
 
     @staticmethod
-    def get_hppc_features(processed_cycler_run, file, parameter_file, diag_pos=1, soc_window=7):
+    def get_hppc_features(processed_cycler_run, diag_pos=1, soc_window=7):
         """
         This method calculates features based on voltage and resistance changes in hppc and rpt cycles
         Args:
-            processed_cycler_run (beep.structure.ProcessedCyclerRun):
-            file: a string of the file name to indicate which cell has problem just in case
-            parameter_file (str): path to file containing tabulated project parameters
+            processed_cycler_run (beep.structure.ProcessedCyclerRun)
+            parameters_path (str): path to the project parameters file
             diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
             if rpt_0.2C, occurs at cycle_index = [2, 42, 147, 249 ...], <diag_pos>=2 would correspond to cycle_index 147
-
-            remaining (float): fraction of the remaining <metric> relative to nominal value.
-            metric (str):  outcome of interest -- discharge energy/discharge capacity
-            diagnostic_cycle_type (str): type of diagnostic cycle to evaluate features at
+            parameters_path (str): location of parameter table csv
             soc_window (int): step index counter corresponding to the soc window of interest.
 
         Returns:
             dataframe of features based on voltage and resistance changes over a SOC window in hppc cycles
         """
         data = processed_cycler_run.diagnostic_interpolated
-        df = pd.read_csv(parameter_file)
-        df = df.loc[df['cell_type'] == 'Tesla_Model3_21700']
-
-        # replace_map = {'discharge_cutoff_voltage': {2.5: 1, 2.7: 2, 2.75: 3, 3.3: 4,
-        #                                            3.5: 5, 3.7: 6},
-        #               'charge_cutoff_voltage': {3.7: 1, 4.0: 2, 4.1: 3, 4.2: 4}}
-        # df.replace(replace_map, inplace=True)
-        df['charge_cutoff_voltage'] = df['charge_cutoff_voltage'].astype('category')
-        df['discharge_cutoff_voltage'] = df['discharge_cutoff_voltage'].astype('category')
 
         cycle_hppc = data.loc[data.cycle_type == 'hppc']
         cycle_hppc = cycle_hppc.loc[cycle_hppc.current.notna()]
         cycles = cycle_hppc.cycle_index.unique()
 
-        [f2_d, f2_c] = get_hppc_r(processed_cycler_run, cycles[diag_pos])
-        f3 = get_hppc_ocv(processed_cycler_run, cycles[diag_pos])
-        v_diff = get_v_diff(file, cycles[diag_pos], processed_cycler_run, soc_window)
+        [f2_d, f2_c] = featurizer_helpers.get_hppc_r(processed_cycler_run, cycles[diag_pos])
+        f3 = featurizer_helpers.get_hppc_ocv(processed_cycler_run, cycles[diag_pos])
+        v_diff = featurizer_helpers.get_v_diff(cycles[diag_pos], processed_cycler_run, soc_window)
 
-        parameter_df = get_cutoff_voltage(file, parameter_df)
+        params, _ = get_protocol_parameters(processed_cycler_run.protocol.split('.')[0],
+                                            parameters_path=DiagnosticCyclesFeatures.parameters_path)
+        params = params[['charge_cutoff_voltage', 'discharge_cutoff_voltage']].reset_index(drop=True)
         df_c = pd.DataFrame()
         df_c = df_c.append({'var(v_diff)': np.var(v_diff),
                             'resistance_d': f2_d, 'resistance_c': f2_c,
                             'var(ocv)': f3}, ignore_index=True)
         df_c.reset_index(drop=True, inplace=True)
-        parameter_df.reset_index(drop=True, inplace=True)
-        df_c = pd.concat([df_c, parameter_df], axis=1)
+        df_c = pd.concat([df_c, params], axis=1)
         df_c.reset_index(drop=True, inplace=True)
 
         return df_c

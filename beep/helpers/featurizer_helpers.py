@@ -407,12 +407,11 @@ def get_V_I(df):
     return result
 
 
-def get_v_diff(file, diag_num, processed_cycler_run, soc_window):
+def get_v_diff(diag_num, processed_cycler_run, soc_window):
     """
     This function helps us get the feature of the variance of the voltage difference
     across a specific capacity window
     Argument:
-            file(str): a string that has the filename
             diag_num(int): diagnostic cycle number at which you want to get the feature, such as 37 or 142
             processed_cycler_run(process_cycler_run object)
             soc_window(int): let the function know which step_counter_index you want to look at
@@ -431,7 +430,7 @@ def get_v_diff(file, diag_num, processed_cycler_run, soc_window):
     step_counters_1 = hppc_data_1_d.step_index_counter.unique()
     step_counters_2 = hppc_data_2_d.step_index_counter.unique()
     if (len(step_counters_1) < 8) or (len(step_counters_2) < 8):
-        print('error' + file)
+        print('error')
         return None
     else:
         chosen_1 = hppc_data_1_d.loc[hppc_data_1_d.step_index_counter == step_counters_1[soc_window]]
@@ -439,35 +438,17 @@ def get_v_diff(file, diag_num, processed_cycler_run, soc_window):
         chosen_1 = chosen_1.loc[chosen_1.discharge_capacity.notna()]
         chosen_2 = chosen_2.loc[chosen_2.discharge_capacity.notna()]
         if len(chosen_1) == 0 or len(chosen_2) == 0:
-            print('error' + file)
+            print('error')
             return None
         f = interp(chosen_2)
         v_1 = chosen_1.voltage.tolist()
         v_2 = f(chosen_1.discharge_capacity).tolist()
         v_diff = list_minus(v_1, v_2)
         if abs(np.var(v_diff)) > 1:
-            print('weird voltage' + file)
+            print('weird voltage')
             return None
         else:
             return v_diff
-
-
-def get_cutoff_voltage(file, df_cat):
-    """
-    this function can help us get the cycling parameters, that is cut-off voltages for
-    both charge and dishcharge for a given filename
-    Argument:
-            file, the filename for the cell
-            df_cat, a dataframe that contains all the cycling parameters
-    Returns:
-            charge and discharge cut_off voltages in the format of categorical variables
-    """
-    seq_num = int(file[11:14])
-    chosen = df_cat.loc[df_cat['seq_num'] == seq_num]
-    result = pd.DataFrame()
-    result['charge_cutoff_voltage'] = chosen['charge_cutoff_voltage']
-    result['discharge_cutoff_voltage'] = chosen['discharge_cutoff_voltage']
-    return result
 
 
 def get_energy_fraction(diag_num, processed_cycler_run, remaining, metric, cycle_type, file):
