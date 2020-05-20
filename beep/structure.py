@@ -256,6 +256,7 @@ class RawCyclerRun(MSONable):
         Returns:
             beep.structure.RawCyclerRun:
         """
+
         data = pd.DataFrame(d['data'])
         data = data.sort_index()
         return cls(data, d['metadata'], d['eis'])
@@ -527,7 +528,12 @@ class RawCyclerRun(MSONable):
         metadata_path = path.replace(".csv", "_Metadata.csv")
         data = pd.read_csv(path)
         data.rename(str.lower, axis='columns', inplace=True)
-        data = data.astype(ARBIN_CONFIG['data_types'])
+
+        for column, dtype in ARBIN_CONFIG['data_types'].items():
+            if column in data:
+                if not data[column].isnull().values.any():
+                    data[column] = pd.Series(data[column], dtype=dtype)
+
         data.rename(ARBIN_CONFIG['data_columns'], axis='columns', inplace=True)
         metadata = pd.read_csv(metadata_path)
         metadata.rename(str.lower, axis='columns', inplace=True)
