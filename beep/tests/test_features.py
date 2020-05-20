@@ -21,6 +21,8 @@ TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 PROCESSED_CYCLER_FILE = "2017-06-30_2C-10per_6C_CH10_structure.json"
 PROCESSED_CYCLER_FILE_INSUF = "structure_insufficient.json"
 MACCOR_FILE_W_DIAGNOSTICS = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000020_CH71.071")
+MACCOR_FILE_W_PARAMETERS = os.path.join(TEST_FILE_DIR, 'PredictionDiagnostics_000109_tztest.010')
+
 BIG_FILE_TESTS = os.environ.get("BEEP_BIG_TESTS", False)
 SKIP_MSG = "Tests requiring large files with diagnostic cycles are disabled, set BIG_FILE_TESTS to run full tests"
 
@@ -177,15 +179,13 @@ class TestFeaturizer(unittest.TestCase):
     def test_DiagnosticCyclesFeatures_class(self):
         with ScratchDir('.'):
             os.environ['BEEP_ROOT'] = TEST_FILE_DIR
-            pcycler_run_loc = os.path.join(TEST_FILE_DIR, 'PreDiag_000240_000227_structure.json')
+            pcycler_run_loc = os.path.join(TEST_FILE_DIR, 'PreDiag_000240_000227_truncated_structure.json')
             pcycler_run = loadfn(pcycler_run_loc)
             featurizer = DiagnosticCyclesFeatures.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
             path, local_filename = os.path.split(featurizer.name)
             folder = os.path.split(path)[-1]
-            self.assertEqual(local_filename,
-                             'PreDiag_000240_000227_features_DiagnosticCyclesFeatures.json')
-            self.assertEqual(folder, 'DiagnosticCyclesFeatures')
             dumpfn(featurizer, featurizer.name)
+            self.assertEqual(folder, 'DiagnosticCyclesFeatures')
             self.assertEqual(featurizer.X.shape[1], 60)
             self.assertTrue(all(x in featurizer.X.columns for x in ['m0_Mu','var(ocv)','var_charging_dQdV'])
 
