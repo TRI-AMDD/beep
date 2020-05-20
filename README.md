@@ -3,7 +3,7 @@
 
 # Summary
 
-Beep is software designed to support Battery Estimation and Early Prediction
+Beep is a software designed to support Battery Evaluation and Early Prediction
 of cycle life corresponding to the research of the
 [d3batt program](https://d3batt.mit.edu/) and the 
 [Toyota Research Institute](http://www.tri.global/accelerated-materials-design-and-discovery/).
