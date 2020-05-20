@@ -169,8 +169,6 @@ class DiagnosticCyclesFeatures(BeepFeatures):
     # Class name for the feature object
     class_feature_name = 'DiagnosticCyclesFeatures'
     diagnostic_cycle_types = ['reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C']
-    parameters_path = '/data-share/raw/parameters' if os.path.isdir(
-        '/data-share/raw/parameters') else os.path.join(os.path.dirname(__file__),'tests/test_files/data-share/raw/parameters')
 
     def __init__(self, name, X, metadata):
         """
@@ -322,8 +320,7 @@ class DiagnosticCyclesFeatures(BeepFeatures):
         f3 = featurizer_helpers.get_hppc_ocv(processed_cycler_run, cycles[diag_pos])
         v_diff = featurizer_helpers.get_v_diff(cycles[diag_pos], processed_cycler_run, soc_window)
 
-        params, _ = get_protocol_parameters(processed_cycler_run.protocol.split('.')[0],
-                                            parameters_path=DiagnosticCyclesFeatures.parameters_path)
+        params, _ = get_protocol_parameters(processed_cycler_run.protocol.split('.')[0])
         params = params[['charge_cutoff_voltage', 'discharge_cutoff_voltage']].reset_index(drop=True)
         df_c = pd.DataFrame()
         df_c = df_c.append({'var(v_diff)': np.var(v_diff),

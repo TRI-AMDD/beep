@@ -176,7 +176,7 @@ class TestFeaturizer(unittest.TestCase):
 
     def test_DiagnosticCyclesFeatures_class(self):
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_ROOT'] = TEST_FILE_DIR
             pcycler_run_loc = os.path.join(TEST_FILE_DIR, 'PreDiag_000240_000227_structure.json')
             pcycler_run = loadfn(pcycler_run_loc)
             featurizer = DiagnosticCyclesFeatures.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
