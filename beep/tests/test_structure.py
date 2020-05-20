@@ -9,7 +9,6 @@ import boto3
 
 import numpy as np
 import pandas as pd
-from botocore.exceptions import NoRegionError, NoCredentialsError
 
 from beep import MODULE_DIR
 from beep.structure import RawCyclerRun, ProcessedCyclerRun, \
@@ -537,7 +536,7 @@ class CliTest(unittest.TestCase):
             kinesis = boto3.client('kinesis')
             response = kinesis.list_streams()
             self.events_mode = "test"
-        except NoRegionError or NoCredentialsError as e:
+        except Exception as e:
             self.events_mode = "events_off"
 
         self.arbin_file = os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29.csv")
@@ -575,7 +574,7 @@ class ProcessedCyclerRunTest(unittest.TestCase):
             kinesis = boto3.client('kinesis')
             response = kinesis.list_streams()
             self.events_mode = "test"
-        except NoRegionError or NoCredentialsError as e:
+        except Exception as e:
             self.events_mode = "events_off"
 
         self.arbin_file = os.path.join(TEST_FILE_DIR, "FastCharge_000000_CH29.csv")

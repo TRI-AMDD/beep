@@ -11,7 +11,6 @@ import pandas as pd
 
 from tempfile import mkdtemp
 from monty.serialization import loadfn
-from botocore.exceptions import NoRegionError, NoCredentialsError
 
 from beep import collate, validate, structure, featurize,\
     run_model, MODEL_DIR
@@ -28,7 +27,7 @@ class EndToEndTest(unittest.TestCase):
             kinesis = boto3.client('kinesis')
             response = kinesis.list_streams()
             self.events_mode = 'test'
-        except NoRegionError or NoCredentialsError as e:
+        except Exception as e:
             self.events_mode = 'events_off'
 
         # Get cwd, create and enter scratch dir

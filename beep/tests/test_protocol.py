@@ -14,7 +14,6 @@ from beep.generate_protocol import ProcedureFile, \
 from monty.tempfile import ScratchDir
 from monty.serialization import dumpfn, loadfn
 from monty.os import makedirs_p
-from botocore.exceptions import NoRegionError, NoCredentialsError
 from beep.utils import os_format
 import difflib
 from sklearn.metrics import mean_absolute_error
@@ -30,7 +29,7 @@ class GenerateProcedureTest(unittest.TestCase):
             kinesis = boto3.client('kinesis')
             response = kinesis.list_streams()
             self.events_mode = 'test'
-        except NoRegionError or NoCredentialsError as e:
+        except Exception as e:
             self.events_mode = 'events_off'
 
     def test_dict_to_file_1(self):

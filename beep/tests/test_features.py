@@ -8,7 +8,6 @@ import boto3
 import shutil
 
 import numpy as np
-from botocore.exceptions import NoRegionError, NoCredentialsError
 
 from beep.structure import RawCyclerRun, ProcessedCyclerRun
 from beep.featurize import process_file_list_from_json, \
@@ -32,7 +31,7 @@ class TestFeaturizer(unittest.TestCase):
             kinesis = boto3.client('kinesis')
             response = kinesis.list_streams()
             self.events_mode = "test"
-        except NoRegionError or NoCredentialsError as e:
+        except Exception as e:
             self.events_mode = "events_off"
 
     def test_feature_generation_full_model(self):
