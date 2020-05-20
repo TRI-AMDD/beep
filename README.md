@@ -235,3 +235,8 @@ $ run_model '{
   "file_list": ["/data-share/predictions/FastCharge_2_CH29_full_model_predictions.json"],
 }
 ```
+## How to cite
+If you use BEEP, please cite this article:
+
+> P. Herring, C. Balaji Gopal, M. Aykol, J.H. Montoya, A. Anapolsky, P.M. Attia, W. Gent, J.S. Hummelshøj, L. Hung, H.-K. Kwon, P. Moore, D. Schweigert, K.A. Severson, S. Suram, Z. Yang, R.D. Braatz, B.D. Storey, SoftwareX 11 (2020) 100506.
+[https://doi.org/10.1016/j.softx.2020.100506](https://doi.org/10.1016/j.softx.2020.100506)
