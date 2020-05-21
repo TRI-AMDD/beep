@@ -45,11 +45,6 @@ class EndToEndTest(unittest.TestCase):
 
         # Set up directory structure and specify the test files
         os.mkdir("raw_cycler_files")
-        os.mkdir("renamed_cycler_files")
-        os.mkdir("validation")
-        os.mkdir("structure")
-        os.mkdir("features")
-        os.mkdir("predictions")
 
         # Copy starting files into raw_cycler_files directory
         starting_files = [
