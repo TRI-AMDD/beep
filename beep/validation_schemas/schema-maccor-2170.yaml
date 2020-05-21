@@ -5,6 +5,9 @@ rec#:
   type: list
 cyc#:
   schema:
+    min: 0
+    min_is_below: 2
+    max_at_least: 1
     type: integer
   type: list
 state:
