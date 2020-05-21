@@ -654,7 +654,7 @@ def process_file_list_from_json(file_list_json, processed_dir='data-share/featur
     events = KinesisEvents(service='DataAnalyzer', mode=file_list_data['mode'])
 
     # Add root path to processed_dir
-    processed_dir = os.path.join(os.environ.get("BEEP_ROOT", "/"),
+    processed_dir = os.path.join(os.environ.get("BEEP_PROCESSING_DIR", "/"),
                                  processed_dir)
     if not os.path.exists(processed_dir):
         os.makedirs(processed_dir)

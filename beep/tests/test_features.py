@@ -37,7 +37,7 @@ class TestFeaturizer(unittest.TestCase):
     def test_feature_generation_full_model(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             pcycler_run = loadfn(processed_cycler_run_path)
             featurizer = DeltaQFastCharge.from_run(processed_cycler_run_path, os.getcwd(), pcycler_run)
 
@@ -48,7 +48,7 @@ class TestFeaturizer(unittest.TestCase):
     def test_feature_old_class(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             predictor = DegradationPredictor.from_processed_cycler_run_file(processed_cycler_run_path,
                                                                             features_label='full_model')
             self.assertEqual(predictor.feature_labels[4], "charge_time_cycles_1:5")
@@ -56,7 +56,7 @@ class TestFeaturizer(unittest.TestCase):
     def test_feature_label_full_model(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             pcycler_run = loadfn(processed_cycler_run_path)
             featurizer = DeltaQFastCharge.from_run(processed_cycler_run_path, os.getcwd(), pcycler_run)
 
@@ -65,7 +65,7 @@ class TestFeaturizer(unittest.TestCase):
     def test_feature_serialization(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             pcycler_run = loadfn(processed_cycler_run_path)
             featurizer = DeltaQFastCharge.from_run(processed_cycler_run_path, os.getcwd(), pcycler_run)
 
@@ -78,7 +78,7 @@ class TestFeaturizer(unittest.TestCase):
     def test_feature_serialization_for_training(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             pcycler_run = loadfn(processed_cycler_run_path)
             featurizer = DeltaQFastCharge.from_run(processed_cycler_run_path, os.getcwd(), pcycler_run)
 
@@ -88,7 +88,7 @@ class TestFeaturizer(unittest.TestCase):
 
     def test_feature_class(self):
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
 
             pcycler_run_loc = os.path.join(TEST_FILE_DIR, '2017-06-30_2C-10per_6C_CH10_structure.json')
             pcycler_run = loadfn(pcycler_run_loc)
@@ -134,7 +134,7 @@ class TestFeaturizer(unittest.TestCase):
     def test_feature_generation_list_to_json(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
 
             # Create dummy json obj
             json_obj = {
@@ -158,7 +158,7 @@ class TestFeaturizer(unittest.TestCase):
     def test_insufficient_data_file(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE_INSUF)
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
 
             json_obj = {
                         "mode": self.events_mode,

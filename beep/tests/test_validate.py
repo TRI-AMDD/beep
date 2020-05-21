@@ -114,7 +114,7 @@ class ValidationArbinTest(unittest.TestCase):
 
     def test_validation_from_json(self):
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             os.mkdir("data-share")
             os.mkdir(os.path.join("data-share", "validation"))
             paths = ["2017-05-09_test-TC-contact_CH33.csv",
@@ -279,7 +279,7 @@ class SimpleValidatorTest(unittest.TestCase):
 
     def test_validation_from_json(self):
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             os.mkdir("data-share")
             os.mkdir(os.path.join("data-share", "validation"))
             paths = ["2017-05-09_test-TC-contact_CH33.csv",
