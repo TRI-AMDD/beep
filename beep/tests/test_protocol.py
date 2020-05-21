@@ -3,6 +3,7 @@
 
 import os
 import unittest
+import warnings
 import json
 import boto3
 import numpy as np
@@ -30,6 +31,7 @@ class GenerateProcedureTest(unittest.TestCase):
             response = kinesis.list_streams()
             self.events_mode = 'test'
         except Exception as e:
+            warnings.warn("Cloud resources not configured")
             self.events_mode = 'events_off'
 
     def test_dict_to_file_1(self):

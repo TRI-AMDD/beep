@@ -1,6 +1,7 @@
 #  Copyright (c) 2019 Toyota Research Institute
 
 import unittest
+import warnings
 import os
 import shutil
 import subprocess
@@ -28,6 +29,7 @@ class EndToEndTest(unittest.TestCase):
             response = kinesis.list_streams()
             self.events_mode = 'test'
         except Exception as e:
+            warnings.warn("Cloud resources not configured")
             self.events_mode = 'events_off'
 
         # Get cwd, create and enter scratch dir
