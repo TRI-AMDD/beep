@@ -4,6 +4,7 @@
 import json
 import os
 import unittest
+import warnings
 
 import pandas as pd
 import numpy as np
@@ -27,6 +28,7 @@ class ValidationArbinTest(unittest.TestCase):
             response = kinesis.list_streams()
             self.events_mode = "test"
         except Exception as e:
+            warnings.warn("Cloud resources not configured")
             self.events_mode = "events_off"
 
     def test_validation_arbin_bad_index(self):
@@ -114,7 +116,7 @@ class ValidationArbinTest(unittest.TestCase):
 
     def test_validation_from_json(self):
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             os.mkdir("data-share")
             os.mkdir(os.path.join("data-share", "validation"))
             paths = ["2017-05-09_test-TC-contact_CH33.csv",
@@ -142,6 +144,7 @@ class ValidationMaccorTest(unittest.TestCase):
             response = kinesis.list_streams()
             self.events_mode = "test"
         except Exception as e:
+            warnings.warn("Cloud resources not configured")
             self.events_mode = "events_off"
 
     def test_validation_maccor(self):
@@ -151,13 +154,10 @@ class ValidationMaccorTest(unittest.TestCase):
         v = SimpleValidator(schema_filename=os.path.join(VALIDATION_SCHEMA_DIR, "schema-maccor-2170.yaml"))
         v.allow_unknown = True
         header = pd.read_csv(path, delimiter='\t', nrows=0)
-        print(header)
         df = pd.read_csv(path, delimiter='\t', skiprows=1)
         df['State'] = df['State'].astype(str)
         df['current'] = df['Amps']
-        print(df.dtypes)
         validity, reason = v.validate(df)
-        print(validity, reason)
         self.assertTrue(validity)
 
     def test_validate_from_paths_maccor(self):
@@ -169,8 +169,6 @@ class ValidationMaccorTest(unittest.TestCase):
                                                 skip_existing=False)
         df = pd.DataFrame(v.validation_records)
         df = df.transpose()
-        print(df)
-        print(df.loc["xTESLADIAG_000019_CH70.070", :])
         self.assertEqual(df.loc["xTESLADIAG_000019_CH70.070", "method"], "simple_maccor")
         self.assertEqual(df.loc["xTESLADIAG_000019_CH70.070", "validated"], True)
 
@@ -200,6 +198,7 @@ class SimpleValidatorTest(unittest.TestCase):
             response = kinesis.list_streams()
             self.events_mode = "test"
         except Exception as e:
+            warnings.warn("Cloud resources not configured")
             self.events_mode = "events_off"
 
     def test_file_incomplete(self):
@@ -279,7 +278,7 @@ class SimpleValidatorTest(unittest.TestCase):
 
     def test_validation_from_json(self):
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             os.mkdir("data-share")
             os.mkdir(os.path.join("data-share", "validation"))
             paths = ["2017-05-09_test-TC-contact_CH33.csv",

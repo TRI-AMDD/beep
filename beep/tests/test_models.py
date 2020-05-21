@@ -2,6 +2,7 @@
 """Unit tests related to feature generation"""
 
 import unittest
+import warnings
 import os
 import json
 import numpy as np
@@ -28,6 +29,7 @@ class TestRunModel(unittest.TestCase):
             response = kinesis.list_streams()
             self.events_mode = "test"
         except Exception as e:
+            warnings.warn("Cloud resources not configured")
             self.events_mode = "events_off"
 
     def test_model_training_and_serialization(self):
@@ -140,6 +142,7 @@ class TestHelperFunctions(unittest.TestCase):
             response = kinesis.list_streams()
             self.events_mode = "test"
         except Exception as e:
+            warnings.warn("Cloud resources not configured")
             self.events_mode = "events_off"
 
     def test_get_project_name_from_list(self):
