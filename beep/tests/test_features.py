@@ -33,7 +33,6 @@ class TestFeaturizer(unittest.TestCase):
             response = kinesis.list_streams()
             self.events_mode = "test"
         except Exception as e:
-            warnings.warn("Cloud resources not configured")
             self.events_mode = "events_off"
 
     def test_feature_generation_full_model(self):
