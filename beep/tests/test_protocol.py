@@ -3,6 +3,7 @@
 
 import os
 import unittest
+import warnings
 import json
 import boto3
 import numpy as np
@@ -14,7 +15,6 @@ from beep.generate_protocol import ProcedureFile, \
 from monty.tempfile import ScratchDir
 from monty.serialization import dumpfn, loadfn
 from monty.os import makedirs_p
-from botocore.exceptions import NoRegionError, NoCredentialsError
 from beep.utils import os_format
 import difflib
 from sklearn.metrics import mean_absolute_error
@@ -30,7 +30,8 @@ class GenerateProcedureTest(unittest.TestCase):
             kinesis = boto3.client('kinesis')
             response = kinesis.list_streams()
             self.events_mode = 'test'
-        except NoRegionError or NoCredentialsError as e:
+        except Exception as e:
+            warnings.warn("Cloud resources not configured")
             self.events_mode = 'events_off'
 
     def test_dict_to_file_1(self):
@@ -191,8 +192,8 @@ class GenerateProcedureTest(unittest.TestCase):
 
         # Test script functionality
         with ScratchDir('.') as scratch_dir:
-            # Set BEEP_ROOT directory to scratch_dir
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            # Set BEEP_PROCESSING_DIR directory to scratch_dir
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             procedures_path = os.path.join("data-share", "protocols", "procedures")
             names_path = os.path.join("data-share", "protocols", "names")
             makedirs_p(procedures_path)

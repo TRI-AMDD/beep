@@ -1358,7 +1358,7 @@ def get_protocol_parameters(filepath, parameters_path='data-share/raw/parameters
     """
     project_name_list = get_project_sequence(filepath)
     project_name = project_name_list[0]
-    path = os.path.join(os.environ.get("BEEP_ROOT", "/"), parameters_path)
+    path = os.path.join(os.environ.get("BEEP_PROCESSING_DIR", "/"), parameters_path)
     project_parameter_files = glob(os.path.join(path, project_name + '*'))
     assert len(project_parameter_files) <= 1, 'Found too many parameter files for: ' + project_name
 
@@ -1532,7 +1532,9 @@ def process_file_list_from_json(file_list_json, processed_dir='data-share/struct
     events = KinesisEvents(service='DataStructurer', mode=file_list_data['mode'])
 
     # Prepend optional root to output directory
-    processed_dir = os.path.join(os.environ.get("BEEP_ROOT", "/"), processed_dir)
+    processed_dir = os.path.join(os.environ.get("BEEP_PROCESSING_DIR", "/"), processed_dir)
+    if not os.path.exists(processed_dir):
+        os.makedirs(processed_dir)
 
     file_list = file_list_data['file_list']
     validities = file_list_data['validity']

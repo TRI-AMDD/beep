@@ -5,11 +5,11 @@ import json
 import os
 import subprocess
 import unittest
+import warnings
 import boto3
 
 import numpy as np
 import pandas as pd
-from botocore.exceptions import NoRegionError, NoCredentialsError
 
 from beep import MODULE_DIR
 from beep.structure import RawCyclerRun, ProcessedCyclerRun, \
@@ -227,7 +227,7 @@ class RawCyclerRunTest(unittest.TestCase):
 
     @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_get_diagnostic(self):
-        os.environ['BEEP_ROOT'] = TEST_FILE_DIR
+        os.environ['BEEP_PROCESSING_DIR'] = TEST_FILE_DIR
 
         cycler_run = RawCyclerRun.from_file(self.maccor_file_w_parameters)
 
@@ -434,7 +434,7 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertEqual(project_name, "PredictionDiagnostics")
 
     def test_get_protocol_parameters(self):
-        os.environ['BEEP_ROOT'] = TEST_FILE_DIR
+        os.environ['BEEP_PROCESSING_DIR'] = TEST_FILE_DIR
         filepath = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010")
         test_path = os.path.join('data-share', 'raw', 'parameters')
         parameters, _ = get_protocol_parameters(filepath, parameters_path=test_path)
@@ -453,7 +453,7 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertIsNone(parameters)
 
     def test_determine_structering_parameters(self):
-        os.environ['BEEP_ROOT'] = TEST_FILE_DIR
+        os.environ['BEEP_PROCESSING_DIR'] = TEST_FILE_DIR
         raw_cycler_run = RawCyclerRun.from_file(self.maccor_file_timestamp)
         v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \
             raw_cycler_run.determine_structuring_parameters()
@@ -480,7 +480,7 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertEqual(diagnostic_available, diagnostic_available_test)
 
     def test_get_diagnostic_parameters(self):
-        os.environ['BEEP_ROOT'] = TEST_FILE_DIR
+        os.environ['BEEP_PROCESSING_DIR'] = TEST_FILE_DIR
         diagnostic_available = {'parameter_set': 'Tesla21700',
                                 'cycle_type': ['reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C'],
                                 'length': 5,
@@ -537,7 +537,8 @@ class CliTest(unittest.TestCase):
             kinesis = boto3.client('kinesis')
             response = kinesis.list_streams()
             self.events_mode = "test"
-        except NoRegionError or NoCredentialsError as e:
+        except Exception as e:
+            warnings.warn("Cloud resources not configured")
             self.events_mode = "events_off"
 
         self.arbin_file = os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29.csv")
@@ -545,7 +546,7 @@ class CliTest(unittest.TestCase):
     def test_simple_conversion(self):
         with ScratchDir('.'):
             # Set root env
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             # Make necessary directories
             os.mkdir("data-share")
             os.mkdir(os.path.join("data-share", "structure"))
@@ -575,7 +576,8 @@ class ProcessedCyclerRunTest(unittest.TestCase):
             kinesis = boto3.client('kinesis')
             response = kinesis.list_streams()
             self.events_mode = "test"
-        except NoRegionError or NoCredentialsError as e:
+        except Exception as e:
+            warnings.warn("Cloud resources not configured")
             self.events_mode = "events_off"
 
         self.arbin_file = os.path.join(TEST_FILE_DIR, "FastCharge_000000_CH29.csv")
@@ -678,7 +680,7 @@ class ProcessedCyclerRunTest(unittest.TestCase):
     def test_json_processing(self):
 
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             os.mkdir("data-share")
             os.mkdir(os.path.join("data-share", "structure"))
 
@@ -706,7 +708,7 @@ class ProcessedCyclerRunTest(unittest.TestCase):
 
         # Test same functionality with json file
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             os.mkdir("data-share")
             os.mkdir(os.path.join("data-share", "structure"))
 

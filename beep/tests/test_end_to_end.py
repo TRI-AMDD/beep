@@ -1,6 +1,7 @@
 #  Copyright (c) 2019 Toyota Research Institute
 
 import unittest
+import warnings
 import os
 import shutil
 import subprocess
@@ -11,7 +12,6 @@ import pandas as pd
 
 from tempfile import mkdtemp
 from monty.serialization import loadfn
-from botocore.exceptions import NoRegionError, NoCredentialsError
 
 from beep import collate, validate, structure, featurize,\
     run_model, MODEL_DIR
@@ -28,7 +28,8 @@ class EndToEndTest(unittest.TestCase):
             kinesis = boto3.client('kinesis')
             response = kinesis.list_streams()
             self.events_mode = 'test'
-        except NoRegionError or NoCredentialsError as e:
+        except Exception as e:
+            warnings.warn("Cloud resources not configured")
             self.events_mode = 'events_off'
 
         # Get cwd, create and enter scratch dir
@@ -37,8 +38,8 @@ class EndToEndTest(unittest.TestCase):
         os.chdir(scratch_dir)
         self.scratch_dir = scratch_dir
 
-        # Set BEEP_ROOT directory to scratch_dir
-        os.environ['BEEP_ROOT'] = scratch_dir
+        # Set BEEP_PROCESSING_DIR directory to scratch_dir
+        os.environ['BEEP_PROCESSING_DIR'] = scratch_dir
 
         # Create data-share and subfolders
         os.mkdir("data-share")
@@ -46,11 +47,6 @@ class EndToEndTest(unittest.TestCase):
 
         # Set up directory structure and specify the test files
         os.mkdir("raw_cycler_files")
-        os.mkdir("renamed_cycler_files")
-        os.mkdir("validation")
-        os.mkdir("structure")
-        os.mkdir("features")
-        os.mkdir("predictions")
 
         # Copy starting files into raw_cycler_files directory
         starting_files = [
