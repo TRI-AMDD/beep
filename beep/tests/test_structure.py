@@ -46,7 +46,10 @@ class RawCyclerRunTest(unittest.TestCase):
         with ScratchDir('.'):
             dumpfn(smaller_run, "smaller_cycler_run.json")
             resurrected = loadfn("smaller_cycler_run.json")
-        pd.testing.assert_frame_equal(smaller_run.data, resurrected.data, check_dtype=True)
+            self.assertIsInstance(resurrected, RawCyclerRun)
+            self.assertIsInstance(resurrected.data, pd.DataFrame)
+            self.assertEqual(smaller_run.data.voltage.to_list(), resurrected.data.voltage.to_list())
+            self.assertEqual(smaller_run.data.current.to_list(), resurrected.data.current.to_list())
 
     def test_ingestion_maccor(self):
         raw_cycler_run = RawCyclerRun.from_maccor_file(self.maccor_file, include_eis=False)
@@ -593,6 +596,20 @@ class ProcessedCyclerRunTest(unittest.TestCase):
         # Ensure barcode/protocol are passed
         self.assertEqual(pcycler_run.barcode, "EL151000429559")
         self.assertEqual(pcycler_run.protocol, r"2017-12-04_tests\20170630-4_65C_69per_6C.sdu")
+
+        all_summary = pcycler_run.summary
+        reg_dtypes = all_summary.dtypes.tolist()
+        reg_columns = all_summary.columns.tolist()
+        reg_dtypes = [str(dtyp) for dtyp in reg_dtypes]
+        for indx, col in enumerate(reg_columns):
+            self.assertEqual(reg_dtypes[indx], STRUCTURE_DTYPES['summary'][col])
+
+        all_interpolated = pcycler_run.cycles_interpolated
+        cycles_interpolated_dyptes = all_interpolated.dtypes.tolist()
+        cycles_interpolated_columns = all_interpolated.columns.tolist()
+        cycles_interpolated_dyptes = [str(dtyp) for dtyp in cycles_interpolated_dyptes]
+        for indx, col in enumerate(cycles_interpolated_columns):
+            self.assertEqual(cycles_interpolated_dyptes[indx], STRUCTURE_DTYPES['cycles_interpolated'][col])
 
     def test_from_raw_cycler_run_maccor(self):
         rcycler_run = RawCyclerRun.from_file(self.maccor_file_w_diagnostics)
