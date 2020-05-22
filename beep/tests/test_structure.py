@@ -5,6 +5,7 @@ import json
 import os
 import subprocess
 import unittest
+import warnings
 import boto3
 
 import numpy as np
@@ -45,7 +46,10 @@ class RawCyclerRunTest(unittest.TestCase):
         with ScratchDir('.'):
             dumpfn(smaller_run, "smaller_cycler_run.json")
             resurrected = loadfn("smaller_cycler_run.json")
-        pd.testing.assert_frame_equal(smaller_run.data, resurrected.data, check_dtype=True)
+            self.assertIsInstance(resurrected, RawCyclerRun)
+            self.assertIsInstance(resurrected.data, pd.DataFrame)
+            self.assertEqual(smaller_run.data.voltage.to_list(), resurrected.data.voltage.to_list())
+            self.assertEqual(smaller_run.data.current.to_list(), resurrected.data.current.to_list())
 
     def test_ingestion_maccor(self):
         raw_cycler_run = RawCyclerRun.from_maccor_file(self.maccor_file, include_eis=False)
@@ -226,7 +230,7 @@ class RawCyclerRunTest(unittest.TestCase):
 
     @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_get_diagnostic(self):
-        os.environ['BEEP_ROOT'] = TEST_FILE_DIR
+        os.environ['BEEP_PROCESSING_DIR'] = TEST_FILE_DIR
 
         cycler_run = RawCyclerRun.from_file(self.maccor_file_w_parameters)
 
@@ -433,7 +437,7 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertEqual(project_name, "PredictionDiagnostics")
 
     def test_get_protocol_parameters(self):
-        os.environ['BEEP_ROOT'] = TEST_FILE_DIR
+        os.environ['BEEP_PROCESSING_DIR'] = TEST_FILE_DIR
         filepath = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010")
         test_path = os.path.join('data-share', 'raw', 'parameters')
         parameters, _ = get_protocol_parameters(filepath, parameters_path=test_path)
@@ -452,7 +456,7 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertIsNone(parameters)
 
     def test_determine_structering_parameters(self):
-        os.environ['BEEP_ROOT'] = TEST_FILE_DIR
+        os.environ['BEEP_PROCESSING_DIR'] = TEST_FILE_DIR
         raw_cycler_run = RawCyclerRun.from_file(self.maccor_file_timestamp)
         v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \
             raw_cycler_run.determine_structuring_parameters()
@@ -479,7 +483,7 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertEqual(diagnostic_available, diagnostic_available_test)
 
     def test_get_diagnostic_parameters(self):
-        os.environ['BEEP_ROOT'] = TEST_FILE_DIR
+        os.environ['BEEP_PROCESSING_DIR'] = TEST_FILE_DIR
         diagnostic_available = {'parameter_set': 'Tesla21700',
                                 'cycle_type': ['reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C'],
                                 'length': 5,
@@ -537,6 +541,7 @@ class CliTest(unittest.TestCase):
             response = kinesis.list_streams()
             self.events_mode = "test"
         except Exception as e:
+            warnings.warn("Cloud resources not configured")
             self.events_mode = "events_off"
 
         self.arbin_file = os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29.csv")
@@ -544,7 +549,7 @@ class CliTest(unittest.TestCase):
     def test_simple_conversion(self):
         with ScratchDir('.'):
             # Set root env
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             # Make necessary directories
             os.mkdir("data-share")
             os.mkdir(os.path.join("data-share", "structure"))
@@ -575,6 +580,7 @@ class ProcessedCyclerRunTest(unittest.TestCase):
             response = kinesis.list_streams()
             self.events_mode = "test"
         except Exception as e:
+            warnings.warn("Cloud resources not configured")
             self.events_mode = "events_off"
 
         self.arbin_file = os.path.join(TEST_FILE_DIR, "FastCharge_000000_CH29.csv")
@@ -590,6 +596,20 @@ class ProcessedCyclerRunTest(unittest.TestCase):
         # Ensure barcode/protocol are passed
         self.assertEqual(pcycler_run.barcode, "EL151000429559")
         self.assertEqual(pcycler_run.protocol, r"2017-12-04_tests\20170630-4_65C_69per_6C.sdu")
+
+        all_summary = pcycler_run.summary
+        reg_dtypes = all_summary.dtypes.tolist()
+        reg_columns = all_summary.columns.tolist()
+        reg_dtypes = [str(dtyp) for dtyp in reg_dtypes]
+        for indx, col in enumerate(reg_columns):
+            self.assertEqual(reg_dtypes[indx], STRUCTURE_DTYPES['summary'][col])
+
+        all_interpolated = pcycler_run.cycles_interpolated
+        cycles_interpolated_dyptes = all_interpolated.dtypes.tolist()
+        cycles_interpolated_columns = all_interpolated.columns.tolist()
+        cycles_interpolated_dyptes = [str(dtyp) for dtyp in cycles_interpolated_dyptes]
+        for indx, col in enumerate(cycles_interpolated_columns):
+            self.assertEqual(cycles_interpolated_dyptes[indx], STRUCTURE_DTYPES['cycles_interpolated'][col])
 
     def test_from_raw_cycler_run_maccor(self):
         rcycler_run = RawCyclerRun.from_file(self.maccor_file_w_diagnostics)
@@ -677,7 +697,7 @@ class ProcessedCyclerRunTest(unittest.TestCase):
     def test_json_processing(self):
 
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             os.mkdir("data-share")
             os.mkdir(os.path.join("data-share", "structure"))
 
@@ -705,7 +725,7 @@ class ProcessedCyclerRunTest(unittest.TestCase):
 
         # Test same functionality with json file
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             os.mkdir("data-share")
             os.mkdir(os.path.join("data-share", "structure"))
 

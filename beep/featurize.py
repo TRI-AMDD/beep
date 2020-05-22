@@ -36,6 +36,7 @@ import os
 import json
 import numpy as np
 import pandas as pd
+import math
 from abc import ABCMeta, abstractmethod
 from docopt import docopt
 from monty.json import MSONable
@@ -43,7 +44,9 @@ from monty.serialization import loadfn, dumpfn
 from scipy.stats import skew, kurtosis
 from beep.collate import scrub_underscore_suffix, add_suffix_to_filename
 from beep.utils import KinesisEvents
+from beep.helpers import featurizer_helpers
 from beep import logger, ENVIRONMENT, __version__
+from beep.structure import get_protocol_parameters
 
 s = {'service': 'DataAnalyzer'}
 
@@ -129,7 +132,7 @@ class BeepFeatures(MSONable, metaclass=ABCMeta):
             'barcode': processed_cycler_run.barcode,
             'protocol': processed_cycler_run.protocol,
             'channel_id': processed_cycler_run.channel_id
-                }
+        }
         return metadata
 
     def as_dict(self):
@@ -151,6 +154,331 @@ class BeepFeatures(MSONable, metaclass=ABCMeta):
         """MSONable deserialization method"""
         d['X'] = pd.DataFrame(d['X'])
         return cls(**d)
+
+
+class DiagnosticCyclesFeatures(BeepFeatures):
+    """
+    Object corresponding to feature object. Includes constructors
+    to create the features, object names and metadata attributes in the
+    object
+        name (str): predictor object name.
+        X (pandas.DataFrame): features in DataFrame format.
+        metadata (dict): information about the conditions, data
+            and code used to produce features
+    """
+    # Class name for the feature object
+    class_feature_name = 'DiagnosticCyclesFeatures'
+    diagnostic_cycle_types = ['reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C']
+
+    def __init__(self, name, X, metadata):
+        """
+        Args:
+            name (str): predictor object name
+            feature_object (pandas.DataFrame): features in DataFrame format.
+            metadata (dict): information about the data and code used to produce features
+        """
+        super().__init__(name, X, metadata)
+        self.name = name
+        self.X = X
+        self.metadata = metadata
+
+    @classmethod
+    def validate_data(cls, processed_cycler_run):
+        """
+        This function determines if the input data has the necessary attributes for
+        creation of this feature class. It should test for all of the possible reasons
+        that feature generation would fail for this particular input data.
+
+        Args:
+            processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
+        Returns:
+            bool: True/False indication of ability to proceed with feature generation
+        """
+        conditions = []
+        conditions.append(hasattr(processed_cycler_run, 'diagnostic_summary'))
+        conditions.append(hasattr(processed_cycler_run, 'diagnostic_interpolated'))
+        conditions.append(set(cls.diagnostic_cycle_types) ==
+                          set(processed_cycler_run.diagnostic_summary.cycle_type.unique()))
+
+        return all(conditions)
+
+    @classmethod
+    def features_from_processed_cycler_run(cls, processed_cycler_run):
+        """
+        Generate features listed in early prediction manuscript, primarily related to the
+        so called delta Q feature
+        Args:
+            processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
+        Returns:
+            pd.DataFrame: features indicative of degradation, derived from the input data
+        """
+
+        rpt_dQdV_features = DiagnosticCyclesFeatures.get_rpt_dQdV_features(processed_cycler_run, diag_ref=0, diag_nr=1,
+                                                                           charge_y_n=1, rpt_type='rpt_0.2C')
+        hppc_features = DiagnosticCyclesFeatures.get_hppc_features(processed_cycler_run)
+        fast_charge_features = DiagnosticCyclesFeatures.get_fast_charge_features(processed_cycler_run,
+                                                                                 diagnostic_cycle_type='rpt_0.2C',
+                                                                                 cycle_comp_num=[0, 1], Q_seg=500)
+
+        X = pd.concat([rpt_dQdV_features, hppc_features, fast_charge_features], axis=1)
+
+        return X
+
+    @classmethod
+    def metadata_from_processed_cycler_run(cls, processed_cycler_run):
+        """
+        Gather and generate information useful for filtering or subsetting the
+        training feature objects for subsequent models
+        Args:
+            processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
+        Returns:
+            dict: information about the data source, conditions under which the run was
+                performed, and other information useful for modeling and prediction
+        """
+        metadata = {
+            'barcode': processed_cycler_run.barcode,
+            'protocol': processed_cycler_run.protocol,
+            'channel_id': processed_cycler_run.channel_id
+        }
+        return metadata
+
+    @staticmethod
+    def get_rpt_dQdV_features(processed_cycler_run, diag_ref=0, diag_nr=1, charge_y_n=1, rpt_type='rpt_0.2C',
+                              plotting_y_n=0):
+        """
+        Generate features out of peakfits to rpt cycles
+
+        Args:
+            processed_cycler_run (beep.structure.ProcessedCyclerRun)
+            diag_ref (int): 0 (default) reference diagnostic cycle
+            diag_nr (int): 1 (default) next diagnostic cycle occurence for a specific cycle_type.
+            For example, if rpt_0.2C occurs at cycle_index = [2,42,147,250.. ],
+            diag_ref = 0 would correspond to cycle_index = 2
+            and diag_nr = 1 would correspond to cycle_index = 42
+
+            charge_y_n (bool): 1 = charge, 0 = discharge
+            rpt_type (str): type of rpt cycle.
+
+        Returns:
+             pd.DataFrame containing features based on gaussian fits to dQdV features in rpt cycles
+        """
+
+        if ((rpt_type == 'rpt_0.2C') and (charge_y_n == 1)):
+            max_nr_peaks = 4
+
+        elif ((rpt_type == 'rpt_0.2C') and (charge_y_n == 0)):
+            max_nr_peaks = 4
+
+        elif ((rpt_type == 'rpt_1C') and (charge_y_n == 1)):
+            max_nr_peaks = 4
+
+        elif ((rpt_type == 'rpt_1C') and (charge_y_n == 0)):
+            max_nr_peaks = 3
+
+        elif ((rpt_type == 'rpt_2C') and (charge_y_n == 1)):
+            max_nr_peaks = 4
+
+        elif ((rpt_type == 'rpt_2C') and (charge_y_n == 0)):
+            max_nr_peaks = 3
+        else:
+            raise InputError("{} is not a valid rpt cycle".format(
+                rpt_type))
+
+        peak_fit_df_ref = featurizer_helpers.generate_dQdV_peak_fits(processed_cycler_run, diag_nr=diag_ref,
+                                                                     charge_y_n=charge_y_n,
+                                                                     rpt_type=rpt_type, plotting_y_n=plotting_y_n,
+                                                                     max_nr_peaks=max_nr_peaks)
+        peak_fit_df = featurizer_helpers.generate_dQdV_peak_fits(processed_cycler_run, diag_nr=diag_nr,
+                                                                 charge_y_n=charge_y_n,
+                                                                 rpt_type=rpt_type, plotting_y_n=plotting_y_n,
+                                                                 max_nr_peaks=max_nr_peaks)
+
+        return 1 + (peak_fit_df - peak_fit_df_ref) / peak_fit_df_ref
+
+    @staticmethod
+    def get_hppc_features(processed_cycler_run, diag_pos=1, soc_window=7):
+        """
+        This method calculates features based on voltage and resistance changes in hppc and rpt cycles
+        Args:
+            processed_cycler_run (beep.structure.ProcessedCyclerRun)
+            parameters_path (str): path to the project parameters file
+            diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
+            if rpt_0.2C, occurs at cycle_index = [2, 42, 147, 249 ...], <diag_pos>=2 would correspond to cycle_index 147
+            parameters_path (str): location of parameter table csv
+            soc_window (int): step index counter corresponding to the soc window of interest.
+
+        Returns:
+            dataframe of features based on voltage and resistance changes over a SOC window in hppc cycles
+        """
+        data = processed_cycler_run.diagnostic_interpolated
+
+        cycle_hppc = data.loc[data.cycle_type == 'hppc']
+        cycle_hppc = cycle_hppc.loc[cycle_hppc.current.notna()]
+        cycles = cycle_hppc.cycle_index.unique()
+
+        [f2_d, f2_c] = featurizer_helpers.get_hppc_r(processed_cycler_run, cycles[diag_pos])
+        f3 = featurizer_helpers.get_hppc_ocv(processed_cycler_run, cycles[diag_pos])
+        v_diff = featurizer_helpers.get_v_diff(cycles[diag_pos], processed_cycler_run, soc_window)
+
+        params, _ = get_protocol_parameters(processed_cycler_run.protocol.split('.')[0])
+        params = params[['charge_cutoff_voltage', 'discharge_cutoff_voltage']].reset_index(drop=True)
+        df_c = pd.DataFrame()
+        df_c = df_c.append({'var(v_diff)': np.var(v_diff),
+                            'resistance_d': f2_d, 'resistance_c': f2_c,
+                            'var(ocv)': f3}, ignore_index=True)
+        df_c.reset_index(drop=True, inplace=True)
+        df_c = pd.concat([df_c, params], axis=1)
+        df_c.reset_index(drop=True, inplace=True)
+
+        return df_c
+
+    @staticmethod
+    def get_fast_charge_features(processed_cycler_run, diagnostic_cycle_type, cycle_comp_num=[0, 1], Q_seg=500):
+        """
+        Generate features listed in early prediction manuscript using both diagnostic and regular cycles
+
+        Args:
+            processed_cycler_run (beep.structure.ProcessedCyclerRun)
+            diagnostic_cycle_type (str): Describes which cyle type is used for feature creation,
+            options are: 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C', 'reset'
+            cycle_comp_num (list of two integers): contains numbers of compared cycles [0,1] for e.g.
+            creates the features from the first and the second cycle of the cycle type
+            Q_seg (int):  Number of cycles considered (first 500 for charging, the following 500 for discharging)
+
+
+        Returns:
+            X (pd.DataFrame): Dataframe containing the features
+        """
+
+        diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated
+
+        X = pd.DataFrame(np.zeros((1, 42)))
+        labels = []
+
+        # Determine beginning and end of investigated cycle type
+        index_pos_list = [i for i in range(len(diagnostic_interpolated.cycle_type))
+                          if diagnostic_interpolated.cycle_type[i] == diagnostic_cycle_type]
+
+        end_list = [index_pos_list[i] for i in range(len(index_pos_list) - 1)
+                    if index_pos_list[i + 1] != index_pos_list[i] + 1]
+        start_list = [index_pos_list[i] for i in range(1, len(index_pos_list))
+                      if index_pos_list[i - 1] != index_pos_list[i] - 1]
+        end_list.append(index_pos_list[-1])
+        start_list.insert(0, index_pos_list[0])
+
+        if diagnostic_interpolated.cycle_type[0] == diagnostic_cycle_type:
+            start_list.insert(0, 1)
+        if diagnostic_interpolated.cycle_type[len(diagnostic_interpolated.cycle_type) - 1] == diagnostic_cycle_type:
+            end_list.append(len(diagnostic_interpolated.cycle_type) - 1)
+
+        # Create features
+
+        # Charging Capacity features
+        Qc100_1 = diagnostic_interpolated.charge_capacity[
+                  start_list[cycle_comp_num[1]]: start_list[cycle_comp_num[1]] + Q_seg]
+        Qc10_1 = diagnostic_interpolated.charge_capacity[
+                 start_list[cycle_comp_num[0]]: start_list[cycle_comp_num[0]] + Q_seg]
+        QcDiff = [a_i - b_i for a_i, b_i in zip(Qc100_1, Qc10_1)]
+        QcDiff = [elem for elem in QcDiff if (math.isnan(elem) == False)]
+
+        X[0] = np.log10(np.absolute(np.var(QcDiff)))
+        labels.append("abs_variance_discharge_capacity_difference_cycles_2:100")
+
+        X[1] = np.log10(np.absolute(min(QcDiff)))
+        labels.append("abs_min_discharge_capacity_difference_cycles_2:100")
+
+        X[2] = np.log10(np.absolute(np.mean(QcDiff)))
+        X[3] = np.log10(np.absolute(skew(QcDiff)))
+        X[4] = np.log10(np.absolute(kurtosis(QcDiff, fisher=False, bias=False)))
+        X[5] = np.log10(np.sum(np.absolute(QcDiff)))
+        X[6] = np.log10(np.sum(np.square(QcDiff)))
+
+        # Discharging Capacity features
+        Qd100_1 = diagnostic_interpolated.discharge_capacity[
+                  start_list[cycle_comp_num[1]] + Q_seg + 1: start_list[cycle_comp_num[1]] + 2 * Q_seg]
+        Qd10_1 = diagnostic_interpolated.discharge_capacity[
+                 start_list[cycle_comp_num[0]] + Q_seg + 1: start_list[cycle_comp_num[0]] + 2 * Q_seg]
+        QdDiff = [a_i - b_i for a_i, b_i in zip(Qd100_1, Qd10_1)]
+        QdDiff = [elem for elem in QdDiff if (math.isnan(elem) == False)]
+
+        X[7] = np.log10(np.absolute(np.var(QdDiff)))
+        X[8] = np.log10(np.absolute(min(QdDiff)))
+        X[9] = np.log10(np.absolute(np.mean(QdDiff)))
+        X[10] = np.log10(np.absolute(skew(QdDiff)))
+        X[11] = np.log10(np.absolute(kurtosis(QdDiff, fisher=False, bias=False)))
+        X[12] = np.log10(np.sum(np.absolute(QdDiff)))
+        X[13] = np.log10(np.sum(np.square(QdDiff)))
+
+        # Charging Energy features
+        Ec100_1 = diagnostic_interpolated.charge_energy[
+                  start_list[cycle_comp_num[1]]: start_list[cycle_comp_num[1]] + Q_seg]
+        Ec10_1 = diagnostic_interpolated.charge_energy[
+                 start_list[cycle_comp_num[0]]: start_list[cycle_comp_num[0]] + Q_seg]
+        EcDiff = [a_i - b_i for a_i, b_i in zip(Ec100_1, Ec10_1)]
+        EcDiff = [elem for elem in EcDiff if (math.isnan(elem) == False)]
+
+        X[14] = np.log10(np.absolute(np.var(EcDiff)))
+        X[15] = np.log10(np.absolute(min(EcDiff)))
+        X[16] = np.log10(np.absolute(np.mean(EcDiff)))
+        X[17] = np.log10(np.absolute(skew(EcDiff)))
+        X[18] = np.log10(np.absolute(kurtosis(EcDiff, fisher=False, bias=False)))
+        X[19] = np.log10(np.sum(np.absolute(EcDiff)))
+        X[20] = np.log10(np.sum(np.square(EcDiff)))
+
+        # Discharging Energy features
+        Ed100_1 = diagnostic_interpolated.discharge_energy[
+                  start_list[cycle_comp_num[1]] + Q_seg + 1: start_list[cycle_comp_num[1]] + 2 * Q_seg]
+        Ed10_1 = diagnostic_interpolated.discharge_energy[
+                 start_list[cycle_comp_num[0]] + Q_seg + 1: start_list[cycle_comp_num[0]] + 2 * Q_seg]
+        EdDiff = [a_i - b_i for a_i, b_i in zip(Ed100_1, Ed10_1)]
+        EdDiff = [elem for elem in EdDiff if (math.isnan(elem) == False)]
+
+        X[21] = np.log10(np.absolute(np.var(EdDiff)))
+        X[22] = np.log10(np.absolute(min(EdDiff)))
+        X[23] = np.log10(np.absolute(np.mean(EdDiff)))
+        X[24] = np.log10(np.absolute(skew(EdDiff)))
+        X[25] = np.log10(np.absolute(kurtosis(EdDiff, fisher=False, bias=False)))
+        X[26] = np.log10(np.sum(np.absolute(EdDiff)))
+        X[27] = np.log10(np.sum(np.square(EdDiff)))
+
+        # Charging dQdV features
+        dQdVc100_1 = diagnostic_interpolated.charge_dQdV[
+                     start_list[cycle_comp_num[1]]: start_list[cycle_comp_num[1]] + Q_seg]
+        dQdVc10_1 = diagnostic_interpolated.charge_dQdV[
+                    start_list[cycle_comp_num[0]]: start_list[cycle_comp_num[0]] + Q_seg]
+        dQdVcDiff = [a_i - b_i for a_i, b_i in zip(dQdVc100_1, dQdVc10_1)]
+        dQdVcDiff = [elem for elem in dQdVcDiff if (math.isnan(elem) == False)]
+
+        X[28] = np.log10(np.absolute(np.var(dQdVcDiff)))
+        X[29] = np.log10(np.absolute(min(dQdVcDiff)))
+        X[30] = np.log10(np.absolute(np.mean(dQdVcDiff)))
+        X[31] = np.log10(np.absolute(skew(dQdVcDiff)))
+        X[32] = np.log10(np.absolute(kurtosis(dQdVcDiff, fisher=False, bias=False)))
+        X[33] = np.log10(np.sum(np.absolute(dQdVcDiff)))
+        X[34] = np.log10(np.sum(np.square(dQdVcDiff)))
+
+        # Discharging Capacity features
+        dQdVd100_1 = diagnostic_interpolated.discharge_dQdV[
+                     start_list[cycle_comp_num[1]] + Q_seg + 1: start_list[cycle_comp_num[1]] + 2 * Q_seg]
+        dQdVd10_1 = diagnostic_interpolated.discharge_dQdV[
+                    start_list[cycle_comp_num[0]] + Q_seg + 1: start_list[cycle_comp_num[0]] + 2 * Q_seg]
+        dQdVdDiff = [a_i - b_i for a_i, b_i in zip(dQdVd100_1, dQdVd10_1)]
+        dQdVdDiff = [elem for elem in dQdVdDiff if (math.isnan(elem) == False)]
+
+        X[35] = np.log10(np.absolute(np.var(dQdVdDiff)))
+        X[36] = np.log10(np.absolute(min(dQdVdDiff)))
+        X[37] = np.log10(np.absolute(np.mean(dQdVdDiff)))
+        X[38] = np.log10(np.absolute(skew(dQdVdDiff)))
+        X[39] = np.log10(np.absolute(kurtosis(dQdVdDiff, fisher=False, bias=False)))
+        X[40] = np.log10(np.sum(np.absolute(dQdVdDiff)))
+        X[41] = np.log10(np.sum(np.square(dQdVdDiff)))
+
+        operations = ['var', 'min', 'mean', 'skew', 'kurtosis', 'abs', 'square']
+        quantities = ['charging_capacity', 'discharging_capacity', 'charging_energy', 'discharging_energy',
+                      'charging_dQdV', 'discharging_dQdV']
+
+        X.columns = [y + '_' + x for x in quantities for y in operations]
+        return X
 
 
 class DeltaQFastCharge(BeepFeatures):
@@ -216,7 +544,7 @@ class DeltaQFastCharge(BeepFeatures):
         """
 
         assert cls.mid_pred_cycle > 10  # Sufficient cycles for analysis
-        assert cls.final_pred_cycle > cls.mid_pred_cycle # Must have final_pred_cycle > mid_pred_cycle
+        assert cls.final_pred_cycle > cls.mid_pred_cycle  # Must have final_pred_cycle > mid_pred_cycle
         ifinal = cls.final_pred_cycle - 1  # python indexing
         imid = cls.mid_pred_cycle - 1
         iini = cls.init_pred_cycle - 1
@@ -257,22 +585,22 @@ class DeltaQFastCharge(BeepFeatures):
         Vd = interpolated_df.voltage[interpolated_df.cycle_index == iini]
         Qd_diff = Qd_final.values - Qd_10.values
 
-        X[5] = np.log10(np.abs(np.min(Qd_diff)))   # Minimum
+        X[5] = np.log10(np.abs(np.min(Qd_diff)))  # Minimum
         labels.append("abs_min_discharge_capacity_difference_cycles_2:100")
 
         X[6] = np.log10(np.abs(np.mean(Qd_diff)))  # Mean
         labels.append("abs_mean_discharge_capacity_difference_cycles_2:100")
 
-        X[7] = np.log10(np.abs(np.var(Qd_diff)))   # Variance
+        X[7] = np.log10(np.abs(np.var(Qd_diff)))  # Variance
         labels.append("abs_variance_discharge_capacity_difference_cycles_2:100")
 
-        X[8] = np.log10(np.abs(skew(Qd_diff)))    # Skewness
+        X[8] = np.log10(np.abs(skew(Qd_diff)))  # Skewness
         labels.append("abs_skew_discharge_capacity_difference_cycles_2:100")
 
         X[9] = np.log10(np.abs(kurtosis(Qd_diff)))  # Kurtosis
         labels.append("abs_kurtosis_discharge_capacity_difference_cycles_2:100")
 
-        X[10] = np.log10(np.abs(Qd_diff[0]))       # First difference
+        X[10] = np.log10(np.abs(Qd_diff[0]))  # First difference
         labels.append("abs_first_discharge_capacity_difference_cycles_2:100")
 
         X[11] = max(summary.temperature_maximum[list(range(1, cls.final_pred_cycle))])  # Max T
@@ -335,7 +663,7 @@ class DeltaQFastCharge(BeepFeatures):
             'barcode': processed_cycler_run.barcode,
             'protocol': processed_cycler_run.protocol,
             'channel_id': processed_cycler_run.channel_id
-                }
+        }
         return metadata
 
 
@@ -388,6 +716,7 @@ class DegradationPredictor(MSONable):
         predicted_quantity (str): 'cycle' or 'capacity'.
         nominal_capacity (float):
     """
+
     def __init__(self, name, X, feature_labels=None, y=None, nominal_capacity=1.1,
                  predict_only=False, predicted_quantity="cycle", prediction_type="multi"):
         """
@@ -496,22 +825,22 @@ class DegradationPredictor(MSONable):
         Vd = interpolated_df.voltage[interpolated_df.cycle_index == iini]
         Qd_diff = Qd_final.values - Qd_10.values
 
-        X[5] = np.log10(np.abs(np.min(Qd_diff)))   # Minimum
+        X[5] = np.log10(np.abs(np.min(Qd_diff)))  # Minimum
         labels.append("abs_min_discharge_capacity_difference_cycles_2:100")
 
         X[6] = np.log10(np.abs(np.mean(Qd_diff)))  # Mean
         labels.append("abs_mean_discharge_capacity_difference_cycles_2:100")
 
-        X[7] = np.log10(np.abs(np.var(Qd_diff)))   # Variance
+        X[7] = np.log10(np.abs(np.var(Qd_diff)))  # Variance
         labels.append("abs_variance_discharge_capacity_difference_cycles_2:100")
 
-        X[8] = np.log10(np.abs(skew(Qd_diff)))    # Skewness
+        X[8] = np.log10(np.abs(skew(Qd_diff)))  # Skewness
         labels.append("abs_skew_discharge_capacity_difference_cycles_2:100")
 
         X[9] = np.log10(np.abs(kurtosis(Qd_diff)))  # Kurtosis
         labels.append("abs_kurtosis_discharge_capacity_difference_cycles_2:100")
 
-        X[10] = np.log10(np.abs(Qd_diff[0]))       # First difference
+        X[10] = np.log10(np.abs(Qd_diff[0]))  # First difference
         labels.append("abs_first_discharge_capacity_difference_cycles_2:100")
 
         X[11] = max(summary.temperature_maximum[list(range(1, final_pred_cycle))])  # Max T
@@ -587,7 +916,7 @@ class DegradationPredictor(MSONable):
                "feature_labels": self.feature_labels,
                "predict_only": self.predict_only,
                "prediction_type": self.prediction_type,
-               "nominal_capacity":self.nominal_capacity
+               "nominal_capacity": self.nominal_capacity
                }
         if isinstance(self.y, pd.DataFrame):
             obj["y"] = self.y.to_dict("list")
@@ -654,7 +983,7 @@ def process_file_list_from_json(file_list_json, processed_dir='data-share/featur
     events = KinesisEvents(service='DataAnalyzer', mode=file_list_data['mode'])
 
     # Add root path to processed_dir
-    processed_dir = os.path.join(os.environ.get("BEEP_ROOT", "/"),
+    processed_dir = os.path.join(os.environ.get("BEEP_PROCESSING_DIR", "/"),
                                  processed_dir)
     if not os.path.exists(processed_dir):
         os.makedirs(processed_dir)
@@ -680,7 +1009,7 @@ def process_file_list_from_json(file_list_json, processed_dir='data-share/featur
                 processed_result_list.append("success")
                 processed_message_list.append({'comment': '',
                                                'error': ''})
-                logger.info('Successfully generated %s',  featurizer.name, extra=s)
+                logger.info('Successfully generated %s', featurizer.name, extra=s)
             else:
                 processed_paths_list.append(path)
                 processed_run_list.append(run_id)

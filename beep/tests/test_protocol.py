@@ -3,6 +3,7 @@
 
 import os
 import unittest
+import warnings
 import json
 import boto3
 import numpy as np
@@ -30,6 +31,7 @@ class GenerateProcedureTest(unittest.TestCase):
             response = kinesis.list_streams()
             self.events_mode = 'test'
         except Exception as e:
+            warnings.warn("Cloud resources not configured")
             self.events_mode = 'events_off'
 
     def test_dict_to_file_1(self):
@@ -190,8 +192,8 @@ class GenerateProcedureTest(unittest.TestCase):
 
         # Test script functionality
         with ScratchDir('.') as scratch_dir:
-            # Set BEEP_ROOT directory to scratch_dir
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            # Set BEEP_PROCESSING_DIR directory to scratch_dir
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             procedures_path = os.path.join("data-share", "protocols", "procedures")
             names_path = os.path.join("data-share", "protocols", "names")
             makedirs_p(procedures_path)

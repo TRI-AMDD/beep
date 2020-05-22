@@ -3,7 +3,7 @@
 
 # Summary
 
-Beep is software designed to support Battery Estimation and Early Prediction
+Beep is a software designed to support Battery Evaluation and Early Prediction
 of cycle life corresponding to the research of the
 [d3batt program](https://d3batt.mit.edu/) and the 
 [Toyota Research Institute](http://www.tri.global/accelerated-materials-design-and-discovery/).
@@ -34,7 +34,7 @@ export BEEP_ENV='dev'
 ```
 For processing file locally its necessary to configure the folder structure 
 ```.env
-export BEEP_ROOT='/path/to/beep/data/'
+export BEEP_PROCESSING_DIR='/path/to/beep/data/'
 ```
 
 ## Testing
@@ -57,7 +57,7 @@ as input in order to provide flexibility and more facile automation.  They are d
 below:
 
 ### collate
-The `collate` script takes no input, and operates by assuming the BEEP_ROOT (default `/`)
+The `collate` script takes no input, and operates by assuming the BEEP_PROCESSING_DIR (default `/`)
 has subdirectories `/data-share/raw_cycler_files` and `data-share/renamed_cycler_files/FastCharge`.
 
 The script moves files from the `/data-share/raw_cycler_files` directory, parses the metadata,

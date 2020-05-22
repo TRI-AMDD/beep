@@ -3,6 +3,7 @@
 
 import os
 import unittest
+import warnings
 import datetime
 import pytz
 import numpy as np
@@ -26,6 +27,7 @@ class KinesisEventsTest(unittest.TestCase):
         print(response)
         beep_kinesis_connection_broken = False
     except Exception as e:
+        warnings.warn("Cloud resources not configured")
         beep_kinesis_connection_broken = True
 
     def setUp(self):
@@ -200,6 +202,7 @@ class CloudWatchLoggingTest(unittest.TestCase):
         cloudwatch.describe_alarms()
         beep_cloudwatch_connection_broken = False
     except Exception as e:
+        warnings.warn("Cloud resources not configured")
         beep_cloudwatch_connection_broken = True
 
     def setUp(self):

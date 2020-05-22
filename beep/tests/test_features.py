@@ -2,6 +2,7 @@
 """Unit tests related to feature generation"""
 
 import unittest
+import warnings
 import os
 import json
 import boto3
@@ -11,7 +12,7 @@ import numpy as np
 
 from beep.structure import RawCyclerRun, ProcessedCyclerRun
 from beep.featurize import process_file_list_from_json, \
-    DeltaQFastCharge, TrajectoryFastCharge, DegradationPredictor
+    DeltaQFastCharge, TrajectoryFastCharge, DegradationPredictor, DiagnosticCyclesFeatures
 from monty.serialization import dumpfn, loadfn
 from monty.tempfile import ScratchDir
 
@@ -20,6 +21,8 @@ TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 PROCESSED_CYCLER_FILE = "2017-06-30_2C-10per_6C_CH10_structure.json"
 PROCESSED_CYCLER_FILE_INSUF = "structure_insufficient.json"
 MACCOR_FILE_W_DIAGNOSTICS = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000020_CH71.071")
+MACCOR_FILE_W_PARAMETERS = os.path.join(TEST_FILE_DIR, 'PredictionDiagnostics_000109_tztest.010')
+
 BIG_FILE_TESTS = os.environ.get("BEEP_BIG_TESTS", False)
 SKIP_MSG = "Tests requiring large files with diagnostic cycles are disabled, set BIG_FILE_TESTS to run full tests"
 
@@ -32,12 +35,13 @@ class TestFeaturizer(unittest.TestCase):
             response = kinesis.list_streams()
             self.events_mode = "test"
         except Exception as e:
+            warnings.warn("Cloud resources not configured")
             self.events_mode = "events_off"
 
     def test_feature_generation_full_model(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             pcycler_run = loadfn(processed_cycler_run_path)
             featurizer = DeltaQFastCharge.from_run(processed_cycler_run_path, os.getcwd(), pcycler_run)
 
@@ -48,7 +52,7 @@ class TestFeaturizer(unittest.TestCase):
     def test_feature_old_class(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             predictor = DegradationPredictor.from_processed_cycler_run_file(processed_cycler_run_path,
                                                                             features_label='full_model')
             self.assertEqual(predictor.feature_labels[4], "charge_time_cycles_1:5")
@@ -56,7 +60,7 @@ class TestFeaturizer(unittest.TestCase):
     def test_feature_label_full_model(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             pcycler_run = loadfn(processed_cycler_run_path)
             featurizer = DeltaQFastCharge.from_run(processed_cycler_run_path, os.getcwd(), pcycler_run)
 
@@ -65,7 +69,7 @@ class TestFeaturizer(unittest.TestCase):
     def test_feature_serialization(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             pcycler_run = loadfn(processed_cycler_run_path)
             featurizer = DeltaQFastCharge.from_run(processed_cycler_run_path, os.getcwd(), pcycler_run)
 
@@ -78,7 +82,7 @@ class TestFeaturizer(unittest.TestCase):
     def test_feature_serialization_for_training(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             pcycler_run = loadfn(processed_cycler_run_path)
             featurizer = DeltaQFastCharge.from_run(processed_cycler_run_path, os.getcwd(), pcycler_run)
 
@@ -88,7 +92,7 @@ class TestFeaturizer(unittest.TestCase):
 
     def test_feature_class(self):
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
 
             pcycler_run_loc = os.path.join(TEST_FILE_DIR, '2017-06-30_2C-10per_6C_CH10_structure.json')
             pcycler_run = loadfn(pcycler_run_loc)
@@ -134,7 +138,7 @@ class TestFeaturizer(unittest.TestCase):
     def test_feature_generation_list_to_json(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
 
             # Create dummy json obj
             json_obj = {
@@ -158,7 +162,7 @@ class TestFeaturizer(unittest.TestCase):
     def test_insufficient_data_file(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE_INSUF)
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
 
             json_obj = {
                         "mode": self.events_mode,
@@ -172,3 +176,18 @@ class TestFeaturizer(unittest.TestCase):
             self.assertEqual(output_obj['result_list'][0], 'incomplete')
             self.assertEqual(output_obj['message_list'][0]['comment'],
                              'Insufficient or incorrect data for featurization')
+
+    def test_DiagnosticCyclesFeatures_class(self):
+        with ScratchDir('.'):
+            os.environ['BEEP_PROCESSING_DIR'] = TEST_FILE_DIR
+            pcycler_run_loc = os.path.join(TEST_FILE_DIR, 'PreDiag_000240_000227_truncated_structure.json')
+            pcycler_run = loadfn(pcycler_run_loc)
+            featurizer = DiagnosticCyclesFeatures.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
+            path, local_filename = os.path.split(featurizer.name)
+            folder = os.path.split(path)[-1]
+            dumpfn(featurizer, featurizer.name)
+            self.assertEqual(folder, 'DiagnosticCyclesFeatures')
+            self.assertEqual(featurizer.X.shape[1], 60)
+            self.assertTrue(all(x in featurizer.X.columns for x in ['m0_Mu','var(ocv)','var_charging_dQdV'])
+
+)
