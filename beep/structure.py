@@ -532,7 +532,7 @@ class RawCyclerRun(MSONable):
         for column, dtype in ARBIN_CONFIG['data_types'].items():
             if column in data:
                 if not data[column].isnull().values.any():
-                    data[column] = pd.Series(data[column], dtype=dtype)
+                    data[column] = data[column].astype(dtype)
 
         data.rename(ARBIN_CONFIG['data_columns'], axis='columns', inplace=True)
         metadata = pd.read_csv(metadata_path)

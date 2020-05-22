@@ -596,11 +596,11 @@ class ProcessedCyclerRunTest(unittest.TestCase):
         self.assertEqual(pcycler_run.protocol, r"2017-12-04_tests\20170630-4_65C_69per_6C.sdu")
 
         all_summary = pcycler_run.summary
-        reg_dyptes = all_summary.dtypes.tolist()
+        reg_dtypes = all_summary.dtypes.tolist()
         reg_columns = all_summary.columns.tolist()
-        reg_dyptes = [str(dtyp) for dtyp in reg_dyptes]
+        reg_dtypes = [str(dtyp) for dtyp in reg_dtypes]
         for indx, col in enumerate(reg_columns):
-            self.assertEqual(reg_dyptes[indx], STRUCTURE_DTYPES['summary'][col])
+            self.assertEqual(reg_dtypes[indx], STRUCTURE_DTYPES['summary'][col])
 
         all_interpolated = pcycler_run.cycles_interpolated
         cycles_interpolated_dyptes = all_interpolated.dtypes.tolist()
