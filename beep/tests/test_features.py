@@ -35,6 +35,7 @@ class TestFeaturizer(unittest.TestCase):
             response = kinesis.list_streams()
             self.events_mode = "test"
         except Exception as e:
+            warnings.warn("Cloud resources not configured")
             self.events_mode = "events_off"
 
     def test_feature_generation_full_model(self):
@@ -178,7 +179,7 @@ class TestFeaturizer(unittest.TestCase):
 
     def test_DiagnosticCyclesFeatures_class(self):
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = TEST_FILE_DIR
+            os.environ['BEEP_PROCESSING_DIR'] = TEST_FILE_DIR
             pcycler_run_loc = os.path.join(TEST_FILE_DIR, 'PreDiag_000240_000227_truncated_structure.json')
             pcycler_run = loadfn(pcycler_run_loc)
             featurizer = DiagnosticCyclesFeatures.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
