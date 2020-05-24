@@ -374,24 +374,6 @@ class DiagnosticCyclesFeatures(BeepFeatures):
         # Create features
 
         # Charging Capacity features
-        Qc100_1 = diagnostic_interpolated.charge_capacity[
-                  start_list[cycle_comp_num[1]]: start_list[cycle_comp_num[1]] + Q_seg]
-        Qc10_1 = diagnostic_interpolated.charge_capacity[
-                 start_list[cycle_comp_num[0]]: start_list[cycle_comp_num[0]] + Q_seg]
-        QcDiff = [a_i - b_i for a_i, b_i in zip(Qc100_1, Qc10_1)]
-        QcDiff = [elem for elem in QcDiff if (math.isnan(elem) == False)]
-
-        X[0] = np.log10(np.absolute(np.var(QcDiff)))
-        labels.append("abs_variance_discharge_capacity_difference_cycles_2:100")
-
-        X[1] = np.log10(np.absolute(min(QcDiff)))
-        labels.append("abs_min_discharge_capacity_difference_cycles_2:100")
-
-        X[2] = np.log10(np.absolute(np.mean(QcDiff)))
-        X[3] = np.log10(np.absolute(skew(QcDiff)))
-        X[4] = np.log10(np.absolute(kurtosis(QcDiff, fisher=False, bias=False)))
-        X[5] = np.log10(np.sum(np.absolute(QcDiff)))
-        X[6] = np.log10(np.sum(np.square(QcDiff)))
 
         # Discharging Capacity features
         Qd100_1 = diagnostic_interpolated.discharge_capacity[
@@ -410,20 +392,6 @@ class DiagnosticCyclesFeatures(BeepFeatures):
         X[13] = np.log10(np.sum(np.square(QdDiff)))
 
         # Charging Energy features
-        Ec100_1 = diagnostic_interpolated.charge_energy[
-                  start_list[cycle_comp_num[1]]: start_list[cycle_comp_num[1]] + Q_seg]
-        Ec10_1 = diagnostic_interpolated.charge_energy[
-                 start_list[cycle_comp_num[0]]: start_list[cycle_comp_num[0]] + Q_seg]
-        EcDiff = [a_i - b_i for a_i, b_i in zip(Ec100_1, Ec10_1)]
-        EcDiff = [elem for elem in EcDiff if (math.isnan(elem) == False)]
-
-        X[14] = np.log10(np.absolute(np.var(EcDiff)))
-        X[15] = np.log10(np.absolute(min(EcDiff)))
-        X[16] = np.log10(np.absolute(np.mean(EcDiff)))
-        X[17] = np.log10(np.absolute(skew(EcDiff)))
-        X[18] = np.log10(np.absolute(kurtosis(EcDiff, fisher=False, bias=False)))
-        X[19] = np.log10(np.sum(np.absolute(EcDiff)))
-        X[20] = np.log10(np.sum(np.square(EcDiff)))
 
         # Discharging Energy features
         Ed100_1 = diagnostic_interpolated.discharge_energy[
@@ -442,20 +410,6 @@ class DiagnosticCyclesFeatures(BeepFeatures):
         X[27] = np.log10(np.sum(np.square(EdDiff)))
 
         # Charging dQdV features
-        dQdVc100_1 = diagnostic_interpolated.charge_dQdV[
-                     start_list[cycle_comp_num[1]]: start_list[cycle_comp_num[1]] + Q_seg]
-        dQdVc10_1 = diagnostic_interpolated.charge_dQdV[
-                    start_list[cycle_comp_num[0]]: start_list[cycle_comp_num[0]] + Q_seg]
-        dQdVcDiff = [a_i - b_i for a_i, b_i in zip(dQdVc100_1, dQdVc10_1)]
-        dQdVcDiff = [elem for elem in dQdVcDiff if (math.isnan(elem) == False)]
-
-        X[28] = np.log10(np.absolute(np.var(dQdVcDiff)))
-        X[29] = np.log10(np.absolute(min(dQdVcDiff)))
-        X[30] = np.log10(np.absolute(np.mean(dQdVcDiff)))
-        X[31] = np.log10(np.absolute(skew(dQdVcDiff)))
-        X[32] = np.log10(np.absolute(kurtosis(dQdVcDiff, fisher=False, bias=False)))
-        X[33] = np.log10(np.sum(np.absolute(dQdVcDiff)))
-        X[34] = np.log10(np.sum(np.square(dQdVcDiff)))
 
         # Discharging Capacity features
         dQdVd100_1 = diagnostic_interpolated.discharge_dQdV[
