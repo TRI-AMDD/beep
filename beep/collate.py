@@ -229,6 +229,7 @@ def process_files_json():
     # chdir into beep root
     pwd = os.getcwd()
     os.chdir(os.environ.get("BEEP_PROCESSING_DIR", "/"))
+
     if not os.path.exists(SRC_DIR):
         os.makedirs(SRC_DIR)
     if not os.path.exists(DEST_DIR):

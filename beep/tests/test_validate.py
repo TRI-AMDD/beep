@@ -160,6 +160,22 @@ class ValidationMaccorTest(unittest.TestCase):
         validity, reason = v.validate(df)
         self.assertTrue(validity)
 
+    def test_invalidation_maccor(self):
+        path = "PredictionDiagnostics_000109_tztest.010"
+        path = os.path.join(TEST_FILE_DIR, path)
+
+        v = SimpleValidator(schema_filename=os.path.join(VALIDATION_SCHEMA_DIR, "schema-maccor-2170.yaml"))
+        v.allow_unknown = True
+        header = pd.read_csv(path, delimiter='\t', nrows=0)
+        print(header)
+        df = pd.read_csv(path, delimiter='\t', skiprows=1)
+        df['State'] = df['State'].astype(str)
+        df['current'] = df['Amps']
+        print(df.dtypes)
+        validity, reason = v.validate(df)
+        print(validity, reason)
+        self.assertFalse(validity)
+
     def test_validate_from_paths_maccor(self):
         paths = [os.path.join(TEST_FILE_DIR, "xTESLADIAG_000019_CH70.070")]
 
