@@ -44,7 +44,7 @@ from monty.serialization import loadfn, dumpfn
 from scipy.stats import skew, kurtosis
 from beep.collate import scrub_underscore_suffix, add_suffix_to_filename
 from beep.utils import KinesisEvents
-from beep.helpers import featurizer_helpers
+from beep.helpers.featurizer_helpers import DiagnosticCyclesFeaturesHelper
 from beep import logger, ENVIRONMENT, __version__
 from beep.structure import get_protocol_parameters
 
@@ -213,10 +213,10 @@ class DiagnosticCyclesFeatures(BeepFeatures):
             pd.DataFrame: features indicative of degradation, derived from the input data
         """
 
-        rpt_dQdV_features = DiagnosticCyclesFeatures.get_rpt_dQdV_features(processed_cycler_run, diag_ref=0, diag_nr=1,
+        rpt_dQdV_features = cls.get_rpt_dQdV_features(processed_cycler_run, diag_ref=0, diag_nr=1,
                                                                            charge_y_n=1, rpt_type='rpt_0.2C')
-        hppc_features = DiagnosticCyclesFeatures.get_hppc_features(processed_cycler_run)
-        fast_charge_features = DiagnosticCyclesFeatures.get_fast_charge_features(processed_cycler_run,
+        hppc_features = cls.get_hppc_features(processed_cycler_run)
+        fast_charge_features = cls.get_fast_charge_features(processed_cycler_run,
                                                                                  diagnostic_cycle_type='rpt_0.2C',
                                                                                  cycle_comp_num=[0, 1], Q_seg=500)
 
@@ -242,8 +242,8 @@ class DiagnosticCyclesFeatures(BeepFeatures):
         }
         return metadata
 
-    @staticmethod
-    def get_rpt_dQdV_features(processed_cycler_run, diag_ref=0, diag_nr=1, charge_y_n=1, rpt_type='rpt_0.2C',
+    @classmethod
+    def get_rpt_dQdV_features(cls, processed_cycler_run, diag_ref=0, diag_nr=1, charge_y_n=1, rpt_type='rpt_0.2C',
                               plotting_y_n=0):
         """
         Generate features out of peakfits to rpt cycles
@@ -284,19 +284,19 @@ class DiagnosticCyclesFeatures(BeepFeatures):
             raise InputError("{} is not a valid rpt cycle".format(
                 rpt_type))
 
-        peak_fit_df_ref = featurizer_helpers.generate_dQdV_peak_fits(processed_cycler_run, diag_nr=diag_ref,
+        peak_fit_df_ref = DiagnosticCyclesFeaturesHelper.generate_dQdV_peak_fits(processed_cycler_run, diag_nr=diag_ref,
                                                                      charge_y_n=charge_y_n,
                                                                      rpt_type=rpt_type, plotting_y_n=plotting_y_n,
                                                                      max_nr_peaks=max_nr_peaks)
-        peak_fit_df = featurizer_helpers.generate_dQdV_peak_fits(processed_cycler_run, diag_nr=diag_nr,
+        peak_fit_df = DiagnosticCyclesFeaturesHelper.generate_dQdV_peak_fits(processed_cycler_run, diag_nr=diag_nr,
                                                                  charge_y_n=charge_y_n,
                                                                  rpt_type=rpt_type, plotting_y_n=plotting_y_n,
                                                                  max_nr_peaks=max_nr_peaks)
 
         return 1 + (peak_fit_df - peak_fit_df_ref) / peak_fit_df_ref
 
-    @staticmethod
-    def get_hppc_features(processed_cycler_run, diag_pos=1, soc_window=7):
+    @classmethod
+    def get_hppc_features(cls, processed_cycler_run, diag_pos=1, soc_window=7):
         """
         This method calculates features based on voltage and resistance changes in hppc and rpt cycles
         Args:
@@ -316,9 +316,9 @@ class DiagnosticCyclesFeatures(BeepFeatures):
         cycle_hppc = cycle_hppc.loc[cycle_hppc.current.notna()]
         cycles = cycle_hppc.cycle_index.unique()
 
-        [f2_d, f2_c] = featurizer_helpers.get_hppc_r(processed_cycler_run, cycles[diag_pos])
-        f3 = featurizer_helpers.get_hppc_ocv(processed_cycler_run, cycles[diag_pos])
-        v_diff = featurizer_helpers.get_v_diff(cycles[diag_pos], processed_cycler_run, soc_window)
+        [f2_d, f2_c] = DiagnosticCyclesFeaturesHelper.get_hppc_r(processed_cycler_run, cycles[diag_pos])
+        f3 = DiagnosticCyclesFeaturesHelper.get_hppc_ocv(processed_cycler_run, cycles[diag_pos])
+        v_diff = DiagnosticCyclesFeaturesHelper.get_v_diff(cycles[diag_pos], processed_cycler_run, soc_window)
 
         params, _ = get_protocol_parameters(processed_cycler_run.protocol.split('.')[0])
         params = params[['charge_cutoff_voltage', 'discharge_cutoff_voltage']].reset_index(drop=True)
@@ -332,8 +332,8 @@ class DiagnosticCyclesFeatures(BeepFeatures):
 
         return df_c
 
-    @staticmethod
-    def get_fast_charge_features(processed_cycler_run, diagnostic_cycle_type, cycle_comp_num=[0, 1], Q_seg=500):
+    @classmethod
+    def get_fast_charge_features(cls, processed_cycler_run, diagnostic_cycle_type, cycle_comp_num=[0, 1], Q_seg=500):
         """
         Generate features listed in early prediction manuscript using both diagnostic and regular cycles
 
