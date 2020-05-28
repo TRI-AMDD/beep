@@ -187,7 +187,7 @@ class TestFeaturizer(unittest.TestCase):
             folder = os.path.split(path)[-1]
             dumpfn(featurizer, featurizer.name)
             self.assertEqual(folder, 'DiagnosticCyclesFeatures')
-            self.assertEqual(featurizer.X.shape[1], 60)
+            self.assertEqual(featurizer.X.shape[1], 90)
             self.assertTrue(all(x in featurizer.X.columns for x in ['m0_Mu','var(ocv)','var_charging_dQdV'])
 
 )

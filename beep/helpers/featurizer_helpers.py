@@ -10,7 +10,7 @@ All methods are currently lumped into this script.
 import pandas as pd
 import numpy as np
 import matplotlib as plt
-from scipy import optimize, signal
+from scipy import signal
 from lmfit import models
 from scipy.interpolate import interp1d
 
@@ -449,6 +449,104 @@ def get_v_diff(diag_num, processed_cycler_run, soc_window):
             return None
         else:
             return v_diff
+
+
+def get_relaxation_times(voltage_data, time_data, decay_percentage = [0.5, 0.8, 0.99]):
+    """
+    This function takes in the voltage data and time data of a voltage relaxation curve
+    and calculates out the time it takes to reach 50%, 80% and 99% of the OCV relaxation.
+
+    Args:
+        voltage_data(np.array): list of the voltage data in a voltage relaxation curve
+        time_data(np.array)   : list of the time data corresponding to voltage data
+        decay_percentage (list): list of thresholds to compute time constants for
+
+    Returns:
+        @time_array(np.array): list of time taken to reach percentage of total relaxation
+                              where percentages are 50%, 80%, and 99% returned in that order.
+
+    """
+
+    # Scaling the voltage data to between 0-1
+    final_voltage = voltage_data[-1]
+    initial_voltage = voltage_data[0]
+    scaled_voltage_data = (voltage_data - initial_voltage) / (final_voltage - initial_voltage)
+
+    # shifting the time data to start at 0
+    shifted_time_data = time_data - time_data[0]
+
+    v_decay_inv = interp1d(scaled_voltage_data, shifted_time_data)
+
+    # these are the decay percentages that will correspond to the time values extracted
+    time_array = []
+
+    for percent in decay_percentage:
+        time_array.append(v_decay_inv(percent))
+
+    return np.array(time_array)
+
+
+def get_relaxation_features(processed_cycler_run):
+    """
+
+    This function takes in the processed structure data and retrieves the fractional change in
+    the time taken to reach 50%, 80% and 99% of the voltage decay between the first and
+    the second HPPC cycles
+
+    Args:
+        @processed_cycler_run(beep.structure.ProcessedCyclerRun): ProcessedCyclerRun object for the cell
+        you want the diagnostic feature for.
+
+    Returns:
+        @fracTimeArray(np.array): list of fractional difference in time taken to reach percentage of
+        total relaxation between the first and second diagnostic cycle. It is organized such that
+        the percentages 50%, 80%, and 99% correspond to a given column, and the rows are different
+        SOCs of the HPPC starting at 0 with the highest SOC and going downwards.
+    """
+
+    total_time_array = []
+
+    # chooses the first and the second diagnostic cycle
+    for hppc_chosen in [0, 1]:
+
+        # Getting just the HPPC cycles
+        hppc_diag_cycles = processed_cycler_run.diagnostic_interpolated[processed_cycler_run.diagnostic_interpolated.cycle_type == "hppc"]
+
+        # Getting unique and ordered cycle index list for HPPC cycles, and choosing the hppc cycle
+        hppc_cycle_list = list(set(hppc_diag_cycles.cycle_index))
+        hppc_cycle_list.sort()
+
+        # Getting unique and ordered Regular Step List (Non-unique identifier)
+        reg_step_list = hppc_diag_cycles[hppc_diag_cycles.cycle_index == hppc_cycle_list[hppc_chosen]].step_index
+        reg_step_list = list(set(reg_step_list))
+        reg_step_list.sort()
+
+        # The value of 1 for regular step corresponds to all of the relaxation curves in the hppc
+        reg_step_relax = 1
+
+        # Getting unique and ordered Step Counter List (unique identifier)
+        step_count_list = hppc_diag_cycles[(hppc_diag_cycles.cycle_index == hppc_cycle_list[hppc_chosen]) &
+                                           (hppc_diag_cycles.step_index == reg_step_list[reg_step_relax])].step_index_counter
+        step_count_list = list(set(step_count_list))
+        step_count_list.sort()
+        # The first one isn't a proper relaxation curve(comes out of CV) so we ignore it
+        step_count_list = step_count_list[1:]
+
+        # 9x2 array where the rows are the different SOC starting high to low and columns are percent degrad
+        # initialized to all nans so when they can't be calculated it has a nan in its place
+        all_time_array = np.nan * np.ones((9, 3))
+
+        # gets all the times for a single SOC per loop
+        for soc_num in range(0, len(step_count_list)):
+            relax_curve_df = hppc_diag_cycles[(hppc_diag_cycles.cycle_index == hppc_cycle_list[hppc_chosen]) &\
+                                          (hppc_diag_cycles.step_index_counter == step_count_list[soc_num])]
+
+            time_array = get_relaxation_times(np.array(relax_curve_df.voltage), np.array(relax_curve_df.test_time))
+            all_time_array[soc_num][:] = time_array
+
+        total_time_array.append(all_time_array)
+
+    return total_time_array[1] / total_time_array[0]
 
 
 def get_energy_fraction(diag_num, processed_cycler_run, remaining, metric, cycle_type, file):
