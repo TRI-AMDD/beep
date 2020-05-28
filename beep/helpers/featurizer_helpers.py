@@ -451,19 +451,15 @@ def get_v_diff(diag_num, processed_cycler_run, soc_window):
             return v_diff
 
 
-def get_relaxation_times(voltage_data, timeData):
+def get_relaxation_times(voltage_data, time_data, decay_percentage = [0.5, 0.8, 0.99]):
     """
     This function takes in the voltage data and time data of a voltage relaxation curve
-    and figured out the time it takes to reach 50%, 80% and 99% of the OCV relaxation.
-    To accomplish this I normalized the curve between 0 and 1, shifted the time values so that
-    it starts at 0, and interpolated the the inverse function (timeData vs voltage_data).
-    Note: that this function likely only works for structured data (voltage interpolated)
-    because the raw data will have repeats of voltage points close to the OCV value due to noise,
-    meaning the function would be non-unique and interpolation can't be performed.
+    and calculates out the time it takes to reach 50%, 80% and 99% of the OCV relaxation.
 
     Args:
-        @voltage_data(np.array): list of the voltage data in a voltage relaxation curve
-        @timeData(np.array)   : list of the time data corresponding to voltage data
+        voltage_data(np.array): list of the voltage data in a voltage relaxation curve
+        time_data(np.array)   : list of the time data corresponding to voltage data
+        decay_percentage (list): list of thresholds to compute time constants for
 
     Returns:
         @time_array(np.array): list of time taken to reach percentage of total relaxation
@@ -477,14 +473,11 @@ def get_relaxation_times(voltage_data, timeData):
     scaled_voltage_data = (voltage_data - initial_voltage) / (final_voltage - initial_voltage)
 
     # shifting the time data to start at 0
-    shifted_time_data = timeData - timeData[0]
+    shifted_time_data = time_data - time_data[0]
 
-    # Part that won't work if multiple voltage values. Because will have multiple
-    # time values (y) for 1 voltage value (x).
     v_decay_inv = interp1d(scaled_voltage_data, shifted_time_data)
 
     # these are the decay percentages that will correspond to the time values extracted
-    decay_percentage = [0.5, 0.8, 0.99]
     time_array = []
 
     for percent in decay_percentage:
@@ -498,9 +491,7 @@ def get_relaxation_features(processed_cycler_run):
 
     This function takes in the processed structure data and retrieves the fractional change in
     the time taken to reach 50%, 80% and 99% of the voltage decay between the first and
-    the second HPPC cycles i.e.: timeHppc2/timeHppc1. It does this by essentially
-    calling get_relaxation_times() for each SOC in a given HPPC cycle twice, one for each HPPC and
-    subtracting these values.
+    the second HPPC cycles
 
     Args:
         @processed_cycler_run(beep.structure.ProcessedCyclerRun): ProcessedCyclerRun object for the cell
