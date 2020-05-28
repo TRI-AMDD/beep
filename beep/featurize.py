@@ -208,16 +208,15 @@ class DiagnosticCyclesFeatures(BeepFeatures):
         """
         This function returns if it is viable to compute the relaxation features. Will return True if
         all the SOC windows for the HPPC are there for both the 1st and 2nd diagnostic cycles, and False
-        if otherwise. This essentially returns False is ANY of the features produced will be a nan. Most
-        commonly the variance and the SOC10% features will fail and return a nan while other features
-        will most likely work
+        if otherwise.
 
         Args:
-            @processed_cycler_run(beep.structure.ProcessedCyclerRun): ProcessedCyclerRun object for the cell
-            you want the diagnostic feature for.
+            processed_cycler_run(beep.structure.ProcessedCyclerRun)
+            n_soc_windows (int): threshold number of soc windows a cell must have
+
 
         Returns:
-            @viable(boolean): True if all SOC window available in both diagnostic cycles. False otherwise.
+            (boolean): True if all SOC window available in both diagnostic cycles. False otherwise.
         """
         conditions_met = []
         # chooses the first and the second diagnostic cycle
