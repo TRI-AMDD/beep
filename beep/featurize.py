@@ -44,7 +44,7 @@ from monty.serialization import loadfn, dumpfn
 from scipy.stats import skew, kurtosis
 from beep.collate import scrub_underscore_suffix, add_suffix_to_filename
 from beep.utils import KinesisEvents
-from beep.helpers.featurizer_helpers import DiagnosticCyclesFeaturesHelper
+from beep.helpers import featurizer_helpers
 from beep import logger, ENVIRONMENT, __version__
 from beep.structure import get_protocol_parameters
 
@@ -199,8 +199,57 @@ class DiagnosticCyclesFeatures(BeepFeatures):
         conditions.append(hasattr(processed_cycler_run, 'diagnostic_interpolated'))
         conditions.append(set(cls.diagnostic_cycle_types) ==
                           set(processed_cycler_run.diagnostic_summary.cycle_type.unique()))
+        conditions.append(cls.check_relaxation_feature_viable(processed_cycler_run))
 
         return all(conditions)
+
+    @classmethod
+    def check_relaxation_feature_viable(cls, processed_cycler_run, n_soc_windows=9):
+        """
+        This function returns if it is viable to compute the relaxation features. Will return True if
+        all the SOC windows for the HPPC are there for both the 1st and 2nd diagnostic cycles, and False
+        if otherwise. This essentially returns False is ANY of the features produced will be a nan. Most
+        commonly the variance and the SOC10% features will fail and return a nan while other features
+        will most likely work
+
+        Args:
+            @processed_cycler_run(beep.structure.ProcessedCyclerRun): ProcessedCyclerRun object for the cell
+            you want the diagnostic feature for.
+
+        Returns:
+            @viable(boolean): True if all SOC window available in both diagnostic cycles. False otherwise.
+        """
+        conditions_met = []
+        # chooses the first and the second diagnostic cycle
+        for hppc_chosen in [0, 1]:
+
+            # Getting just the HPPC cycles
+            hppc_diag_cycles = processed_cycler_run.diagnostic_interpolated[
+                processed_cycler_run.diagnostic_interpolated.cycle_type == "hppc"]
+
+            # Getting unique and ordered cycle index list for HPPC cycles, and choosing the hppc cycle
+            hppc_cycle_list = list(set(hppc_diag_cycles.cycle_index))
+            hppc_cycle_list.sort()
+
+            # Getting unique and ordered Regular Step List (Non-unique identifier)
+            reg_step_list = hppc_diag_cycles[hppc_diag_cycles.cycle_index == hppc_cycle_list[hppc_chosen]].step_index
+            reg_step_list = list(set(reg_step_list))
+            reg_step_list.sort()
+
+            # The value of 1 for regular step corresponds to all of the relaxation curves in the hppc
+            reg_step_relax = 1
+
+            # Getting unique and ordered Step Counter List (unique identifier)
+            step_count_list = hppc_diag_cycles[(hppc_diag_cycles.cycle_index == hppc_cycle_list[hppc_chosen]) &
+                                               (hppc_diag_cycles.step_index == reg_step_list[
+                                                   reg_step_relax])].step_index_counter
+            step_count_list = list(set(step_count_list))
+            step_count_list.sort()
+            # The first one isn't a proper relaxation curve(comes out of CV) so we ignore it
+            step_count_list = step_count_list[1:]
+            conditions_met.append(len(step_count_list) == n_soc_windows)
+
+            return all(conditions_met)
 
     @classmethod
     def features_from_processed_cycler_run(cls, processed_cycler_run):
@@ -216,11 +265,12 @@ class DiagnosticCyclesFeatures(BeepFeatures):
         rpt_dQdV_features = cls.get_rpt_dQdV_features(processed_cycler_run, diag_ref=0, diag_nr=1,
                                                                            charge_y_n=1, rpt_type='rpt_0.2C')
         hppc_features = cls.get_hppc_features(processed_cycler_run)
+        relaxation_features = cls.get_all_relaxation_features(processed_cycler_run)
         fast_charge_features = cls.get_fast_charge_features(processed_cycler_run,
                                                                                  diagnostic_cycle_type='rpt_0.2C',
                                                                                  cycle_comp_num=[0, 1], Q_seg=500)
 
-        X = pd.concat([rpt_dQdV_features, hppc_features, fast_charge_features], axis=1)
+        X = pd.concat([rpt_dQdV_features, hppc_features, relaxation_features, fast_charge_features], axis=1)
 
         return X
 
@@ -284,11 +334,11 @@ class DiagnosticCyclesFeatures(BeepFeatures):
             raise InputError("{} is not a valid rpt cycle".format(
                 rpt_type))
 
-        peak_fit_df_ref = DiagnosticCyclesFeaturesHelper.generate_dQdV_peak_fits(processed_cycler_run, diag_nr=diag_ref,
+        peak_fit_df_ref = featurizer_helpers.generate_dQdV_peak_fits(processed_cycler_run, diag_nr=diag_ref,
                                                                      charge_y_n=charge_y_n,
                                                                      rpt_type=rpt_type, plotting_y_n=plotting_y_n,
                                                                      max_nr_peaks=max_nr_peaks)
-        peak_fit_df = DiagnosticCyclesFeaturesHelper.generate_dQdV_peak_fits(processed_cycler_run, diag_nr=diag_nr,
+        peak_fit_df = featurizer_helpers.generate_dQdV_peak_fits(processed_cycler_run, diag_nr=diag_nr,
                                                                  charge_y_n=charge_y_n,
                                                                  rpt_type=rpt_type, plotting_y_n=plotting_y_n,
                                                                  max_nr_peaks=max_nr_peaks)
@@ -316,9 +366,9 @@ class DiagnosticCyclesFeatures(BeepFeatures):
         cycle_hppc = cycle_hppc.loc[cycle_hppc.current.notna()]
         cycles = cycle_hppc.cycle_index.unique()
 
-        [f2_d, f2_c] = DiagnosticCyclesFeaturesHelper.get_hppc_r(processed_cycler_run, cycles[diag_pos])
-        f3 = DiagnosticCyclesFeaturesHelper.get_hppc_ocv(processed_cycler_run, cycles[diag_pos])
-        v_diff = DiagnosticCyclesFeaturesHelper.get_v_diff(cycles[diag_pos], processed_cycler_run, soc_window)
+        [f2_d, f2_c] = featurizer_helpers.get_hppc_r(processed_cycler_run, cycles[diag_pos])
+        f3 = featurizer_helpers.get_hppc_ocv(processed_cycler_run, cycles[diag_pos])
+        v_diff = featurizer_helpers.get_v_diff(cycles[diag_pos], processed_cycler_run, soc_window)
 
         params, _ = get_protocol_parameters(processed_cycler_run.protocol.split('.')[0])
         params = params[['charge_cutoff_voltage', 'discharge_cutoff_voltage']].reset_index(drop=True)
@@ -331,6 +381,39 @@ class DiagnosticCyclesFeatures(BeepFeatures):
         df_c.reset_index(drop=True, inplace=True)
 
         return df_c
+
+    @classmethod
+    def get_all_relaxation_features(cls, processed_cycler_run, soc_list = np.linspace(90, 10, 9, dtype='int'),
+                                    percentage_list = [50, 80, 99]):
+        """
+        This function returns all of the relaxation features in a panda dataframe for a given processed cycler run.
+
+        Args:
+            processed_cycler_run(beep.structure.ProcessedCyclerRun): ProcessedCyclerRun object for the cell
+            you want the diagnostic features for.
+            soc_list (list): list of SOCs to evaluate time constants at
+            percentage_list (list): time constants to evaluate
+
+        Returns:
+            @featureDf(pd.DataFrame): Columns are either SOC{#%}_degrad{#%} where the first #% is the
+            SOC % and the second #% is the time taken at what % of the final voltage value of the relaxation
+            curve. The other type is names var_{#%} which is the variance of the other features taken at a
+            certain % of the final voltage value of the relaxation curve.
+        """
+
+        relax_feature_array = featurizer_helpers.get_relaxation_features(processed_cycler_run)
+        col_names = []
+        full_feature_array = []
+
+        for i, percentage in enumerate(percentage_list):
+            col_names.append("var_{0}%".format(percentage))
+            full_feature_array.append(np.var(relax_feature_array[:, i]))
+
+            for j, soc in enumerate(soc_list):
+                col_names.append("SOC{0}%_degrad{1}%".format(soc, percentage))
+                full_feature_array.append(relax_feature_array[j, i])
+
+        return pd.DataFrame(data=full_feature_array, columns=col_names)
 
     @classmethod
     def get_fast_charge_features(cls, processed_cycler_run, diagnostic_cycle_type, cycle_comp_num=[0, 1], Q_seg=500):
