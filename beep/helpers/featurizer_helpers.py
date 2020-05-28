@@ -525,8 +525,8 @@ def get_relaxation_features(processed_cycler_run):
         reg_step_relax = 1
 
         # Getting unique and ordered Step Counter List (unique identifier)
-        step_count_list = hppc_diag_cycles[(hppc_diag_cycles.cycle_index == hppc_cycle_list[hppc_chosen]) & \
-                                       (hppc_diag_cycles.step_index == reg_step_list[reg_step_relax])].step_index_counter
+        step_count_list = hppc_diag_cycles[(hppc_diag_cycles.cycle_index == hppc_cycle_list[hppc_chosen]) &
+                                           (hppc_diag_cycles.step_index == reg_step_list[reg_step_relax])].step_index_counter
         step_count_list = list(set(step_count_list))
         step_count_list.sort()
         # The first one isn't a proper relaxation curve(comes out of CV) so we ignore it
@@ -537,12 +537,12 @@ def get_relaxation_features(processed_cycler_run):
         all_time_array = np.nan * np.ones((9, 3))
 
         # gets all the times for a single SOC per loop
-        for socNum in range(0, len(step_count_list)):
-            relax_curve_df = hppc_diag_cycles[(hppc_diag_cycles.cycle_index == hppc_cycle_list[hppc_chosen]) & \
-                                          (hppc_diag_cycles.step_index_counter == step_count_list[socNum])]
+        for soc_num in range(0, len(step_count_list)):
+            relax_curve_df = hppc_diag_cycles[(hppc_diag_cycles.cycle_index == hppc_cycle_list[hppc_chosen]) &\
+                                          (hppc_diag_cycles.step_index_counter == step_count_list[soc_num])]
 
             time_array = get_relaxation_times(np.array(relax_curve_df.voltage), np.array(relax_curve_df.test_time))
-            all_time_array[socNum][:] = time_array
+            all_time_array[soc_num][:] = time_array
 
         total_time_array.append(all_time_array)
 
