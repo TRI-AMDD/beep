@@ -451,18 +451,18 @@ def get_v_diff(diag_num, processed_cycler_run, soc_window):
             return v_diff
 
 
-def get_relaxation_times(voltageData, timeData):
+def get_relaxation_times(voltage_data, timeData):
     """
     This function takes in the voltage data and time data of a voltage relaxation curve
     and figured out the time it takes to reach 50%, 80% and 99% of the OCV relaxation.
     To accomplish this I normalized the curve between 0 and 1, shifted the time values so that
-    it starts at 0, and interpolated the the inverse function (timeData vs voltageData).
+    it starts at 0, and interpolated the the inverse function (timeData vs voltage_data).
     Note: that this function likely only works for structured data (voltage interpolated)
     because the raw data will have repeats of voltage points close to the OCV value due to noise,
     meaning the function would be non-unique and interpolation can't be performed.
 
     Args:
-        @voltageData(np.array): list of the voltage data in a voltage relaxation curve
+        @voltage_data(np.array): list of the voltage data in a voltage relaxation curve
         @timeData(np.array)   : list of the time data corresponding to voltage data
 
     Returns:
@@ -472,23 +472,23 @@ def get_relaxation_times(voltageData, timeData):
     """
 
     # Scaling the voltage data to between 0-1
-    finalVoltage = voltageData[-1]
-    initialVoltage = voltageData[0]
-    scaledVoltageData = (voltageData - initialVoltage) / (finalVoltage - initialVoltage)
+    final_voltage = voltage_data[-1]
+    initial_voltage = voltage_data[0]
+    scaled_voltage_data = (voltage_data - initial_voltage) / (final_voltage - initial_voltage)
 
     # shifting the time data to start at 0
-    shiftedTimeData = timeData - timeData[0]
+    shifted_time_data = timeData - timeData[0]
 
     # Part that won't work if multiple voltage values. Because will have multiple
     # time values (y) for 1 voltage value (x).
-    vDecayFunInv = interp1d(scaledVoltageData, shiftedTimeData)
+    v_decay_inv = interp1d(scaled_voltage_data, shifted_time_data)
 
     # these are the decay percentages that will correspond to the time values extracted
-    decayPercentage = [0.5, 0.8, 0.99]
+    decay_percentage = [0.5, 0.8, 0.99]
     time_array = []
 
-    for percent in decayPercentage:
-        time_array.append(vDecayFunInv(percent))
+    for percent in decay_percentage:
+        time_array.append(v_decay_inv(percent))
 
     return np.array(time_array)
 
