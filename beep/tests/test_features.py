@@ -183,11 +183,12 @@ class TestFeaturizer(unittest.TestCase):
             pcycler_run_loc = os.path.join(TEST_FILE_DIR, 'PreDiag_000240_000227_truncated_structure.json')
             pcycler_run = loadfn(pcycler_run_loc)
             featurizer = DiagnosticCyclesFeatures.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
+            print(featurizer)
             path, local_filename = os.path.split(featurizer.name)
             folder = os.path.split(path)[-1]
             dumpfn(featurizer, featurizer.name)
             self.assertEqual(folder, 'DiagnosticCyclesFeatures')
-            self.assertEqual(featurizer.X.shape[1], 60)
+            self.assertEqual(featurizer.X.shape[1], 90)
             self.assertTrue(all(x in featurizer.X.columns for x in ['m0_Mu','var(ocv)','var_charging_dQdV'])
 
 )

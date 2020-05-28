@@ -199,12 +199,12 @@ class DiagnosticCyclesFeatures(BeepFeatures):
         conditions.append(hasattr(processed_cycler_run, 'diagnostic_interpolated'))
         conditions.append(set(cls.diagnostic_cycle_types) ==
                           set(processed_cycler_run.diagnostic_summary.cycle_type.unique()))
-        conditions.append(cls.check_relaxation_feature_viable(processed_cycler_run))
+        conditions.append(cls.check_relaxation_features_viable(processed_cycler_run))
 
         return all(conditions)
 
     @classmethod
-    def check_relaxation_feature_viable(cls, processed_cycler_run, n_soc_windows=9):
+    def check_relaxation_features_viable(cls, processed_cycler_run, n_soc_windows=8):
         """
         This function returns if it is viable to compute the relaxation features. Will return True if
         all the SOC windows for the HPPC are there for both the 1st and 2nd diagnostic cycles, and False
@@ -247,9 +247,9 @@ class DiagnosticCyclesFeatures(BeepFeatures):
             step_count_list.sort()
             # The first one isn't a proper relaxation curve(comes out of CV) so we ignore it
             step_count_list = step_count_list[1:]
-            conditions_met.append(len(step_count_list) == n_soc_windows)
+            conditions_met.append(len(step_count_list) >= n_soc_windows)
 
-            return all(conditions_met)
+        return all(conditions_met)
 
     @classmethod
     def features_from_processed_cycler_run(cls, processed_cycler_run):
@@ -267,9 +267,8 @@ class DiagnosticCyclesFeatures(BeepFeatures):
         hppc_features = cls.get_hppc_features(processed_cycler_run)
         relaxation_features = cls.get_all_relaxation_features(processed_cycler_run)
         fast_charge_features = cls.get_fast_charge_features(processed_cycler_run,
-                                                                                 diagnostic_cycle_type='rpt_0.2C',
-                                                                                 cycle_comp_num=[0, 1], Q_seg=500)
-
+                                                            diagnostic_cycle_type='rpt_0.2C',
+                                                            cycle_comp_num=[0, 1], Q_seg=500)
         X = pd.concat([rpt_dQdV_features, hppc_features, relaxation_features, fast_charge_features], axis=1)
 
         return X
@@ -413,7 +412,8 @@ class DiagnosticCyclesFeatures(BeepFeatures):
                 col_names.append("SOC{0}%_degrad{1}%".format(soc, percentage))
                 full_feature_array.append(relax_feature_array[j, i])
 
-        return pd.DataFrame(data=full_feature_array, columns=col_names)
+        return pd.DataFrame(dict(zip(col_names, full_feature_array)), index=[0])
+
 
     @classmethod
     def get_fast_charge_features(cls, processed_cycler_run, diagnostic_cycle_type, cycle_comp_num=[0, 1], Q_seg=500):

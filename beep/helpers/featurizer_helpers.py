@@ -451,58 +451,6 @@ def get_v_diff(diag_num, processed_cycler_run, soc_window):
             return v_diff
 
 
-def check_relaxation_feature_viable(processed_cycler_run):
-    """
-    This function returns if it is viable to compute the relaxation features. Will return True if
-    all the SOC windows for the HPPC are there for both the 1st and 2nd diagnostic cycles, and False
-    if otherwise. This essentially returns False is ANY of the features produced will be a nan. Most
-    commonly the variance and the SOC10% features will fail and return a nan while other features
-    will most likely work
-
-    Args:
-        @processed_cycler_run(beep.structure.ProcessedCyclerRun): ProcessedCyclerRun object for the cell
-        you want the diagnostic feature for.
-
-    Returns:
-        @viable(boolean): True if all SOC window available in both diagnostic cycles. False otherwise.
-    """
-
-    viable = True
-
-    # chooses the first and the second diagnostic cycle
-    for hppcChosen in [0, 1]:
-
-        # Getting just the HPPC cycles
-        hppc_diag_cycles = processed_cycler_run.diagnostic_interpolated[processed_cycler_run.diagnostic_interpolated.cycle_type == "hppc"]
-
-        # Getting unique and ordered cycle index list for HPPC cycles, and choosing the hppc cycle
-        hppc_cycle_list = list(set(hppc_diag_cycles.cycle_index))
-        hppc_cycle_list.sort()
-
-        # Getting unique and ordered Regular Step List (Non-unique identifier)
-        reg_step_list = hppc_diag_cycles[hppc_diag_cycles.cycle_index == hppc_cycle_list[hppcChosen]].step_index
-        reg_step_list = list(set(reg_step_list))
-        reg_step_list.sort()
-
-        # The value of 1 for regular step corresponds to all of the relaxation curves in the hppc
-        reg_step_relax = 1
-
-        # Getting unique and ordered Step Counter List (unique identifier)
-        step_count_list = hppc_diag_cycles[(hppc_diag_cycles.cycle_index == hppc_cycle_list[hppcChosen]) & \
-                                       (hppc_diag_cycles.step_index == reg_step_list[reg_step_relax])].step_index_counter
-        step_count_list = list(set(step_count_list))
-        step_count_list.sort()
-        # The first one isn't a proper relaxation curve(comes out of CV) so we ignore it
-        step_count_list = step_count_list[1:]
-
-        numSocWindows = 9
-        if (len(step_count_list) != numSocWindows):
-            viable = False
-            return viable
-
-    return viable
-
-
 def get_relaxation_times(voltageData, timeData):
     """
     This function takes in the voltage data and time data of a voltage relaxation curve
