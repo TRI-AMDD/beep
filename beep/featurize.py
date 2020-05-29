@@ -195,11 +195,14 @@ class DiagnosticCyclesFeatures(BeepFeatures):
             bool: True/False indication of ability to proceed with feature generation
         """
         conditions = []
-        conditions.append(hasattr(processed_cycler_run, 'diagnostic_summary'))
-        conditions.append(hasattr(processed_cycler_run, 'diagnostic_interpolated'))
-        conditions.append(set(cls.diagnostic_cycle_types) ==
-                          set(processed_cycler_run.diagnostic_summary.cycle_type.unique()))
-        conditions.append(cls.check_relaxation_features_viable(processed_cycler_run))
+        if not hasattr(processed_cycler_run, 'diagnostic_summary') & hasattr(processed_cycler_run, 'diagnostic_interpolated'):
+            return False
+        if processed_cycler_run.diagnostic_summary.empty:
+            return False
+        else:
+            conditions.append(set(cls.diagnostic_cycle_types) ==
+                              set(processed_cycler_run.diagnostic_summary.cycle_type.unique()))
+            conditions.append(cls.check_relaxation_features_viable(processed_cycler_run))
 
         return all(conditions)
 
@@ -367,7 +370,6 @@ class DiagnosticCyclesFeatures(BeepFeatures):
         [f2_d, f2_c] = featurizer_helpers.get_hppc_r(processed_cycler_run, cycles[diag_pos])
         f3 = featurizer_helpers.get_hppc_ocv(processed_cycler_run, cycles[diag_pos])
         v_diff = featurizer_helpers.get_v_diff(cycles[diag_pos], processed_cycler_run, soc_window)
-
         params, _ = get_protocol_parameters(processed_cycler_run.protocol.split('.')[0])
         params = params[['charge_cutoff_voltage', 'discharge_cutoff_voltage']].reset_index(drop=True)
         df_c = pd.DataFrame()
@@ -1098,7 +1100,7 @@ def process_file_list_from_json(file_list_json, processed_dir='data-share/featur
         logger.info('run_id=%s featurizing=%s', str(run_id), path, extra=s)
         processed_cycler_run = loadfn(path)
 
-        featurizer_classes = [DeltaQFastCharge, TrajectoryFastCharge, ]
+        featurizer_classes = [DeltaQFastCharge, TrajectoryFastCharge, DiagnosticCyclesFeatures, DiagnosticCapacities]
         for featurizer_class in featurizer_classes:
             featurizer = featurizer_class.from_run(path, processed_dir, processed_cycler_run)
             if featurizer:

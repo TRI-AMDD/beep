@@ -136,9 +136,10 @@ class TestFeaturizer(unittest.TestCase):
             self.assertEqual(trajectory.X.loc[0, 'capacity_0.8'], 161)
 
     def test_feature_generation_list_to_json(self):
-        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
+        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, 'PreDiag_000240_000227_truncated_structure.json')
         with ScratchDir('.'):
-            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = TEST_FILE_DIR
+            #os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
 
             # Create dummy json obj
             json_obj = {
@@ -157,7 +158,10 @@ class TestFeaturizer(unittest.TestCase):
             # Ensure first is correct
             features_reloaded = loadfn(reloaded['file_list'][0])
             self.assertIsInstance(features_reloaded, DeltaQFastCharge)
-            self.assertEqual(features_reloaded.X.loc[0, 'nominal_capacity_by_median'], 1.0628421000000001)
+            self.assertEqual(features_reloaded.X.loc[0, 'nominal_capacity_by_median'], 0.07114775279999999)
+            features_reloaded = loadfn(reloaded['file_list'][-1])
+            self.assertIsInstance(features_reloaded, DiagnosticCapacities)
+            self.assertListEqual(list(features_reloaded.X.iloc[2,:]), [143, 0.9753520623934744, 'rpt_0.2C','discharge_energy'])
 
     def test_insufficient_data_file(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE_INSUF)
@@ -202,5 +206,4 @@ class TestFeaturizer(unittest.TestCase):
             dumpfn(featurizer, featurizer.name)
             self.assertEqual(folder, 'DiagnosticCapacities')
             self.assertEqual(featurizer.X.shape, (10, 4))
-            print(featurizer.X.iloc[2,:])
             self.assertListEqual(list(featurizer.X.iloc[2,:]), [143, 0.9753520623934744, 'rpt_0.2C','discharge_energy'])
