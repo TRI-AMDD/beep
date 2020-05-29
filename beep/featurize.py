@@ -739,6 +739,9 @@ class TrajectoryFastCharge(DeltaQFastCharge):
 
 class DiagnosticCapacities(DiagnosticCyclesFeatures):
     """
+    This class stores fractional levels of degradation in discharge capacity and discharge energy
+    relative to the first cycle at each diagnostic cycle, grouped by diagnostic cycle type.
+
         name (str): predictor object name.
         X (pandas.DataFrame): features in DataFrame format.
         metadata (dict): information about the conditions, data
@@ -756,8 +759,6 @@ class DiagnosticCapacities(DiagnosticCyclesFeatures):
     @classmethod
     def features_from_processed_cycler_run(cls, processed_cycler_run):
         """
-        Calculate the outcomes from the input data. In particular, the number of cycles
-        where we expect to reach certain thresholds of capacity loss
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
         Returns:
