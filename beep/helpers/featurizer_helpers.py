@@ -548,34 +548,3 @@ def get_relaxation_features(processed_cycler_run):
 
     return total_time_array[1] / total_time_array[0]
 
-
-def get_energy_fraction(diag_num, processed_cycler_run, remaining, metric, cycle_type, file):
-    """
-    This function can help us to get the dataframe that contains the diagnostic cycle index and energy fraction
-    which we can use to predict energy fraction later
-    Argument:
-            diag_num(int): diagnostic cycle number at which you want to get the feature, such as 37 or 142
-            processed_cycler_run(process_cycler_run object)
-            remaining(float): how much enegry left, such as 0.95
-            metric: such as discharge_energy
-            cycle_type: such as rpt_0.2C
-            file(str): a string that has the filename
-    Returns:
-            a dataframe that contains two columns cycle index and discharge energy fraction
-            Diagnostic cycles after the diagnostic cycle at which we generate the feature
-    """
-    summary_diag = processed_cycler_run.diagnostic_summary[processed_cycler_run.diagnostic_summary.cycle_type == cycle_type]
-    initial = summary_diag[metric].max()
-    threshold = remaining * initial
-    if summary_diag[metric].min() > threshold:
-        print('havent degraded to' + str(remaining) + metric + file)
-        return None
-    y = summary_diag[summary_diag[metric] < threshold].cycle_index.min()
-    if diag_num > y:
-        print('degraded before diagnostic cycle' + str(diag_num) + file)
-        return None
-    df = summary_diag[summary_diag['cycle_index'] > diag_num + 1]
-    result = pd.DataFrame()
-    result['cycle_index'] = df['cycle_index']
-    result['discharge_energy_fraction'] = df['discharge_energy'] / initial
-    return result

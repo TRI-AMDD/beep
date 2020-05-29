@@ -12,7 +12,7 @@ import numpy as np
 
 from beep.structure import RawCyclerRun, ProcessedCyclerRun
 from beep.featurize import process_file_list_from_json, \
-    DeltaQFastCharge, TrajectoryFastCharge, DegradationPredictor, DiagnosticCyclesFeatures
+    DeltaQFastCharge, TrajectoryFastCharge, DegradationPredictor, DiagnosticCyclesFeatures, DiagnosticCapacities
 from monty.serialization import dumpfn, loadfn
 from monty.tempfile import ScratchDir
 
@@ -191,3 +191,16 @@ class TestFeaturizer(unittest.TestCase):
             self.assertTrue(all(x in featurizer.X.columns for x in ['m0_Mu','var(ocv)','var_charging_dQdV'])
 
 )
+    def test_DiagnosticCapacities_class(self):
+        with ScratchDir('.'):
+            os.environ['BEEP_PROCESSING_DIR'] = TEST_FILE_DIR
+            pcycler_run_loc = os.path.join(TEST_FILE_DIR, 'PreDiag_000240_000227_truncated_structure.json')
+            pcycler_run = loadfn(pcycler_run_loc)
+            featurizer = DiagnosticCapacities.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
+            path, local_filename = os.path.split(featurizer.name)
+            folder = os.path.split(path)[-1]
+            dumpfn(featurizer, featurizer.name)
+            self.assertEqual(folder, 'DiagnosticCapacities')
+            self.assertEqual(featurizer.X.shape, (10, 4))
+            print(featurizer.X.iloc[2,:])
+            self.assertListEqual(list(featurizer.X.iloc[2,:]), [143, 0.9753520623934744, 'rpt_0.2C','discharge_energy'])

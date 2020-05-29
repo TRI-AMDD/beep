@@ -737,6 +737,68 @@ class TrajectoryFastCharge(DeltaQFastCharge):
             thresh_max_cap=0.98, thresh_min_cap=0.78, interval_cap=0.03)
         return y
 
+class DiagnosticCapacities(DiagnosticCyclesFeatures):
+    """
+        name (str): predictor object name.
+        X (pandas.DataFrame): features in DataFrame format.
+        metadata (dict): information about the conditions, data
+            and code used to produce features
+    """
+    # Class name for the feature object
+    class_feature_name = 'DiagnosticCapacities'
+
+    def __init__(self, name, X, metadata):
+        super().__init__(name, X, metadata)
+        self.name = name
+        self.X = X
+        self.metadata = metadata
+
+    @classmethod
+    def features_from_processed_cycler_run(cls, processed_cycler_run):
+        """
+        Calculate the outcomes from the input data. In particular, the number of cycles
+        where we expect to reach certain thresholds of capacity loss
+        Args:
+            processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
+        Returns:
+            pd.DataFrame: cycles at which capacity/energy degradation exceeds thresholds
+        """
+
+        quantities = ['discharge_energy', 'discharge_capacity']
+        cycle_types = processed_cycler_run.diagnostic_summary.cycle_type.unique()
+        X = pd.DataFrame()
+        for quantity in quantities:
+            for cycle_type in cycle_types:
+                summary_diag_cycle_type = cls.get_fractional_quantity_remaining(processed_cycler_run, quantity, cycle_type)
+                summary_diag_cycle_type['cycle_type'] = cycle_type
+                summary_diag_cycle_type['metric'] = quantity
+                X = X.append(summary_diag_cycle_type)
+
+        return X
+
+    @classmethod
+    def get_fractional_quantity_remaining(cls, processed_cycler_run, metric='discharge_energy',
+                                          diagnostic_cycle_type='rpt_0.2C'):
+        """
+        Determine relative loss of <metric> in diagnostic_cycles of type <diagnostic_cycle_type> after 100 regular cycles
+
+        Args:
+            processed_cycler_run (beep.structure.ProcessedCyclerRun): information about cycler run
+            metric (str): column name to use for measuring degradation
+            diagnostic_cycle_type (str): the diagnostic cycle to use for computing the amount of degradation
+
+        Returns:
+            a dataframe with cycle_index and corresponding degradation relative to the first measured value
+        """
+        summary_diag_cycle_type = processed_cycler_run.diagnostic_summary[
+            (processed_cycler_run.diagnostic_summary.cycle_type == diagnostic_cycle_type)
+            & (processed_cycler_run.diagnostic_summary.cycle_index > 100)].reset_index()
+        summary_diag_cycle_type = summary_diag_cycle_type[['cycle_index', metric]]
+        summary_diag_cycle_type[metric] = summary_diag_cycle_type[metric] / \
+                                          processed_cycler_run.diagnostic_summary[metric].iloc[0]
+        summary_diag_cycle_type.columns = ['cycle_index', 'fractional_metric']
+        return summary_diag_cycle_type
+
 
 class DegradationPredictor(MSONable):
     """
@@ -1035,7 +1097,7 @@ def process_file_list_from_json(file_list_json, processed_dir='data-share/featur
         logger.info('run_id=%s featurizing=%s', str(run_id), path, extra=s)
         processed_cycler_run = loadfn(path)
 
-        featurizer_classes = [DeltaQFastCharge, TrajectoryFastCharge]
+        featurizer_classes = [DeltaQFastCharge, TrajectoryFastCharge, ]
         for featurizer_class in featurizer_classes:
             featurizer = featurizer_class.from_run(path, processed_dir, processed_cycler_run)
             if featurizer:
