@@ -12,7 +12,7 @@ import numpy as np
 
 from beep.structure import RawCyclerRun, ProcessedCyclerRun
 from beep.featurize import process_file_list_from_json, \
-    DeltaQFastCharge, TrajectoryFastCharge, DegradationPredictor, DiagnosticCyclesFeatures, DiagnosticCapacities
+    DeltaQFastCharge, TrajectoryFastCharge, DegradationPredictor, DiagnosticCyclesFeatures, DiagnosticProperties
 from monty.serialization import dumpfn, loadfn
 from monty.tempfile import ScratchDir
 
@@ -160,7 +160,7 @@ class TestFeaturizer(unittest.TestCase):
             self.assertIsInstance(features_reloaded, DeltaQFastCharge)
             self.assertEqual(features_reloaded.X.loc[0, 'nominal_capacity_by_median'], 0.07114775279999999)
             features_reloaded = loadfn(reloaded['file_list'][-1])
-            self.assertIsInstance(features_reloaded, DiagnosticCapacities)
+            self.assertIsInstance(features_reloaded, DiagnosticProperties)
             self.assertListEqual(list(features_reloaded.X.iloc[2,:]), [143, 0.9753520623934744, 'rpt_0.2C','discharge_energy'])
 
     def test_insufficient_data_file(self):
@@ -195,15 +195,15 @@ class TestFeaturizer(unittest.TestCase):
             self.assertTrue(all(x in featurizer.X.columns for x in ['m0_Mu','var(ocv)','var_charging_dQdV'])
 
 )
-    def test_DiagnosticCapacities_class(self):
+    def test_DiagnosticProperties_class(self):
         with ScratchDir('.'):
             os.environ['BEEP_PROCESSING_DIR'] = TEST_FILE_DIR
             pcycler_run_loc = os.path.join(TEST_FILE_DIR, 'PreDiag_000240_000227_truncated_structure.json')
             pcycler_run = loadfn(pcycler_run_loc)
-            featurizer = DiagnosticCapacities.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
+            featurizer = DiagnosticProperties.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
             path, local_filename = os.path.split(featurizer.name)
             folder = os.path.split(path)[-1]
             dumpfn(featurizer, featurizer.name)
-            self.assertEqual(folder, 'DiagnosticCapacities')
+            self.assertEqual(folder, 'DiagnosticProperties')
             self.assertEqual(featurizer.X.shape, (10, 4))
             self.assertListEqual(list(featurizer.X.iloc[2,:]), [143, 0.9753520623934744, 'rpt_0.2C','discharge_energy'])

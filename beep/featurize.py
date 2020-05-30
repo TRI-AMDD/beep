@@ -739,7 +739,7 @@ class TrajectoryFastCharge(DeltaQFastCharge):
             thresh_max_cap=0.98, thresh_min_cap=0.78, interval_cap=0.03)
         return y
 
-class DiagnosticCapacities(DiagnosticCyclesFeatures):
+class DiagnosticProperties(DiagnosticCyclesFeatures):
     """
     This class stores fractional levels of degradation in discharge capacity and discharge energy
     relative to the first cycle at each diagnostic cycle, grouped by diagnostic cycle type.
@@ -750,7 +750,7 @@ class DiagnosticCapacities(DiagnosticCyclesFeatures):
             and code used to produce features
     """
     # Class name for the feature object
-    class_feature_name = 'DiagnosticCapacities'
+    class_feature_name = 'DiagnosticProperties'
 
     def __init__(self, name, X, metadata):
         super().__init__(name, X, metadata)
@@ -772,15 +772,16 @@ class DiagnosticCapacities(DiagnosticCyclesFeatures):
         X = pd.DataFrame()
         for quantity in quantities:
             for cycle_type in cycle_types:
-                summary_diag_cycle_type = cls.get_fractional_quantity_remaining(processed_cycler_run, quantity, cycle_type)
+                summary_diag_cycle_type = DiagnosticProperties.get_fractional_quantity_remaining(processed_cycler_run,
+                                                                                                 quantity, cycle_type)
                 summary_diag_cycle_type['cycle_type'] = cycle_type
                 summary_diag_cycle_type['metric'] = quantity
                 X = X.append(summary_diag_cycle_type)
 
         return X
 
-    @classmethod
-    def get_fractional_quantity_remaining(cls, processed_cycler_run, metric='discharge_energy',
+    @staticmethod
+    def get_fractional_quantity_remaining(processed_cycler_run, metric='discharge_energy',
                                           diagnostic_cycle_type='rpt_0.2C'):
         """
         Determine relative loss of <metric> in diagnostic_cycles of type <diagnostic_cycle_type> after 100 regular cycles
@@ -1049,9 +1050,7 @@ def add_file_prefix_to_path(path, prefix):
     return os.path.join(*split_path)
 
 
-def process_file_list_from_json(file_list_json, processed_dir='data-share/features/',
-                                features_label='full_model', predict_only=False,
-                                prediction_type="multi", predicted_quantity="cycle"):
+def process_file_list_from_json(file_list_json, processed_dir='data-share/features/'):
     """
     Function to take a json file containing processed cycler run file locations,
     extract features, dump the processed file into a predetermined directory,
@@ -1100,7 +1099,7 @@ def process_file_list_from_json(file_list_json, processed_dir='data-share/featur
         logger.info('run_id=%s featurizing=%s', str(run_id), path, extra=s)
         processed_cycler_run = loadfn(path)
 
-        featurizer_classes = [DeltaQFastCharge, TrajectoryFastCharge, DiagnosticCyclesFeatures, DiagnosticCapacities]
+        featurizer_classes = [DeltaQFastCharge, TrajectoryFastCharge, DiagnosticCyclesFeatures, DiagnosticProperties]
         for featurizer_class in featurizer_classes:
             featurizer = featurizer_class.from_run(path, processed_dir, processed_cycler_run)
             if featurizer:
