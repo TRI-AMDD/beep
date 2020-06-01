@@ -195,11 +195,14 @@ class DiagnosticCyclesFeatures(BeepFeatures):
             bool: True/False indication of ability to proceed with feature generation
         """
         conditions = []
-        conditions.append(hasattr(processed_cycler_run, 'diagnostic_summary'))
-        conditions.append(hasattr(processed_cycler_run, 'diagnostic_interpolated'))
-        conditions.append(set(cls.diagnostic_cycle_types) ==
-                          set(processed_cycler_run.diagnostic_summary.cycle_type.unique()))
-        conditions.append(cls.check_relaxation_features_viable(processed_cycler_run))
+        if not hasattr(processed_cycler_run, 'diagnostic_summary') & hasattr(processed_cycler_run, 'diagnostic_interpolated'):
+            return False
+        if processed_cycler_run.diagnostic_summary.empty:
+            return False
+        else:
+            conditions.append(set(cls.diagnostic_cycle_types) ==
+                              set(processed_cycler_run.diagnostic_summary.cycle_type.unique()))
+            conditions.append(cls.check_relaxation_features_viable(processed_cycler_run))
 
         return all(conditions)
 
@@ -367,7 +370,6 @@ class DiagnosticCyclesFeatures(BeepFeatures):
         [f2_d, f2_c] = featurizer_helpers.get_hppc_r(processed_cycler_run, cycles[diag_pos])
         f3 = featurizer_helpers.get_hppc_ocv(processed_cycler_run, cycles[diag_pos])
         v_diff = featurizer_helpers.get_v_diff(cycles[diag_pos], processed_cycler_run, soc_window)
-
         params, _ = get_protocol_parameters(processed_cycler_run.protocol.split('.')[0])
         params = params[['charge_cutoff_voltage', 'discharge_cutoff_voltage']].reset_index(drop=True)
         df_c = pd.DataFrame()
@@ -737,6 +739,70 @@ class TrajectoryFastCharge(DeltaQFastCharge):
             thresh_max_cap=0.98, thresh_min_cap=0.78, interval_cap=0.03)
         return y
 
+class DiagnosticProperties(DiagnosticCyclesFeatures):
+    """
+    This class stores fractional levels of degradation in discharge capacity and discharge energy
+    relative to the first cycle at each diagnostic cycle, grouped by diagnostic cycle type.
+
+        name (str): predictor object name.
+        X (pandas.DataFrame): features in DataFrame format.
+        metadata (dict): information about the conditions, data
+            and code used to produce features
+    """
+    # Class name for the feature object
+    class_feature_name = 'DiagnosticProperties'
+
+    def __init__(self, name, X, metadata):
+        super().__init__(name, X, metadata)
+        self.name = name
+        self.X = X
+        self.metadata = metadata
+
+    @classmethod
+    def features_from_processed_cycler_run(cls, processed_cycler_run):
+        """
+        Args:
+            processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
+        Returns:
+            pd.DataFrame: cycles at which capacity/energy degradation exceeds thresholds
+        """
+
+        quantities = ['discharge_energy', 'discharge_capacity']
+        cycle_types = processed_cycler_run.diagnostic_summary.cycle_type.unique()
+        X = pd.DataFrame()
+        for quantity in quantities:
+            for cycle_type in cycle_types:
+                summary_diag_cycle_type = DiagnosticProperties.get_fractional_quantity_remaining(processed_cycler_run,
+                                                                                                 quantity, cycle_type)
+                summary_diag_cycle_type['cycle_type'] = cycle_type
+                summary_diag_cycle_type['metric'] = quantity
+                X = X.append(summary_diag_cycle_type)
+
+        return X
+
+    @staticmethod
+    def get_fractional_quantity_remaining(processed_cycler_run, metric='discharge_energy',
+                                          diagnostic_cycle_type='rpt_0.2C'):
+        """
+        Determine relative loss of <metric> in diagnostic_cycles of type <diagnostic_cycle_type> after 100 regular cycles
+
+        Args:
+            processed_cycler_run (beep.structure.ProcessedCyclerRun): information about cycler run
+            metric (str): column name to use for measuring degradation
+            diagnostic_cycle_type (str): the diagnostic cycle to use for computing the amount of degradation
+
+        Returns:
+            a dataframe with cycle_index and corresponding degradation relative to the first measured value
+        """
+        summary_diag_cycle_type = processed_cycler_run.diagnostic_summary[
+            (processed_cycler_run.diagnostic_summary.cycle_type == diagnostic_cycle_type)
+            & (processed_cycler_run.diagnostic_summary.cycle_index > 100)].reset_index()
+        summary_diag_cycle_type = summary_diag_cycle_type[['cycle_index', metric]]
+        summary_diag_cycle_type[metric] = summary_diag_cycle_type[metric] / \
+                                          processed_cycler_run.diagnostic_summary[metric].iloc[0]
+        summary_diag_cycle_type.columns = ['cycle_index', 'fractional_metric']
+        return summary_diag_cycle_type
+
 
 class DegradationPredictor(MSONable):
     """
@@ -984,9 +1050,7 @@ def add_file_prefix_to_path(path, prefix):
     return os.path.join(*split_path)
 
 
-def process_file_list_from_json(file_list_json, processed_dir='data-share/features/',
-                                features_label='full_model', predict_only=False,
-                                prediction_type="multi", predicted_quantity="cycle"):
+def process_file_list_from_json(file_list_json, processed_dir='data-share/features/'):
     """
     Function to take a json file containing processed cycler run file locations,
     extract features, dump the processed file into a predetermined directory,
@@ -1035,7 +1099,7 @@ def process_file_list_from_json(file_list_json, processed_dir='data-share/featur
         logger.info('run_id=%s featurizing=%s', str(run_id), path, extra=s)
         processed_cycler_run = loadfn(path)
 
-        featurizer_classes = [DeltaQFastCharge, TrajectoryFastCharge]
+        featurizer_classes = [DeltaQFastCharge, TrajectoryFastCharge, DiagnosticCyclesFeatures, DiagnosticProperties]
         for featurizer_class in featurizer_classes:
             featurizer = featurizer_class.from_run(path, processed_dir, processed_cycler_run)
             if featurizer:
