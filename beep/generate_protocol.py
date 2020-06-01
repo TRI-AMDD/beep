@@ -1055,7 +1055,7 @@ def generate_maccor_waveform_file(df, file_prefix, file_directory, mwf_config=No
     return MWF_file_path
 
 
-def generate_protocol_files_from_csv(csv_filename, output_directory, **kwargs):
+def generate_protocol_files_from_csv(csv_filename, output_directory=None, **kwargs):
     """
     Generates a set of protocol files from csv filename input by
     reading protocol file input corresponding to each line of
@@ -1078,6 +1078,8 @@ def generate_protocol_files_from_csv(csv_filename, output_directory, **kwargs):
     result = ''
     message = {'comment': '',
                'error': ''}
+    if output_directory is None:
+        output_directory = PROCEDURE_TEMPLATE_DIR
     for index, protocol_params in protocol_params_df.iterrows():
         template = protocol_params['template']
         if template not in ["EXP.000", "diagnosticV1.000", "diagnosticV2.000",
@@ -1092,7 +1094,7 @@ def generate_protocol_files_from_csv(csv_filename, output_directory, **kwargs):
             # Generate primary procedure dictionary
             proc_dict, sp = procedure_file_generator.to_dict(
                 os.path.join(PROCEDURE_TEMPLATE_DIR, "{}".format(template)),
-                os.path.join(PROCEDURE_TEMPLATE_DIR, "{}.json".format(template.split('.')[0]))
+                os.path.join(output_directory, "{}.json".format(template.split('.')[0]))
             )
 
             # Generate EXP-based proc_dict

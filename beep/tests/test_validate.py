@@ -178,15 +178,16 @@ class ValidationMaccorTest(unittest.TestCase):
 
     def test_validate_from_paths_maccor(self):
         paths = [os.path.join(TEST_FILE_DIR, "xTESLADIAG_000019_CH70.070")]
-
-        # Run validation on everything
-        v = SimpleValidator()
-        validate_record = v.validate_from_paths(paths, record_results=True,
-                                                skip_existing=False)
-        df = pd.DataFrame(v.validation_records)
-        df = df.transpose()
-        self.assertEqual(df.loc["xTESLADIAG_000019_CH70.070", "method"], "simple_maccor")
-        self.assertEqual(df.loc["xTESLADIAG_000019_CH70.070", "validated"], True)
+        with ScratchDir('.') as scratch_dir:
+            # Run validation on everything
+            v = SimpleValidator()
+            validate_record = v.validate_from_paths(paths, record_results=True,
+                                                    skip_existing=False,
+                                                    record_path=os.path.join(scratch_dir, 'validation_records.json'))
+            df = pd.DataFrame(v.validation_records)
+            df = df.transpose()
+            self.assertEqual(df.loc["xTESLADIAG_000019_CH70.070", "method"], "simple_maccor")
+            self.assertEqual(df.loc["xTESLADIAG_000019_CH70.070", "validated"], True)
 
 
 class ValidationEisTest(unittest.TestCase):
