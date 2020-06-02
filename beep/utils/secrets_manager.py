@@ -41,7 +41,6 @@ def get_secret(secret_name):
         secret          dict object containing database credentials
 
     """
-
     region_name = 'us-west-2'
 
     # Create a Secrets Manager client
