@@ -13,8 +13,8 @@ import boto3
 from monty.tempfile import ScratchDir
 from beep.validate import ValidatorBeep, validate_file_list_from_json, \
     SimpleValidator
-from beep import S3_CACHE, VALIDATION_SCHEMA_DIR
-
+from beep import S3_CACHE, VALIDATION_SCHEMA_DIR, ENVIRONMENT
+from beep.utils.secrets_manager import secret_accessible
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
@@ -23,13 +23,17 @@ TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 class ValidationArbinTest(unittest.TestCase):
     def setUp(self):
         # Setup events for testing
-        try:
-            kinesis = boto3.client('kinesis')
-            response = kinesis.list_streams()
-            self.events_mode = "test"
-        except Exception as e:
-            warnings.warn("Cloud resources not configured")
+        if not secret_accessible(ENVIRONMENT):
             self.events_mode = "events_off"
+        else:
+            try:
+                kinesis = boto3.client('kinesis')
+                response = kinesis.list_streams()
+                self.events_mode = "test"
+            except Exception as e:
+                warnings.warn("Cloud resources not configured")
+                self.events_mode = "events_off"
+
 
     def test_validation_arbin_bad_index(self):
         path = "2017-05-09_test-TC-contact_CH33.csv"
@@ -139,13 +143,17 @@ class ValidationMaccorTest(unittest.TestCase):
     # To further develop as Maccor data / schema becomes available
     def setUp(self):
         # Setup events for testing
-        try:
-            kinesis = boto3.client('kinesis')
-            response = kinesis.list_streams()
-            self.events_mode = "test"
-        except Exception as e:
-            warnings.warn("Cloud resources not configured")
+        if not secret_accessible(ENVIRONMENT):
             self.events_mode = "events_off"
+        else:
+            try:
+                kinesis = boto3.client('kinesis')
+                response = kinesis.list_streams()
+                self.events_mode = "test"
+            except Exception as e:
+                warnings.warn("Cloud resources not configured")
+                self.events_mode = "events_off"
+
 
     def test_validation_maccor(self):
         path = "xTESLADIAG_000019_CH70.070"
@@ -210,13 +218,17 @@ class ValidationEisTest(unittest.TestCase):
 class SimpleValidatorTest(unittest.TestCase):
     def setUp(self):
         # Setup events for testing
-        try:
-            kinesis = boto3.client('kinesis')
-            response = kinesis.list_streams()
-            self.events_mode = "test"
-        except Exception as e:
-            warnings.warn("Cloud resources not configured")
+        if not secret_accessible(ENVIRONMENT):
             self.events_mode = "events_off"
+        else:
+            try:
+                kinesis = boto3.client('kinesis')
+                response = kinesis.list_streams()
+                self.events_mode = "test"
+            except Exception as e:
+                warnings.warn("Cloud resources not configured")
+                self.events_mode = "events_off"
+
 
     def test_file_incomplete(self):
         path = "FastCharge_000025_CH8.csv"
