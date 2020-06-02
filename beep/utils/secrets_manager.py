@@ -10,9 +10,10 @@ Current environments:
 
 import boto3
 import base64
+import warnings
 from botocore.exceptions import ClientError
 import json
-
+from beep import ENVIRONMENT
 from beep.config import config
 
 
@@ -68,3 +69,17 @@ def get_secret(secret_name):
                 get_secret_value_response['SecretBinary'])
             return json.loads(decoded_binary_secret)
 
+
+def event_setup():
+    # Setup events for testing
+    if not secret_accessible(ENVIRONMENT):
+        events_mode = "events_off"
+    else:
+        try:
+            kinesis = boto3.client('kinesis')
+            response = kinesis.list_streams()
+            events_mode = "test"
+        except Exception as e:
+            warnings.warn("Cloud resources not configured")
+            events_mode = "events_off"
+    return events_mode

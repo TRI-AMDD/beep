@@ -1,36 +1,28 @@
 #  Copyright (c) 2019 Toyota Research Institute
 
 import unittest
-import warnings
 import os
 import shutil
 import subprocess
 import json
-import boto3
-import numpy as np
+
 import pandas as pd
 
 from tempfile import mkdtemp
 from monty.serialization import loadfn
 
 from beep import collate, validate, structure, featurize,\
-    run_model, MODEL_DIR
+    run_model
 from beep.utils import os_format
-
+from beep.utils.secrets_manager import event_setup
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 
 class EndToEndTest(unittest.TestCase):
     def setUp(self):
-        # Determine events mode for testing
-        try:
-            kinesis = boto3.client('kinesis')
-            response = kinesis.list_streams()
-            self.events_mode = 'test'
-        except Exception as e:
-            warnings.warn("Cloud resources not configured")
-            self.events_mode = 'events_off'
+        # Setup events for testing
+        self.events_mode = event_setup()
 
         # Get cwd, create and enter scratch dir
         self.cwd = os.getcwd()

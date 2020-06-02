@@ -9,7 +9,7 @@ import boto3
 import numpy as np
 import datetime
 import pandas as pd
-from beep import PROCEDURE_TEMPLATE_DIR
+from beep import PROCEDURE_TEMPLATE_DIR, ENVIRONMENT
 from beep.generate_protocol import ProcedureFile, \
     generate_protocol_files_from_csv, convert_velocity_to_power_waveform, generate_maccor_waveform_file
 from monty.tempfile import ScratchDir
@@ -17,22 +17,28 @@ from monty.serialization import dumpfn, loadfn
 from monty.os import makedirs_p
 from beep.utils import os_format
 import difflib
-from sklearn.metrics import mean_absolute_error
+from beep.utils.secrets_manager import secret_accessible
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
-
-class GenerateProcedureTest(unittest.TestCase):
-    def setUp(self):
-        # Determine events mode for testing
+def event_setup():
+    # Setup events for testing
+    if not secret_accessible(ENVIRONMENT):
+        events_mode = "events_off"
+    else:
         try:
             kinesis = boto3.client('kinesis')
             response = kinesis.list_streams()
-            self.events_mode = 'test'
+            events_mode = "test"
         except Exception as e:
             warnings.warn("Cloud resources not configured")
-            self.events_mode = 'events_off'
+            events_mode = "events_off"
+    return events_mode
+
+class GenerateProcedureTest(unittest.TestCase):
+    def setUp(self):
+        self.events_mode = event_setup()
 
     def test_dict_to_file_1(self):
         sdu = ProcedureFile(version='0.1')
