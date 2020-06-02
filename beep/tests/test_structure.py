@@ -11,7 +11,7 @@ import boto3
 import numpy as np
 import pandas as pd
 
-from beep import MODULE_DIR
+from beep import MODULE_DIR, ENVIRONMENT
 from beep.structure import RawCyclerRun, ProcessedCyclerRun, \
     process_file_list_from_json, EISpectrum, get_project_sequence, \
     get_protocol_parameters, get_diagnostic_parameters, \
@@ -20,6 +20,7 @@ from beep.conversion_schemas import STRUCTURE_DTYPES
 from monty.serialization import loadfn, dumpfn
 from monty.tempfile import ScratchDir
 from beep.utils import os_format
+from beep.utils.secrets_manager import secret_accessible
 import matplotlib.pyplot as plt
 
 BIG_FILE_TESTS = os.environ.get("BEEP_BIG_TESTS", False)
@@ -536,13 +537,16 @@ class RawCyclerRunTest(unittest.TestCase):
 class CliTest(unittest.TestCase):
     def setUp(self):
         # Setup events for testing
-        try:
-            kinesis = boto3.client('kinesis')
-            response = kinesis.list_streams()
-            self.events_mode = "test"
-        except Exception as e:
-            warnings.warn("Cloud resources not configured")
+        if not secret_accessible(ENVIRONMENT):
             self.events_mode = "events_off"
+        else:
+            try:
+                kinesis = boto3.client('kinesis')
+                response = kinesis.list_streams()
+                self.events_mode = "test"
+            except Exception as e:
+                warnings.warn("Cloud resources not configured")
+                self.events_mode = "events_off"
 
         self.arbin_file = os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29.csv")
 
@@ -575,13 +579,16 @@ class CliTest(unittest.TestCase):
 class ProcessedCyclerRunTest(unittest.TestCase):
     def setUp(self):
         # Setup events for testing
-        try:
-            kinesis = boto3.client('kinesis')
-            response = kinesis.list_streams()
-            self.events_mode = "test"
-        except Exception as e:
-            warnings.warn("Cloud resources not configured")
+        if not secret_accessible(ENVIRONMENT):
             self.events_mode = "events_off"
+        else:
+            try:
+                kinesis = boto3.client('kinesis')
+                response = kinesis.list_streams()
+                self.events_mode = "test"
+            except Exception as e:
+                warnings.warn("Cloud resources not configured")
+                self.events_mode = "events_off"
 
         self.arbin_file = os.path.join(TEST_FILE_DIR, "FastCharge_000000_CH29.csv")
         self.maccor_file = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000019_CH70.070")
