@@ -22,21 +22,23 @@ from beep.utils.secrets_manager import secret_accessible
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
+def event_setup():
+    # Setup events for testing
+    if not secret_accessible(ENVIRONMENT):
+        events_mode = "events_off"
+    else:
+        try:
+            kinesis = boto3.client('kinesis')
+            response = kinesis.list_streams()
+            events_mode = "test"
+        except Exception as e:
+            warnings.warn("Cloud resources not configured")
+            events_mode = "events_off"
+    return events_mode
 
 class GenerateProcedureTest(unittest.TestCase):
     def setUp(self):
-        # Setup events for testing
-        if not secret_accessible(ENVIRONMENT):
-            self.events_mode = "events_off"
-        else:
-            try:
-                kinesis = boto3.client('kinesis')
-                response = kinesis.list_streams()
-                self.events_mode = "test"
-            except Exception as e:
-                warnings.warn("Cloud resources not configured")
-                self.events_mode = "events_off"
-
+        self.events_mode = event_setup()
 
     def test_dict_to_file_1(self):
         sdu = ProcedureFile(version='0.1')

@@ -2,15 +2,12 @@
 """Unit tests related to feature generation"""
 
 import unittest
-import warnings
 import os
 import json
-import boto3
 import shutil
 
 import numpy as np
-from beep import ENVIRONMENT
-from beep.utils.secrets_manager import secret_accessible
+from beep.utils.secrets_manager import event_setup
 from beep.featurize import process_file_list_from_json, \
     DeltaQFastCharge, TrajectoryFastCharge, DegradationPredictor, DiagnosticCyclesFeatures, DiagnosticProperties
 from monty.serialization import dumpfn, loadfn
@@ -29,17 +26,7 @@ SKIP_MSG = "Tests requiring large files with diagnostic cycles are disabled, set
 
 class TestFeaturizer(unittest.TestCase):
     def setUp(self):
-        # Setup events for testing
-        if not secret_accessible(ENVIRONMENT):
-            self.events_mode = "events_off"
-        else:
-            try:
-                kinesis = boto3.client('kinesis')
-                response = kinesis.list_streams()
-                self.events_mode = "test"
-            except Exception as e:
-                warnings.warn("Cloud resources not configured")
-                self.events_mode = "events_off"
+        self.events_mode = event_setup()
 
     def test_feature_generation_full_model(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)

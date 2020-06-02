@@ -2,13 +2,12 @@
 """Unit tests related to feature generation"""
 
 import unittest
-import warnings
 import os
 import json
 import numpy as np
 from glob import glob
 from beep import MODEL_DIR, ENVIRONMENT
-from beep.utils.secrets_manager import secret_accessible
+from beep.utils.secrets_manager import event_setup
 from beep.run_model import DegradationModel, process_file_list_from_json, get_project_name_from_list
 from monty.serialization import loadfn
 
@@ -24,17 +23,7 @@ MULTI_TASK_FEATURES_PATH = os.path.join(
 
 class TestRunModel(unittest.TestCase):
     def setUp(self):
-        # Setup events for testing
-        if not secret_accessible(ENVIRONMENT):
-            self.events_mode = "events_off"
-        else:
-            try:
-                kinesis = boto3.client('kinesis')
-                response = kinesis.list_streams()
-                self.events_mode = "test"
-            except Exception as e:
-                warnings.warn("Cloud resources not configured")
-                self.events_mode = "events_off"
+        self.events_mode = event_setup()
 
     def test_model_training_and_serialization(self):
         # tests for model training and serialization
@@ -139,20 +128,6 @@ class TestRunModel(unittest.TestCase):
 
 
 class TestHelperFunctions(unittest.TestCase):
-    def setUp(self):
-        # Setup events for testing
-        if not secret_accessible(ENVIRONMENT):
-            self.events_mode = "events_off"
-        else:
-            try:
-                kinesis = boto3.client('kinesis')
-                response = kinesis.list_streams()
-                self.events_mode = "test"
-            except Exception as e:
-                warnings.warn("Cloud resources not configured")
-                self.events_mode = "events_off"
-
-
     def test_get_project_name_from_list(self):
         file_list = ['data-share/predictions/PredictionDiagnostics_000100_003022_predictions.json',
                      'data-share/predictions/PredictionDiagnostics_000101_003022_predictions.json',

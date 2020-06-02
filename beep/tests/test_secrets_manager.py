@@ -5,7 +5,7 @@ import os
 import unittest
 from beep import ENVIRONMENT
 from beep.config import config
-from beep.utils.secrets_manager import secret_accessible, get_secret
+from beep.utils.secrets_manager import secret_accessible, get_secret, event_setup
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
