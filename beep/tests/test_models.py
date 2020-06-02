@@ -10,6 +10,7 @@ from glob import glob
 from beep import MODEL_DIR
 from beep.run_model import DegradationModel, process_file_list_from_json, get_project_name_from_list
 from monty.serialization import loadfn
+from monty.tempfile import ScratchDir
 
 import boto3
 
@@ -35,38 +36,40 @@ class TestRunModel(unittest.TestCase):
     def test_model_training_and_serialization(self):
         # tests for model training and serialization
         featurized_jsons = glob(os.path.join(SINGLE_TASK_FEATURES_PATH, "*features.json"))
-        json_obj = {
-            "mode": self.events_mode,
-            "file_list": featurized_jsons,
-            'run_list': list(range(len(featurized_jsons)))
-        }
-        json_string = json.dumps(json_obj)
-        model = DegradationModel.train(
-            json_string, dataset_id=2, model_type='linear',
-            regularization_type='elasticnet', model_name='test_model',
-            hyperparameters={})
-        model.serialize(processed_dir=TEST_FILE_DIR)
-        serialized_model_reloaded = DegradationModel.from_serialized_model(
-            model_dir=TEST_FILE_DIR, serialized_model=model.name + '.model')
-        self.assertIsInstance(serialized_model_reloaded, DegradationModel)
+        with ScratchDir('.') as scratch_dir:
+            json_obj = {
+                "mode": self.events_mode,
+                "file_list": featurized_jsons,
+                'run_list': list(range(len(featurized_jsons)))
+            }
+            json_string = json.dumps(json_obj)
+            model = DegradationModel.train(
+                json_string, dataset_id=2, model_type='linear',
+                regularization_type='elasticnet', model_name='test_model',
+                hyperparameters={})
+            model.serialize(processed_dir=scratch_dir)
+            serialized_model_reloaded = DegradationModel.from_serialized_model(
+                model_dir=scratch_dir, serialized_model=model.name + '.model')
+            self.assertIsInstance(serialized_model_reloaded, DegradationModel)
 
     def test_multi_task_model_training(self):
         featurized_jsons = glob(os.path.join(MULTI_TASK_FEATURES_PATH, "*features.json"))
-        json_obj = {
-            "mode": self.events_mode,
-            "file_list": featurized_jsons,
-            'run_list': list(range(len(featurized_jsons)))
-        }
-        json_string = json.dumps(json_obj)
+        with ScratchDir('.') as scratch_dir:
+            json_obj = {
+                "mode": self.events_mode,
+                "file_list": featurized_jsons,
+                'run_list': list(range(len(featurized_jsons)))
+            }
+            json_string = json.dumps(json_obj)
 
-        model = DegradationModel.train(json_string, dataset_id=2,
-                                       model_type='linear', regularization_type='elasticnet',
-                                       model_name='test_model', hyperparameters={})
-        model.serialize(processed_dir=TEST_FILE_DIR)
-        serialized_model_reloaded = DegradationModel.from_serialized_model(model_dir=TEST_FILE_DIR,
-                                                                           serialized_model=model.name + '.model')
-        self.assertGreater(len(serialized_model_reloaded.model['confidence_bounds']), 1)
-        self.assertIsInstance(serialized_model_reloaded, DegradationModel)
+            model = DegradationModel.train(json_string, dataset_id=2,
+                                           model_type='linear', regularization_type='elasticnet',
+                                           model_name='test_model', hyperparameters={})
+            model.serialize(processed_dir=scratch_dir)
+            serialized_model_reloaded = DegradationModel.from_serialized_model(model_dir=scratch_dir,
+                                                                               serialized_model=model.name + '.model')
+            self.assertGreater(len(serialized_model_reloaded.model['confidence_bounds']), 1)
+            self.assertIsInstance(serialized_model_reloaded, DegradationModel)
 
     def test_multi_task_prediction_list_to_json(self):
         featurized_jsons = glob(os.path.join(MULTI_TASK_FEATURES_PATH, "*features.json"))
