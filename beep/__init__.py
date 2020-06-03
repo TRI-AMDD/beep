@@ -23,7 +23,6 @@ except (ImportError, ModuleNotFoundError):
 # Versioning.  The python code version is frequently tagged
 # with a commit hash from the repo, which is supplied via
 # an environment variable by the integration build procedure
-
 __version__ = "2020.6.2"
 
 VERSION_TAG = os.environ.get("BEEP_VERSION_TAG")
