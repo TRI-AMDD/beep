@@ -10,6 +10,21 @@ v2020.6.2
 * Automate directory creation for running tests under different environments.
 * Add datatypes to arbin cycling data.
 
+=======
+v2020.5.24
+----------
+
+* Address Issue #45 - Failing tests with NoCredential Error
+* Change to more descriptive name of the data directory and add defaults
+* Changing the exception catch to be broad, exceptions change depending on environment
+* Make creation of directories automatic
+* Add validation criteria for maccor files to have minimum cycle number
+* Changing the exception catch to be broad, exceptions change depending on environment
+* Adding data types to raw arbin data
+* Rough draft of features from diagnostic cycles - Thanks to Chirranjeevi Gopal
+* include truncated PreDiag structure file for tests
+* add lmfit to requirements + test fix
+* updates to class variables
 
 v2020.5.16
 ----------
