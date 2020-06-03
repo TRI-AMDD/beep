@@ -10,7 +10,6 @@ v2020.6.2
 * Automate directory creation for running tests under different environments.
 * Add datatypes to arbin cycling data.
 
-=======
 v2020.5.24
 ----------
 
