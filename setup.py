@@ -18,7 +18,7 @@ arbin and maccor cyclers.
 
 setup(name="beep",
       url="https://github.com/TRI-AMDD/beep",
-      version="2020.5.24",
+      version="2020.6.2",
       description=DESCRIPTION,
       long_description=LONG_DESCRIPTION,
       long_description_content_type='text/markdown',
