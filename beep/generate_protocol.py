@@ -42,18 +42,156 @@ import warnings
 import json
 import datetime
 import csv
-
+import numpy as np
 import pandas as pd
 from docopt import docopt
 from monty.serialization import loadfn
+
 from beep import logger, __version__
 from beep.protocol import PROCEDURE_TEMPLATE_DIR
 from beep.protocol.maccor import Procedure
+from beep.conversion_schemas import MACCOR_WAVEFORM_CONFIG
+
 from beep.utils import KinesisEvents
 s = {'service': 'ProtocolGenerator'}
 
+def insert_maccor_waveform_discharge(self, proc_dict, waveform_idx, waveform_filename):
+    """
+    Inserts a waveform into procedure dictionary at given id.
+
+    Args:
+        proc_dict (dict): dictionary of procedure parameters associated
+            with a procedure template file
+        waveform_idx (int): Step in the procedure file to insert waveform at
+        waveform_filename (str): Path to .MWF waveform file. Waveform needs to be pre-scaled for
+        current/power capabilities of the cell and cycler
+
+    Returns:
+        dict:
+    """
+    steps = proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep']
+    assert steps[waveform_idx]['StepType'] == "FastWave"
+
+    steps[waveform_idx]['StepValue'] = waveform_filename.split('.MWF')[0]
+
+    return proc_dict
+
+
+def convert_velocity_to_power_waveform(waveform_file, velocity_units):
+    """
+    Helper function to perform model based conversion of velocity waveform into power waveform.
+
+    For model description and parameters ref JECS, 161 (14) A2099-A2108 (2014)
+    "Model-Based SEI Layer Growth and Capacity Fade Analysis for EV and PHEV Batteries and Drive Cycles"
+
+    Args:
+        waveform_file (str): file containing tab or comma delimited values of time and velocity
+        velocity_units (str): units of velocity. Accept 'mph' or 'kmph' or 'mps'
+
+    returns
+    pd.DataFrame with two columns: time (sec) and power (W). Negative = Discharge
+    """
+    df = pd.read_csv(waveform_file, sep='\t', header=0)
+    df.columns = ['t', 'v']
+
+    if velocity_units == 'mph':
+        scale = 1600.0 / 3600.0
+    elif velocity_units == 'kmph':
+        scale = 1000.0 / 3600.0
+    elif velocity_units == 'mps':
+        scale = 1.0
+    else:
+        raise NotImplementedError
+
+    df.v = df.v * scale
+
+    # Define model constants
+    m = 1500  # kg
+    rolling_resistance_coef = 0.01  # rolling resistance coeff
+    g = 9.8  # m/s^2
+    theta = 0  # gradient in radians
+    rho = 1.225  # kg/m^3
+    drag_coef = 0.34  # Coeff of drag
+    frontal_area = 1.75  # m^2
+    v_wind = 0  # wind velocity in m/s
+
+    # Power = Force * vel
+    # Force = Rate of change of momentum + Rolling frictional force + Aerodynamic drag force
+
+    # Method treats the time-series as is and does not interpolate on a uniform grid before computing gradient.
+    power = m * np.gradient(df.v, df.t) + rolling_resistance_coef * m * g * np.cos(
+        theta * np.pi / 180) + 0.5 * rho * drag_coef * frontal_area * (df.v - v_wind) ** 2
+
+    power = -power * df.v  # positive power = charge
+
+    return pd.DataFrame({'time': df.t,
+                         'power': power})
+
+
+def generate_maccor_waveform_file(df, file_prefix, file_directory, mwf_config=None):
+    """
+    Helper function that takes in a variable power waveform and outputs a maccor waveform file (.MWF), which is read by
+    the cycler when the procedure file has a "fast-wave" step.
+    Relevant parameters to generate the .mwf files governing the input mode, charge/discharge limits, end conditions
+    and scaling are stored in /conversion_schemas/maccor_waveform_conversion.yaml
+
+    Args:
+        df (pd.DataFrame): power waveform containing two columns "time" and "power", in sec and W respectively.
+        file_prefix (str): prefix for the filename (extension is .MWF by default)
+        file_directory (str): folder to store the mwf file
+        mwf_config (dict): dictionary of instrument control parameters for generating the waveform
+
+    Returns:
+         path to the maccor waveform file generated
+    """
+
+    if mwf_config is None:
+        mwf_config = MACCOR_WAVEFORM_CONFIG
+
+    df['power'] = df['power'] / max(abs(df['power'])) * mwf_config['value_scale']
+
+    df['step_counter'] = df['power'].diff().fillna(0).ne(0).cumsum()
+    df = df.groupby('step_counter').agg({'time': 'count',
+                                         'power': 'first'})
+
+    df.rename(columns={'time': 'duration'}, inplace=True)
+
+    df['control_mode'] = mwf_config['control_mode']
+
+    if mwf_config['control_mode'] == 'P':
+        df.loc[df['power'] == 0, 'control_mode'] = 'I'
+
+    df['value'] = np.round(abs(df['power']), 5)
+
+    mask = df['power'] <= 0
+    df = df.assign(**{'state': 'C',
+                      'limit_mode': mwf_config['charge_limit_mode'],
+                      'limit_value': mwf_config['charge_limit_value'],
+                      'end_mode': mwf_config['charge_end_mode'],
+                      'operation':  mwf_config['charge_end_operation'],
+                      'end_mode_value': mwf_config['charge_end_mode_value']
+                      })
+
+    df.loc[mask, ['state', 'limit_mode', 'limit_value', 'end_mode', 'operation', 'end_mode_value']] =\
+        ['D', mwf_config['discharge_limit_mode'], mwf_config['discharge_limit_value'],
+         mwf_config['discharge_end_mode'], mwf_config['discharge_end_operation'],
+         mwf_config['discharge_end_mode_value']]
+
+    df['report_mode'] = mwf_config['report_mode']
+    df['report_value'] = mwf_config['report_value']
+    df['range'] = mwf_config['range']
+
+    MWF_file_path = os.path.join(file_directory, file_prefix + ".MWF")
+
+    df[['state', 'control_mode', 'value', 'limit_mode', 'limit_value', 'duration', 'end_mode',
+        'operation', 'end_mode_value', 'report_mode', 'report_value', 'range']].\
+        to_csv(MWF_file_path, sep='\t', header=None, index=None)
+
+    return MWF_file_path
+
 
 def generate_protocol_files_from_csv(csv_filename, output_directory):
+
     """
     Generates a set of protocol files from csv filename input by
     reading protocol file input corresponding to each line of
@@ -71,6 +209,8 @@ def generate_protocol_files_from_csv(csv_filename, output_directory):
     result = ''
     message = {'comment': '',
                'error': ''}
+    if output_directory is None:
+        output_directory = PROCEDURE_TEMPLATE_DIR
     for index, protocol_params in protocol_params_df.iterrows():
         template = protocol_params['template']
 
@@ -166,11 +306,11 @@ def process_csv_file_list_from_json(
         file_list_data = json.loads(file_list_json)
 
     # Setup Events
-    events = KinesisEvents(service='protocolGenerator', mode=file_list_data['mode'])
+    events = KinesisEvents(service='ProtocolGenerator', mode=file_list_data['mode'])
 
     file_list = file_list_data['file_list']
     all_output_files = []
-    protocol_dir = os.path.join(os.environ.get("BEEP_ROOT", "/"),
+    protocol_dir = os.path.join(os.environ.get("BEEP_PROCESSING_DIR", "/"),
                               processed_dir)
     for filename in file_list:
         output_files, result, message = generate_protocol_files_from_csv(

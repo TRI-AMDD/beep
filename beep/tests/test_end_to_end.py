@@ -5,31 +5,24 @@ import os
 import shutil
 import subprocess
 import json
-import boto3
-import numpy as np
+
 import pandas as pd
 
 from tempfile import mkdtemp
 from monty.serialization import loadfn
-from botocore.exceptions import NoRegionError, NoCredentialsError
 
 from beep import collate, validate, structure, featurize,\
-    run_model, MODEL_DIR
+    run_model
 from beep.utils import os_format
-
+from beep.utils.secrets_manager import event_setup
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 
 class EndToEndTest(unittest.TestCase):
     def setUp(self):
-        # Determine events mode for testing
-        try:
-            kinesis = boto3.client('kinesis')
-            response = kinesis.list_streams()
-            self.events_mode = 'test'
-        except NoRegionError or NoCredentialsError as e:
-            self.events_mode = 'events_off'
+        # Setup events for testing
+        self.events_mode = event_setup()
 
         # Get cwd, create and enter scratch dir
         self.cwd = os.getcwd()
@@ -37,8 +30,8 @@ class EndToEndTest(unittest.TestCase):
         os.chdir(scratch_dir)
         self.scratch_dir = scratch_dir
 
-        # Set BEEP_ROOT directory to scratch_dir
-        os.environ['BEEP_ROOT'] = scratch_dir
+        # Set BEEP_PROCESSING_DIR directory to scratch_dir
+        os.environ['BEEP_PROCESSING_DIR'] = scratch_dir
 
         # Create data-share and subfolders
         os.mkdir("data-share")
@@ -46,11 +39,6 @@ class EndToEndTest(unittest.TestCase):
 
         # Set up directory structure and specify the test files
         os.mkdir("raw_cycler_files")
-        os.mkdir("renamed_cycler_files")
-        os.mkdir("validation")
-        os.mkdir("structure")
-        os.mkdir("features")
-        os.mkdir("predictions")
 
         # Copy starting files into raw_cycler_files directory
         starting_files = [
@@ -107,8 +95,8 @@ class EndToEndTest(unittest.TestCase):
         featurized = json.dumps(featurized_output)
 
         # Prediction
-        predictions = run_model.process_file_list_from_json(
-            featurized, model_dir=MODEL_DIR)
+        # predictions = run_model.process_file_list_from_json(
+        #     featurized, model_dir=MODEL_DIR)
 
         # Validate output files
         self._check_result_file_validity()
@@ -157,15 +145,15 @@ class EndToEndTest(unittest.TestCase):
                                                  shell=True).decode('utf-8')
 
         # Fitting console test
-        feature_output = json.loads(feature_output)
-        fitting_input = {
-            "mode": self.events_mode,  # mode run|test|events_off
-            "file_list": feature_output['file_list'],  # list of file paths ['path/test1.json', 'path/test2.json']
-            'run_list': list(range(len(feature_output['file_list'])))  # list of run_ids [0, 1]
-            }
-        fitting_input = os_format(json.dumps(fitting_input))
-        model_output = subprocess.check_output("run_model {}".format(fitting_input),
-                                               shell=True).decode('utf-8')
+        # feature_output = json.loads(feature_output)
+        # fitting_input = {
+        #     "mode": self.events_mode,  # mode run|test|events_off
+        #     "file_list": feature_output['file_list'],  # list of file paths ['path/test1.json', 'path/test2.json']
+        #     'run_list': list(range(len(feature_output['file_list'])))  # list of run_ids [0, 1]
+        #     }
+        # fitting_input = os_format(json.dumps(fitting_input))
+        # model_output = subprocess.check_output("run_model {}".format(fitting_input),
+        #                                        shell=True).decode('utf-8')
 
         # Validate output files
         self._check_result_file_validity()
@@ -183,12 +171,13 @@ class EndToEndTest(unittest.TestCase):
         self.assertIsInstance(loaded_structure, structure.ProcessedCyclerRun)
 
         loaded_features = loadfn(
-            os.path.join("data-share", "features", "FastCharge_000002_CH29_full_model_multi_features.json"))
-        self.assertIsInstance(loaded_features, featurize.DegradationPredictor)
+            os.path.join("data-share", "features", "DeltaQFastCharge",
+                         "FastCharge_000002_CH29_features_DeltaQFastCharge.json"))
+        self.assertIsInstance(loaded_features, featurize.DeltaQFastCharge)
 
-        loaded_prediction = loadfn(
-            os.path.join("data-share", "predictions", "FastCharge_000002_CH29_full_model_multi_predictions.json"))
-        self.assertAlmostEqual(np.floor(loaded_prediction['cycle_number'][0]), 121)
+        # loaded_prediction = loadfn(
+        #     os.path.join("data-share", "predictions", "FastCharge_000002_CH29_full_model_multi_predictions.json"))
+        # self.assertAlmostEqual(np.floor(loaded_prediction['cycle_number'][0]), 121)
 
 
 if __name__ == "__main__":

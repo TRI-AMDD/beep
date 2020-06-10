@@ -9,6 +9,8 @@ import sys
 from functools import partial
 import numpy as np
 import watchtower
+import time
+from botocore.exceptions import NoCredentialsError
 from tqdm import tqdm as _tqdm
 
 from .config import config
@@ -21,7 +23,7 @@ except (ImportError, ModuleNotFoundError):
 # Versioning.  The python code version is frequently tagged
 # with a commit hash from the repo, which is supplied via
 # an environment variable by the integration build procedure
-__version__ = "2020.3.31"
+__version__ = "2020.6.2"
 VERSION_TAG = os.environ.get("BEEP_VERSION_TAG")
 if VERSION_TAG is not None:
     __version__ = '-'.join([__version__, VERSION_TAG])
@@ -30,6 +32,8 @@ if VERSION_TAG is not None:
 tqdm = partial(_tqdm, disable=bool(os.environ.get("TQDM_OFF")))
 
 ENV_VAR = 'BEEP_ENV'
+PROCESSED_DIR = 'BEEP_PROCESSING_DIR'
+MAX_RETRIES = 12
 
 # environment
 ENVIRONMENT = os.getenv(ENV_VAR)
@@ -37,6 +41,16 @@ if ENVIRONMENT is None or ENVIRONMENT not in config.keys():
     raise ValueError(f'Environment variable {ENV_VAR} must be set and be one '
                      + f'of the following: {", ".join(list(config.keys()))}. '
                      + f'Found: {ENVIRONMENT}')
+
+DIR = os.getenv(PROCESSED_DIR)
+if DIR is None:
+    if ENVIRONMENT in ['stage', 'prod']:
+        os.environ[PROCESSED_DIR] = "/"
+    elif ENVIRONMENT in ['local', 'dev', 'test']:
+        os.environ[PROCESSED_DIR] = os.path.dirname(__file__)
+    else:
+        raise ValueError(f'The directory for processing cycling data {PROCESSED_DIR} must be set'
+                         + f' eg. /Users/Bob/cycling')
 
 MODULE_DIR = os.path.dirname(__file__)
 CONVERSION_SCHEMA_DIR = os.path.join(MODULE_DIR, "conversion_schemas")
@@ -72,7 +86,16 @@ formatter = logging.Formatter(fmt_str)
 # output and format
 if 'CloudWatch' in config[ENVIRONMENT]['logging']['streams']:
     if ENVIRONMENT == "stage":
-        hdlr = watchtower.CloudWatchLogHandler(log_group='/stage/beep/services')
+        for _ in range(MAX_RETRIES):
+            try:
+                hdlr = watchtower.CloudWatchLogHandler(log_group='/stage/beep/services')
+            except NoCredentialsError:
+                time.sleep(10)
+                continue
+            else:
+                break
+        else:
+            raise NoCredentialsError
     else:
         hdlr = watchtower.CloudWatchLogHandler(log_group='Worker')
     hdlr.setFormatter(formatter)

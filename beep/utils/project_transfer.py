@@ -35,6 +35,7 @@ class ProjectTransfer:
             prefix (str): Prefix of the input and output project in the S3 bucket.
             mode (str): mode to run in, if 'test' the output bucket is the 'beep-sync-test' bucket.
         """
+
         self.input_project = input_project
         self.output_project = output_project
         self.bucket = bucket
@@ -103,7 +104,7 @@ class ProjectTransfer:
 if __name__ == "__main__":
     transfer = ProjectTransfer("PredictionDiagnostics",
                                "PreDiag",
-                               "beep-input-data",
+                               "beep-input-data-stage",
                                "d3Batt/raw/maccor/STANFORD LOANER #2")
     # List of strings here can be used to filer out specific file names so that not all files are transferred over
     # '_000052' is a file generated using an even earlier version of the protocol and probably should not be transferred

@@ -55,11 +55,12 @@ from monty.serialization import loadfn, dumpfn
 from glob import glob
 from beep import tqdm
 
-from beep import StringIO, MODULE_DIR
+from beep import StringIO, MODULE_DIR, ENVIRONMENT
 from beep.validate import ValidatorBeep, BeepValidationError
 from beep.collate import add_suffix_to_filename
 from beep.conversion_schemas import ARBIN_CONFIG, MACCOR_CONFIG, \
-    FastCharge_CONFIG, xTesladiag_CONFIG, INDIGO_CONFIG, BIOLOGIC_CONFIG
+    FastCharge_CONFIG, xTesladiag_CONFIG, INDIGO_CONFIG, BIOLOGIC_CONFIG, \
+    STRUCTURE_DTYPES
 from beep.utils import KinesisEvents
 from beep import logger, __version__
 
@@ -136,7 +137,7 @@ class RawCyclerRun(MSONable):
         else:
             raise ValueError("{} does not match any known file pattern".format(path))
 
-    def get_interpolated_steps(self, v_range, resolution, step_type='discharge', reg_cycles=None):
+    def get_interpolated_steps(self, v_range, resolution, step_type='discharge', reg_cycles=None, axis='voltage'):
         """
         Gets interpolated cycles for the step specified, charge or discharge.
 
@@ -145,32 +146,45 @@ class RawCyclerRun(MSONable):
                 the voltage interpolation range endpoints.
             resolution (int): resolution of interpolated data.
             step_type (str): which step to interpolate i.e. 'charge' or 'discharge'
-            diag_cycles (dict): dictionary containing information about
-                location of diagnostic cycles
+            reg_cycles (list): list containing cycle indicies of regular cycles
+            axis (str): which column to use for interpolation
 
         Returns:
             pandas.DataFrame: DataFrame corresponding to interpolated values.
         """
         if step_type is 'discharge':
-            group = self.data.groupby(["cycle_index", "step_index"]).filter(
-                determine_whether_step_is_discharging).groupby("cycle_index")
-            group.apply(lambda g: g[g['cycle_index'].isin(reg_cycles)])
+            step_filter = determine_whether_step_is_discharging
         elif step_type is 'charge':
-            group = self.data.groupby(["cycle_index", "step_index"]).filter(
-                determine_whether_step_is_charging).groupby("cycle_index")
-            group.apply(lambda g: g[g['cycle_index'].isin(reg_cycles)])
+            step_filter = determine_whether_step_is_charging
         else:
             raise ValueError("{} is not a recognized step type")
-
-        incl_columns = ["current", "charge_capacity", "discharge_capacity",
-                        "internal_resistance", "temperature", "cycle_index"]
+        incl_columns = ["voltage", "current", "charge_capacity", "discharge_capacity",
+                        "internal_resistance", "temperature"]
         all_dfs = []
-        for cycle_index, df in tqdm(group):
-            new_df = get_interpolated_data(df, "voltage", field_range=v_range,
-                                           columns=incl_columns, resolution=resolution)
-            new_df.cycle_index = cycle_index
+        cycle_indices = self.data.cycle_index.unique()
+        cycle_indices = [c for c in cycle_indices if c in reg_cycles]
+        cycle_indices.sort()
+        for cycle_index in tqdm(cycle_indices):
+            # Use a cycle_index mask instead of a global groupby to save memory
+            new_df = self.data.loc[self.data["cycle_index"] == cycle_index].groupby("step_index").filter(step_filter)
+            if new_df.size == 0:
+                continue
+            if axis in ['charge_capacity', 'discharge_capacity']:
+                axis_range = [self.data[axis].min(), self.data[axis].max()]
+                new_df = get_interpolated_data(new_df, axis, field_range=axis_range,
+                                               columns=incl_columns, resolution=resolution)
+            elif axis == 'test_time':
+                axis_range = [new_df[axis].min(), new_df[axis].max()]
+                new_df = get_interpolated_data(new_df, axis, field_range=axis_range,
+                                               columns=incl_columns, resolution=resolution)
+            elif axis == 'voltage':
+                new_df = get_interpolated_data(new_df, axis, field_range=v_range,
+                                               columns=incl_columns, resolution=resolution)
+            else:
+                raise NotImplementedError
+            new_df['cycle_index'] = cycle_index
             new_df['step_type'] = step_type
-            new_df['step_type'].astype('category')
+            new_df['step_type'] = new_df['step_type'].astype('category')
             all_dfs.append(new_df)
 
         # Ignore the index to avoid issues with overlapping voltages
@@ -208,12 +222,15 @@ class RawCyclerRun(MSONable):
         interpolated_discharge = self.get_interpolated_steps(v_range,
                                                              resolution,
                                                              step_type='discharge',
-                                                             reg_cycles=reg_cycles)
+                                                             reg_cycles=reg_cycles,
+                                                             axis='voltage')
         interpolated_charge = self.get_interpolated_steps(v_range,
                                                           resolution,
                                                           step_type='charge',
-                                                          reg_cycles=reg_cycles)
+                                                          reg_cycles=reg_cycles,
+                                                          axis='charge_capacity')
         result = pd.concat([interpolated_discharge, interpolated_charge], ignore_index=True)
+        result = result.astype(STRUCTURE_DTYPES['cycles_interpolated'])
 
         return result
 
@@ -239,6 +256,7 @@ class RawCyclerRun(MSONable):
         Returns:
             beep.structure.RawCyclerRun:
         """
+
         data = pd.DataFrame(d['data'])
         data = data.sort_index()
         return cls(data, d['metadata'], d['eis'])
@@ -247,7 +265,8 @@ class RawCyclerRun(MSONable):
                     full_fast_charge=0.8, cycle_complete_discharge_ratio=0.97,
                     cycle_complete_vmin=3.3, cycle_complete_vmax=3.3):
         """
-        Gets summary statistics for data according to
+        Gets summary statistics for data according to cycle number. Summary data
+        must be float or int type for compatibility with other methods
 
         Args:
             diagnostic_available (dict): dictionary with diagnostic_types
@@ -325,6 +344,11 @@ class RawCyclerRun(MSONable):
         # Drop the time since cycle start column
         self.data.drop(columns=['time_since_cycle_start'])
 
+        # Determine if any of the cycles has been paused
+        summary['paused'] = self.data.groupby("cycle_index").apply(determine_paused)
+
+        summary = summary.astype(STRUCTURE_DTYPES['summary'])
+
         last_voltage = self.data.loc[self.data['cycle_index'] == self.data['cycle_index'].max()]['voltage']
         if ((last_voltage.min() < cycle_complete_vmin) and (last_voltage.max() > cycle_complete_vmax) and
             ((summary.iloc[[-1]])['discharge_capacity'].iloc[0] > cycle_complete_discharge_ratio
@@ -372,10 +396,13 @@ class RawCyclerRun(MSONable):
 
         diag_summary['coulombic_efficiency'] = diag_summary['discharge_capacity'] \
                                                / diag_summary['charge_capacity']
+        diag_summary['paused'] = self.data.groupby("cycle_index").apply(determine_paused)
 
         diag_summary.reset_index(drop=True, inplace=True)
 
         diag_summary['cycle_type'] = pd.Series(diagnostic_available['cycle_type'] * len(starts_at))
+
+        diag_summary = diag_summary.astype(STRUCTURE_DTYPES['diagnostic_summary'])
 
         return diag_summary
 
@@ -418,21 +445,21 @@ class RawCyclerRun(MSONable):
         diag_data = self.data[self.data['cycle_index'].isin(diag_cycles_at)]
 
         # Convert date_time_iso field into pd.datetime object
-        diag_data['date_time_iso'] = pd.to_datetime(diag_data['date_time_iso'])
+        diag_data.loc[:, 'date_time_iso'] = pd.to_datetime(diag_data['date_time_iso'])
 
         # Convert datetime into seconds to allow interpolation of time
-        diag_data['datetime_seconds'] = [time.mktime(t.timetuple())
-                                if t is not pd.NaT else float('nan')
-                                for t in diag_data['date_time_iso']]
+        diag_data.loc[:, 'datetime_seconds'] = [time.mktime(t.timetuple())
+                                                if t is not pd.NaT else float('nan')
+                                                for t in diag_data['date_time_iso']]
 
         # Counter to ensure non-contiguous repeats of step_index
         # within same cycle_index are grouped separately
-        diag_data['step_index_counter'] = 0
+        diag_data.loc[:, 'step_index_counter'] = 0
 
         for cycle_index in diag_cycles_at:
             indices = diag_data.loc[diag_data.cycle_index == cycle_index].index
             step_index_list = diag_data.step_index.loc[indices]
-            diag_data['step_index_counter'].loc[indices] = \
+            diag_data.loc[indices, 'step_index_counter'] = \
                 step_index_list.ne(step_index_list.shift()).cumsum()
 
         group = diag_data.groupby(["cycle_index", "step_index", "step_index_counter"])
@@ -481,6 +508,9 @@ class RawCyclerRun(MSONable):
         result = pd.concat(all_dfs, ignore_index=True)
         # Cycle_index gets a little weird about typing, so round it here
         result.cycle_index = result.cycle_index.round()
+
+        result = result.astype(STRUCTURE_DTYPES['diagnostic_interpolated'])
+
         return result
 
     @classmethod
@@ -497,12 +527,17 @@ class RawCyclerRun(MSONable):
         """
         metadata_path = path.replace(".csv", "_Metadata.csv")
         data = pd.read_csv(path)
-        data = data.rename(str.lower, axis='columns')
-        data = data.rename(ARBIN_CONFIG['data_columns'], axis='columns')
+        data.rename(str.lower, axis='columns', inplace=True)
+
+        for column, dtype in ARBIN_CONFIG['data_types'].items():
+            if column in data:
+                if not data[column].isnull().values.any():
+                    data[column] = data[column].astype(dtype)
+
+        data.rename(ARBIN_CONFIG['data_columns'], axis='columns', inplace=True)
         metadata = pd.read_csv(metadata_path)
-        metadata = metadata.rename(str.lower, axis='columns')
-        metadata = metadata.rename(ARBIN_CONFIG['metadata_fields'],
-                                   axis='columns')
+        metadata.rename(str.lower, axis='columns', inplace=True)
+        metadata.rename(ARBIN_CONFIG['metadata_fields'], axis='columns', inplace=True)
         # Note the to_dict, which scrubs numpy typing
         metadata = {col: item[0] for col, item
                     in metadata.to_dict('list').items()}
@@ -538,7 +573,7 @@ class RawCyclerRun(MSONable):
         # transformations
         data = data.reset_index().reset_index()  # twice in case old index is stored in file
         data = data.drop(columns=['index'])
-        data = data.rename(columns={'level_0': 'data_point'})
+        data.rename(columns={'level_0': 'data_point'}, inplace=True)
         data.loc[data.half_cycle_count % 2 == 1, 'charge_capacity'] = abs(data.cell_coulomb_count_c) / 3600
         data.loc[data.half_cycle_count % 2 == 0, 'charge_capacity'] = 0
         data.loc[data.half_cycle_count % 2 == 0, 'discharge_capacity'] = abs(data.cell_coulomb_count_c) / 3600
@@ -551,7 +586,7 @@ class RawCyclerRun(MSONable):
         data['date_time_iso'] = data['system_time_us']\
             .apply(lambda x: datetime.utcfromtimestamp(x/1000000).replace(tzinfo=pytz.UTC).isoformat())
 
-        data = data.rename(INDIGO_CONFIG['data_columns'], axis='columns')
+        data.rename(INDIGO_CONFIG['data_columns'], axis='columns', inplace=True)
 
         metadata['start_datetime'] = data.sort_values(by='system_time_us')['date_time_iso'].iloc[0]
 
@@ -636,25 +671,31 @@ class RawCyclerRun(MSONable):
             state_type (str): charge or discharge.
 
         Returns:
-            list: summed quantities.
+            Series: summed quantities.
         """
         state_code = MACCOR_CONFIG["{}_state_code".format(state_type)]
-        quantity = data.apply(lambda row: row['_' + quantity] if row['_state'] == state_code else 0.0, axis=1)
-        earlier_quantity = 0.
-        earlier_cycle_index = data['cycle_index'][0]
-        new_step_flag = False
-        for i, (step_quantity, es, cycle_index) in \
-                enumerate(zip(quantity, data['_ending_status'], data['cycle_index'])):
-            if new_step_flag:
-                if cycle_index > earlier_cycle_index:
-                    earlier_quantity = 0.
-                    earlier_cycle_index = cycle_index
-                new_step_flag = False
-            quantity[i] += earlier_quantity
-            if (es >= MACCOR_CONFIG['end_step_code_min']) and (es <= MACCOR_CONFIG['end_step_code_max']):
-                new_step_flag = True
-                earlier_quantity += step_quantity
-        return quantity
+        quantity_agg = data['_' + quantity].where(data['_state'] == state_code, other=0.0, axis=0)
+        end_step = data['_ending_status'].apply(lambda x: MACCOR_CONFIG['end_step_code_min'] <= x
+                                                          <= MACCOR_CONFIG['end_step_code_max'])
+        end_step_inds = end_step.index[end_step]
+
+        if end_step_inds.size == 0:
+            return quantity_agg
+
+        lastindex = quantity_agg.size - 1
+        for i, istep in enumerate(end_step_inds):
+            if i > 0:
+                quantity_agg[istep_old+1:istep+1] += cycle_sum
+            if istep == lastindex:
+                cycle_sum = 0.
+            elif data.loc[istep+1, 'cycle_index'] != data.loc[istep, 'cycle_index']:
+                cycle_sum = 0.
+            else:
+                cycle_sum = quantity_agg[istep]
+            istep_old = istep
+        if end_step_inds[-1] < lastindex:
+            quantity_agg[istep_old+1:] += cycle_sum
+        return quantity_agg
 
     @classmethod
     def from_maccor_file(cls, filename, include_eis=True, validate=False):
@@ -672,9 +713,9 @@ class RawCyclerRun(MSONable):
 
         # Parse data
         data = pd.read_csv(filename, delimiter="\t", skiprows=1)
-        data = data.rename(str.lower, axis='columns')
+        data.rename(str.lower, axis='columns', inplace=True)
         data = data.astype(MACCOR_CONFIG['data_types'])
-        data = data.rename(MACCOR_CONFIG['data_columns'], axis='columns')
+        data.rename(MACCOR_CONFIG['data_columns'], axis='columns', inplace=True)
         data['charge_capacity'] = cls.get_maccor_quantity_sum(data, 'capacity', 'charge')
         data['discharge_capacity'] = cls.get_maccor_quantity_sum(data, 'capacity', 'discharge')
         data['charge_energy'] = cls.get_maccor_quantity_sum(data, 'energy', 'charge')
@@ -688,8 +729,8 @@ class RawCyclerRun(MSONable):
         metadata = pd.DataFrame(metadata)
         _, channel_number = os.path.splitext(filename)
         metadata['channel_id'] = int(channel_number.replace('.', ''))
-        metadata = metadata.rename(str.lower, axis='columns')
-        metadata = metadata.rename(MACCOR_CONFIG['metadata_fields'], axis='columns')
+        metadata.rename(str.lower, axis='columns', inplace=True)
+        metadata.rename(MACCOR_CONFIG['metadata_fields'], axis='columns', inplace=True)
         # Note the to_dict, which scrubs numpy typing
         metadata = {col: item[0] for col, item
                     in metadata.to_dict('list').items()}
@@ -832,7 +873,7 @@ class ProcessedCyclerRun(MSONable):
             channel_id (int): id for the channel for the experiment
             summary (pandas.DataFrame): data of summary data for each cycle
             cycles_interpolated (pandas.DataFrame): interpolated data for
-                discharge over 2.8-3.5
+                regular cycles
         """
         self.barcode = barcode
         self.protocol = protocol
@@ -842,12 +883,10 @@ class ProcessedCyclerRun(MSONable):
         # We can drop this restriction later if we don't need it
         min_index = cycles_interpolated.cycle_index.min()
         if 'step_type' in cycles_interpolated.columns:
-            cycles_interpolated = cycles_interpolated[(cycles_interpolated.step_type == 'discharge')]
-        min_index_df = cycles_interpolated[(cycles_interpolated.cycle_index == min_index)]
-        matches = cycles_interpolated.groupby("cycle_index").apply(
-            lambda x: np.allclose(x.voltage.values, min_index_df.voltage.values))
-        if not np.all(matches):
-            raise ValueError("cycles_interpolated are not uniform")
+            min_index_df = cycles_interpolated[(cycles_interpolated.cycle_index == min_index) &
+                                               (cycles_interpolated.step_type == 'discharge')]
+        else:
+            min_index_df = cycles_interpolated[(cycles_interpolated.cycle_index == min_index)]
         self.v_interpolated = min_index_df.voltage.values
 
         self.cycles_interpolated = cycles_interpolated
@@ -1032,6 +1071,12 @@ class ProcessedCyclerRun(MSONable):
             beep.structure.ProcessedCyclerRun: deserialized ProcessedCyclerRun.
         """
         """MSONable deserialization method"""
+        for obj, dtype_dict in STRUCTURE_DTYPES.items():
+            for column, dtype in dtype_dict.items():
+                if d.get(obj) is not None:
+                    if d[obj].get(column) is not None:
+                        d[obj][column] = pd.Series(d[obj][column], dtype=dtype)
+
         d['cycles_interpolated'] = pd.DataFrame(d['cycles_interpolated'])
         d['summary'] = pd.DataFrame(d['summary'])
         d['diagnostic_summary'] = pd.DataFrame(d.get('diagnostic_summary'))
@@ -1320,7 +1365,7 @@ def get_protocol_parameters(filepath, parameters_path='data-share/raw/parameters
     """
     project_name_list = get_project_sequence(filepath)
     project_name = project_name_list[0]
-    path = os.path.join(os.environ.get("BEEP_ROOT", "/"), parameters_path)
+    path = os.path.join(os.environ.get("BEEP_PROCESSING_DIR", "/"), parameters_path)
     project_parameter_files = glob(os.path.join(path, project_name + '*'))
     assert len(project_parameter_files) <= 1, 'Found too many parameter files for: ' + project_name
 
@@ -1415,6 +1460,26 @@ def add_file_prefix_to_path(path, prefix):
     return os.path.join(*split_path)
 
 
+def determine_paused(group, paused_threshold=3600):
+    """
+    Evaluate a raw cycling dataframe to determine if there is a pause in cycling
+
+    Args:
+        group (pd.DataFrame): cycling dataframe with date_time_iso column
+        paused_threshold (int): gap in seconds to classify as a pause in cycling
+
+    Returns:
+        bool: is there a pause in this cycle?
+
+    """
+    date_time_obj = pd.to_datetime(group['date_time_iso'])
+    date_time_float = [time.mktime(t.timetuple())
+                       if t is not pd.NaT else float('nan')
+                       for t in date_time_obj]
+    date_time_float = pd.Series(date_time_float)
+    return int(date_time_float.diff().max() > paused_threshold)
+
+
 def maccor_timestamp(x):
     """
     Helper function with exception handling for cases where the
@@ -1474,7 +1539,10 @@ def process_file_list_from_json(file_list_json, processed_dir='data-share/struct
     events = KinesisEvents(service='DataStructurer', mode=file_list_data['mode'])
 
     # Prepend optional root to output directory
-    processed_dir = os.path.join(os.environ.get("BEEP_ROOT", "/"), processed_dir)
+    processed_dir = os.path.join(os.environ.get("BEEP_PROCESSING_DIR", "/"), processed_dir)
+
+    if not os.path.exists(processed_dir):
+        os.makedirs(processed_dir)
 
     file_list = file_list_data['file_list']
     validities = file_list_data['validity']

@@ -14,11 +14,13 @@ Options:
     --version                Show version
     --mode <mode>            Mode to run in [default: 'test']
     --s3_prefix <s3_prefix>  Prefix to use [default: 'd3Batt/raw/arbin']
+    --s3_output <s3_output>  Output prefix to use [default: 'd3Batt/structure']
 
 """
 
 import time
 import datetime
+import pytz
 from dateutil.tz import tzutc
 import boto3
 import collections
@@ -26,7 +28,8 @@ import ast
 from docopt import docopt
 from beep.utils import KinesisEvents
 
-S3_BUCKET = "beep-input-data"
+S3_BUCKET_IN = "beep-input-data-stage"
+S3_BUCKET_OUT = "beep-output-data-stage"
 
 
 class DotDict(collections.OrderedDict):
@@ -68,24 +71,40 @@ def eval_args(args):
     return DotDict(dict(zip(map(lambda x: x[2:], args.keys()), map(_parse_args, args.values()))))
 
 
+def get_structure_name(object):
+    file_name = object['Key'].split("/")[-1]
+    structure_name = file_name.split(".")[0] + "_structure.json"
+    return structure_name
+
+
 def scan(config):
     print("scanning")
     s3 = boto3.client("s3")
-    all_objects = s3.list_objects_v2(Bucket=S3_BUCKET, Prefix=config.s3_prefix)
+    all_objects = s3.list_objects_v2(Bucket=S3_BUCKET_IN, Prefix=config.s3_prefix)
 
     objects = [obj for obj in all_objects['Contents']
                if obj['Size'] > 1000]
 
-    # db_objects = dim_run['file_path_data'].tolist()
-    # print(db_objects)
-    # print(len([obj for obj in objects if obj['Key'] not in db_objects]))
-    # objects = [obj for obj in objects if obj['Key'] not in db_objects]
-    objects = [obj for obj in objects if "PreDiag" in obj['Key']
+    objects = [obj for obj in objects if "PredictionDiagnostics" in obj['Key']
                and "x" not in obj['Key']
                and "Complete" not in obj['Key']
                # and obj['LastModified'] < datetime.datetime(2020, 3, 24, 5, 35, 43, tzinfo=tzutc())
-               and "_000260_" in obj['Key']
+               # and "_000175_" in obj['Key']
                ]
+
+    old_objects = []
+    old = datetime.datetime.now(pytz.utc) - datetime.timedelta(hours=6)
+    for obj in objects:
+        name = config.s3_output + '/' + get_structure_name(obj)
+        structure_objects = s3.list_objects_v2(Bucket=S3_BUCKET_OUT, Prefix=name)
+        # print(structure_objects)
+        if 'Contents' in structure_objects.keys() and len(structure_objects['Contents']) == 1:
+            if structure_objects['Contents'][0]['LastModified'] < old:
+                old_objects.append(obj)
+        else:
+            old_objects.append(obj)
+
+    objects = old_objects
     print(len(objects))
 
     events = KinesisEvents(service='S3Syncer', mode=config.mode)
@@ -93,13 +112,13 @@ def scan(config):
     for obj in objects:
         retrigger_data = {
             "filename": obj['Key'],
-            "bucket": S3_BUCKET,
+            "bucket": S3_BUCKET_IN,
             "size": obj['Size'],
             "hash": obj["ETag"].strip('\"')
         }
         events.put_upload_retrigger_event('complete', retrigger_data)
         print(retrigger_data)
-        time.sleep(1)
+        time.sleep(0.1)
 
 
 if __name__ == "__main__":

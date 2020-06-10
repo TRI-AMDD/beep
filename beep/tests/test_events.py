@@ -3,13 +3,15 @@
 
 import os
 import unittest
+import warnings
 import datetime
 import pytz
 import numpy as np
 import boto3
 from dateutil.tz import tzutc
-from botocore.exceptions import NoRegionError, NoCredentialsError
 from beep.utils import KinesisEvents, Logger
+from beep.utils.secrets_manager import get_secret
+from beep.config import config
 from beep import ENVIRONMENT, __version__
 
 TEST_DIR = os.path.dirname(__file__)
@@ -24,12 +26,18 @@ class KinesisEventsTest(unittest.TestCase):
         response = kinesis.list_streams()
         print(response)
         beep_kinesis_connection_broken = False
-    except NoRegionError or NoCredentialsError as e:
+    except Exception as e:
+        warnings.warn("Cloud resources not configured")
         beep_kinesis_connection_broken = True
 
     def setUp(self):
-        pass
+        try:
+            stream_name = get_secret(config[ENVIRONMENT]['kinesis']['stream'])['streamName']
+            self.assertEqual('kinesis-test', stream_name)
+        except Exception as e:
+            beep_secrets_connection_broken = True
 
+    @unittest.skipIf(beep_kinesis_connection_broken, "Unable to connect to Kinesis")
     def test_get_file_size(self):
         events = KinesisEvents(service='Testing', mode='test')
         file_list = [os.path.join(TEST_FILE_DIR, "2017-05-09_test-TC-contact_CH33.csv"),
@@ -193,7 +201,8 @@ class CloudWatchLoggingTest(unittest.TestCase):
         cloudwatch = boto3.client('cloudwatch')
         cloudwatch.describe_alarms()
         beep_cloudwatch_connection_broken = False
-    except NoRegionError or NoCredentialsError as e:
+    except Exception as e:
+        warnings.warn("Cloud resources not configured")
         beep_cloudwatch_connection_broken = True
 
     def setUp(self):

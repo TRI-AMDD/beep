@@ -43,7 +43,7 @@ from sklearn.linear_model import Lasso, LassoCV, RidgeCV, Ridge, ElasticNetCV, \
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
 from beep.utils import KinesisEvents
-from beep import MODEL_DIR, logger, __version__
+from beep import MODEL_DIR, ENVIRONMENT, logger, __version__
 
 s = {'service': 'DataAnalyzer'}
 # Projects that have cycling profiles compatible with the FastCharge model should be included in the list below
@@ -502,9 +502,12 @@ def process_file_list_from_json(file_list_json, model_dir="/data-share/models/",
     # Setup Events
     events = KinesisEvents(service='DataAnalyzer', mode=file_list_data['mode'])
 
-    # Add BEEP_ROOT to processed_dir
-    processed_dir = os.path.join(os.environ.get("BEEP_ROOT", "/"),
+    # Add BEEP_PROCESSING_DIR to processed_dir
+    processed_dir = os.path.join(os.environ.get("BEEP_PROCESSING_DIR", "/"),
                                  processed_dir)
+    if not os.path.exists(processed_dir):
+        os.makedirs(processed_dir)
+
     file_list = file_list_data['file_list']
     run_ids = file_list_data['run_list']
     processed_run_list = []
@@ -538,8 +541,6 @@ def process_file_list_from_json(file_list_json, model_dir="/data-share/models/",
         else:
             model = DegradationModel.from_serialized_model(model_dir=model_dir,
                                                            serialized_model=model_name)
-
-
 
     else:
         if hyperparameters is None:
@@ -603,12 +604,10 @@ def main():
             print(process_file_list_from_json(input_json, predict_only=False, model_dir=MODEL_DIR), end="")
         else:
             print(process_file_list_from_json(input_json, model_dir=MODEL_DIR), end="")
-
     except Exception as e:
         logger.error(str(e), extra=s)
         raise e
     logger.info('finish', extra=s)
-
     return None
 
 

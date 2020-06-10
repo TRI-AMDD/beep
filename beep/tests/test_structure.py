@@ -5,19 +5,19 @@ import json
 import os
 import subprocess
 import unittest
-import boto3
-
 import numpy as np
 import pandas as pd
-from botocore.exceptions import NoRegionError, NoCredentialsError
 
 from beep import MODULE_DIR
 from beep.structure import RawCyclerRun, ProcessedCyclerRun, \
     process_file_list_from_json, EISpectrum, get_project_sequence, \
-    get_protocol_parameters, get_diagnostic_parameters
+    get_protocol_parameters, get_diagnostic_parameters, \
+    determine_paused
+from beep.conversion_schemas import STRUCTURE_DTYPES
 from monty.serialization import loadfn, dumpfn
 from monty.tempfile import ScratchDir
 from beep.utils import os_format
+from beep.utils.secrets_manager import event_setup
 import matplotlib.pyplot as plt
 
 BIG_FILE_TESTS = os.environ.get("BEEP_BIG_TESTS", False)
@@ -35,6 +35,7 @@ class RawCyclerRunTest(unittest.TestCase):
         self.maccor_file_w_parameters = os.path.join(TEST_FILE_DIR, "PreDiag_000287_000128.092")
         self.maccor_file_timezone = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010")
         self.maccor_file_timestamp = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000151_test.052")
+        self.maccor_file_paused = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000151_paused.052")
         self.indigo_file = os.path.join(TEST_FILE_DIR, "indigo_test_sample.h5")
         self.biologic_file = os.path.join(TEST_FILE_DIR, "raw", "biologic_test_file_short.mpt")
 
@@ -43,7 +44,10 @@ class RawCyclerRunTest(unittest.TestCase):
         with ScratchDir('.'):
             dumpfn(smaller_run, "smaller_cycler_run.json")
             resurrected = loadfn("smaller_cycler_run.json")
-        pd.testing.assert_frame_equal(smaller_run.data, resurrected.data, check_dtype=True)
+            self.assertIsInstance(resurrected, RawCyclerRun)
+            self.assertIsInstance(resurrected.data, pd.DataFrame)
+            self.assertEqual(smaller_run.data.voltage.to_list(), resurrected.data.voltage.to_list())
+            self.assertEqual(smaller_run.data.current.to_list(), resurrected.data.current.to_list())
 
     def test_ingestion_maccor(self):
         raw_cycler_run = RawCyclerRun.from_maccor_file(self.maccor_file, include_eis=False)
@@ -159,17 +163,72 @@ class RawCyclerRunTest(unittest.TestCase):
         for col_name in y_at_point.columns:
             self.assertAlmostEqual(pred[col_name].iloc[0], y_at_point[col_name].iloc[0], places=5)
 
+    def test_get_interpolated_charge_step(self):
+        cycler_run = RawCyclerRun.from_file(self.arbin_file)
+        reg_cycles = [i for i in cycler_run.data.cycle_index.unique()]
+        v_range = [2.8, 3.5]
+        resolution = 1000
+        interpolated_charge = cycler_run.get_interpolated_steps(v_range,
+                                                                resolution,
+                                                                step_type='charge',
+                                                                reg_cycles=reg_cycles,
+                                                                axis='test_time')
+        lengths = [len(df) for index, df in interpolated_charge.groupby("cycle_index")]
+        axis_1 = interpolated_charge[interpolated_charge.cycle_index == 5].charge_capacity.to_list()
+        axis_2 = interpolated_charge[interpolated_charge.cycle_index == 10].charge_capacity.to_list()
+        self.assertGreater(max(axis_1), max(axis_2))
+        self.assertTrue(np.all(np.array(lengths) == 1000))
+        self.assertTrue(interpolated_charge['current'].mean() > 0)
+
     def test_get_interpolated_charge_cycles(self):
         cycler_run = RawCyclerRun.from_file(self.arbin_file)
         all_interpolated = cycler_run.get_interpolated_cycles()
         all_interpolated = all_interpolated[(all_interpolated.step_type == 'charge')]
         lengths = [len(df) for index, df in all_interpolated.groupby("cycle_index")]
+        axis_1 = all_interpolated[all_interpolated.cycle_index == 5].charge_capacity.to_list()
+        axis_2 = all_interpolated[all_interpolated.cycle_index == 10].charge_capacity.to_list()
+        self.assertEqual(axis_1, axis_2)
         self.assertTrue(np.all(np.array(lengths) == 1000))
         self.assertTrue(all_interpolated['current'].mean() > 0)
 
+    def test_interpolated_cycles_dtypes(self):
+        cycler_run = RawCyclerRun.from_file(self.arbin_file)
+        all_interpolated = cycler_run.get_interpolated_cycles()
+        cycles_interpolated_dyptes = all_interpolated.dtypes.tolist()
+        cycles_interpolated_columns = all_interpolated.columns.tolist()
+        cycles_interpolated_dyptes = [str(dtyp) for dtyp in cycles_interpolated_dyptes]
+        for indx, col in enumerate(cycles_interpolated_columns):
+            self.assertEqual(cycles_interpolated_dyptes[indx], STRUCTURE_DTYPES['cycles_interpolated'][col])
+
+        cycler_run = RawCyclerRun.from_maccor_file(self.maccor_file_w_diagnostics, include_eis=False)
+        all_interpolated = cycler_run.get_interpolated_cycles()
+        cycles_interpolated_dyptes = all_interpolated.dtypes.tolist()
+        cycles_interpolated_columns = all_interpolated.columns.tolist()
+        cycles_interpolated_dyptes = [str(dtyp) for dtyp in cycles_interpolated_dyptes]
+        for indx, col in enumerate(cycles_interpolated_columns):
+            self.assertEqual(cycles_interpolated_dyptes[indx], STRUCTURE_DTYPES['cycles_interpolated'][col])
+
+    def test_summary_dtypes(self):
+        cycler_run = RawCyclerRun.from_file(self.arbin_file)
+        all_summary = cycler_run.get_summary()
+        reg_dyptes = all_summary.dtypes.tolist()
+        reg_columns = all_summary.columns.tolist()
+        reg_dyptes = [str(dtyp) for dtyp in reg_dyptes]
+        for indx, col in enumerate(reg_columns):
+            self.assertEqual(reg_dyptes[indx], STRUCTURE_DTYPES['summary'][col])
+
+        cycler_run = RawCyclerRun.from_maccor_file(self.maccor_file_w_diagnostics, include_eis=False)
+        all_summary = cycler_run.get_summary()
+        reg_dyptes = all_summary.dtypes.tolist()
+        reg_columns = all_summary.columns.tolist()
+        reg_dyptes = [str(dtyp) for dtyp in reg_dyptes]
+        for indx, col in enumerate(reg_columns):
+            self.assertEqual(reg_dyptes[indx], STRUCTURE_DTYPES['summary'][col])
+
+
     @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_get_diagnostic(self):
-        os.environ['BEEP_ROOT'] = TEST_FILE_DIR
+        os.environ['BEEP_PROCESSING_DIR'] = TEST_FILE_DIR
 
         cycler_run = RawCyclerRun.from_file(self.maccor_file_w_parameters)
 
@@ -179,6 +238,14 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertEqual(v_range, [2.7, 4.2])
         self.assertEqual(diagnostic_available['cycle_type'], ['reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C'])
         diag_summary = cycler_run.get_diagnostic_summary(diagnostic_available)
+
+        # Check data types are being set correctly for diagnostic summary
+        diag_dyptes = diag_summary.dtypes.tolist()
+        diag_columns = diag_summary.columns.tolist()
+        diag_dyptes = [str(dtyp) for dtyp in diag_dyptes]
+        for indx, col in enumerate(diag_columns):
+            self.assertEqual(diag_dyptes[indx], STRUCTURE_DTYPES['diagnostic_summary'][col])
+
         self.assertEqual(diag_summary.cycle_index.tolist(), [1, 2, 3, 4, 5,
                                                              36, 37, 38, 39, 40,
                                                              141, 142, 143, 144, 145,
@@ -189,7 +256,17 @@ class RawCyclerRunTest(unittest.TestCase):
                                                             'reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C',
                                                             'reset', 'hppc'
                                                             ])
+        self.assertEqual(diag_summary.paused.max(), 0)
         diag_interpolated = cycler_run.get_interpolated_diagnostic_cycles(diagnostic_available, resolution=1000)
+
+        # Check data types are being set correctly for interpolated data
+        diag_dyptes = diag_interpolated.dtypes.tolist()
+        diag_columns = diag_interpolated.columns.tolist()
+        diag_dyptes = [str(dtyp) for dtyp in diag_dyptes]
+        for indx, col in enumerate(diag_columns):
+            self.assertEqual(diag_dyptes[indx], STRUCTURE_DTYPES['diagnostic_interpolated'][col])
+
+        # Provide visual inspection to ensure that diagnostic interpolation is being done correctly
         diag_cycle = diag_interpolated[(diag_interpolated.cycle_type == 'rpt_0.2C')
                                        & (diag_interpolated.step_type == 1)]
         self.assertEqual(diag_cycle.cycle_index.unique().tolist(), [3, 38, 143])
@@ -209,7 +286,7 @@ class RawCyclerRunTest(unittest.TestCase):
                                          & (diag_interpolated.step_type == 2)
                                          & (diag_interpolated.step_index_counter == 3)
                                          & ~pd.isnull(diag_interpolated.current)]
-        print(hppc_dischg1)
+
         plt.figure()
         plt.plot(hppc_dischg1.test_time, hppc_dischg1.voltage)
         plt.savefig(os.path.join(TEST_FILE_DIR, "hppc_discharge_pulse_1.png"))
@@ -217,12 +294,33 @@ class RawCyclerRunTest(unittest.TestCase):
 
         processed_cycler_run = cycler_run.to_processed_cycler_run()
         self.assertNotIn(diag_summary.index.tolist(), processed_cycler_run.cycles_interpolated.cycle_index.unique())
+
         processed_cycler_run_loc = os.path.join(TEST_FILE_DIR, 'processed_diagnostic.json')
         dumpfn(processed_cycler_run, processed_cycler_run_loc)
         proc_size = os.path.getsize(processed_cycler_run_loc)
-        self.assertLess(proc_size, 29000000)
+        self.assertLess(proc_size, 47000000)
+
         test = loadfn(processed_cycler_run_loc)
         self.assertIsInstance(test.diagnostic_summary, pd.DataFrame)
+        diag_dyptes = test.diagnostic_summary.dtypes.tolist()
+        diag_columns = test.diagnostic_summary.columns.tolist()
+        diag_dyptes = [str(dtyp) for dtyp in diag_dyptes]
+        for indx, col in enumerate(diag_columns):
+            self.assertEqual(diag_dyptes[indx], STRUCTURE_DTYPES['diagnostic_summary'][col])
+
+        diag_dyptes = test.diagnostic_interpolated.dtypes.tolist()
+        diag_columns = test.diagnostic_interpolated.columns.tolist()
+        diag_dyptes = [str(dtyp) for dtyp in diag_dyptes]
+        for indx, col in enumerate(diag_columns):
+            self.assertEqual(diag_dyptes[indx], STRUCTURE_DTYPES['diagnostic_interpolated'][col])
+
+        plt.figure()
+        single_charge = test.cycles_interpolated[(test.cycles_interpolated.step_type == 'charge') &
+                                                 (test.cycles_interpolated.cycle_index == 25)]
+        self.assertEqual(len(single_charge.index), 1000)
+        plt.plot(single_charge.charge_capacity, single_charge.voltage)
+        plt.savefig(os.path.join(TEST_FILE_DIR, "charge_capacity_interpolation_regular_cycle.png"))
+
         os.remove(processed_cycler_run_loc)
 
     def test_get_interpolated_cycles_maccor(self):
@@ -235,9 +333,10 @@ class RawCyclerRunTest(unittest.TestCase):
 
         self.assertTrue(interp3.current.mean() > 0)
         self.assertEqual(len(interp3.voltage), 10000)
-        self.assertEqual(interp3.voltage.median(), 3.6)
-        np.testing.assert_almost_equal(interp3[interp3.voltage <= interp3.voltage.median()].current.iloc[0],
-                                       2.4227011, decimal=6)
+        self.assertEqual(interp3.voltage.max(), np.float32(4.100838))
+        self.assertEqual(interp3.voltage.min(), np.float32(3.3334765))
+        np.testing.assert_almost_equal(interp3[interp3.charge_capacity <=
+                                               interp3.charge_capacity.median()].current.iloc[0], 2.423209, decimal=6)
 
         cycle_2 = cycler_run.data[cycler_run.data['cycle_index'] == 2]
         discharge = cycle_2[cycle_2.step_index == 12]
@@ -271,7 +370,9 @@ class RawCyclerRunTest(unittest.TestCase):
                                       'temperature_maximum', 'temperature_average', 'temperature_minimum',
                                       'date_time_iso', 'charge_throughput', 'energy_throughput',
                                       'charge_energy', 'discharge_energy', 'energy_efficiency'}, set(summary.columns)))
+        self.assertEqual(summary['cycle_index'].tolist(), list(range(0, 13)))
         self.assertEqual(len(summary.index), len(summary['date_time_iso']))
+        self.assertEqual(summary['paused'].max(), 0)
 
     def test_get_energy(self):
         cycler_run = RawCyclerRun.from_file(self.arbin_file)
@@ -282,8 +383,8 @@ class RawCyclerRunTest(unittest.TestCase):
     def test_get_charge_throughput(self):
         cycler_run = RawCyclerRun.from_file(self.arbin_file)
         summary = cycler_run.get_summary(nominal_capacity=4.7, full_fast_charge=0.8)
-        self.assertEqual(summary['charge_throughput'][5], 6.7614094)
-        self.assertEqual(summary['energy_throughput'][5], 23.2752363)
+        self.assertEqual(summary['charge_throughput'][5], np.float32(6.7614093))
+        self.assertEqual(summary['energy_throughput'][5], np.float32(23.2752363))
 
     def test_ingestion_indigo(self):
 
@@ -334,7 +435,7 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertEqual(project_name, "PredictionDiagnostics")
 
     def test_get_protocol_parameters(self):
-        os.environ['BEEP_ROOT'] = TEST_FILE_DIR
+        os.environ['BEEP_PROCESSING_DIR'] = TEST_FILE_DIR
         filepath = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010")
         test_path = os.path.join('data-share', 'raw', 'parameters')
         parameters, _ = get_protocol_parameters(filepath, parameters_path=test_path)
@@ -353,7 +454,7 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertIsNone(parameters)
 
     def test_determine_structering_parameters(self):
-        os.environ['BEEP_ROOT'] = TEST_FILE_DIR
+        os.environ['BEEP_PROCESSING_DIR'] = TEST_FILE_DIR
         raw_cycler_run = RawCyclerRun.from_file(self.maccor_file_timestamp)
         v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \
             raw_cycler_run.determine_structuring_parameters()
@@ -380,7 +481,7 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertEqual(diagnostic_available, diagnostic_available_test)
 
     def test_get_diagnostic_parameters(self):
-        os.environ['BEEP_ROOT'] = TEST_FILE_DIR
+        os.environ['BEEP_PROCESSING_DIR'] = TEST_FILE_DIR
         diagnostic_available = {'parameter_set': 'Tesla21700',
                                 'cycle_type': ['reset', 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C'],
                                 'length': 5,
@@ -414,23 +515,31 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertTrue('date_time_iso' in d_interp.columns)
         self.assertFalse(d_interp.date_time_iso.isna().all())
 
+    def test_get_diagnostic_summary(self):
+        cycler_run = RawCyclerRun.from_file(self.maccor_file_w_diagnostics)
+        diagnostic_available = {'type': 'HPPC',
+                                'cycle_type': ['hppc'],
+                                'length': 1,
+                                'diagnostic_starts_at': [1]
+                                }
+        diag_summary = cycler_run.get_diagnostic_summary(diagnostic_available)
+        self.assertEqual(diag_summary['paused'].max(), 0)
+
+    def test_determine_paused(self):
+        cycler_run = RawCyclerRun.from_file(self.maccor_file_paused)
+        paused = cycler_run.data.groupby('cycle_index').apply(determine_paused)
+        self.assertEqual(paused.max(), 1)
+
 
 class CliTest(unittest.TestCase):
     def setUp(self):
-        # Setup events for testing
-        try:
-            kinesis = boto3.client('kinesis')
-            response = kinesis.list_streams()
-            self.events_mode = "test"
-        except NoRegionError or NoCredentialsError as e:
-            self.events_mode = "events_off"
-
+        self.events_mode = event_setup()
         self.arbin_file = os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29.csv")
 
     def test_simple_conversion(self):
         with ScratchDir('.'):
             # Set root env
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             # Make necessary directories
             os.mkdir("data-share")
             os.mkdir(os.path.join("data-share", "structure"))
@@ -455,13 +564,7 @@ class CliTest(unittest.TestCase):
 
 class ProcessedCyclerRunTest(unittest.TestCase):
     def setUp(self):
-        # Setup events for testing
-        try:
-            kinesis = boto3.client('kinesis')
-            response = kinesis.list_streams()
-            self.events_mode = "test"
-        except NoRegionError or NoCredentialsError as e:
-            self.events_mode = "events_off"
+        self.events_mode = event_setup()
 
         self.arbin_file = os.path.join(TEST_FILE_DIR, "FastCharge_000000_CH29.csv")
         self.maccor_file = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000019_CH70.070")
@@ -477,6 +580,20 @@ class ProcessedCyclerRunTest(unittest.TestCase):
         self.assertEqual(pcycler_run.barcode, "EL151000429559")
         self.assertEqual(pcycler_run.protocol, r"2017-12-04_tests\20170630-4_65C_69per_6C.sdu")
 
+        all_summary = pcycler_run.summary
+        reg_dtypes = all_summary.dtypes.tolist()
+        reg_columns = all_summary.columns.tolist()
+        reg_dtypes = [str(dtyp) for dtyp in reg_dtypes]
+        for indx, col in enumerate(reg_columns):
+            self.assertEqual(reg_dtypes[indx], STRUCTURE_DTYPES['summary'][col])
+
+        all_interpolated = pcycler_run.cycles_interpolated
+        cycles_interpolated_dyptes = all_interpolated.dtypes.tolist()
+        cycles_interpolated_columns = all_interpolated.columns.tolist()
+        cycles_interpolated_dyptes = [str(dtyp) for dtyp in cycles_interpolated_dyptes]
+        for indx, col in enumerate(cycles_interpolated_columns):
+            self.assertEqual(cycles_interpolated_dyptes[indx], STRUCTURE_DTYPES['cycles_interpolated'][col])
+
     def test_from_raw_cycler_run_maccor(self):
         rcycler_run = RawCyclerRun.from_file(self.maccor_file_w_diagnostics)
         pcycler_run = ProcessedCyclerRun.from_raw_cycler_run(rcycler_run)
@@ -484,6 +601,23 @@ class ProcessedCyclerRunTest(unittest.TestCase):
         # Ensure barcode/protocol are passed
         self.assertEqual(pcycler_run.barcode, "EXP")
         self.assertEqual(pcycler_run.protocol, "xTESLADIAG_000020_CH71.000")
+        steps = pcycler_run.cycles_interpolated.step_type.unique().tolist()
+        # Ensure that charge and discharge steps are processed
+        self.assertEqual(steps, ['discharge', 'charge'])
+
+        min_index = pcycler_run.cycles_interpolated.cycle_index.min()
+        if 'step_type' in pcycler_run.cycles_interpolated.columns:
+            discharge_interpolated = pcycler_run.cycles_interpolated[
+                (pcycler_run.cycles_interpolated.step_type == 'discharge')]
+            min_index_df = pcycler_run.cycles_interpolated[(pcycler_run.cycles_interpolated.cycle_index == min_index) &
+                                                           (pcycler_run.cycles_interpolated.step_type == 'discharge')]
+        else:
+            discharge_interpolated = pcycler_run.cycles_interpolated
+            min_index_df = pcycler_run.cycles_interpolated[(pcycler_run.cycles_interpolated.cycle_index == min_index)]
+        matches = discharge_interpolated.groupby("cycle_index").apply(
+            lambda x: np.allclose(x.voltage.values, min_index_df.voltage.values))
+        if not np.all(matches):
+            raise ValueError("cycles_interpolated are not uniform")
 
     def test_from_raw_cycler_run_parameters(self):
         rcycler_run = RawCyclerRun.from_file(self.maccor_file_w_parameters)
@@ -498,6 +632,23 @@ class ProcessedCyclerRunTest(unittest.TestCase):
         pcycler_run = loadfn(self.pcycler_run_file)
         self.assertEqual(pcycler_run.get_cycle_life(30,0.99), 82)
         self.assertEqual(pcycler_run.get_cycle_life(),189)
+
+    def test_data_types_old_processed(self):
+        pcycler_run = loadfn(self.pcycler_run_file)
+
+        all_summary = pcycler_run.summary
+        reg_dyptes = all_summary.dtypes.tolist()
+        reg_columns = all_summary.columns.tolist()
+        reg_dyptes = [str(dtyp) for dtyp in reg_dyptes]
+        for indx, col in enumerate(reg_columns):
+            self.assertEqual(reg_dyptes[indx], STRUCTURE_DTYPES['summary'][col])
+
+        all_interpolated = pcycler_run.cycles_interpolated
+        cycles_interpolated_dyptes = all_interpolated.dtypes.tolist()
+        cycles_interpolated_columns = all_interpolated.columns.tolist()
+        cycles_interpolated_dyptes = [str(dtyp) for dtyp in cycles_interpolated_dyptes]
+        for indx, col in enumerate(cycles_interpolated_columns):
+            self.assertEqual(cycles_interpolated_dyptes[indx], STRUCTURE_DTYPES['cycles_interpolated'][col])
 
     def test_cycles_to_reach_set_capacities(self):
         pcycler_run = loadfn(self.pcycler_run_file)
@@ -529,7 +680,7 @@ class ProcessedCyclerRunTest(unittest.TestCase):
     def test_json_processing(self):
 
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             os.mkdir("data-share")
             os.mkdir(os.path.join("data-share", "structure"))
 
@@ -557,7 +708,7 @@ class ProcessedCyclerRunTest(unittest.TestCase):
 
         # Test same functionality with json file
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             os.mkdir("data-share")
             os.mkdir(os.path.join("data-share", "structure"))
 

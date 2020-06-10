@@ -4,17 +4,13 @@
 import json
 import os
 import unittest
-
 import pandas as pd
 import numpy as np
-import boto3
-
-from botocore.exceptions import NoRegionError, NoCredentialsError
 from monty.tempfile import ScratchDir
 from beep.validate import ValidatorBeep, validate_file_list_from_json, \
     SimpleValidator
 from beep import S3_CACHE, VALIDATION_SCHEMA_DIR
-
+from beep.utils.secrets_manager import event_setup
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
@@ -23,12 +19,7 @@ TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 class ValidationArbinTest(unittest.TestCase):
     def setUp(self):
         # Setup events for testing
-        try:
-            kinesis = boto3.client('kinesis')
-            response = kinesis.list_streams()
-            self.events_mode = "test"
-        except NoRegionError or NoCredentialsError as e:
-            self.events_mode = "events_off"
+        self.events_mode = event_setup()
 
     def test_validation_arbin_bad_index(self):
         path = "2017-05-09_test-TC-contact_CH33.csv"
@@ -115,7 +106,7 @@ class ValidationArbinTest(unittest.TestCase):
 
     def test_validation_from_json(self):
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             os.mkdir("data-share")
             os.mkdir(os.path.join("data-share", "validation"))
             paths = ["2017-05-09_test-TC-contact_CH33.csv",
@@ -138,15 +129,23 @@ class ValidationMaccorTest(unittest.TestCase):
     # To further develop as Maccor data / schema becomes available
     def setUp(self):
         # Setup events for testing
-        try:
-            kinesis = boto3.client('kinesis')
-            response = kinesis.list_streams()
-            self.events_mode = "test"
-        except NoRegionError or NoCredentialsError as e:
-            self.events_mode = "events_off"
+        self.events_mode = event_setup()
 
     def test_validation_maccor(self):
         path = "xTESLADIAG_000019_CH70.070"
+        path = os.path.join(TEST_FILE_DIR, path)
+
+        v = SimpleValidator(schema_filename=os.path.join(VALIDATION_SCHEMA_DIR, "schema-maccor-2170.yaml"))
+        v.allow_unknown = True
+        header = pd.read_csv(path, delimiter='\t', nrows=0)
+        df = pd.read_csv(path, delimiter='\t', skiprows=1)
+        df['State'] = df['State'].astype(str)
+        df['current'] = df['Amps']
+        validity, reason = v.validate(df)
+        self.assertTrue(validity)
+
+    def test_invalidation_maccor(self):
+        path = "PredictionDiagnostics_000109_tztest.010"
         path = os.path.join(TEST_FILE_DIR, path)
 
         v = SimpleValidator(schema_filename=os.path.join(VALIDATION_SCHEMA_DIR, "schema-maccor-2170.yaml"))
@@ -159,21 +158,20 @@ class ValidationMaccorTest(unittest.TestCase):
         print(df.dtypes)
         validity, reason = v.validate(df)
         print(validity, reason)
-        self.assertTrue(validity)
+        self.assertFalse(validity)
 
     def test_validate_from_paths_maccor(self):
         paths = [os.path.join(TEST_FILE_DIR, "xTESLADIAG_000019_CH70.070")]
-
-        # Run validation on everything
-        v = SimpleValidator()
-        validate_record = v.validate_from_paths(paths, record_results=True,
-                                                skip_existing=False)
-        df = pd.DataFrame(v.validation_records)
-        df = df.transpose()
-        print(df)
-        print(df.loc["xTESLADIAG_000019_CH70.070", :])
-        self.assertEqual(df.loc["xTESLADIAG_000019_CH70.070", "method"], "simple_maccor")
-        self.assertEqual(df.loc["xTESLADIAG_000019_CH70.070", "validated"], True)
+        with ScratchDir('.') as scratch_dir:
+            # Run validation on everything
+            v = SimpleValidator()
+            validate_record = v.validate_from_paths(paths, record_results=True,
+                                                    skip_existing=False,
+                                                    record_path=os.path.join(scratch_dir, 'validation_records.json'))
+            df = pd.DataFrame(v.validation_records)
+            df = df.transpose()
+            self.assertEqual(df.loc["xTESLADIAG_000019_CH70.070", "method"], "simple_maccor")
+            self.assertEqual(df.loc["xTESLADIAG_000019_CH70.070", "validated"], True)
 
 
 class ValidationEisTest(unittest.TestCase):
@@ -196,12 +194,7 @@ class ValidationEisTest(unittest.TestCase):
 class SimpleValidatorTest(unittest.TestCase):
     def setUp(self):
         # Setup events for testing
-        try:
-            kinesis = boto3.client('kinesis')
-            response = kinesis.list_streams()
-            self.events_mode = "test"
-        except NoRegionError or NoCredentialsError as e:
-            self.events_mode = "events_off"
+        self.events_mode = event_setup()
 
     def test_file_incomplete(self):
         path = "FastCharge_000025_CH8.csv"
@@ -280,7 +273,7 @@ class SimpleValidatorTest(unittest.TestCase):
 
     def test_validation_from_json(self):
         with ScratchDir('.'):
-            os.environ['BEEP_ROOT'] = os.getcwd()
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             os.mkdir("data-share")
             os.mkdir(os.path.join("data-share", "validation"))
             paths = ["2017-05-09_test-TC-contact_CH33.csv",

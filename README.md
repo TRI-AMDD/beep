@@ -3,7 +3,7 @@
 
 # Summary
 
-Beep is software designed to support Battery Estimation and Early Prediction
+Beep is a software designed to support Battery Evaluation and Early Prediction
 of cycle life corresponding to the research of the
 [d3batt program](https://d3batt.mit.edu/) and the 
 [Toyota Research Institute](http://www.tri.global/accelerated-materials-design-and-discovery/).
@@ -24,11 +24,23 @@ pip (or `python setup.py develop`)  for an editable install:
 git clone git@github.com:ToyotaResearchInstitute/BEEP.git
 cd BEEP
 pip install -e .
+
+```
+## Environment
+To configure the use of AWS resources its necessary to set the environment variable `BEEP_ENV`. For most users `'dev'`
+is the appropriate choice since it assumes that no AWS resources are available. 
+```.env
+export BEEP_ENV='dev'
+```
+For processing file locally its necessary to configure the folder structure 
+```.env
+export BEEP_PROCESSING_DIR='/path/to/beep/data/'
 ```
 
 ## Testing
 You can use nose or pytests for running unittests (use `pip install nose` 
-to install nose if not installed)
+to install nose if not installed). In order to run tests the environment variable
+needs to be set (ie. export BEEP_ENV='dev')
 
 ```bash
 nosetests beep
@@ -45,7 +57,7 @@ as input in order to provide flexibility and more facile automation.  They are d
 below:
 
 ### collate
-The `collate` script takes no input, and operates by assuming the BEEP_ROOT (default `/`)
+The `collate` script takes no input, and operates by assuming the BEEP_PROCESSING_DIR (default `/`)
 has subdirectories `/data-share/raw_cycler_files` and `data-share/renamed_cycler_files/FastCharge`.
 
 The script moves files from the `/data-share/raw_cycler_files` directory, parses the metadata,
@@ -68,7 +80,7 @@ $ collate
 ```
 ```json
 {
-    "mode": "run",
+    "mode": "events_off",
     "fid": [0, 
             1, 
             2],
@@ -112,7 +124,7 @@ The output json will have the following fields:
 Example:
 ```bash
 $ validate '{
-    "mode": "run",
+    "mode": "events_off",
     "run_list": [1, 20, 34],
     "strname": ["2017-05-09_test-TC-contact", 
                 "2017-08-14_8C-5per_3_47C", 
@@ -163,7 +175,7 @@ The output json contains the following fields:
 Example:
 ```bash
 $ structure '{
-    "mode": "run",
+    "mode": "events_off",
     "run_list": [1, 20, 34],
     "validity": ["invalid", "invalid", "valid"], 
     "file_list": ["/data-share/renamed_cycler_files/FastCharge/FastCharge_0_CH33.csv", 
@@ -196,7 +208,7 @@ The output json file will contain the following:
 Example:
 ```bash
 $ featurize '{
-    "mode": "run",
+    "mode": "events_off",
     "run_list": [1, 20, 34],
     "invalid_file_list": ["/data-share/renamed_cycler_files/FastCharge/FastCharge_0_CH33.csv", 
                           "/data-share/renamed_cycler_files/FastCharge/FastCharge_1_CH44.csv"], 
@@ -224,7 +236,7 @@ The output json will contain the following fields
 Example:
 ```bash
 $ run_model '{
-    "mode": "run",
+    "mode": "events_off",
     "run_list": [34],
     "file_list": ["/data-share/features/FastCharge_2_CH29_full_model_features.json"]
 }'
@@ -234,3 +246,8 @@ $ run_model '{
   "file_list": ["/data-share/predictions/FastCharge_2_CH29_full_model_predictions.json"],
 }
 ```
+## How to cite
+If you use BEEP, please cite this article:
+
+> P. Herring, C. Balaji Gopal, M. Aykol, J.H. Montoya, A. Anapolsky, P.M. Attia, W. Gent, J.S. Hummelshøj, L. Hung, H.-K. Kwon, P. Moore, D. Schweigert, K.A. Severson, S. Suram, Z. Yang, R.D. Braatz, B.D. Storey, SoftwareX 11 (2020) 100506.
+[https://doi.org/10.1016/j.softx.2020.100506](https://doi.org/10.1016/j.softx.2020.100506)
