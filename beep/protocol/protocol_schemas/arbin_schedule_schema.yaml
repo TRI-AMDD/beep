@@ -32,26 +32,3 @@ step_blank_limit: {
       "Equation2_szCompareSign":"",
       "Equation2_szRight":""
       }
-step_body_keymap:
-  'Current ':
-    'NotLimit': "CC"
-    'Voltage': "CCCV"
-  m_uLimitNum: ""
-  m_szLabel: ""
-  m_szStepCtrlType: 'StepMode'
-  m_szCurrentRange: ''
-  m_szVoltageRange: "High"
-  m_szCtrlValue: 'StepValue'
-  m_szExtCtrlValue1: "3.6"
-  m_szExtCtrlValue2: "0"
-  m_szExtDef: ""
-  m_uStepCtrlTypeExtFlag: "0"
-  m_szAddIn: ""
-  m_bSampleClockStretch: "0"
-  m_szUnitType: ""
-  m_szExUnitType1: ""
-  m_bSynchronizedStart: "0"
-  m_bAutoPidTips: "0"
-  m_nExtra1: "0"
-  m_szExtDef1: ""
-  m_bBurstModeEnable: "0"
