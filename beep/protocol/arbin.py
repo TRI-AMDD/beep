@@ -29,9 +29,7 @@ class Schedule(DashOrderedDict):
     def from_file(cls, filename, encoding='latin-1'):
         """
         Schedule file ingestion. Converts a schedule file with section headers
-        to an ordered dict with section headers as nested dicts. One line in the
-        schedule file is not parsable by utf-8. This line is stored and returned
-        separately with the line number that it came from
+        to an ordered dict with section headers as nested dicts.
 
         Args:
             filename (str): Schedule file name (tested with FastCharge schedule file)
@@ -61,8 +59,7 @@ class Schedule(DashOrderedDict):
     def to_file(self, filename, encoding="latin-1", linesep="\r\n"):
         """
         Schedule file output. Converts an dictionary to a schedule file with
-        the appropriate section headers. The one line in the schedule file that is
-        not parsable is reinserted at the correct line number. This function
+        the appropriate section headers. This function
         DOES NOT check the flow control or limits set in the steps. The dictionary
         must represent a valid schedule before it is passed to this function.
 

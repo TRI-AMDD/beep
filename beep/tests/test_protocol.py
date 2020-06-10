@@ -10,7 +10,7 @@ import numpy as np
 import datetime
 
 import pandas as pd
-from beep import ENVIRONMENT
+# from beep.utils.secrets_manager import event_setup
 from beep.protocol import PROCEDURE_TEMPLATE_DIR, SCHEDULE_TEMPLATE_DIR
 from beep.generate_protocol import Procedure, \
     generate_protocol_files_from_csv, convert_velocity_to_power_waveform, generate_maccor_waveform_file
@@ -23,29 +23,14 @@ from botocore.exceptions import NoRegionError, NoCredentialsError
 from beep.utils import os_format, hash_file
 
 import difflib
-from beep.utils.secrets_manager import secret_accessible
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
-
-def event_setup():
-    # Setup events for testing
-    if not secret_accessible(ENVIRONMENT):
-        events_mode = "events_off"
-    else:
-        try:
-            kinesis = boto3.client('kinesis')
-            response = kinesis.list_streams()
-            events_mode = "test"
-        except Exception as e:
-            warnings.warn("Cloud resources not configured")
-            events_mode = "events_off"
-    return events_mode
   
 class ProcedureTest(unittest.TestCase):
     def setUp(self):
-        self.events_mode = event_setup()
+        pass
         # Determine events mode for testing
         
     def test_convert_velocity_to_power_waveform(self):
@@ -117,7 +102,8 @@ class ProcedureTest(unittest.TestCase):
 
 class GenerateProcedureTest(unittest.TestCase):
     def setUp(self):
-        self.events_mode = event_setup()
+        pass
+        # self.events_mode = event_setup()
 
     def test_io(self):
         test_file = os.path.join(TEST_FILE_DIR, 'xTESLADIAG_000003_CH68.000')
@@ -267,7 +253,8 @@ class GenerateProcedureTest(unittest.TestCase):
 class ProcedureToScheduleTest(unittest.TestCase):
 
     def setUp(self):
-        self.events_mode = event_setup()
+        pass
+        # self.events_mode = event_setup()
 
     def test_single_step_conversion(self):
         procedure = Procedure()
@@ -359,7 +346,8 @@ class ProcedureToScheduleTest(unittest.TestCase):
 
 class ArbinScheduleTest(unittest.TestCase):
     def setUp(self):
-        self.events_mode = event_setup()
+        pass
+        # self.events_mode = event_setup()
 
     def test_dict_to_file(self):
         filename = '20170630-3_6C_9per_5C.sdu'

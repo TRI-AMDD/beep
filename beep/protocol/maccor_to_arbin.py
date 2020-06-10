@@ -7,6 +7,7 @@ from datetime import datetime
 from beep import PROTOCOL_SCHEMA_DIR
 from collections import OrderedDict
 from monty.serialization import loadfn
+from beep.protocol.arbin import Schedule
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
@@ -42,21 +43,21 @@ class ProcedureToSchedule:
             sdu_output_name (str): the full path of the schedule file to output
 
         """
-        schedule = ScheduleFile()
-        sdu_dict = schedule.to_dict(sdu_input_name)
+        schedule = Schedule.from_file(sdu_input_name)
+        # sdu_dict = Schedule.from_file(sdu_input_name)
 
-        keys = list(sdu_dict['[Schedule]'].keys())
+        keys = list(schedule['Schedule'].keys())
         for key in keys:
-            if '[Schedule' in key:
-                del sdu_dict['[Schedule]'][key]
+            if 'Schedule' in key:
+                del schedule['Schedule'][key]
 
         step_name_list, step_flow_ctrl = self.create_metadata()
         for step_index, step in enumerate(self.procedure_dict_steps):
             step_arbin = self.compile_to_arbin(self.procedure_dict_steps[step_index],
                                                step_index, step_name_list, step_flow_ctrl)
             key = '[Schedule_Step{}]'.format(step_index)
-            sdu_dict['[Schedule]'].update({key: step_arbin})
-        schedule.dict_to_file(sdu_dict, sdu_output_name)
+            schedule.set(['Schedule]']).update({key: step_arbin})
+        schedule.to_file(sdu_output_name)
 
     def create_metadata(self):
         """
