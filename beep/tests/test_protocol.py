@@ -10,12 +10,12 @@ import numpy as np
 import datetime
 
 import pandas as pd
-from beep.protocol import PROCEDURE_TEMPLATE_DIR, SCHEDULE_TEMPLATE_DIR, ENVIRONMENT
+from beep import ENVIRONMENT
+from beep.protocol import PROCEDURE_TEMPLATE_DIR, SCHEDULE_TEMPLATE_DIR
 from beep.generate_protocol import Procedure, \
     generate_protocol_files_from_csv, convert_velocity_to_power_waveform, generate_maccor_waveform_file
 from beep.protocol.arbin import Schedule
 from beep.protocol.maccor_to_arbin import ProcedureToSchedule
-from beep.tests.test_maccor_to_arbin import TEST_FILE_DIR
 from monty.tempfile import ScratchDir
 from monty.serialization import dumpfn, loadfn
 from monty.os import makedirs_p
