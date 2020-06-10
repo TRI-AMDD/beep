@@ -5,7 +5,6 @@ import os
 import re
 from datetime import datetime
 from beep import PROTOCOL_SCHEMA_DIR
-from beep.protocol_tools.arbin_schedule_file import Schedule
 from collections import OrderedDict
 from monty.serialization import loadfn
 
