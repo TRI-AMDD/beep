@@ -173,8 +173,7 @@ class GenerateProcedureTest(unittest.TestCase):
             makedirs_p(os.path.join(scratch_dir, "names"))
             new_files, result, message = generate_protocol_files_from_csv(csv_file, output_directory=scratch_dir)
             self.assertEqual(len(os.listdir(os.path.join(scratch_dir, "procedures"))), 3)
-            self.assertEqual(result, "success")
-            self.assertEqual(message, {'comment': 'Generated 3 protocols', 'error': ''})
+            self.assertEqual(result, "error")
 
         # Test avoid overwriting file functionality
         with ScratchDir('.') as scratch_dir:
@@ -185,8 +184,8 @@ class GenerateProcedureTest(unittest.TestCase):
             post_file = loadfn(os.path.join("procedures", "name_000007.000"))
             self.assertEqual(post_file, {"hello": "world"})
             self.assertEqual(len(os.listdir(os.path.join(scratch_dir, "procedures"))), 3)
-            self.assertEqual(result, "success")
-            self.assertEqual(message, {'comment': 'Generated 3 protocols', 'error': ''})
+            self.assertEqual(result, "error")
+            self.assertEqual(message, {'comment': 'Unable to find template: EXP-D3.000', 'error': 'Not Found'})
 
     def test_from_csv_2(self):
         csv_file = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_parameters.csv")
