@@ -144,7 +144,7 @@ class ProcedureToSchedule:
         if step_abs['StepMode'] == 'Current' and 'C' not in step_abs['StepValue']:
             if step_abs['Limits'] is not None:
                 blank_step['m_szStepCtrlType'] = "CCCV"
-                if step_abs['StepType'] == ' Charge ':
+                if step_abs['StepType'] == 'Charge':
                     blank_step['m_szCtrlValue'] = step_abs['StepValue']
                     blank_step['m_szExtCtrlValue1'] = step_abs['Limits']['Voltage']
                     blank_step['m_szExtCtrlValue2'] = "0"
@@ -154,7 +154,7 @@ class ProcedureToSchedule:
                     blank_step['m_szExtCtrlValue2'] = "0"
             elif step_abs['Limits'] is None:
                 blank_step['m_szStepCtrlType'] = "Current(A)"
-                if step_abs['StepType'] == ' Charge ':
+                if step_abs['StepType'] == 'Charge':
                     blank_step['m_szCtrlValue'] = step_abs['StepValue']
                 elif step_abs['StepType'] == 'Dischrge':
                     blank_step['m_szCtrlValue'] = '-' + step_abs['StepValue']
@@ -165,7 +165,7 @@ class ProcedureToSchedule:
         elif step_abs['StepMode'] == 'Current' and 'C' in step_abs['StepValue']:
             if step_abs['Limits'] is not None:
                 blank_step['m_szStepCtrlType'] = "CCCV"
-                if step_abs['StepType'] == ' Charge ':
+                if step_abs['StepType'] == 'Charge':
                     blank_step['m_szCtrlValue'] = step_abs['StepValue'].replace('C', '')
                     blank_step['m_szExtCtrlValue1'] = step_abs['Limits']['Voltage']
                     blank_step['m_szExtCtrlValue2'] = "0"
@@ -173,7 +173,7 @@ class ProcedureToSchedule:
                     blank_step['m_szCtrlValue'] = '-' + step_abs['StepValue'].replace('C', '')
             elif step_abs['Limits'] is None:
                 blank_step['m_szStepCtrlType'] = "C-Rate"
-                if step_abs['StepType'] == ' Charge ':
+                if step_abs['StepType'] == 'Charge':
                     blank_step['m_szCtrlValue'] = step_abs['StepValue'].replace('C', '')
                 elif step_abs['StepType'] == 'Dischrge':
                     blank_step['m_szCtrlValue'] = '-' + step_abs['StepValue'].replace('C', '')
@@ -184,7 +184,7 @@ class ProcedureToSchedule:
         elif step_abs['StepMode'] == 'Voltage':
             if step_abs['Limits'] is not None and 'C' not in step_abs['Limits']['Current']:
                 blank_step['m_szStepCtrlType'] = "CCCV"
-                if step_abs['StepType'] == ' Charge ':
+                if step_abs['StepType'] == 'Charge':
                     blank_step['m_szCtrlValue'] = step_abs['Limits']['Current']
                     blank_step['m_szExtCtrlValue1'] = step_abs['StepValue']
                     blank_step['m_szExtCtrlValue2'] = "0"
@@ -194,7 +194,7 @@ class ProcedureToSchedule:
                     blank_step['m_szExtCtrlValue2'] = "0"
             elif step_abs['Limits'] is None:
                 blank_step['m_szStepCtrlType'] = "Voltage(V)"
-                if step_abs['StepType'] == ' Charge ':
+                if step_abs['StepType'] == 'Charge':
                     blank_step['m_szCtrlValue'] = step_abs['StepValue']
                 elif step_abs['StepType'] == 'Dischrge':
                     blank_step['m_szCtrlValue'] = step_abs['StepValue']
@@ -414,7 +414,7 @@ class ProcedureToSchedule:
             limit['Equation0_szLeft'] = 'DV_Voltage'
             limit['Equation0_szCompareSign'] = '>'
             limit['Equation0_szRight'] = report['Value']
-        elif report['ReportType'] == ' Current ':
+        elif report['ReportType'] == 'Current':
             limit['Equation0_szLeft'] = 'DV_Current'
             limit['Equation0_szRight'] = report['Value']
             limit['Equation0_szCompareSign'] = '>'
