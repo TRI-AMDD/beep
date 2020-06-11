@@ -171,18 +171,22 @@ class GenerateProcedureTest(unittest.TestCase):
         with ScratchDir('.') as scratch_dir:
             makedirs_p(os.path.join(scratch_dir, "procedures"))
             makedirs_p(os.path.join(scratch_dir, "names"))
-            generate_protocol_files_from_csv(csv_file, output_directory=scratch_dir)
+            new_files, result, message = generate_protocol_files_from_csv(csv_file, output_directory=scratch_dir)
             self.assertEqual(len(os.listdir(os.path.join(scratch_dir, "procedures"))), 3)
+            self.assertEqual(result, "success")
+            self.assertEqual(message, {'comment': 'Generated 3 protocols', 'error': ''})
 
         # Test avoid overwriting file functionality
         with ScratchDir('.') as scratch_dir:
             makedirs_p(os.path.join(scratch_dir, "procedures"))
             makedirs_p(os.path.join(scratch_dir, "names"))
             dumpfn({"hello": "world"}, os.path.join("procedures", "name_000007.000"))
-            generate_protocol_files_from_csv(csv_file, output_directory=scratch_dir)
+            new_files, result, message = generate_protocol_files_from_csv(csv_file, output_directory=scratch_dir)
             post_file = loadfn(os.path.join("procedures", "name_000007.000"))
             self.assertEqual(post_file, {"hello": "world"})
             self.assertEqual(len(os.listdir(os.path.join(scratch_dir, "procedures"))), 3)
+            self.assertEqual(result, "success")
+            self.assertEqual(message, {'comment': 'Generated 3 protocols', 'error': ''})
 
     def test_from_csv_2(self):
         csv_file = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_parameters.csv")
@@ -191,7 +195,9 @@ class GenerateProcedureTest(unittest.TestCase):
         with ScratchDir('.') as scratch_dir:
             makedirs_p(os.path.join(scratch_dir, "procedures"))
             makedirs_p(os.path.join(scratch_dir, "names"))
-            generate_protocol_files_from_csv(csv_file, output_directory=scratch_dir)
+            new_files, result, message = generate_protocol_files_from_csv(csv_file, output_directory=scratch_dir)
+            self.assertEqual(result, "success")
+            self.assertEqual(message, {'comment': 'Generated 2 protocols', 'error': ''})
             self.assertEqual(len(os.listdir(os.path.join(scratch_dir, "procedures"))), 2)
 
             original = open(os.path.join(PROCEDURE_TEMPLATE_DIR, "diagnosticV2.000")).readlines()
