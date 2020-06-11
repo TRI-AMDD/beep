@@ -4,7 +4,7 @@
 import os
 import re
 from datetime import datetime
-from beep import PROTOCOL_SCHEMA_DIR
+from beep.protocol import PROTOCOL_SCHEMA_DIR
 from collections import OrderedDict
 from monty.serialization import loadfn
 from beep.protocol.arbin import Schedule
@@ -55,8 +55,8 @@ class ProcedureToSchedule:
         for step_index, step in enumerate(self.procedure_dict_steps):
             step_arbin = self.compile_to_arbin(self.procedure_dict_steps[step_index],
                                                step_index, step_name_list, step_flow_ctrl)
-            key = '[Schedule_Step{}]'.format(step_index)
-            schedule.set(['Schedule]']).update({key: step_arbin})
+            key = 'Step{}'.format(step_index)
+            schedule.set("Schedule.{}".format(key), step_arbin)
         schedule.to_file(sdu_output_name)
 
     def create_metadata(self):
@@ -79,7 +79,7 @@ class ProcedureToSchedule:
                 loop_counter = int(re.search(r'\d+', step['StepType']).group())
                 i = 1
                 while (indx - i) > 1:
-                    if self.procedure_dict_steps[abs(indx - i)]['StepType'] == '  Do {}  '.format(loop_counter):
+                    if self.procedure_dict_steps[abs(indx - i)]['StepType'] == 'Do {}'.format(loop_counter):
                         do_index = abs(indx - i)
                         break
                     i = i + 1
@@ -141,7 +141,7 @@ class ProcedureToSchedule:
         blank_step['m_szCurrentRange'] = current_range
 
         # Current control mode with currents measured in Amps
-        if step_abs['StepMode'] == 'Current ' and 'C' not in step_abs['StepValue']:
+        if step_abs['StepMode'] == 'Current' and 'C' not in step_abs['StepValue']:
             if step_abs['Limits'] is not None:
                 blank_step['m_szStepCtrlType'] = "CCCV"
                 if step_abs['StepType'] == ' Charge ':
@@ -162,7 +162,7 @@ class ProcedureToSchedule:
                 raise ValueError("Unable to set m_szStepCtrlType for current")
 
         # Current control mode currents measured in C-rate
-        elif step_abs['StepMode'] == 'Current ' and 'C' in step_abs['StepValue']:
+        elif step_abs['StepMode'] == 'Current' and 'C' in step_abs['StepValue']:
             if step_abs['Limits'] is not None:
                 blank_step['m_szStepCtrlType'] = "CCCV"
                 if step_abs['StepType'] == ' Charge ':
@@ -181,7 +181,7 @@ class ProcedureToSchedule:
                 raise ValueError("Unable to set m_szStepCtrlType for current")
 
         # Voltage control mode and current limit measured in Amps
-        elif step_abs['StepMode'] == 'Voltage ':
+        elif step_abs['StepMode'] == 'Voltage':
             if step_abs['Limits'] is not None and 'C' not in step_abs['Limits']['Current']:
                 blank_step['m_szStepCtrlType'] = "CCCV"
                 if step_abs['StepType'] == ' Charge ':
@@ -202,16 +202,16 @@ class ProcedureToSchedule:
                 raise ValueError("Unable to set m_szStepCtrlType for voltage")
 
         # Rest control mode
-        elif step_abs['StepMode'] == '        ' and step_abs['StepType'] == '  Rest  ':
+        elif step_abs['StepMode'] is None and step_abs['StepType'] == 'Rest':
             if step_abs['Limits'] is None:
                 blank_step['m_szStepCtrlType'] = "Rest"
             else:
                 raise ValueError("Unable to set m_szStepCtrlType for voltage")
 
         # Flow control steps
-        elif step_abs['StepMode'] == '        ' and step_abs['StepType'] in [' Loop 1 ', '  Do 1  ',
-                                                                             ' Loop 2 ', '  Do 2  ',
-                                                                             'AdvCycle', '  End   ']:
+        elif step_abs['StepMode'] is None and step_abs['StepType'] in ['Loop 1', 'Do 1',
+                                                                       'Loop 2', 'Do 2',
+                                                                       'AdvCycle', 'End']:
             if step_abs['StepType'] == 'AdvCycle':
                 blank_step['m_szStepCtrlType'] = "Set Variable(s)"
                 blank_step['m_szCtrlValue1'] = '0'
@@ -239,6 +239,7 @@ class ProcedureToSchedule:
             else:
                 blank_step['m_szStepCtrlType'] = "Rest"
         else:
+            print(step_abs)
             raise ValueError("Unable to set StepMode for Flow control step")
 
         step_type = step_abs['StepType']
@@ -333,13 +334,13 @@ class ProcedureToSchedule:
         else:
             limit['m_szGotoStep'] = step_name_list[int(end['Step']) - 1]
 
-        if end['EndType'] == 'Voltage ':
+        if end['EndType'] == 'Voltage':
             limit['Equation0_szLeft'] = 'PV_CHAN_Voltage'
             limit['Equation0_szCompareSign'] = end['Oper'].replace(' ', '')
             limit['Equation0_szRight'] = end['Value']
-        elif end['EndType'] == 'Current ' and blank_step['m_szStepCtrlType'] == "CCCV":
+        elif end['EndType'] == 'Current' and blank_step['m_szStepCtrlType'] == "CCCV":
             limit['Equation0_szLeft'] = 'PV_CHAN_CV_Stage_Current'
-            if step_type == ' Charge ':
+            if step_type == 'Charge':
                 limit['Equation0_szRight'] = end['Value']
                 limit['Equation0_szCompareSign'] = end['Oper'].replace(' ', '')
             elif step_type == 'Dischrge':
@@ -348,9 +349,9 @@ class ProcedureToSchedule:
             else:
                 raise ValueError("Unable to convert end to limit for EndType:{} and Ctrl:{}".
                                  format(end['EndType'], blank_step['m_szStepCtrlType']))
-        elif end['EndType'] == 'Current ' and blank_step['m_szStepCtrlType'] == "Voltage(V)":
+        elif end['EndType'] == 'Current' and blank_step['m_szStepCtrlType'] == "Voltage(V)":
             limit['Equation0_szLeft'] = 'PV_CHAN_Current'
-            if step_type == ' Charge ':
+            if step_type == 'Charge':
                 limit['Equation0_szRight'] = end['Value']
                 limit['Equation0_szCompareSign'] = end['Oper'].replace(' ', '')
             elif step_type == 'Dischrge':
@@ -410,7 +411,7 @@ class ProcedureToSchedule:
         limit['m_bLogDataLimit'] = "1"
         limit['m_szGotoStep'] = 'Next Step'
 
-        if report['ReportType'] == 'Voltage ':
+        if report['ReportType'] == 'Voltage':
             limit['Equation0_szLeft'] = 'DV_Voltage'
             limit['Equation0_szCompareSign'] = '>'
             limit['Equation0_szRight'] = report['Value']

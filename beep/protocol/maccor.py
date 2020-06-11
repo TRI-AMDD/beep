@@ -16,7 +16,8 @@ import pandas as pd
 import xmltodict
 from docopt import docopt
 from monty.serialization import loadfn
-from beep import logger, __version__, PROCEDURE_TEMPLATE_DIR
+from beep import logger, __version__
+from beep.protocol import PROCEDURE_TEMPLATE_DIR
 from beep.utils import KinesisEvents, DashOrderedDict
 s = {'service': 'ProtocolGenerator'}
 
