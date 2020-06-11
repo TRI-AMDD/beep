@@ -55,27 +55,6 @@ from beep.conversion_schemas import MACCOR_WAVEFORM_CONFIG
 from beep.utils import KinesisEvents
 s = {'service': 'ProtocolGenerator'}
 
-def insert_maccor_waveform_discharge(self, proc_dict, waveform_idx, waveform_filename):
-    """
-    Inserts a waveform into procedure dictionary at given id.
-
-    Args:
-        proc_dict (dict): dictionary of procedure parameters associated
-            with a procedure template file
-        waveform_idx (int): Step in the procedure file to insert waveform at
-        waveform_filename (str): Path to .MWF waveform file. Waveform needs to be pre-scaled for
-        current/power capabilities of the cell and cycler
-
-    Returns:
-        dict:
-    """
-    steps = proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep']
-    assert steps[waveform_idx]['StepType'] == "FastWave"
-
-    steps[waveform_idx]['StepValue'] = waveform_filename.split('.MWF')[0]
-
-    return proc_dict
-
 
 def convert_velocity_to_power_waveform(waveform_file, velocity_units):
     """
