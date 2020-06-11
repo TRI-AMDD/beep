@@ -171,7 +171,7 @@ class GenerateProcedureTest(unittest.TestCase):
         with ScratchDir('.') as scratch_dir:
             makedirs_p(os.path.join(scratch_dir, "procedures"))
             makedirs_p(os.path.join(scratch_dir, "names"))
-            generate_protocol_files_from_csv(csv_file, scratch_dir)
+            generate_protocol_files_from_csv(csv_file, output_directory=scratch_dir)
             self.assertEqual(len(os.listdir(os.path.join(scratch_dir, "procedures"))), 3)
 
         # Test avoid overwriting file functionality
@@ -179,7 +179,7 @@ class GenerateProcedureTest(unittest.TestCase):
             makedirs_p(os.path.join(scratch_dir, "procedures"))
             makedirs_p(os.path.join(scratch_dir, "names"))
             dumpfn({"hello": "world"}, os.path.join("procedures", "name_000007.000"))
-            generate_protocol_files_from_csv(csv_file, scratch_dir)
+            generate_protocol_files_from_csv(csv_file, output_directory=scratch_dir)
             post_file = loadfn(os.path.join("procedures", "name_000007.000"))
             self.assertEqual(post_file, {"hello": "world"})
             self.assertEqual(len(os.listdir(os.path.join(scratch_dir, "procedures"))), 3)
@@ -191,7 +191,7 @@ class GenerateProcedureTest(unittest.TestCase):
         with ScratchDir('.') as scratch_dir:
             makedirs_p(os.path.join(scratch_dir, "procedures"))
             makedirs_p(os.path.join(scratch_dir, "names"))
-            generate_protocol_files_from_csv(csv_file, scratch_dir)
+            generate_protocol_files_from_csv(csv_file, output_directory=scratch_dir)
             self.assertEqual(len(os.listdir(os.path.join(scratch_dir, "procedures"))), 2)
 
             original = open(os.path.join(PROCEDURE_TEMPLATE_DIR, "diagnosticV2.000")).readlines()
@@ -226,7 +226,7 @@ class GenerateProcedureTest(unittest.TestCase):
         csv_file_list = os.path.join(TEST_FILE_DIR, "PreDiag_parameters - GP.csv")
         makedirs_p(os.path.join(TEST_FILE_DIR, "procedures"))
         makedirs_p(os.path.join(TEST_FILE_DIR, "names"))
-        generate_protocol_files_from_csv(csv_file_list, TEST_FILE_DIR)
+        generate_protocol_files_from_csv(csv_file_list, output_directory=TEST_FILE_DIR)
         if os.path.isfile(os.path.join(TEST_FILE_DIR, "procedures", ".DS_Store")):
             os.remove(os.path.join(TEST_FILE_DIR, "procedures", ".DS_Store"))
         self.assertEqual(len(os.listdir(os.path.join(TEST_FILE_DIR, "procedures"))), 265)

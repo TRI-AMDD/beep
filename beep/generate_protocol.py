@@ -169,7 +169,7 @@ def generate_maccor_waveform_file(df, file_prefix, file_directory, mwf_config=No
     return MWF_file_path
 
 
-def generate_protocol_files_from_csv(csv_filename, output_directory):
+def generate_protocol_files_from_csv(csv_filename, output_directory=None):
 
     """
     Generates a set of protocol files from csv filename input by
