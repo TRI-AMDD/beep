@@ -40,7 +40,9 @@ setup(name="beep",
                         "python-dateutil==2.8.0",
                         "xmltodict==0.12.0",
                         "tables==3.6.1",
+                        "pydash==4.5.0",
                         "lmfit==1.0.1"
+
                         ],
       extras_require={
           "tests": ["pytest",

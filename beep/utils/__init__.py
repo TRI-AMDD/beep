@@ -1,6 +1,55 @@
 import os
+import hashlib
+import json
+from collections import OrderedDict
 from .events import Logger, KinesisEvents
 from .splice import MaccorSplice
+from pydash import get, set_with, unset, merge
+
+
+class DashOrderedDict(OrderedDict):
+    """
+    Nested data structure with pydash enabled
+    getters and setters.  Nested values can
+    be set using dot notation, e. g.
+
+    >>> dod = DashOrderedDict()
+    >>> dod.set('key1.key2', 5)
+    >>> print(dod['key1']['key2'])
+    >>> 5
+    """
+    def set(self, string, value):
+        set_with(self, string, value, lambda x: OrderedDict())
+
+    def get(self, string):
+        return get(self, string)
+
+    def unset(self, string):
+        unset(self, string)
+
+    def merge(self, obj):
+        merge(self, obj)
+
+    def __str__(self):
+        return "{}:\n{}".format(
+            self.__class__.__name__,
+            json.dumps(self, indent=4)
+        )
+
+    def __repr__(self):
+        return self.__str__()
+
+
+def hash_file(filename):
+    """
+    Utility function to hash a file
+
+    Args:
+        filename (str): name fo file to hash
+    """
+    with open(filename, 'rb') as f:
+        chunk = f.read()
+    return hashlib.md5(chunk).digest()
 
 
 def os_format(json_string):
