@@ -276,15 +276,15 @@ class ProcedureToScheduleTest(unittest.TestCase):
 
         step_arbin = converter.compile_to_arbin(test_step_dict[step_index], step_index, step_name_list, step_flow_ctrl)
         self.assertEqual(step_arbin['m_szLabel'], '6-None')
-        self.assertEqual(step_arbin['[Schedule_Step5_Limit0]']['m_szGotoStep'], 'Next Step')
-        self.assertEqual(step_arbin['[Schedule_Step5_Limit0]']['Equation0_szLeft'], 'PV_CHAN_Voltage')
-        self.assertEqual(step_arbin['[Schedule_Step5_Limit2]']['m_szGotoStep'], '70-These are the 2 reset cycles')
+        self.assertEqual(step_arbin['Limit0']['m_szGotoStep'], 'Next Step')
+        self.assertEqual(step_arbin['Limit0']['Equation0_szLeft'], 'PV_CHAN_Voltage')
+        self.assertEqual(step_arbin['Limit2']['m_szGotoStep'], '70-These are the 2 reset cycles')
 
         step_index = 8
         step_arbin = converter.compile_to_arbin(test_step_dict[step_index], step_index, step_name_list, step_flow_ctrl)
 
-        self.assertEqual(step_arbin['[Schedule_Step8_Limit0]']['Equation0_szLeft'], 'PV_CHAN_CV_Stage_Current')
-        self.assertEqual(step_arbin['[Schedule_Step8_Limit0]']['Equation0_szRight'],
+        self.assertEqual(step_arbin['Limit0']['Equation0_szLeft'], 'PV_CHAN_CV_Stage_Current')
+        self.assertEqual(step_arbin['Limit0']['Equation0_szRight'],
                          test_step_dict[step_index]['Ends']['EndEntry'][0]['Value'])
 
     def test_serial_conversion(self):
@@ -311,8 +311,8 @@ class ProcedureToScheduleTest(unittest.TestCase):
                 self.assertEqual(step_arbin['m_szStepCtrlType'], 'Set Variable(s)')
                 self.assertEqual(step_arbin['m_uLimitNum'], '2')
             if step_index == 15:
-                self.assertEqual(step_arbin['[Schedule_Step15_Limit0]']['m_szGotoStep'], '11-None')
-                self.assertEqual(step_arbin['[Schedule_Step15_Limit1]']['m_szGotoStep'], 'Next Step')
+                self.assertEqual(step_arbin['Limit0']['m_szGotoStep'], '11-None')
+                self.assertEqual(step_arbin['Limit1']['m_szGotoStep'], 'Next Step')
 
     def test_schedule_creation(self):
         procedure = Procedure()
@@ -329,8 +329,9 @@ class ProcedureToScheduleTest(unittest.TestCase):
 
         converter = ProcedureToSchedule(test_step_dict)
         converter.create_sdu(sdu_test_input, sdu_test_output)
-        # os.remove(os.path.join(templates, json_file))
-        # os.remove(sdu_test_output)
+        parsed = open(sdu_test_output, encoding='latin-1').readlines()
+        self.assertEqual(parsed[329], '[Schedule_Step3_Limit0]\n')
+        os.remove(sdu_test_output)
 
 
 class ArbinScheduleTest(unittest.TestCase):

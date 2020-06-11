@@ -239,7 +239,6 @@ class ProcedureToSchedule:
             else:
                 blank_step['m_szStepCtrlType'] = "Rest"
         else:
-            print(step_abs)
             raise ValueError("Unable to set StepMode for Flow control step")
 
         step_type = step_abs['StepType']
@@ -250,21 +249,21 @@ class ProcedureToSchedule:
                 blank_step['m_uLimitNum'] = 1
                 end = step_abs['Ends']['EndEntry']
                 end_index = 0
-                limit_key = "[Schedule_Step{}_Limit{}]".format(str(step_index), str(end_index))
+                limit_key = "Limit{}".format(str(end_index))
                 blank_step[limit_key] = OrderedDict(self.convert_end_to_limit(blank_step, end,
                                                                          step_index, step_name_list,
                                                                          step_type, step_flow_ctrl))
             elif isinstance(step_abs['Ends']['EndEntry'], list):
                 blank_step['m_uLimitNum'] = len(step_abs['Ends']['EndEntry'])
                 for end_index, end in enumerate(step_abs['Ends']['EndEntry']):
-                    limit_key = "[Schedule_Step{}_Limit{}]".format(str(step_index), str(end_index))
+                    limit_key = "Limit{}".format(str(end_index))
                     blank_step[limit_key] = OrderedDict(self.convert_end_to_limit(blank_step, end,
                                                                              step_index, step_name_list,
                                                                              step_type, step_flow_ctrl))
         elif step_abs['Ends'] is None:
             blank_step['m_uLimitNum'] = 1
             end_index = 0
-            limit_key = "[Schedule_Step{}_Limit{}]".format(str(step_index), str(end_index))
+            limit_key = "Limit{}".format(str(end_index))
             blank_step[limit_key] = self.add_blank_limit()
 
         # Reports
@@ -274,13 +273,13 @@ class ProcedureToSchedule:
                 report = step_abs['Reports']['ReportEntry']
                 report_index = 0
                 limit_start = len(step_abs['Ends']['EndEntry'])
-                limit_key = "[Schedule_Step{}_Limit{}]".format(str(step_index), str(report_index + limit_start))
+                limit_key = "Limit{}".format(str(report_index + limit_start))
                 blank_step[limit_key] = OrderedDict(self.convert_report_to_logging_limit(report))
             elif isinstance(step_abs['Ends']['EndEntry'], list):
                 blank_step['m_uLimitNum'] = blank_step['m_uLimitNum'] + len(step_abs['Ends']['EndEntry'])
                 for report_index, report in enumerate(step_abs['Reports']['ReportEntry']):
                     limit_start = len(step_abs['Ends']['EndEntry'])
-                    limit_key = "[Schedule_Step{}_Limit{}]".format(str(step_index), str(report_index + limit_start))
+                    limit_key = "Limit{}".format(str(report_index + limit_start))
                     blank_step[limit_key] = OrderedDict(self.convert_report_to_logging_limit(report))
 
         blank_step['m_uLimitNum'] = str(blank_step['m_uLimitNum'])
