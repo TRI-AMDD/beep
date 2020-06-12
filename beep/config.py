@@ -9,7 +9,7 @@ config = {
     'local': {
         'logging': {
             'container': 'Testing',
-            'streams': ['CloudWatch']
+            'streams': ['file', 'stdout']
         },
         'kinesis': {
             'stream': 'local/beep/eventstream'
@@ -29,7 +29,7 @@ config = {
     'test': {
         'logging': {
             'container': 'Testing',
-            'streams': ['CloudWatch']
+            'streams': ['file']
         },
         'kinesis': {
             'stream': 'local/beep/eventstream'

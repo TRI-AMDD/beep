@@ -12,6 +12,7 @@ from dateutil.tz import tzutc
 from beep.utils import KinesisEvents, Logger
 from beep.utils.secrets_manager import get_secret
 from beep.config import config
+from beep.utils.secrets_manager import event_setup
 from beep import ENVIRONMENT, __version__
 
 TEST_DIR = os.path.dirname(__file__)
@@ -24,20 +25,17 @@ class KinesisEventsTest(unittest.TestCase):
     try:
         kinesis = boto3.client('kinesis')
         response = kinesis.list_streams()
-        print(response)
-        beep_kinesis_connection_broken = False
+        stream_name = get_secret(config[ENVIRONMENT]['kinesis']['stream'])['streamName']
+        assert 'kinesis-test' == stream_name
+        beep_aws_disconnected = False
     except Exception as e:
         warnings.warn("Cloud resources not configured")
-        beep_kinesis_connection_broken = True
+        beep_aws_disconnected = True
 
     def setUp(self):
-        try:
-            stream_name = get_secret(config[ENVIRONMENT]['kinesis']['stream'])['streamName']
-            self.assertEqual('kinesis-test', stream_name)
-        except Exception as e:
-            beep_secrets_connection_broken = True
+        pass
 
-    @unittest.skipIf(beep_kinesis_connection_broken, "Unable to connect to Kinesis")
+    @unittest.skipIf(beep_aws_disconnected, "Unable to connect to Kinesis")
     def test_get_file_size(self):
         events = KinesisEvents(service='Testing', mode='test')
         file_list = [os.path.join(TEST_FILE_DIR, "2017-05-09_test-TC-contact_CH33.csv"),
@@ -49,13 +47,13 @@ class KinesisEventsTest(unittest.TestCase):
         assert file_sizes[1] == 37878198
         assert file_sizes[2] == 3019440
 
-    @unittest.skipIf(beep_kinesis_connection_broken, "Unable to connect to Kinesis")
+    @unittest.skipIf(beep_aws_disconnected, "Unable to connect to Kinesis")
     def test_kinesis_put_basic_event(self):
         events = KinesisEvents(service='Testing', mode='test')
         response = events.put_basic_event('test_events', 'This is a basic event test')
         assert response['ResponseMetadata']['HTTPStatusCode'] == 200
 
-    @unittest.skipIf(beep_kinesis_connection_broken, "Unable to connect to Kinesis")
+    @unittest.skipIf(beep_aws_disconnected, "Unable to connect to Kinesis")
     def test_kinesis_put_service_event(self):
         events = KinesisEvents(service='Testing', mode='test')
         response_valid = events.put_service_event('Test', 'starting', {"String": "test"})
@@ -76,7 +74,7 @@ class KinesisEventsTest(unittest.TestCase):
         response_valid = events.put_service_event('Test', 'starting', {"Dict": {"key": "value"}})
         assert response_valid['ResponseMetadata']['HTTPStatusCode'] == 200
 
-    @unittest.skipIf(beep_kinesis_connection_broken, "Unable to connect to Kinesis")
+    @unittest.skipIf(beep_aws_disconnected, "Unable to connect to Kinesis")
     def test_kinesis_put_service_event_stress(self):
         events = KinesisEvents(service='Testing', mode='test')
         for i in range(10):
@@ -85,7 +83,7 @@ class KinesisEventsTest(unittest.TestCase):
             response_valid = events.put_service_event('Test', 'starting', {"Stress test array": array.tolist()})
             assert response_valid['ResponseMetadata']['HTTPStatusCode'] == 200
 
-    @unittest.skipIf(beep_kinesis_connection_broken, "Unable to connect to Kinesis")
+    @unittest.skipIf(beep_aws_disconnected, "Unable to connect to Kinesis")
     def test_kinesis_put_upload_retrigger_event(self):
         events = KinesisEvents(service='Testing', mode='test')
         s3_bucket = "beep-input-data"
@@ -109,7 +107,7 @@ class KinesisEventsTest(unittest.TestCase):
         response_valid = events.put_upload_retrigger_event('complete', retrigger_data)
         assert response_valid['ResponseMetadata']['HTTPStatusCode'] == 200
 
-    @unittest.skipIf(beep_kinesis_connection_broken, "Unable to connect to Kinesis")
+    @unittest.skipIf(beep_aws_disconnected, "Unable to connect to Kinesis")
     def test_kinesis_put_validation_event(self):
         events = KinesisEvents(service='Testing', mode='test')
         file_list = [os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29.csv")]
@@ -122,7 +120,7 @@ class KinesisEventsTest(unittest.TestCase):
         response_valid = events.put_validation_event(output_json, 'complete')
         assert response_valid['ResponseMetadata']['HTTPStatusCode'] == 200
 
-    @unittest.skipIf(beep_kinesis_connection_broken, "Unable to connect to Kinesis")
+    @unittest.skipIf(beep_aws_disconnected, "Unable to connect to Kinesis")
     def test_kinesis_put_structuring_event(self):
         events = KinesisEvents(service='Testing', mode='test')
         processed_file_list = [os.path.join(TEST_FILE_DIR, "2017-06-30_2C-10per_6C_CH10_structure.json")]
@@ -140,7 +138,7 @@ class KinesisEventsTest(unittest.TestCase):
         response_valid = events.put_structuring_event(output_json, 'complete')
         assert response_valid['ResponseMetadata']['HTTPStatusCode'] == 200
 
-    @unittest.skipIf(beep_kinesis_connection_broken, "Unable to connect to Kinesis")
+    @unittest.skipIf(beep_aws_disconnected, "Unable to connect to Kinesis")
     def test_kinesis_put_analyzing_event(self):
         events = KinesisEvents(service='Testing', mode='test')
         processed_paths_list = [os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_features.json")]
@@ -173,7 +171,7 @@ class KinesisEventsTest(unittest.TestCase):
         response_valid = events.put_analyzing_event(output_data, 'predicting', 'complete')
         assert response_valid['ResponseMetadata']['HTTPStatusCode'] == 200
 
-    @unittest.skipIf(beep_kinesis_connection_broken, "Unable to connect to Kinesis")
+    @unittest.skipIf(beep_aws_disconnected, "Unable to connect to Kinesis")
     def test_kinesis_put_generate_event(self):
         events = KinesisEvents(service='Testing', mode='test')
 
@@ -201,6 +199,7 @@ class CloudWatchLoggingTest(unittest.TestCase):
         cloudwatch = boto3.client('cloudwatch')
         cloudwatch.describe_alarms()
         beep_cloudwatch_connection_broken = False
+        print("here")
     except Exception as e:
         warnings.warn("Cloud resources not configured")
         beep_cloudwatch_connection_broken = True
@@ -214,7 +213,7 @@ class CloudWatchLoggingTest(unittest.TestCase):
         self.assertGreater(len(__version__), 11)
 
     def test_log(self):
-        logger = Logger(log_file=os.path.join(TEST_FILE_DIR, "Testing_logger.log"))
+        logger = Logger(log_file=os.path.join(TEST_FILE_DIR, "Testing_logger.log"), log_cloudwatch=False)
         logger.info('Hi! Your local test log is working')
 
     @unittest.skipIf(beep_cloudwatch_connection_broken, "Unable to connect to Cloudwatch")
