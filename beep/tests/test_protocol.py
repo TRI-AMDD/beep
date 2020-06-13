@@ -9,10 +9,11 @@ import datetime
 
 import pandas as pd
 from beep.utils.secrets_manager import event_setup
-from beep.protocol import PROCEDURE_TEMPLATE_DIR, SCHEDULE_TEMPLATE_DIR
+from beep.protocol import PROCEDURE_TEMPLATE_DIR, SCHEDULE_TEMPLATE_DIR, BIOLOGIC_TEMPLATE_DIR
 from beep.generate_protocol import generate_protocol_files_from_csv, convert_velocity_to_power_waveform
 from beep.protocol.maccor import Procedure, generate_maccor_waveform_file
 from beep.protocol.arbin import Schedule
+from beep.protocol.biologic import Settings
 from beep.protocol.maccor_to_arbin import ProcedureToSchedule
 from monty.tempfile import ScratchDir
 from monty.serialization import dumpfn, loadfn
@@ -371,3 +372,17 @@ class ArbinScheduleTest(unittest.TestCase):
                 for line in udiff:
                     print(line)
                 self.assertFalse(udiff)
+
+
+class BiologicSettingsTest(unittest.TestCase):
+    def setUp(self):
+        self.events_mode = event_setup()
+
+    def test_from_file(self):
+        filename = 'BCS - 171.64.160.115_Ta19_ourprotocol_gdocSEP2019_CC7.mps'
+        bcs = Settings.from_file(os.path.join(BIOLOGIC_TEMPLATE_DIR, filename))
+        print(bcs['Technique']['1'].keys())
+        self.assertEqual(len(bcs['Technique']['1'].keys()), 55)
+        print(bcs['Technique']['1']['Step1'])
+        self.assertEqual(bcs.get('Technique.1.Step5.Ns'), '4')
+        self.assertEqual(1, 2)
