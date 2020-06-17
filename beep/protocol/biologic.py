@@ -45,21 +45,48 @@ class Settings(DashOrderedDict):
                 control variables. Section headers are nested dicts or lists
                 within the dict.
         """
-        tq_offset = 2
         tq_length = 62
         obj = cls()
         with open(filename, 'rb') as f:
             text = f.read()
             text = text.decode(encoding)
         split_text = re.split(r'\r\n', text)
-        number_of_columns = max([len(l) for l in split_text]) // column_width
+
+        extra_lines = list(range(len(split_text)))
+        technique_lines = [indx for indx, val in enumerate(split_text) if 'Technique' in val]
+        technique_pos = []
+        for technique_start_line in technique_lines:
+            technique_num = split_text[technique_start_line].split(':')[-1].strip()
+            start = technique_start_line + 1
+            end = start + 1 + tq_length
+            technique_pos.append((technique_num, start, end))
+            lines_to_parse = [i for i in extra_lines if i not in list(range(start, end))]
+
+        section = 'Metadata'
+        metadata = []
+        for line_num in lines_to_parse:
+            # metadata.append(['line{}'.format(line_num), split_text[line_num]])
+            if ':' in split_text[line_num]:
+                if 'Technique' in split_text[line_num]:
+                    metadata.append(['_'.join(split_text[line_num].split(' : ', 1)),
+                                     split_text[line_num].split(':', 1)[-1].strip()])
+                else:
+                    metadata.append(split_text[line_num].split(' : ', 1))
+            elif split_text[line_num] == '':
+                metadata.append(['line{}'.format(line_num), 'blank'])
+            else:
+                metadata.append([split_text[line_num], None])
+        meta = OrderedDict(metadata)
+        obj.set('{}'.format(section), meta)
 
         section = 'Technique'
-        technique_lines = [indx for indx, val in enumerate(split_text) if 'Technique' in val]
-        for technique_start_line in technique_lines:
-            technique = split_text[technique_start_line].split(':')[-1].strip()
-            start = technique_start_line + tq_offset
-            end = start + tq_length
+        for technique in technique_pos:
+            technique_num = technique[0]
+            start = technique[1]
+            end = technique[2]
+            obj.set('{}.{}.{}'.format(section, technique_num, 'Type'), split_text[start])
+            start = start + 1
+            number_of_columns = max([len(l) for l in split_text[start:end]]) // column_width
             technique_steps = []
             for line in split_text[start:end]:
                 steps_values = []
@@ -71,6 +98,41 @@ class Settings(DashOrderedDict):
 
             for step_number in range(1, number_of_columns):
                 step = OrderedDict(zip(step_headers, step_matrix[step_number]))
-                obj.set('{}.{}.{}'.format(section, technique, 'Step' + str(step_number)), step)
+                obj.set('{}.{}.{}.{}'.format(section, technique_num, 'Step', str(step_number)), step)
 
         return obj
+
+    def to_file(self, filename, encoding='ISO-8859-1', column_width=20, linesep="\r\n"):
+        data = deepcopy(self)
+        blocks = []
+        meta_data_keys = list(data['Metadata'].keys())
+        # print(meta_data_keys)
+        for indx, meta_key in enumerate(meta_data_keys):
+            if 'Technique_' in meta_key:
+                blocks.append(' : '.join([meta_key.split('_')[0], data['Metadata'][meta_key]]))
+                tq_number = data['Metadata'][meta_key]
+                # print(data['Technique'][tq_number]['Type'])
+                blocks.append(data['Technique'][tq_number]['Type'])
+                technique_keys = list(data['Technique'][tq_number]['Step']['1'].keys())
+                for tq_key in technique_keys:
+                    line = tq_key.ljust(column_width)
+                    for step in data['Technique']['1']['Step'].keys():
+                        line = line + data['Technique']['1']['Step'][step][tq_key].ljust(column_width)
+                    blocks.append(line)
+                continue
+            # else:
+            #     line = data['Metadata'][meta_key]
+            elif data['Metadata'][meta_key] is None:
+                line = meta_key
+            elif data['Metadata'][meta_key] == 'blank':
+                line = ''
+            elif data['Metadata'][meta_key] is not None:
+                line = ' : '.join([meta_key, data['Metadata'][meta_key]])
+            blocks.append(line)
+            data.unset(data['Metadata'][meta_key])
+
+        # print(blocks)
+        contents = linesep.join(blocks)
+
+        with open(filename, 'wb') as f:
+            f.write(contents.encode(encoding))

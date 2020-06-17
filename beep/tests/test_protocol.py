@@ -381,8 +381,38 @@ class BiologicSettingsTest(unittest.TestCase):
     def test_from_file(self):
         filename = 'BCS - 171.64.160.115_Ta19_ourprotocol_gdocSEP2019_CC7.mps'
         bcs = Settings.from_file(os.path.join(BIOLOGIC_TEMPLATE_DIR, filename))
-        print(bcs['Technique']['1'].keys())
-        self.assertEqual(len(bcs['Technique']['1'].keys()), 55)
-        print(bcs['Technique']['1']['Step1'])
-        self.assertEqual(bcs.get('Technique.1.Step5.Ns'), '4')
-        self.assertEqual(1, 2)
+        self.assertEqual(len(bcs['Technique']['1']['Step'].keys()), 55)
+        self.assertEqual(bcs.get('Technique.1.Step.5.Ns'), '4')
+        self.assertEqual(bcs['Technique']['1']['Type'], 'Modulo Bat')
+        self.assertEqual(bcs['Metadata']['BT-LAB SETTING FILE'], None)
+        self.assertEqual(bcs['Metadata']['line3'], 'blank')
+        self.assertEqual(bcs['Metadata']['Device'], 'BCS-805')
+
+    def test_to_file(self):
+        filename = 'BCS - 171.64.160.115_Ta19_ourprotocol_gdocSEP2019_CC7.mps'
+        bcs = Settings.from_file(os.path.join(BIOLOGIC_TEMPLATE_DIR, filename))
+        test_name = 'test.mps'
+        with ScratchDir('.'):
+            bcs.to_file(test_name)
+            original = open(os.path.join(BIOLOGIC_TEMPLATE_DIR, filename), encoding='ISO-8859-1').readlines()
+            parsed = open(test_name, encoding='ISO-8859-1').readlines()
+            udiff = list(difflib.unified_diff(original, parsed))
+            for line in udiff:
+                print(line)
+            self.assertFalse(udiff)
+
+    def test_insertion(self):
+        filename = 'BCS - 171.64.160.115_Ta19_ourprotocol_gdocSEP2019_CC7.mps'
+        bcs = Settings.from_file(os.path.join(BIOLOGIC_TEMPLATE_DIR, filename))
+        value = '{:.3f}'.format(5)
+        bcs.set('Technique.1.Step.3.ctrl1_val', value)
+        self.assertEqual(bcs.get('Technique.1.Step.3.ctrl1_val'), '5.000')
+        test_name = 'test.mps'
+        with ScratchDir('.'):
+            bcs.to_file(test_name)
+            original = open(os.path.join(BIOLOGIC_TEMPLATE_DIR, filename), encoding='ISO-8859-1').readlines()
+            parsed = open(test_name, encoding='ISO-8859-1').readlines()
+            udiff = list(difflib.unified_diff(original, parsed))
+            for line in udiff:
+                print(line)
+            self.assertTrue(udiff)
