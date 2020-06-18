@@ -104,8 +104,7 @@ class Settings(DashOrderedDict):
 
     def to_file(self, filename, encoding='ISO-8859-1', column_width=20, linesep="\r\n"):
         """
-        Settings file ingestion. Invokes Settings object
-        from standard Biologic *.mps file.
+        Write DashOrderedDict to a settings file in the Biologic format with a *.mps extension.
 
         Args:
             filename (str): output name for settings file, full path
@@ -114,7 +113,7 @@ class Settings(DashOrderedDict):
             linesep (str): characters to use for line separation, usually CRLF for Windows based machines
 
         Returns:
-            (None): Writes out file to filename
+            (None): Writes out data to filename
         """
         data = deepcopy(self)
         blocks = []
