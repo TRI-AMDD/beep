@@ -45,8 +45,7 @@ setup(name="beep",
 
                         ],
       extras_require={
-          "tests": ["pytest",
-                    "pytest-cov",
+          "tests": ["pytest-cov",
                     "coveralls",
                     "memory_profiler",
                     "matplotlib"]
