@@ -103,6 +103,19 @@ class Settings(DashOrderedDict):
         return obj
 
     def to_file(self, filename, encoding='ISO-8859-1', column_width=20, linesep="\r\n"):
+        """
+        Settings file ingestion. Invokes Settings object
+        from standard Biologic *.mps file.
+
+        Args:
+            filename (str): output name for settings file, full path
+            encoding (str): file encoding to use when reading the file
+            column_width (int): number of characters per step column
+            linesep (str): characters to use for line separation, usually CRLF for Windows based machines
+
+        Returns:
+            (None): Writes out file to filename
+        """
         data = deepcopy(self)
         blocks = []
         meta_data_keys = list(data['Metadata'].keys())
