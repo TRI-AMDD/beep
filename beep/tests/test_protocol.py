@@ -9,10 +9,11 @@ import datetime
 
 import pandas as pd
 from beep.utils.secrets_manager import event_setup
-from beep.protocol import PROCEDURE_TEMPLATE_DIR, SCHEDULE_TEMPLATE_DIR
+from beep.protocol import PROCEDURE_TEMPLATE_DIR, SCHEDULE_TEMPLATE_DIR, BIOLOGIC_TEMPLATE_DIR
 from beep.generate_protocol import generate_protocol_files_from_csv, convert_velocity_to_power_waveform
 from beep.protocol.maccor import Procedure, generate_maccor_waveform_file
 from beep.protocol.arbin import Schedule
+from beep.protocol.biologic import Settings
 from beep.protocol.maccor_to_arbin import ProcedureToSchedule
 from monty.tempfile import ScratchDir
 from monty.serialization import dumpfn, loadfn
@@ -371,3 +372,47 @@ class ArbinScheduleTest(unittest.TestCase):
                 for line in udiff:
                     print(line)
                 self.assertFalse(udiff)
+
+
+class BiologicSettingsTest(unittest.TestCase):
+    def setUp(self):
+        self.events_mode = event_setup()
+
+    def test_from_file(self):
+        filename = 'BCS - 171.64.160.115_Ta19_ourprotocol_gdocSEP2019_CC7.mps'
+        bcs = Settings.from_file(os.path.join(BIOLOGIC_TEMPLATE_DIR, filename))
+        self.assertEqual(len(bcs['Technique']['1']['Step'].keys()), 55)
+        self.assertEqual(bcs.get('Technique.1.Step.5.Ns'), '4')
+        self.assertEqual(bcs['Technique']['1']['Type'], 'Modulo Bat')
+        self.assertEqual(bcs['Metadata']['BT-LAB SETTING FILE'], None)
+        self.assertEqual(bcs['Metadata']['line3'], 'blank')
+        self.assertEqual(bcs['Metadata']['Device'], 'BCS-805')
+
+    def test_to_file(self):
+        filename = 'BCS - 171.64.160.115_Ta19_ourprotocol_gdocSEP2019_CC7.mps'
+        bcs = Settings.from_file(os.path.join(BIOLOGIC_TEMPLATE_DIR, filename))
+        test_name = 'test.mps'
+        with ScratchDir('.'):
+            bcs.to_file(test_name)
+            original = open(os.path.join(BIOLOGIC_TEMPLATE_DIR, filename), encoding='ISO-8859-1').readlines()
+            parsed = open(test_name, encoding='ISO-8859-1').readlines()
+            udiff = list(difflib.unified_diff(original, parsed))
+            for line in udiff:
+                print(line)
+            self.assertFalse(udiff)
+
+    def test_insertion(self):
+        filename = 'BCS - 171.64.160.115_Ta19_ourprotocol_gdocSEP2019_CC7.mps'
+        bcs = Settings.from_file(os.path.join(BIOLOGIC_TEMPLATE_DIR, filename))
+        value = '{:.3f}'.format(5)
+        bcs.set('Technique.1.Step.3.ctrl1_val', value)
+        self.assertEqual(bcs.get('Technique.1.Step.3.ctrl1_val'), '5.000')
+        test_name = 'test.mps'
+        with ScratchDir('.'):
+            bcs.to_file(test_name)
+            original = open(os.path.join(BIOLOGIC_TEMPLATE_DIR, filename), encoding='ISO-8859-1').readlines()
+            parsed = open(test_name, encoding='ISO-8859-1').readlines()
+            udiff = list(difflib.unified_diff(original, parsed))
+            for line in udiff:
+                print(line)
+            self.assertTrue(udiff)
