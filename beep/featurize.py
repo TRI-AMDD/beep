@@ -568,6 +568,7 @@ class DeltaQFastCharge(BeepFeatures):
         else:
             conditions.append(len(processed_cycler_run.summary.index) > cls.final_pred_cycle)
 
+
         return all(conditions)
 
     @classmethod
@@ -623,23 +624,25 @@ class DeltaQFastCharge(BeepFeatures):
         Vd = interpolated_df.voltage[interpolated_df.cycle_index == iini]
         Qd_diff = Qd_final.values - Qd_10.values
 
-        X[5] = np.log10(np.abs(np.min(Qd_diff)))  # Minimum
+        # If DeltaQ(V) is not an empty array, compute summary stats, else initialize with np.nan
+        # Cells discharged rapidly over a narrow voltage window run into have no interpolated discharge steps
+        if len(Qd_diff):
+            X[5] = np.log10(np.abs(np.nanmin(Qd_diff)))  # Minimum
+            X[6] = np.log10(np.abs(np.nanmean(Qd_diff)))  # Mean
+            X[7] = np.log10(np.abs(np.nanvar(Qd_diff)))  # Variance
+            X[8] = np.log10(np.abs(skew(Qd_diff)))  # Skewness
+            X[9] = np.log10(np.abs(kurtosis(Qd_diff)))  # Kurtosis
+            X[10] = np.log10(np.abs(Qd_diff[0]))  # First difference
+        else:
+            X[5:11] = np.nan
+
         labels.append("abs_min_discharge_capacity_difference_cycles_2:100")
-
-        X[6] = np.log10(np.abs(np.mean(Qd_diff)))  # Mean
         labels.append("abs_mean_discharge_capacity_difference_cycles_2:100")
-
-        X[7] = np.log10(np.abs(np.var(Qd_diff)))  # Variance
         labels.append("abs_variance_discharge_capacity_difference_cycles_2:100")
-
-        X[8] = np.log10(np.abs(skew(Qd_diff)))  # Skewness
         labels.append("abs_skew_discharge_capacity_difference_cycles_2:100")
-
-        X[9] = np.log10(np.abs(kurtosis(Qd_diff)))  # Kurtosis
         labels.append("abs_kurtosis_discharge_capacity_difference_cycles_2:100")
-
-        X[10] = np.log10(np.abs(Qd_diff[0]))  # First difference
         labels.append("abs_first_discharge_capacity_difference_cycles_2:100")
+
 
         X[11] = max(summary.temperature_maximum[list(range(1, cls.final_pred_cycle))])  # Max T
         labels.append("max_temperature_cycles_1:100")
