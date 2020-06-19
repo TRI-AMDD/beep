@@ -624,6 +624,8 @@ class DeltaQFastCharge(BeepFeatures):
         Vd = interpolated_df.voltage[interpolated_df.cycle_index == iini]
         Qd_diff = Qd_final.values - Qd_10.values
 
+        # If DeltaQ(V) is not an empty array, compute summary stats, else initialize with np.nan
+        # Cells discharged rapidly over a narrow voltage window run into have no interpolated discharge steps
         if len(Qd_diff):
             X[5] = np.log10(np.abs(np.nanmin(Qd_diff)))  # Minimum
             X[6] = np.log10(np.abs(np.nanmean(Qd_diff)))  # Mean

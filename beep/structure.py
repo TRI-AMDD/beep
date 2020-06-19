@@ -759,6 +759,7 @@ class RawCyclerRun(MSONable):
             resolution (int): resolution for interpolation
             nominal_capacity (float): nominal capacity for summary stats
             full_fast_charge (float): full fast charge for summary stats
+            parameters_path (str): path to parameters file
 
         Returns:
             v_range ([float, float]): voltage range for interpolation
