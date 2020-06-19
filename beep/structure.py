@@ -165,7 +165,7 @@ class RawCyclerRun(MSONable):
         cycle_indices = [c for c in cycle_indices if c in reg_cycles]
         cycle_indices.sort()
         for cycle_index in tqdm(cycle_indices):
-            # Use a cycle_index mask instead of a global groupby to save memory
+            # Use a cycle_index mask instead of a global groupby to save memoryÍ
             new_df = self.data.loc[self.data["cycle_index"] == cycle_index].groupby("step_index").filter(step_filter)
             if new_df.size == 0:
                 continue
@@ -749,7 +749,8 @@ class RawCyclerRun(MSONable):
         return cls(data, metadata, eis, validate, filename=filename)
 
     def determine_structuring_parameters(self, v_range=None, resolution=1000,
-                                         nominal_capacity=1.1, full_fast_charge=0.8):
+                                         nominal_capacity=1.1, full_fast_charge=0.8,
+                                         parameters_path='data-share/raw/parameters'):
         """
         Method for determining what values to use to convert raw run into processed run
 
@@ -768,7 +769,7 @@ class RawCyclerRun(MSONable):
                 finding and using the diagnostic cycles
 
         """
-        run_parameter, all_parameters = get_protocol_parameters(self.filename)
+        run_parameter, all_parameters = get_protocol_parameters(self.filename, parameters_path)
         # Logic for interpolation variables and diagnostic cycles
         diagnostic_available = False
         if run_parameter is not None:
