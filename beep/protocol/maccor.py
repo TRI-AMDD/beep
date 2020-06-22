@@ -283,8 +283,8 @@ class Procedure(DashOrderedDict):
 
         self.set('MaccorTestProcedure.ProcSteps.TestStep.{}.StepType'.format(waveform_idx), 'FastWave')
         self.set('MaccorTestProcedure.ProcSteps.TestStep.{}.StepMode'.format(waveform_idx), '')
-        self.set('MaccorTestProcedure.ProcSteps.TestStep.{}.Ends'.format(waveform_idx), None)
-        self.set('MaccorTestProcedure.ProcSteps.TestStep.{}.Reports'.format(waveform_idx), None)
+        # self.set('MaccorTestProcedure.ProcSteps.TestStep.{}.Ends'.format(waveform_idx), None)
+        # self.set('MaccorTestProcedure.ProcSteps.TestStep.{}.Reports'.format(waveform_idx), None)
         self.set('MaccorTestProcedure.ProcSteps.TestStep.{}.Range'.format(waveform_idx), '')
         self.set('MaccorTestProcedure.ProcSteps.TestStep.{}.Option1'.format(waveform_idx), '')
         self.set('MaccorTestProcedure.ProcSteps.TestStep.{}.Option2'.format(waveform_idx), '')
