@@ -283,8 +283,8 @@ class Procedure(DashOrderedDict):
 
         self.set('MaccorTestProcedure.ProcSteps.TestStep.{}.StepType'.format(waveform_idx), 'FastWave')
         self.set('MaccorTestProcedure.ProcSteps.TestStep.{}.StepMode'.format(waveform_idx), '')
-        # self.set('MaccorTestProcedure.ProcSteps.TestStep.{}.Ends'.format(waveform_idx), None)
-        # self.set('MaccorTestProcedure.ProcSteps.TestStep.{}.Reports'.format(waveform_idx), None)
+        self.set('MaccorTestProcedure.ProcSteps.TestStep.{}.Ends'.format(waveform_idx), None)
+        self.set('MaccorTestProcedure.ProcSteps.TestStep.{}.Reports'.format(waveform_idx), None)
         self.set('MaccorTestProcedure.ProcSteps.TestStep.{}.Range'.format(waveform_idx), '')
         self.set('MaccorTestProcedure.ProcSteps.TestStep.{}.Option1'.format(waveform_idx), '')
         self.set('MaccorTestProcedure.ProcSteps.TestStep.{}.Option2'.format(waveform_idx), '')
@@ -294,6 +294,8 @@ class Procedure(DashOrderedDict):
         assert waveform_filename.split('.')[-1].lower() == 'mwf'
         local_name = waveform_filename.split('.')[0]
         _, local_name = os.path.split(local_name)
+        assert len(local_name) < 25, str(len(local_name))
+
         steps[waveform_idx]['StepValue'] = local_name
 
         return self
