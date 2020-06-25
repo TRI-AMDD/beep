@@ -390,83 +390,102 @@ def res_calc(chosen, diag_pos, soc, step_ocv, step_cur, index):
 
     return res
 
-def get_hppc_r(processed_cycler_run, diag_num):
-    '''
-    This function takes in cycling data for one cell and returns the resistance at different SOCs with resistance at the
-    first hppc cycle(cycle 2) deducted
-    Argument:
-            processed_cycler_run(process_cycler_run object)
-            diag_num(int): diagnostic cycle number at which you want to get the feature, such as 37 or 142
-    Returns:
-            two floats
-            the variance of the diag_num - cycle 2 for HPPC resistance for both charge and discharge
-    '''
-    data = processed_cycler_run.diagnostic_interpolated
-    cycle_hppc = data.loc[data.cycle_type == 'hppc']
-    cycle_hppc = cycle_hppc.loc[cycle_hppc.current.notna()]
-    cycles = cycle_hppc.cycle_index.unique()
-    if diag_num not in cycles:
-        return None
-    steps = [11, 12, 14]
-    states = ['R', 'D', 'C']
-    results_0 = {}
-    results = {}
-    resistance = {}
-    dr_d = {}
-    cycle_hppc_0 = cycle_hppc.loc[cycle_hppc.cycle_index == 2]
-    #     in case that cycle 2 correspond to two cycles one is real cycle 2, one is at the end
-    cycle_hppc_0 = cycle_hppc_0.loc[cycle_hppc_0.test_time < 250000]
-    for i in range(len(steps)):
-        chosen = cycle_hppc_0[cycle_hppc_0.step_index == steps[i]]
-        state = states[i]
-        result = get_V_I(chosen)
-        results_0[state] = result
-    results[2] = results_0
-    steps_later = [43, 44, 46]
-    #     step 43 is rest, 44 is discharge and 46 is charge, use the get ocv function to get the voltage values
-    #     and calculate the over potential and thus the resistance change
-    for i in range(1, len(cycles)):
-        chosen = cycle_hppc[cycle_hppc.cycle_index == cycles[i]]
-        results_s = {}
-        for j in range(len(steps_later)):
-            chosen_s = chosen[chosen.step_index == steps_later[j]]
-            state = states[j]
-            results_s[state] = get_V_I(chosen_s)
-        results[cycles[i]] = results_s
-    # calculate the resistance and compare the cycle evolution
-    keys = list(results.keys())
-    resistance['D'] = {}
-    resistance['C'] = {}
-    for i in range(len(keys)):
-        d_v = results[keys[i]]['D']['voltage']  # discharge voltage for a cycle
-        c_v = results[keys[i]]['C']['voltage']  # charge voltage for a cycle
-        r_v = results[keys[i]]['R']['voltage']  # rest voltage for a cycle
-        r_v_d = r_v[0:min(len(r_v), len(d_v))]  # in case the size is different
-        d_v = d_v[0:min(len(r_v), len(d_v))]
-        c_v = c_v[0:min(len(r_v), len(c_v))]
-        r_v_c = r_v[0:min(len(r_v), len(c_v))]
-        d_n = list(np.array(d_v) - np.array(r_v_d))  # discharge overpotential
-        c_n = list(np.array(c_v) - np.array(r_v_c))  # charge overpotential
-        resistance['D'][keys[i]] = np.true_divide(d_n, results[keys[i]]['D']['current'])
-        resistance['C'][keys[i]] = np.true_divide(c_n, results[keys[i]]['C']['current'])
-    resistance_d = resistance['D']
-    resistance_c = resistance['C']
-    dr_c = {}
-    SOC = list(range(10, 100, 10))
-    for i in range(1, len(keys)):
-        resistance_d_i = resistance_d[keys[i]]
-        resistance_d_0 = resistance_d[keys[0]]
-        resistance_d_0 = resistance_d_0[0:min(len(resistance_d_i), len(resistance_d_0))]
-        dr_d[keys[i]] = list(resistance_d_i - resistance_d_0)
-    for i in range(1, len(keys)):
-        resistance_c_i = resistance_c[keys[i]]
-        resistance_c_0 = resistance_c[keys[0]]
-        resistance_c_0 = resistance_c_0[0:min(len(resistance_c_i), len(resistance_c_0))]
-        dr_c[keys[i]] = list(resistance_c_i - resistance_c_0)
-    f2_d = np.var(dr_d[diag_num])
-    f2_c = np.var(dr_c[diag_num])
-    return f2_d, f2_c
 
+def get_r_df(processed_cycler_run, diag_pos):
+    """
+    This function calculates resistance based on different socs and differnet time length in hppc cycles.
+
+    Args:
+        processed_cycler_run (beep.structure.ProcessedCyclerRun)
+        diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
+        if rpt_0.2C, occurs at cycle_index = [2, 42, 147, 249 ...], <diag_pos>=0 would correspond to cycle_index 2
+
+    Returns:
+        a dataframe contains 54 resistances calculated at diag_pos.
+        6 columns are ohmic, charge transfer and polarization resistances each both for charge and discharge;
+        9 columns from 0 to 8, correspond to state of charge from high to low.
+    """
+
+    resistances = pd.DataFrame()
+
+    chosen = get_chosen_df(processed_cycler_run, diag_pos)
+
+    resistance = []
+    for i in range(9):
+        res = res_calc(chosen, diag_pos, i, 0, 1, 'last')
+        resistance.append(res)
+    resistances['discharge_pulse_last'] = resistance
+
+    resistance = []
+    for i in range(9):
+        res = res_calc(chosen, diag_pos, i, 0, 1, 0.001)
+        resistance.append(res)
+    resistances['discharge_pulse_0.001s'] = resistance
+
+    resistance = []
+    for i in range(9):
+        res = res_calc(chosen, diag_pos, i, 0, 1, 2)
+        resistance.append(res)
+    resistances['discharge_pulse_2s'] = resistance
+
+    resistance = []
+    for i in range(9):
+        res = res_calc(chosen, diag_pos, i, 2, 3, 'last')
+        resistance.append(res)
+    resistances['charge_pulse_last'] = resistance
+
+    resistance = []
+    for i in range(9):
+        res = res_calc(chosen, diag_pos, i, 2, 3, 2)
+        resistance.append(res)
+    resistances['charge_pulse_2s'] = resistance
+
+    resistance = []
+    for i in range(9):
+        res = res_calc(chosen, diag_pos, i, 2, 3, 0.001)
+        resistance.append(res)
+    resistances['charge_pulse_0.001s'] = resistance
+
+    result = pd.DataFrame()
+    result['ohmic_r_d'] = resistances['discharge_pulse_0.001s']
+    result['ohmic_r_c'] = resistances['charge_pulse_0.001s']
+    result['ct_r_d'] = resistances['discharge_pulse_2s'] - resistances['discharge_pulse_0.001s']
+    result['ct_r_c'] = resistances['charge_pulse_2s'] - resistances['charge_pulse_0.001s']
+    result['polar_r_d'] = resistances['discharge_pulse_last'] - resistances['discharge_pulse_2s']
+    result['polar_r_c'] = resistances['charge_pulse_last'] - resistances['charge_pulse_2s']
+
+    #     result.plot(figsize=(8,6))
+    #     plt.legend()
+    #     plt.ylabel('Resistance [Ohms]')
+    #     plt.xlabel('SOC Index High to Low')
+    #     plt.title('Resistance with different time constants')
+
+    return result
+
+def get_dr_df(processed_cycler_run, diag_pos):
+    """
+    This function calculates resistance change between the cycle first and cycle at diag_pos you are interested in.
+
+    Args:
+        processed_cycler_run (beep.structure.ProcessedCyclerRun)
+        diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
+        if rpt_0.2C, occurs at cycle_index = [2, 42, 147, 249 ...], <diag_pos>=0 would correspond to cycle_index 2.
+
+    Returns:
+        a dataframe contains resistances changes normalized by the first diagnostic cycle value.
+    """
+
+    r_df_0 = get_r_df(processed_cycler_run, 0)
+    r_df_i = get_r_df(processed_cycler_run, diag_pos)
+    dr_df = (r_df_i - r_df_0) / r_df_0
+
+    #     dr_df.plot(figsize=(8,6))
+    #     plt.legend()
+    #     plt.ylabel('Resistance Change [Ohms]')
+    #     plt.xlabel('SOC Index High to Low')
+    #     plt.title('Resistance with different time constants')
+
+    return dr_df
 
 def get_V_I(df):
     """
