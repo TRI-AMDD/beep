@@ -558,6 +558,103 @@ def get_v_diff(processed_cycler_run, file, diag_pos, soc_window):
         result['file'] = file
         return result
 
+def d_curve_fitting(x, y):
+    '''
+    This function fits given data x and y into a linear function.
+
+    Argument:
+           relevant data x and y.
+    Returns:
+            the slope of the curve.
+    '''
+
+    def test(x, a, b):
+        return a * x + b
+
+    param, param_cov = curve_fit(test, x, y)
+
+    a = param[0]
+
+    ans = param[0] * (x) + param[1]
+
+    return a
+
+
+def get_diffusion_coeff(processed_cycler_run, diag_pos):
+    """
+    This function calculates the slope for the linearized 40s rest in hppc at different socs.
+    The slope is proportional to 1/sqrt(D). (D here is interdiffusivity)
+
+    Args:
+        processed_cycler_run (beep.structure.ProcessedCyclerRun)
+        diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
+        if rpt_0.2C, occurs at cycle_index = [2, 42, 147, 249 ...], <diag_pos>=0 would correspond to cycle_index 2
+
+    Returns:
+        a dataframe, with 9 entries, the slope at different socs.
+    """
+
+    data = processed_cycler_run.diagnostic_interpolated
+    hppc_cycle = data.loc[data.cycle_type == 'hppc']
+    cycles = hppc_cycle.cycle_index.unique()
+    diag_num = cycles[diag_pos]
+
+    chosen = hppc_cycle.loc[hppc_cycle.cycle_index == diag_num]
+    chosen = chosen.sort_values(by='test_time')
+
+    counters = []
+
+    if diag_pos == 0:
+        steps = [11, 12, 13, 14, 15]
+    else:
+        steps = [43, 44, 45, 46, 47]
+
+    for step in steps:
+        counters.append(chosen[chosen.step_index == step].step_index_counter.unique().tolist())
+
+    result = pd.DataFrame()
+
+    #     fig, axs = plt.subplots(2, 5, figsize=(23, 10), dpi = 80, facecolor='w', edgecolor='k')
+    #     fig.subplots_adjust(hspace = .5, wspace=.3)
+    #     axs = axs.ravel()
+    for i in range(1, min(len(counters[1]), 9)):
+        discharge = chosen.loc[chosen.step_index_counter == counters[1][i]]
+        rest = chosen.loc[chosen.step_index_counter == counters[2][i]]
+        rest['diagnostic_time'] = (rest.test_time - rest.test_time.min())
+        t_d = discharge.test_time.max() - discharge.test_time.min()
+        v = rest.voltage
+        t = rest.diagnostic_time
+        x = np.sqrt(t + t_d) - np.sqrt(t)
+        y = v - v.min()
+        a = d_curve_fitting(x[round(3 * len(x) / 4):len(x)], y[round(3 * len(x) / 4):len(x)])
+        #         d = 1/(a**2)
+        result['D_' + str(i)] = [a]
+    #         axs[i-1].plot(x, y, 'o', color ='red', label ="data")
+    #         axs[i-1].plot(x[round(3*len(x)/4):len(x)], ans, '--', color ='blue', label ="optimized data")
+    #         axs[i-1].set_xlabel('sqrt(T_relax+T_pluse)- sqrt(T_relax)')
+    #         axs[i-1].set_ylabel('\u0394Voltage[V]')
+    #         axs[i-1].set_title(str(100-i*10)+'%')
+    return result
+
+
+def get_diffusion_feature(processed_cycler_run, diag_pos):
+    """
+    This function calculates the slope difference between cycle first and cycle diag_pos we are interested in.
+
+    Args:
+        processed_cycler_run (beep.structure.ProcessedCyclerRun)
+        diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
+        if rpt_0.2C, occurs at cycle_index = [2, 42, 147, 249 ...], <diag_pos>=0 would correspond to cycle_index 2.
+
+    Returns:
+        a dataframe contains slope changes.
+
+    """
+    df_0 = get_diffusion_coeff(processed_cycler_run, 0)
+    df = get_diffusion_coeff(processed_cycler_run, diag_pos)
+    result = df_0.subtract(df)
+    return result
+
 def get_relaxation_times(voltage_data, time_data, decay_percentage = [0.5, 0.8, 0.99]):
     """
     This function takes in the voltage data and time data of a voltage relaxation curve
