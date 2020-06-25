@@ -247,17 +247,6 @@ def generate_dQdV_peak_fits(processed_cycler_run, rpt_type, diag_nr, charge_y_n,
 
 
 
-def interp(df):
-    '''
-    this function takes in a data frame that we are interested in, and
-    returns an interpolation function based on the discharge volatge and capacity
-    '''
-    V = df.voltage.values
-    Q = df.discharge_capacity.values
-    f = interp1d(Q, V, kind='cubic', fill_value="extrapolate")
-    return f
-
-
 def list_minus(list1, list2):
     """
     this function takes in two lists and will return a list containing
