@@ -504,50 +504,59 @@ def get_V_I(df):
     result['current'] = current
     return result
 
+def get_v_diff(processed_cycler_run, file, diag_pos, soc_window):
+    """
+    This function calculates voltage difference between a hppc cycle we are interested (at diag_pos) and the initial
+    diag cycle (cycle 2) for a specific soc range
 
-def get_v_diff(diag_num, processed_cycler_run, soc_window):
-    """
-    This function helps us get the feature of the variance of the voltage difference
-    across a specific capacity window
-    Argument:
-            diag_num(int): diagnostic cycle number at which you want to get the feature, such as 37 or 142
-            processed_cycler_run(process_cycler_run object)
-            soc_window(int): let the function know which step_counter_index you want to look at
+    Args:
+        processed_cycler_run (beep.structure.ProcessedCyclerRun)
+        file (str): the file name of the processed_cycler_run object, to indicate which cell if it is doing
+        weird things.
+        diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
+        if rpt_0.2C, occurs at cycle_index = [2, 42, 147, 249 ...], <diag_pos>=0 would correspond to cycle_index 2
+        soc_window (int): step index counter corresponding to the soc window of interest.
+
     Returns:
-            a float
+        a dataframe that contains this a value (float), the variance of the voltage differences
     """
+
+    result = pd.DataFrame()
+
     data = processed_cycler_run.diagnostic_interpolated
     hppc_data = data.loc[data.cycle_type == 'hppc']
-    # the discharge steps in the hppc cycles step number 47
-    hppc_data_2 = hppc_data.loc[hppc_data.cycle_index == diag_num]
-    hppc_data_1 = hppc_data.loc[hppc_data.cycle_index == 2]
+    cycles = hppc_data.cycle_index.unique()
+
+    hppc_data_2 = hppc_data.loc[hppc_data.cycle_index == cycles[diag_pos]]
+    hppc_data_1 = hppc_data.loc[hppc_data.cycle_index == cycles[0]]
     #     in case a final HPPC is appended in the end also with cycle number 2
     hppc_data_1 = hppc_data_1.loc[hppc_data_1.discharge_capacity < 8]
+
+    #         the discharge steps in later hppc cycles has a step number of 47
+    #         but that in the initial hppc cycle has a step number of 15
     hppc_data_2_d = hppc_data_2.loc[hppc_data_2.step_index == 47]
     hppc_data_1_d = hppc_data_1.loc[hppc_data_1.step_index == 15]
     step_counters_1 = hppc_data_1_d.step_index_counter.unique()
     step_counters_2 = hppc_data_2_d.step_index_counter.unique()
-    if (len(step_counters_1) < 8) or (len(step_counters_2) < 8):
-        print('error')
+    chosen_1 = hppc_data_1_d.loc[hppc_data_1_d.step_index_counter == step_counters_1[soc_window]]
+    chosen_2 = hppc_data_2_d.loc[hppc_data_2_d.step_index_counter == step_counters_2[soc_window]]
+    chosen_1 = chosen_1.loc[chosen_1.discharge_capacity.notna()]
+    chosen_2 = chosen_2.loc[chosen_2.discharge_capacity.notna()]
+
+    V = chosen_1.voltage.values
+    Q = chosen_1.discharge_capacity.values
+    f = interp1d(Q, V, kind='cubic', fill_value="extrapolate")
+
+    v_2 = chosen_2.voltage.tolist()
+    v_1 = f(chosen_2.discharge_capacity).tolist()
+    v_diff = list_minus(v_1, v_2)
+    if abs(np.var(v_diff)) > 1:
+        print('weird voltage' + file)
         return None
     else:
-        chosen_1 = hppc_data_1_d.loc[hppc_data_1_d.step_index_counter == step_counters_1[soc_window]]
-        chosen_2 = hppc_data_2_d.loc[hppc_data_2_d.step_index_counter == step_counters_2[soc_window]]
-        chosen_1 = chosen_1.loc[chosen_1.discharge_capacity.notna()]
-        chosen_2 = chosen_2.loc[chosen_2.discharge_capacity.notna()]
-        if len(chosen_1) == 0 or len(chosen_2) == 0:
-            print('error')
-            return None
-        f = interp(chosen_2)
-        v_1 = chosen_1.voltage.tolist()
-        v_2 = f(chosen_1.discharge_capacity).tolist()
-        v_diff = list_minus(v_1, v_2)
-        if abs(np.var(v_diff)) > 1:
-            print('weird voltage')
-            return None
-        else:
-            return v_diff
-
+        result['var(v_diff)'] = [np.var(v_diff)]
+        result['file'] = file
+        return result
 
 def get_relaxation_times(voltage_data, time_data, decay_percentage = [0.5, 0.8, 0.99]):
     """
