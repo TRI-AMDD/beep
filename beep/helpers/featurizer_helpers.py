@@ -13,6 +13,7 @@ import matplotlib as plt
 from scipy import signal
 from lmfit import models
 from scipy.interpolate import interp1d
+from scipy.optimize import curve_fit
 
 
 def isolate_dQdV_peaks(processed_cycler_run, diag_nr, charge_y_n, max_nr_peaks, rpt_type, half_peak_width=0.075):
