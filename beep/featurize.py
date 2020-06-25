@@ -429,7 +429,7 @@ class DiagnosticCyclesFeatures(BeepFeatures):
 
 
         Returns:
-            X (pd.DataFrame): Dataframe containing the features
+            X (pd.DataFrame): Dataframe containing the feature
         """
 
         diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated
