@@ -274,30 +274,45 @@ def get_hppc_ocv_helper(cycle_hppc_0, step_num):
     return voltage1
 
 
-def get_hppc_ocv(processed_cycler_run, diag_num):
+def get_hppc_ocv(processed_cycler_run, diag_pos):
     '''
     This function takes in cycling data for one cell and returns the variance of OCVs at different SOCs
-    diag_num cyce minus first hppc cycle(cycle 2)
+    diag_num cyce minus first hppc cycle(cycle 2).
+
     Argument:
-            processed_cycler_run(process_cycler_run object)
-            diag_num(int): diagnostic cycle number at which you want to get the feature, such as 37 or 142
+            processed_cycler_run (beep.structure.ProcessedCyclerRun)
+            diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
+            if rpt_0.2C, occurs at cycle_index = [2, 42, 147, 249 ...], <diag_pos>=0 would correspond to cycle_index 2.
     Returns:
-            a float
-            the variance of the diag_num minus cycle 2 for OCV
+            a dataframe with one entry('variance of ocv'):
+                the variance of the diag_num minus cycle 2 for OCV.
     '''
+
+    hppc_ocv_features = pd.DataFrame()
+
     data = processed_cycler_run.diagnostic_interpolated
     cycle_hppc = data.loc[data.cycle_type == 'hppc']
     cycle_hppc = cycle_hppc.loc[cycle_hppc.current.notna()]
-    step = 11
-    step_later = 43
-    cycle_hppc_0 = cycle_hppc.loc[cycle_hppc.cycle_index == 2]
+    cycles = cycle_hppc.cycle_index.unique()
+
+    cycle_hppc_0 = cycle_hppc.loc[cycle_hppc.cycle_index == cycles[0]]
     #     in case that cycle 2 correspond to two cycles one is real cycle 2, one is at the end
     cycle_hppc_0 = cycle_hppc_0.loc[cycle_hppc_0.test_time < 250000]
+
+    step = 11
+    step_later = 43
+
     voltage_1 = get_hppc_ocv_helper(cycle_hppc_0, step)
-    chosen = cycle_hppc.loc[cycle_hppc.cycle_index == diag_num]
+    chosen = cycle_hppc.loc[cycle_hppc.cycle_index == cycles[diag_pos]]
     voltage_2 = get_hppc_ocv_helper(chosen, step_later)
+
     dv = list_minus(voltage_1, voltage_2)
-    return np.var(dv)
+
+    var_dv = np.var(dv)
+
+    hppc_ocv_features['variance of ocv'] = [var_dv]
+
+    return hppc_ocv_features
 
 
 def get_hppc_r(processed_cycler_run, diag_num):
