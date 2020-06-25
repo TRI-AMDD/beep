@@ -347,15 +347,13 @@ class DiagnosticCyclesFeatures(BeepFeatures):
         return 1 + (peak_fit_df - peak_fit_df_ref) / peak_fit_df_ref
 
     @classmethod
-    def get_hppc_features(cls, processed_cycler_run, diag_pos=1, soc_window=7):
+    def get_hppc_features(cls, processed_cycler_run, diag_pos=1, soc_window=8):
         """
         This method calculates features based on voltage and resistance changes in hppc and rpt cycles
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun)
-            parameters_path (str): path to the project parameters file
             diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
             if rpt_0.2C, occurs at cycle_index = [2, 42, 147, 249 ...], <diag_pos>=2 would correspond to cycle_index 147
-            parameters_path (str): location of parameter table csv
             soc_window (int): step index counter corresponding to the soc window of interest.
 
         Returns:
