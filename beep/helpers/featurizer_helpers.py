@@ -504,15 +504,13 @@ def get_V_I(df):
     result['current'] = current
     return result
 
-def get_v_diff(processed_cycler_run, file, diag_pos, soc_window):
+def get_v_diff(processed_cycler_run, diag_pos, soc_window):
     """
     This function calculates voltage difference between a hppc cycle we are interested (at diag_pos) and the initial
     diag cycle (cycle 2) for a specific soc range
 
     Args:
         processed_cycler_run (beep.structure.ProcessedCyclerRun)
-        file (str): the file name of the processed_cycler_run object, to indicate which cell if it is doing
-        weird things.
         diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
         if rpt_0.2C, occurs at cycle_index = [2, 42, 147, 249 ...], <diag_pos>=0 would correspond to cycle_index 2
         soc_window (int): step index counter corresponding to the soc window of interest.
@@ -551,11 +549,10 @@ def get_v_diff(processed_cycler_run, file, diag_pos, soc_window):
     v_1 = f(chosen_2.discharge_capacity).tolist()
     v_diff = list_minus(v_1, v_2)
     if abs(np.var(v_diff)) > 1:
-        print('weird voltage' + file)
+        print('weird voltage')
         return None
     else:
         result['var(v_diff)'] = [np.var(v_diff)]
-        result['file'] = file
         return result
 
 def d_curve_fitting(x, y):

@@ -359,26 +359,32 @@ class DiagnosticCyclesFeatures(BeepFeatures):
         Returns:
             dataframe of features based on voltage and resistance changes over a SOC window in hppc cycles
         """
-        data = processed_cycler_run.diagnostic_interpolated
+        result = pd.DataFrame()
 
-        cycle_hppc = data.loc[data.cycle_type == 'hppc']
-        cycle_hppc = cycle_hppc.loc[cycle_hppc.current.notna()]
-        cycles = cycle_hppc.cycle_index.unique()
+        # diffusion features
+        d = get_diffusion_feature(processed_cycler_run, diag_pos)
 
-        [f2_d, f2_c] = featurizer_helpers.get_hppc_r(processed_cycler_run, cycles[diag_pos])
-        f3 = featurizer_helpers.get_hppc_ocv(processed_cycler_run, cycles[diag_pos])
-        v_diff = featurizer_helpers.get_v_diff(cycles[diag_pos], processed_cycler_run, soc_window)
-        params, _ = get_protocol_parameters(processed_cycler_run.protocol.split('.')[0])
-        params = params[['charge_cutoff_voltage', 'discharge_cutoff_voltage']].reset_index(drop=True)
-        df_c = pd.DataFrame()
-        df_c = df_c.append({'var(v_diff)': np.var(v_diff),
-                            'resistance_d': f2_d, 'resistance_c': f2_c,
-                            'var(ocv)': f3}, ignore_index=True)
-        df_c.reset_index(drop=True, inplace=True)
-        df_c = pd.concat([df_c, params], axis=1)
-        df_c.reset_index(drop=True, inplace=True)
+        # resistance features, but the resistance feature is a 9 by 6 dataframe, so we have to make it to 1 by 54
+        hppc_r = pd.DataFrame()
+        # the 9 by 6 dataframe
+        df_dr = get_dr_df(processed_cycler_run, diag_pos)
+        # transform this dataframe to be 1 by 54
+        columns = df_dr.columns
+        for column in columns:
+            for r in range(len(df_dr[column])):
+                name = column + str(r)
+                hppc_r[name] = [df_dr[column][r]]
 
-        return df_c
+        # the variance of ocv features
+        hppc_ocv = get_hppc_ocv(processed_cycler_run, diag_pos)
+
+        # the v_diff features
+        v_diff = get_v_diff(processed_cycler_run, diag_pos, soc_window)
+
+        # merge everything together as a final result dataframe
+        result = pd.concat([hppc_r, hppc_ocv, v_diff, d], axis=1)
+
+        return result
 
     @classmethod
     def get_all_relaxation_features(cls, processed_cycler_run, soc_list = np.linspace(90, 10, 9, dtype='int'),
