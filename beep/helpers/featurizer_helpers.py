@@ -277,13 +277,12 @@ def get_hppc_ocv_helper(cycle_hppc_0, step_num):
 
 def get_hppc_ocv(processed_cycler_run, diag_pos):
     '''
-    This function takes in cycling data for one cell and returns the variance of OCVs at different SOCs
-    diag_num cyce minus first hppc cycle(cycle 2).
+    This function calculates the variance of ocv changes between hppc cycle specified by and the first one.
 
     Argument:
             processed_cycler_run (beep.structure.ProcessedCyclerRun)
             diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
-            if rpt_0.2C, occurs at cycle_index = [2, 42, 147, 249 ...], <diag_pos>=0 would correspond to cycle_index 2.
+            if rpt_0.2C, occurs at cycle_index = [2, 37, 142, 244 ...], <diag_pos>=0 would correspond to cycle_index 2.
     Returns:
             a dataframe with one entry('variance of ocv'):
                 the variance of the diag_num minus cycle 2 for OCV.
@@ -324,7 +323,7 @@ def get_chosen_df(processed_cycler_run, diag_pos):
     Args:
         processed_cycler_run (beep.structure.ProcessedCyclerRun)
         diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
-        if rpt_0.2C, occurs at cycle_index = [2, 42, 147, 249 ...], <diag_pos>=0 would correspond to cycle_index 2.
+        if rpt_0.2C, occurs at cycle_index = [2, 37, 142, 244 ...], <diag_pos>=0 would correspond to cycle_index 2.
 
     Returns:
         a datarame that only has the diagnostic cycle you are interested in, and there is a column called
@@ -346,12 +345,12 @@ def get_chosen_df(processed_cycler_run, diag_pos):
 
 def res_calc(chosen, diag_pos, soc, step_ocv, step_cur, index):
     """
-    This function calculates resistance at different socs and a specific pulse duration in hppc cycles.
+    This function calculates resistances at different socs and a specific pulse duration for a specified hppc cycle.
 
     Args:
         chosen(pd.DataFrame): a dataframe for a specific diagnostic cycle you are interested in.
         diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
-        if rpt_0.2C, occurs at cycle_index = [2, 42, 147, 249 ...], <diag_pos>=0 would correspond to cycle_index 2
+        if rpt_0.2C, occurs at cycle_index = [2, 37, 142, 244 ...], <diag_pos>=0 would correspond to cycle_index 2
         soc (int): step index counter corresponding to the soc window of interest.
         step_ocv (int): 0 corresponds to the 1h-rest, and 2 corresponds to the 40s-rest.
         step_cur (int): 1 is for discharge, and 3 is for charge.
@@ -394,12 +393,12 @@ def res_calc(chosen, diag_pos, soc, step_ocv, step_cur, index):
 
 def get_resistance_soc_duration_hppc(processed_cycler_run, diag_pos):
     """
-    This function calculates resistance at different socs and different pulse durations in hppc cycles.
+    This function calculates resistances at different socs and different pulse durations for a specified hppc cycle.
 
     Args:
         processed_cycler_run (beep.structure.ProcessedCyclerRun)
         diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
-        if rpt_0.2C, occurs at cycle_index = [2, 42, 147, 249 ...], <diag_pos>=0 would correspond to cycle_index 2
+        if rpt_0.2C, occurs at cycle_index = [2, 37, 142, 244 ...], <diag_pos>=0 would correspond to cycle_index 2
 
     Returns:
         a dataframe contains 54 resistances calculated at diag_pos.
@@ -459,12 +458,14 @@ def get_resistance_soc_duration_hppc(processed_cycler_run, diag_pos):
 
 def get_dr_df(processed_cycler_run, diag_pos):
     """
-    This function calculates resistance change between the cycle first and cycle at diag_pos you are interested in.
+    This function calculates resistance changes between a hppc cycle specified by and the first one under different
+    pulse durations (1ms for ohmic resistance, 2s for charge transfer and the end of pulse for polarization resistance)
+    and different state of charge.
 
     Args:
         processed_cycler_run (beep.structure.ProcessedCyclerRun)
         diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
-        if rpt_0.2C, occurs at cycle_index = [2, 42, 147, 249 ...], <diag_pos>=0 would correspond to cycle_index 2.
+        if rpt_0.2C, occurs at cycle_index = [2, 37, 142, 244 ...], <diag_pos>=0 would correspond to cycle_index 2.
 
     Returns:
         a dataframe contains resistances changes normalized by the first diagnostic cycle value.
@@ -495,13 +496,13 @@ def get_V_I(df):
 
 def get_v_diff(processed_cycler_run, diag_pos, soc_window):
     """
-    This function calculates voltage difference between a hppc cycle we are interested (at diag_pos) and the initial
-    diag cycle (cycle 2) for a specific soc range
+    This method calculates the variance of voltage difference between a specified hppc cycle and the first
+    one during a specified state of charge window.
 
     Args:
         processed_cycler_run (beep.structure.ProcessedCyclerRun)
         diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
-        if rpt_0.2C, occurs at cycle_index = [2, 42, 147, 249 ...], <diag_pos>=0 would correspond to cycle_index 2
+        if rpt_0.2C, occurs at cycle_index = [2, 37, 142, 244 ...], <diag_pos>=0 would correspond to cycle_index 2
         soc_window (int): step index counter corresponding to the soc window of interest.
 
     Returns:
@@ -568,16 +569,16 @@ def d_curve_fitting(x, y):
 
 def get_diffusion_coeff(processed_cycler_run, diag_pos):
     """
-    This function calculates the slope for the linearized 40s rest in hppc at different socs.
-    The slope is proportional to 1/sqrt(D). (D here is interdiffusivity)
+    This method calculates diffusion coefficients at different soc for a specified hppc cycle.
+    (NOTE: The slope is proportional to 1/sqrt(D), and D here is interdiffusivity)
 
     Args:
         processed_cycler_run (beep.structure.ProcessedCyclerRun)
         diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
-        if rpt_0.2C, occurs at cycle_index = [2, 42, 147, 249 ...], <diag_pos>=0 would correspond to cycle_index 2
+        if rpt_0.2C, occurs at cycle_index = [2, 37, 142, 244 ...], <diag_pos>=0 would correspond to cycle_index 2
 
     Returns:
-        a dataframe, with 9 entries, the slope at different socs.
+        a dataframe with 8 entries, slope at different socs.
     """
 
     data = processed_cycler_run.diagnostic_interpolated
@@ -619,15 +620,16 @@ def get_diffusion_coeff(processed_cycler_run, diag_pos):
 
 def get_diffusion_features(processed_cycler_run, diag_pos):
     """
-    This function calculates the slope difference between cycle first and cycle diag_pos we are interested in.
+    This method calculates changes in diffusion coefficient between a specified hppc cycle and the first one at
+    different state of charge.
 
     Args:
         processed_cycler_run (beep.structure.ProcessedCyclerRun)
         diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
-        if rpt_0.2C, occurs at cycle_index = [2, 42, 147, 249 ...], <diag_pos>=0 would correspond to cycle_index 2.
+        if rpt_0.2C, occurs at cycle_index = [2, 37, 142...], <diag_pos>=0 would correspond to cycle_index 2.
 
     Returns:
-        a dataframe contains slope changes.
+        a dataframe contains 8 slope changes.
 
     """
     df_0 = get_diffusion_coeff(processed_cycler_run, 0)
