@@ -346,7 +346,7 @@ def get_chosen_df(processed_cycler_run, diag_pos):
 
 def res_calc(chosen, diag_pos, soc, step_ocv, step_cur, index):
     """
-    This function calculates resistance based on different socs and differnet time scales in hppc cycles.
+    This function calculates resistance at different socs and a specific pulse duration in hppc cycles.
 
     Args:
         chosen(pd.DataFrame): a dataframe for a specific diagnostic cycle you are interested in.
@@ -392,9 +392,9 @@ def res_calc(chosen, diag_pos, soc, step_ocv, step_cur, index):
     return res
 
 
-def get_r_df(processed_cycler_run, diag_pos):
+def get_resistance_soc_duration_hppc(processed_cycler_run, diag_pos):
     """
-    This function calculates resistance based on different socs and differnet time length in hppc cycles.
+    This function calculates resistance at different socs and different pulse durations in hppc cycles.
 
     Args:
         processed_cycler_run (beep.structure.ProcessedCyclerRun)
@@ -455,12 +455,6 @@ def get_r_df(processed_cycler_run, diag_pos):
     result['polar_r_d'] = resistances['discharge_pulse_last'] - resistances['discharge_pulse_2s']
     result['polar_r_c'] = resistances['charge_pulse_last'] - resistances['charge_pulse_2s']
 
-    #     result.plot(figsize=(8,6))
-    #     plt.legend()
-    #     plt.ylabel('Resistance [Ohms]')
-    #     plt.xlabel('SOC Index High to Low')
-    #     plt.title('Resistance with different time constants')
-
     return result
 
 def get_dr_df(processed_cycler_run, diag_pos):
@@ -476,15 +470,9 @@ def get_dr_df(processed_cycler_run, diag_pos):
         a dataframe contains resistances changes normalized by the first diagnostic cycle value.
     """
 
-    r_df_0 = get_r_df(processed_cycler_run, 0)
-    r_df_i = get_r_df(processed_cycler_run, diag_pos)
+    r_df_0 = get_resistance_soc_duration_hppc(processed_cycler_run, 0)
+    r_df_i = get_resistance_soc_duration_hppc(processed_cycler_run, diag_pos)
     dr_df = (r_df_i - r_df_0) / r_df_0
-
-    #     dr_df.plot(figsize=(8,6))
-    #     plt.legend()
-    #     plt.ylabel('Resistance Change [Ohms]')
-    #     plt.xlabel('SOC Index High to Low')
-    #     plt.title('Resistance with different time constants')
 
     return dr_df
 
@@ -517,7 +505,7 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window):
         soc_window (int): step index counter corresponding to the soc window of interest.
 
     Returns:
-        a dataframe that contains this a value (float), the variance of the voltage differences
+        a dataframe that contains the variance of the voltage differences
     """
 
     result = pd.DataFrame()
@@ -612,9 +600,7 @@ def get_diffusion_coeff(processed_cycler_run, diag_pos):
 
     result = pd.DataFrame()
 
-    #     fig, axs = plt.subplots(2, 5, figsize=(23, 10), dpi = 80, facecolor='w', edgecolor='k')
-    #     fig.subplots_adjust(hspace = .5, wspace=.3)
-    #     axs = axs.ravel()
+
     for i in range(1, min(len(counters[1]), 9)):
         discharge = chosen.loc[chosen.step_index_counter == counters[1][i]]
         rest = chosen.loc[chosen.step_index_counter == counters[2][i]]
@@ -627,15 +613,11 @@ def get_diffusion_coeff(processed_cycler_run, diag_pos):
         a = d_curve_fitting(x[round(3 * len(x) / 4):len(x)], y[round(3 * len(x) / 4):len(x)])
         #         d = 1/(a**2)
         result['D_' + str(i)] = [a]
-    #         axs[i-1].plot(x, y, 'o', color ='red', label ="data")
-    #         axs[i-1].plot(x[round(3*len(x)/4):len(x)], ans, '--', color ='blue', label ="optimized data")
-    #         axs[i-1].set_xlabel('sqrt(T_relax+T_pluse)- sqrt(T_relax)')
-    #         axs[i-1].set_ylabel('\u0394Voltage[V]')
-    #         axs[i-1].set_title(str(100-i*10)+'%')
+
     return result
 
 
-def get_diffusion_feature(processed_cycler_run, diag_pos):
+def get_diffusion_features(processed_cycler_run, diag_pos):
     """
     This function calculates the slope difference between cycle first and cycle diag_pos we are interested in.
 
