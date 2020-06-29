@@ -182,7 +182,7 @@ class TestFeaturizer(unittest.TestCase):
             dumpfn(featurizer, featurizer.name)
             self.assertEqual(folder, 'DiagnosticCyclesFeatures')
             self.assertEqual(featurizer.X.shape[1], 148)
-            self.assertTrue(all(x in featurizer.X.columns for x in ['m0_Mu','var(ocv)','var_charging_dQdV'])
+            self.assertTrue(all(x in featurizer.X.columns for x in ['m0_Mu','variance of ocv','var_charging_dQdV'])
 
 )
     def test_DiagnosticProperties_class(self):
