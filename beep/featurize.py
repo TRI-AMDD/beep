@@ -362,7 +362,7 @@ class DiagnosticCyclesFeatures(BeepFeatures):
         result = pd.DataFrame()
 
         # diffusion features
-        d = featurizer_helpers.get_diffusion_feature(processed_cycler_run, diag_pos)
+        diffusion_features = featurizer_helpers.get_diffusion_feature(processed_cycler_run, diag_pos)
 
         # resistance features, but the resistance feature is a 9 by 6 dataframe, so we have to make it to 1 by 54
         hppc_r = pd.DataFrame()
@@ -382,7 +382,7 @@ class DiagnosticCyclesFeatures(BeepFeatures):
         v_diff = featurizer_helpers.get_v_diff(processed_cycler_run, diag_pos, soc_window)
 
         # merge everything together as a final result dataframe
-        result = pd.concat([hppc_r, hppc_ocv, v_diff, d], axis=1)
+        result = pd.concat([hppc_r, hppc_ocv, v_diff, diffusion_features], axis=1)
 
         return result
 
