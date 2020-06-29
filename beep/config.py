@@ -9,7 +9,7 @@ config = {
     'local': {
         'logging': {
             'container': 'Testing',
-            'streams': ['file', 'stdout']
+            'streams': ['file']
         },
         'kinesis': {
             'stream': 'local/beep/eventstream'
