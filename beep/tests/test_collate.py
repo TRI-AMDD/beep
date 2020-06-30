@@ -11,12 +11,12 @@ from beep.collate import get_parameters_fastcharge, get_parameters_oed, process_
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
-
 class CollateTest(unittest.TestCase):
     def test_get_parameters_fastcharge(self):
         # Force a weird filename to be parsed
         source_directory = os.path.join(TEST_FILE_DIR)
-        date, chno, strname, protocol = get_parameters_fastcharge('2019-03-06-per_CH1234', source_directory)
+        with self.assertWarns(Warning):
+            date, chno, strname, protocol = get_parameters_fastcharge('2019-03-06-per_CH1234', source_directory)
         self.assertEqual(date, "2019-03-06")
         self.assertEqual(chno, "CH1234")
         self.assertEqual(protocol, None)
@@ -31,7 +31,6 @@ class CollateTest(unittest.TestCase):
         # Proper filename
         source_directory = os.path.join(TEST_FILE_DIR)
         date, chno, strname, protocol = get_parameters_oed("2018-08-28_oed_0_CH1.csv", source_directory)
-        print(date, chno, strname, protocol)
         self.assertEqual(date, "2018-08-28")
         self.assertEqual(chno, "CH1")
         self.assertEqual(protocol, '{"cc1": "5.6", "cc2": "6", "cc3": "4.8", "cc4": "3.574"}')
@@ -40,10 +39,6 @@ class CollateTest(unittest.TestCase):
     def test_all_filenames(self):
         """Test to see if renaming works on all filenames"""
         files = loadfn(os.path.join(TEST_FILE_DIR, 'test_filenames.json'))
-        source_directory = os.path.join(TEST_FILE_DIR)
-        for filename in files:
-            params = get_parameters_fastcharge(filename, source_directory)
-
         with ScratchDir('.'):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
             os.mkdir("data-share")
@@ -55,3 +50,7 @@ class CollateTest(unittest.TestCase):
                 Path(os.path.join("data-share", "raw_cycler_files", filename)).touch()
             process_files_json()
         pass  # to exit scratch dir context
+
+
+if __name__ == "__main__":
+    unittest.main()
