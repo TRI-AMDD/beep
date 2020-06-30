@@ -59,6 +59,7 @@ from beep import logger, __version__
 DEFAULT_ARBIN_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-arbin-lfp.yaml")
 DEFAULT_MACCOR_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-maccor-lfp.yaml")
 DEFAULT_EIS_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-maccor-eis.yaml")
+PROJECT_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-projects.yaml")
 DEFAULT_VALIDATION_RECORDS = os.path.join(VALIDATION_SCHEMA_DIR, "validation_records.json")
 s = {'service': 'DataValidator'}
 
@@ -204,8 +205,13 @@ class ValidatorBeep(Validator):
             results[name] = {}
             if re.match(ARBIN_CONFIG['file_pattern'], path):
                 df = pd.read_csv(path, index_col=0)
-                results[name]['validated'] = self.validate_arbin_dataframe(df)
-                results[name]['method'] = self.validate_arbin_dataframe.__name__
+                if 'Iris' in name:
+                    iris_schema = os.path.join(VALIDATION_SCHEMA_DIR, "schema-arbin-nmc-phev.yaml")
+                    results[name]['validated'] = self.validate_arbin_dataframe(df, schema=iris_schema)
+                    results[name]['method'] = self.validate_arbin_dataframe.__name__
+                else:
+                    results[name]['validated'] = self.validate_arbin_dataframe(df)
+                    results[name]['method'] = self.validate_arbin_dataframe.__name__
             elif re.match(MACCOR_CONFIG['file_pattern'], path):
                 df = pd.read_csv(path, delimiter='\t', skiprows=1)
                 results[name]['validated'] = self.validate_maccor_dataframe(df)
@@ -451,15 +457,28 @@ class SimpleValidator(object):
         for path in tqdm(paths):
             name = os.path.basename(path)
             results[name] = {}
+            project_schema = loadfn(PROJECT_SCHEMA)
             if re.match(ARBIN_CONFIG['file_pattern'], path):
-                schema_filename = os.path.join(VALIDATION_SCHEMA_DIR, "schema-arbin-lfp.yaml")
-                self.schema = loadfn(schema_filename)
+                if project_schema.get(name.split('_')[0]):
+                    schema_filename = os.path.join(VALIDATION_SCHEMA_DIR, project_schema.get(name.split('_')[0]))
+                    self.schema = loadfn(schema_filename)
+                    method = project_schema.get(name.split('_')[0])
+                else:
+                    schema_filename = os.path.join(VALIDATION_SCHEMA_DIR, "schema-arbin-lfp.yaml")
+                    self.schema = loadfn(schema_filename)
+                    method = "simple_arbin"
+
                 df = pd.read_csv(path, index_col=0)
                 validated, reason = self.validate(df)
-                method = "simple_arbin"
             elif re.match(MACCOR_CONFIG['file_pattern'], path):
-                schema_filename = os.path.join(VALIDATION_SCHEMA_DIR, "schema-maccor-2170.yaml")
-                self.schema = loadfn(schema_filename)
+                if project_schema.get(name.split('_')[0]):
+                    schema_filename = os.path.join(VALIDATION_SCHEMA_DIR, project_schema.get(name.split('_')[0]))
+                    self.schema = loadfn(schema_filename)
+                    method = project_schema.get(name.split('_')[0])
+                else:
+                    schema_filename = os.path.join(VALIDATION_SCHEMA_DIR, "schema-maccor-2170.yaml")
+                    self.schema = loadfn(schema_filename)
+                    method = "simple_maccor"
                 self.allow_unknown = True
                 df = pd.read_csv(path, delimiter='\t', skiprows=1)
 
@@ -469,7 +488,7 @@ class SimpleValidator(object):
                 df['current'] = df['Amps']
 
                 validated, reason = self.validate(df)
-                method = "simple_maccor"
+
             else:
                 validated, reason = False, "File type not recognized"
                 method = None
