@@ -354,11 +354,7 @@ class DiagnosticCyclesFeatures(BeepFeatures):
             processed_cycler_run (beep.structure.ProcessedCyclerRun)
             parameters_path (str): path to the project parameters file
             diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
-            if rpt_0.2C, occurs at cycle_index = [
-            exi
-
-
-            2, 42, 147, 249 ...], <diag_pos>=2 would correspond to cycle_index 147
+            if rpt_0.2C, occurs at cycle_index = [2, 42, 147, 249 ...], <diag_pos>=2 would correspond to cycle_index 147
             parameters_path (str): location of parameter table csv
             soc_window (int): step index counter corresponding to the soc window of interest.
 
