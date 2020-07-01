@@ -15,7 +15,7 @@ from lmfit import models
 from scipy.interpolate import interp1d
 
 
-def isolate_dQdV_peaks(processed_cycler_run, diag_nr, charge_y_n, max_nr_peaks, rpt_type, half_peak_width=0.075):
+def isolate_dQdV_peaks(processed_cycler_run, diag_nr, charge_y_n, cwt_range, max_nr_peaks, rpt_type, half_peak_width=0.075):
     """
     Determine the number of cycles to reach a certain level of degradation
 
@@ -24,7 +24,7 @@ def isolate_dQdV_peaks(processed_cycler_run, diag_nr, charge_y_n, max_nr_peaks, 
         rpt_type: string indicating which rpt to pick
         charge_y_n: if 1 (default), takes charge dQdV, if 0, takes discharge dQdV
         diag_nr: if 1 (default), takes dQdV of 1st RPT past the initial diagnostic
-
+        cwt_range: parameter for peakfinder
     Returns:
         dataframe with Voltage and dQdV columns for charge or discharge curve in the rpt_type diagnostic cycle.
         The peaks will be isolated
@@ -70,7 +70,7 @@ def isolate_dQdV_peaks(processed_cycler_run, diag_nr, charge_y_n, max_nr_peaks, 
     no_filter_data = data
 
     # Find peaks
-    peak_indices = signal.find_peaks_cwt(y, (10,))[-max_nr_peaks:]
+    peak_indices = signal.find_peaks_cwt(y, cwt_range)[-max_nr_peaks:]
 
     peak_voltages = {}
     peak_dQdVs = {}
@@ -176,6 +176,7 @@ def generate_dQdV_peak_fits(processed_cycler_run, rpt_type, diag_nr, charge_y_n,
 
     data, no_filter_data, peak_voltages, peak_dQdVs = isolate_dQdV_peaks(processed_cycler_run, rpt_type=rpt_type, \
                                                                          charge_y_n=charge_y_n, diag_nr=diag_nr,
+                                                                         cwt_range = np.arange(10,30),
                                                                          max_nr_peaks=max_nr_peaks,
                                                                          half_peak_width=0.07)
 
@@ -236,9 +237,9 @@ def generate_dQdV_peak_fits(processed_cycler_run, rpt_type, diag_nr, charge_y_n,
     for i, model in enumerate(spec['model']):
         best_values = output.best_values
         prefix = f'm{i}_'
-        peak_fit_dict[prefix + "Amp"] = [peak_dQdVs[i]]
-        peak_fit_dict[prefix + "Mu"] = [best_values[prefix + "center"]]
-        peak_fit_dict[prefix + "Sig"] = [best_values[prefix + "sigma"]]
+        peak_fit_dict[prefix+"Amp"+"_"+rpt_type+"_"+str(charge_y_n)] = [peak_dQdVs[i]]
+        peak_fit_dict[prefix+"Mu"+"_"+rpt_type+"_"+str(charge_y_n)] = [peak_voltages[i]]
+        #peak_fit_dict[prefix + "Sig"] = [best_values[prefix + "sigma"]]
 
     # Make dataframe out of dict
     peak_fit_df = pd.DataFrame(peak_fit_dict)
