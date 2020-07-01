@@ -349,7 +349,16 @@ class DiagnosticCyclesFeatures(BeepFeatures):
     @classmethod
     def get_hppc_features(cls, processed_cycler_run, diag_pos=1, soc_window=8):
         """
-        This method calculates features based on voltage and resistance changes in hppc and rpt cycles
+        This method calculates features based on voltage, diffusion and resistance changes in hppc cycles.
+
+        Note: Inside this function it calls function get_dr_df, but if the cell does not state of charge from 20% to
+        10%, the function will fail, and throw you error messages. This will only happen after cycle 37 and on fast
+        charging cells. Also, this function calls function get_v_diff, which takes in an argument soc_window, if you
+        want more correlation, you should go for low state of charge, which corresponds to soc_window = 8. However,
+        like the resistance feature, at cycle 142 and beyond, soc_window = 8 might fail on fast charged cells. For
+        lower soc_window values, smaller than or equal to 7, this should not be a problem, but it will not give you
+        high correlations.
+
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun)
             diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
