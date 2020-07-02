@@ -7,6 +7,7 @@ import json
 import numpy as np
 import datetime
 import shutil
+from copy import deepcopy
 
 import pandas as pd
 from beep.utils.secrets_manager import event_setup
@@ -112,24 +113,35 @@ class ProcedureTest(unittest.TestCase):
         procedure['MaccorTestProcedure']['ProcSteps']['TestStep'] = \
             procedure['MaccorTestProcedure']['ProcSteps']['TestStep'][:8]
         procedure['MaccorTestProcedure']['ProcSteps']['TestStep'][5:9] = \
-            procedure['MaccorTestProcedure']['ProcSteps']['TestStep'][4:8]
-        procedure.set('MaccorTestProcedure.ProcSteps.TestStep.5', rest_step)
-        procedure.set('MaccorTestProcedure.ProcSteps.TestStep.9', rest_step)
-        procedure.set('MaccorTestProcedure.ProcSteps.TestStep.10', end_step)
+            deepcopy(procedure['MaccorTestProcedure']['ProcSteps']['TestStep'][4:8])
+
+        procedure.set('MaccorTestProcedure.ProcSteps.TestStep.5', deepcopy(rest_step))
+
+        procedure.set('MaccorTestProcedure.ProcSteps.TestStep.9', deepcopy(rest_step))
+
+        procedure.set('MaccorTestProcedure.ProcSteps.TestStep.10', deepcopy(end_step))
+
+        procedure.set('MaccorTestProcedure.ProcSteps.TestStep.5.Ends.EndEntry.0.Step', '007')
+        procedure.set('MaccorTestProcedure.ProcSteps.TestStep.8.Ends.EndEntry.Step', '010')
+        procedure.set('MaccorTestProcedure.ProcSteps.TestStep.9.Ends.EndEntry.0.Step', '011')
+
+        procedure = procedure.insert_maccor_waveform_discharge(6, maccor_waveform_file)
         for step in procedure['MaccorTestProcedure']['ProcSteps']['TestStep']:
             print(step['Ends'])
             if step['StepType'] in ['Charge', 'Dischrge', 'Rest']:
                 step['Ends']['EndEntry'][-1]['Step'] = '011'
                 step['Ends']['EndEntry'][-2]['Step'] = '011'
-        procedure.insert_maccor_waveform_discharge(6, maccor_waveform_file)
+
         steps = [x['StepType'] for x in procedure['MaccorTestProcedure']['ProcSteps']['TestStep']]
         self.assertEqual(steps, ['Rest', 'Charge', 'Rest', 'Do 1', 'Charge', 'Rest',
                                  'FastWave', 'AdvCycle', 'Loop 1', 'Rest', 'End'])
+        self.assertEqual(procedure['MaccorTestProcedure']['ProcSteps']['TestStep'][5]['Ends']['EndEntry'][0]['Step'],
+                         '007')
         self.assertEqual(procedure['MaccorTestProcedure']['ProcSteps']['TestStep'][6]['StepType'], 'FastWave')
         with ScratchDir('.') as scratch_dir:
-            procedure.to_file(os.path.join(scratch_dir, "test.000"))
+            procedure.to_file(os.path.join(scratch_dir, "test_20200630.000"))
             # Uncomment line below to keep the output in the test file directory
-            # shutil.copyfile(os.path.join(scratch_dir, "test.000"), os.path.join(TEST_FILE_DIR, "test.000"))
+            shutil.copyfile(os.path.join(scratch_dir, "test_20200630.000"), os.path.join(TEST_FILE_DIR, "test_20200630.000"))
 
 
 class GenerateProcedureTest(unittest.TestCase):
