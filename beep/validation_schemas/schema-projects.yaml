@@ -1,4 +1,5 @@
 Iris: schema-arbin-nmc-phev.yaml
+xIris: schema-arbin-nmc-phev.yaml
 PreDiag: schema-maccor-2170.yaml
 PredictionDiagnostics: schema-maccor-2170.yaml
 FastCharge: schema-arbin-lfp.yaml
