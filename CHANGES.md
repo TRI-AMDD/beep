@@ -2,6 +2,10 @@
 
 v2020.7.8
 ---------
+* Fix missing modules in package
+
+v2020.7.8
+---------
 * HPPC feature update - Thanks to Xiao Cui
 * Resolve warnings during tests - Thanks to Tino Sulzer
 * Change logging options in the config for local to eliminate some errors
