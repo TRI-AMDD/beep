@@ -672,7 +672,7 @@ def get_relaxation_times(voltage_data, time_data, decay_percentage = [0.5, 0.8, 
     return np.array(time_array)
 
 
-def get_relaxation_features(processed_cycler_run):
+def get_relaxation_features(processed_cycler_run, hppc_list = [0, 1]):
     """
 
     This function takes in the processed structure data and retrieves the fractional change in
@@ -693,7 +693,7 @@ def get_relaxation_features(processed_cycler_run):
     total_time_array = []
 
     # chooses the first and the second diagnostic cycle
-    for hppc_chosen in [0, 1]:
+    for hppc_chosen in hppc_list:
 
         # Getting just the HPPC cycles
         hppc_diag_cycles = processed_cycler_run.diagnostic_interpolated[processed_cycler_run.diagnostic_interpolated.cycle_type == "hppc"]
@@ -734,3 +734,25 @@ def get_relaxation_features(processed_cycler_run):
 
     return total_time_array[1] / total_time_array[0]
 
+
+def get_fractional_quantity_remaining(processed_cycler_run, metric='discharge_energy',
+                                      diagnostic_cycle_type='rpt_0.2C'):
+    """
+    Determine relative loss of <metric> in diagnostic_cycles of type <diagnostic_cycle_type> after 100 regular cycles
+
+    Args:
+        processed_cycler_run (beep.structure.ProcessedCyclerRun): information about cycler run
+        metric (str): column name to use for measuring degradation
+        diagnostic_cycle_type (str): the diagnostic cycle to use for computing the amount of degradation
+
+    Returns:
+        a dataframe with cycle_index and corresponding degradation relative to the first measured value
+    """
+    summary_diag_cycle_type = processed_cycler_run.diagnostic_summary[
+        (processed_cycler_run.diagnostic_summary.cycle_type == diagnostic_cycle_type)
+        & (processed_cycler_run.diagnostic_summary.cycle_index > 100)].reset_index()
+    summary_diag_cycle_type = summary_diag_cycle_type[['cycle_index', metric]]
+    summary_diag_cycle_type[metric] = summary_diag_cycle_type[metric] / \
+                                      processed_cycler_run.diagnostic_summary[metric].iloc[0]
+    summary_diag_cycle_type.columns = ['cycle_index', 'fractional_metric']
+    return summary_diag_cycle_type
