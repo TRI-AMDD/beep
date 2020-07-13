@@ -214,15 +214,15 @@ class ProcedureToSchedule:
                                                                        'AdvCycle', 'End']:
             if step_abs['StepType'] == 'AdvCycle':
                 blank_step['m_szStepCtrlType'] = "Set Variable(s)"
-                blank_step['m_szCtrlValue1'] = '0'
+                blank_step['m_szCtrlValue'] = '0'
                 blank_step['m_szExtCtrlValue1'] = '1'
-                blank_step['m_szExtCtrlValue1'] = '0'
+                blank_step['m_szExtCtrlValue2'] = '0'
             elif 'Loop' in step_abs['StepType']:
                 loop_counter = int(re.search(r'\d+', step_abs['StepType']).group())
                 blank_step['m_szStepCtrlType'] = "Set Variable(s)"
-                blank_step['m_szCtrlValue1'] = '0'
+                blank_step['m_szCtrlValue'] = '0'
                 blank_step['m_szExtCtrlValue1'] = str(2 ** loop_counter)
-                blank_step['m_szExtCtrlValue1'] = '0'
+                blank_step['m_szExtCtrlValue2'] = '0'
                 assert isinstance(step_abs['Ends']['EndEntry'], OrderedDict)
                 loop_addendum = OrderedDict([('EndType', 'Loop Addendum'), ('Oper', '< '),
                                             ('Step', step_flow_ctrl[step_index].split('-')[0]),
@@ -232,9 +232,9 @@ class ProcedureToSchedule:
             elif 'Do' in step_abs['StepType']:
                 loop_counter = int(re.search(r'\d+', step_abs['StepType']).group())
                 blank_step['m_szStepCtrlType'] = "Set Variable(s)"
-                blank_step['m_szCtrlValue1'] = str(2 ** (loop_counter + 15))
+                blank_step['m_szCtrlValue'] = str(2 ** (loop_counter + 15))
                 blank_step['m_szExtCtrlValue1'] = '0'
-                blank_step['m_szExtCtrlValue1'] = '0'
+                blank_step['m_szExtCtrlValue2'] = '0'
 
             else:
                 blank_step['m_szStepCtrlType'] = "Rest"
@@ -276,7 +276,7 @@ class ProcedureToSchedule:
                 limit_key = "Limit{}".format(str(report_index + limit_start))
                 blank_step[limit_key] = OrderedDict(self.convert_report_to_logging_limit(report))
             elif isinstance(step_abs['Ends']['EndEntry'], list):
-                blank_step['m_uLimitNum'] = blank_step['m_uLimitNum'] + len(step_abs['Ends']['EndEntry'])
+                blank_step['m_uLimitNum'] = blank_step['m_uLimitNum'] + len(step_abs['Reports']['ReportEntry'])
                 for report_index, report in enumerate(step_abs['Reports']['ReportEntry']):
                     limit_start = len(step_abs['Ends']['EndEntry'])
                     limit_key = "Limit{}".format(str(report_index + limit_start))
