@@ -104,7 +104,7 @@ class ProcedureTest(unittest.TestCase):
             self.assertLessEqual(np.mean(relative_differences)*100, 0.01)  # mean percentage error < 0.01%
 
     def test_procedure_with_waveform(self):
-        maccor_waveform_file = os.path.join(TEST_FILE_DIR, "LA4_ref_default.mwf")
+        maccor_waveform_file = os.path.join(TEST_FILE_DIR, "LA4_8rep.MWF")
         test_file = os.path.join(PROCEDURE_TEMPLATE_DIR, 'diagnosticV2.000')
         procedure = Procedure.from_file(test_file)
         rest_step = procedure['MaccorTestProcedure']['ProcSteps']['TestStep'][2]
@@ -138,10 +138,48 @@ class ProcedureTest(unittest.TestCase):
         self.assertEqual(procedure['MaccorTestProcedure']['ProcSteps']['TestStep'][5]['Ends']['EndEntry'][0]['Step'],
                          '007')
         self.assertEqual(procedure['MaccorTestProcedure']['ProcSteps']['TestStep'][6]['StepType'], 'FastWave')
+
         with ScratchDir('.') as scratch_dir:
-            procedure.to_file(os.path.join(scratch_dir, "test_20200630.000"))
+            local_name = "test_mwf_LA4.000"
+            procedure.to_file(os.path.join(scratch_dir, local_name))
             # Uncomment line below to keep the output in the test file directory
-            shutil.copyfile(os.path.join(scratch_dir, "test_20200630.000"), os.path.join(TEST_FILE_DIR, "test_20200630.000"))
+            shutil.copyfile(os.path.join(scratch_dir, local_name), os.path.join(TEST_FILE_DIR, local_name))
+
+    def test_generate_maccor_waveform_from_power(self):
+        power_waveform_file = os.path.join(TEST_FILE_DIR, "LA4_power_profile.csv")
+        mwf_config = {'control_mode': 'P',
+                      'value_scale': 30,
+                      'charge_limit_mode': None,
+                      'charge_limit_value': None,
+                      'discharge_limit_mode': None,
+                      'discharge_limit_value': None,
+                      'charge_end_mode': 'V',
+                      'charge_end_operation': '>=',
+                      'charge_end_mode_value': 4.199999,
+                      'discharge_end_mode': 'V',
+                      'discharge_end_operation': '<=',
+                      'discharge_end_mode_value': 2.711111,
+                      'report_mode': 'T',
+                      'report_value': 3.0000,
+                      'range': 'A',
+                      }
+        with ScratchDir('.') as scratch_dir:
+            waveform_name = "LA4_8rep"
+            df_power = pd.read_csv(power_waveform_file)
+            df_power = pd.concat([df_power, df_power, df_power, df_power, df_power, df_power, df_power, df_power])
+            df_power.drop(columns=['power'], inplace=True)
+            df_power.rename(columns={'power_scaled': 'power'}, inplace=True)
+            df_MWF = pd.read_csv(generate_maccor_waveform_file(df_power, waveform_name, scratch_dir,
+                                                               mwf_config=mwf_config), sep='\t', header=None)
+            sign = df_MWF[0].apply(lambda x: -1 if x is 'D' else 1)
+            energy = df_MWF[2] * df_MWF[5] * sign
+            self.assertLess(df_MWF[5].sum(), 10961)
+            self.assertLess(energy.sum(), -20000)
+            self.assertGreater(40, df_MWF[2].max())
+            self.assertLess(-40, df_MWF[2].min())
+            # Uncomment line below to keep the output in the test file directory
+            shutil.copyfile(os.path.join(scratch_dir, waveform_name + '.MWF'),
+                            os.path.join(TEST_FILE_DIR, waveform_name + '.MWF'))
 
 
 class GenerateProcedureTest(unittest.TestCase):
@@ -206,6 +244,48 @@ class GenerateProcedureTest(unittest.TestCase):
         template = os.path.join(TEST_FILE_DIR, "EXP_missing.000")
         self.assertRaises(UnboundLocalError, Procedure.from_exp,
                           *test_parameters[1:]+[template])
+
+    def test_prediag_with_waveform(self):
+        maccor_waveform_file = os.path.join(TEST_FILE_DIR, "LA4_8rep.MWF")
+        test_file = os.path.join(PROCEDURE_TEMPLATE_DIR, 'diagnosticV3.000')
+        csv_file = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_parameters.csv")
+        protocol_params_df = pd.read_csv(csv_file)
+        index = 1
+        protocol_params_df.iloc[index, protocol_params_df.columns.get_loc('capacity_nominal')] = 3.71
+        protocol_params = protocol_params_df.iloc[index]
+        diag_params_df = pd.read_csv(os.path.join(PROCEDURE_TEMPLATE_DIR,
+                                                  "PreDiag_parameters - DP.csv"))
+        diagnostic_params = diag_params_df[diag_params_df['diagnostic_parameter_set'] ==
+                                           protocol_params['diagnostic_parameter_set']].squeeze()
+
+        procedure = Procedure.generate_procedure_regcyclev3(index, protocol_params)
+        procedure.generate_procedure_diagcyclev3(
+            protocol_params["capacity_nominal"], diagnostic_params
+        )
+
+        steps = [x['StepType'] for x in procedure['MaccorTestProcedure']['ProcSteps']['TestStep']]
+        print(steps)
+        start = 27
+        reg_cycle_steps = ['Do 1', 'Charge', 'Charge', 'Charge', 'Rest', 'Dischrge', 'Rest', 'AdvCycle', 'Loop 1']
+        reg_steps_len = len(reg_cycle_steps)
+        self.assertEqual(steps[start:start + reg_steps_len], reg_cycle_steps)
+        start = 59
+        reg_cycle_steps = ['Do 2', 'Charge', 'Charge', 'Charge', 'Rest', 'Dischrge', 'Rest', 'AdvCycle', 'Loop 2']
+        reg_steps_len = len(reg_cycle_steps)
+        self.assertEqual(steps[start:start + reg_steps_len], reg_cycle_steps)
+        print(procedure['MaccorTestProcedure']['ProcSteps']['TestStep'][32])
+        print(procedure['MaccorTestProcedure']['ProcSteps']['TestStep'][64])
+
+        procedure.insert_maccor_waveform_discharge(32, maccor_waveform_file)
+        procedure.insert_maccor_waveform_discharge(64, maccor_waveform_file)
+        self.assertEqual(procedure['MaccorTestProcedure']['ProcSteps']['TestStep'][32]['StepType'], 'FastWave')
+        self.assertEqual(procedure['MaccorTestProcedure']['ProcSteps']['TestStep'][64]['StepType'], 'FastWave')
+        with ScratchDir('.') as scratch_dir:
+            driving_test_name = 'Drive_test20200712.000'
+            procedure.to_file(driving_test_name)
+            # Uncomment line below to keep the output in the test file directory
+            shutil.copyfile(os.path.join(scratch_dir, driving_test_name),
+                            os.path.join(TEST_FILE_DIR, driving_test_name))
 
     def test_from_csv(self):
         csv_file = os.path.join(TEST_FILE_DIR, "parameter_test.csv")
