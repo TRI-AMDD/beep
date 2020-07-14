@@ -73,6 +73,8 @@ setup(name="beep",
           "beep.protocol.schedule_templates": ["*.sdu", "*.csv", "*.json"],
           "beep.validation_schemas": ["*.yaml"],
           "beep.model": ["*.model"],
+          "beep.features": ["*.yaml"]
+
       },
       include_package_data=True,
       author="AMDD - Toyota Research Institute",
