@@ -4,8 +4,6 @@
 import unittest
 import os
 import json
-import shutil
-
 import numpy as np
 from beep.utils.secrets_manager import event_setup
 from beep.featurize import process_file_list_from_json, \
@@ -214,9 +212,17 @@ class TestFeaturizer(unittest.TestCase):
             path, local_filename = os.path.split(featurizer.name)
             folder = os.path.split(path)[-1]
             dumpfn(featurizer, featurizer.name)
+            params_dict = {'n_soc_windows': 8,
+                           'soc_list': [90, 80, 70, 60, 50, 40, 30, 20, 10],
+                           'percentage_list': [50, 80, 99],
+                           'hppc_list': [0, 1]
+                           }
+
             self.assertEqual(folder, 'HPPCRelaxationFeatures')
             self.assertEqual(featurizer.X.shape[1], 30)
             self.assertListEqual([featurizer.X.columns[0], featurizer.X.columns[-1]], ['var_50%', 'SOC10%_degrad99%'])
+            self.assertEqual(featurizer.metadata['parameters'], params_dict)
+
 
     def test_DiagnosticSummaryStats_class(self):
         with ScratchDir('.'):
