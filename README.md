@@ -12,7 +12,10 @@ of cycle life corresponding to the research of the
 Beep enables parsing and handing of electrochemical battery cycling data
 via data objects reflecting cycling run data, experimental protocols,
 featurization, and modeling of cycle life.  Currently beep supports 
-arbin and maccor cyclers.
+arbin, maccor and biologic cyclers.
+
+We are currently looking for experienced python developers to help us improve this package and implement new features.
+Please contact any of the maintainers for more information. 
 
 ## Installation
 Use `pip install beep` to install.
