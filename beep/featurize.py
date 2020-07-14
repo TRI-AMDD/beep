@@ -82,7 +82,8 @@ class BeepFeatures(MSONable, metaclass=ABCMeta):
             input_filename (str): path to the input data from processed cycler run
             feature_dir (str): path to the base directory for the feature sets.
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
-            params_dict (dict): dictionary of parameters relevant for the featurization methods
+            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
+            gets featurized. These could be filters for column or row operations
         Returns:
             (beep.featurize.BeepFeatures): class object for the feature set
         """
@@ -198,6 +199,8 @@ class RPTdQdVFeatures(BeepFeatures):
 
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
+            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
+            gets featurized. These could be filters for column or row operations
         Returns:
             bool: True/False indication of ability to proceed with feature generation
         """
@@ -217,15 +220,8 @@ class RPTdQdVFeatures(BeepFeatures):
         """
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun)
-            diag_ref (int): 0 (default) reference diagnostic cycle
-            diag_nr (int): 1 (default) next diagnostic cycle occurence for a specific cycle_type.
-            For example, if rpt_0.2C occurs at cycle_index = [2,42,147,250.. ],
-            diag_ref = 0 would correspond to cycle_index = 2
-            and diag_nr = 1 would correspond to cycle_index = 42
-
-            charge_y_n (bool): 1 = charge, 0 = discharge
-            rpt_type (str): type of rpt cycle.
-
+            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
+            gets featurized. These could be filters for column or row operations
         Returns:
              pd.DataFrame containing features based on gaussian fits to dQdV features in rpt cycles
         """
@@ -302,6 +298,8 @@ class HPPCResistanceVoltageFeatures(BeepFeatures):
 
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
+            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
+            gets featurized. These could be filters for column or row operations
         Returns:
             bool: True/False indication of ability to proceed with feature generation
         """
@@ -331,9 +329,8 @@ class HPPCResistanceVoltageFeatures(BeepFeatures):
 
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun)
-            diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
-            if rpt_0.2C, occurs at cycle_index = [2, 37, 142, 244 ...], <diag_pos>=2 would correspond to cycle_index 142
-            soc_window (int): step index counter corresponding to the soc window of interest.
+            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
+            gets featurized. These could be filters for column or row operations
 
         Returns:
             dataframe of features based on voltage and resistance changes over a SOC window in hppc cycles
@@ -401,6 +398,8 @@ class HPPCRelaxationFeatures(BeepFeatures):
 
         Args:
             processed_cycler_run(beep.structure.ProcessedCyclerRun)
+            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
+            gets featurized. These could be filters for column or row operations
 
         Returns:
             (boolean): True if all SOC window available in both diagnostic cycles. False otherwise.
@@ -456,6 +455,8 @@ class HPPCRelaxationFeatures(BeepFeatures):
         Args:
             processed_cycler_run(beep.structure.ProcessedCyclerRun): ProcessedCyclerRun object for the cell
             you want the diagnostic features for.
+            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
+            gets featurized. These could be filters for column or row operations
 
         Returns:
             @featureDf(pd.DataFrame): Columns are either SOC{#%}_degrad{#%} where the first #% is the
@@ -517,6 +518,8 @@ class DiagnosticSummaryStats(BeepFeatures):
 
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
+            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
+            gets featurized. These could be filters for column or row operations
         Returns:
             bool: True/False indication of ability to proceed with feature generation
         """
@@ -542,13 +545,8 @@ class DiagnosticSummaryStats(BeepFeatures):
 
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun)
-            diagnostic_cycle_type (str): Describes which cyle type is used for feature creation,
-            options are: 'hppc', 'rpt_0.2C', 'rpt_1C', 'rpt_2C', 'reset'
-            cycle_comp_num (list of two integers): contains numbers of compared cycles [0,1] for e.g.
-            creates the features from the first and the second cycle of the cycle type
-            Q_seg (int):  Number of cycles considered (first 500 for charging, the following 500 for discharging)
-
-
+            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
+            gets featurized. These could be filters for column or row operations
         Returns:
             X (pd.DataFrame): Dataframe containing the feature
         """
@@ -678,6 +676,8 @@ class DeltaQFastCharge(BeepFeatures):
 
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
+            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
+            gets featurized. These could be filters for column or row operations
         Returns:
             bool: True/False indication of ability to proceed with feature generation
         """
@@ -702,6 +702,8 @@ class DeltaQFastCharge(BeepFeatures):
         so called delta Q feature
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
+            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
+            gets featurized. These could be filters for column or row operations
         Returns:
             pd.DataFrame: features indicative of degradation, derived from the input data
         """
@@ -848,6 +850,8 @@ class TrajectoryFastCharge(DeltaQFastCharge):
 
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
+            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
+            gets featurized. These could be filters for column or row operations
         Returns:
             bool: True/False indication of ability to proceed with feature generation
         """
@@ -869,6 +873,8 @@ class TrajectoryFastCharge(DeltaQFastCharge):
         where we expect to reach certain thresholds of capacity loss
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
+            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
+            gets featurized. These could be filters for column or row operations
         Returns:
             pd.DataFrame: cycles at which capacity/energy degradation exceeds thresholds
         """
@@ -908,6 +914,8 @@ class DiagnosticProperties(BeepFeatures):
 
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
+            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
+            gets featurized. These could be filters for column or row operations
         Returns:
             bool: True/False indication of ability to proceed with feature generation
         """
@@ -924,6 +932,8 @@ class DiagnosticProperties(BeepFeatures):
         """
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
+            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
+            gets featurized. These could be filters for column or row operations
         Returns:
             pd.DataFrame: cycles at which capacity/energy degradation exceeds thresholds
         """
