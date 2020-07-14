@@ -328,13 +328,21 @@ class ProcedureToScheduleTest(unittest.TestCase):
         sdu_test_output = os.path.join(TEST_FILE_DIR, 'schedule_test_output.sdu')
 
         proc_dict = procedure.from_file(os.path.join(templates, test_file))
-        test_step_dict = proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep']
+        with ScratchDir('.') as scratch_dir:
+            sdu_test_output = os.path.join(TEST_FILE_DIR, 'schedule_test_output.sdu')
+            test_step_dict = proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep']
 
-        converter = ProcedureToSchedule(test_step_dict)
-        converter.create_sdu(sdu_test_input, sdu_test_output)
-        parsed = open(sdu_test_output, encoding='latin-1').readlines()
-        self.assertEqual(parsed[329], '[Schedule_Step3_Limit0]\n')
-        os.remove(sdu_test_output)
+            converter = ProcedureToSchedule(test_step_dict)
+            converter.create_sdu(sdu_test_input, sdu_test_output, current_range='Range4')
+            parsed = open(sdu_test_output, encoding='latin-1').readlines()
+            self.assertEqual(parsed[328], '[Schedule_Step3_Limit0]\n')
+            self.assertEqual(parsed[6557], '[Schedule_UserDefineSafety15]\n')
+            schedule = Schedule.from_file(os.path.join(sdu_test_output))
+            self.assertEqual(schedule['Schedule']['Step15']['m_uLimitNum'], '2')
+            self.assertEqual(schedule['Schedule']['Step14']['m_uLimitNum'], '6')
+            self.assertEqual(schedule['Schedule']['m_uStepNum'], '96')
+            #
+            # shutil.copyfile(os.path.join(scratch_dir, sdu_test_output), os.path.join(TEST_FILE_DIR, sdu_test_output))
 
 
 class ArbinScheduleTest(unittest.TestCase):

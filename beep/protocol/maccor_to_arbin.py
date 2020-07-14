@@ -4,6 +4,7 @@
 import os
 import re
 from datetime import datetime
+from copy import deepcopy
 from beep.protocol import PROTOCOL_SCHEMA_DIR
 from collections import OrderedDict
 from monty.serialization import loadfn
@@ -31,7 +32,7 @@ class ProcedureToSchedule:
                  ):
         self.procedure_dict_steps = procedure_dict_steps
 
-    def create_sdu(self, sdu_input_name, sdu_output_name):
+    def create_sdu(self, sdu_input_name, sdu_output_name, current_range='Range3'):
         """
         Highest level function in the class. Takes a schedule file and replaces
         all of the steps with steps from the procedure file. Then writes the
@@ -47,16 +48,27 @@ class ProcedureToSchedule:
         # sdu_dict = Schedule.from_file(sdu_input_name)
 
         keys = list(schedule['Schedule'].keys())
+        safety_data = []
+        safety_key = []
         for key in keys:
-            if 'Schedule' in key:
+            if bool(re.match('Step[0-9]+', key)):
+                del schedule['Schedule'][key]
+            if bool(re.match('UserDefineSafety[0-9]+', key)):
+                safety_data.append(deepcopy(schedule['Schedule'][key]))
+                safety_key.append(key)
                 del schedule['Schedule'][key]
 
         step_name_list, step_flow_ctrl = self.create_metadata()
+        schedule.set("Schedule.m_uStepNum", str(len(step_name_list)))
         for step_index, step in enumerate(self.procedure_dict_steps):
+            ## TODO develop method for setting range automatically
             step_arbin = self.compile_to_arbin(self.procedure_dict_steps[step_index],
-                                               step_index, step_name_list, step_flow_ctrl)
+                                               step_index, step_name_list, step_flow_ctrl,
+                                               current_range=current_range)
             key = 'Step{}'.format(step_index)
             schedule.set("Schedule.{}".format(key), step_arbin)
+        for indx, safety in enumerate(safety_data):
+            schedule.set("Schedule.{}".format(safety_key[indx]), safety)
         schedule.to_file(sdu_output_name)
 
     def create_metadata(self):
@@ -117,6 +129,7 @@ class ProcedureToSchedule:
         35	Loop 3 (Cycling 30)	    65536	   13	  0			T1	    T2		00010 00000 00000 00000	01101
         36	Loop 4 (Cycling 100)	    0	   16	  0				    T4			                    10000
         37	Loop 5 (always true)	524288	   1	  0			T4	    CI		10000 00000 00000 00000	00001
+        15  Loop                       15      1      0         PVs             00000 00000 00000 01111 00001
 
         Args:
             step_abs (OrderedDict): A ordered dict of the maccor step to be converted
@@ -126,7 +139,7 @@ class ProcedureToSchedule:
             step_flow_ctrl (dict): A dictionary of the loop steps as keys and the
                 corresponding steps to go to after the
             current_range (str): The current range to use for the step, values can
-            be 'Range1', 'Range2', 'Range3', and 'Parallel-High' depending on the
+            be 'Range1', 'Range2', 'Range3', 'Range4' and 'Parallel-High' depending on the
             cycler being used
 
         Returns:
@@ -214,7 +227,7 @@ class ProcedureToSchedule:
                                                                        'AdvCycle', 'End']:
             if step_abs['StepType'] == 'AdvCycle':
                 blank_step['m_szStepCtrlType'] = "Set Variable(s)"
-                blank_step['m_szCtrlValue'] = '0'
+                blank_step['m_szCtrlValue'] = '15'
                 blank_step['m_szExtCtrlValue1'] = '1'
                 blank_step['m_szExtCtrlValue2'] = '0'
             elif 'Loop' in step_abs['StepType']:
