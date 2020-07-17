@@ -1,5 +1,14 @@
 
 
+v2020.7.17
+----------
+* Add blurb about looking for python dev
+* Refactored featurize module to split up DiagnosticCycleFeatures class into separate classes for 
+each set of features from different diagnostic cycles.
+* Added a yaml file to set default hyperparameters for feature generation. Alternately, a hyperparameter
+dict can be passed as an argument (`params_dict`) to the `from_run()` method
+* Metadata for features includes hyperparameter information 
+
 v2020.7.8
 ---------
 * Fix missing modules in package
