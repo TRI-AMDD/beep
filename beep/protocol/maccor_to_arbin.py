@@ -35,7 +35,7 @@ class ProcedureToSchedule:
     def create_sdu(self, sdu_input_name, sdu_output_name,
                    current_range='Range1',
                    global_v_range=[2.5, 4.5],
-                   global_temp_range=[0, 60],
+                   global_temp_range=[-100, 100],
                    global_current_range=[-30, 30]):
         """
         Highest level function in the class. Takes a schedule file and replaces
