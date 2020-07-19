@@ -32,7 +32,11 @@ class ProcedureToSchedule:
                  ):
         self.procedure_dict_steps = procedure_dict_steps
 
-    def create_sdu(self, sdu_input_name, sdu_output_name, current_range='Range3'):
+    def create_sdu(self, sdu_input_name, sdu_output_name,
+                   current_range='Range1',
+                   global_v_range=[2.5, 4.5],
+                   global_temp_range=[0, 60],
+                   global_current_range=[-30, 30]):
         """
         Highest level function in the class. Takes a schedule file and replaces
         all of the steps with steps from the procedure file. Then writes the
@@ -60,6 +64,12 @@ class ProcedureToSchedule:
 
         step_name_list, step_flow_ctrl = self.create_metadata()
         schedule.set("Schedule.m_uStepNum", str(len(step_name_list)))
+        schedule.set("Schedule.m_VoltageSafetyScope",
+                     "{:.6f}".format(global_v_range[0]) + "^" + "{:.6f}".format(global_v_range[1]))
+        schedule.set("Schedule.m_AuxTempSafetyScope",
+                     "{:.6f}".format(global_temp_range[0]) + '^' + "{:.6f}".format(global_temp_range[1]))
+        schedule.set("Schedule.m_CurrentSafetyScope",
+                     "{:.6f}".format(global_current_range[0]) + '^' + "{:.6f}".format(global_current_range[1]))
         for step_index, step in enumerate(self.procedure_dict_steps):
             ## TODO develop method for setting range automatically
             step_arbin = self.compile_to_arbin(self.procedure_dict_steps[step_index],
@@ -140,7 +150,8 @@ class ProcedureToSchedule:
                 corresponding steps to go to after the
             current_range (str): The current range to use for the step, values can
             be 'Range1', 'Range2', 'Range3', 'Range4' and 'Parallel-High' depending on the
-            cycler being used
+            cycler being used. Range1 is the largest normal current range. The values for the
+            ranges are 30A, 5A, 500mA, 20mA
 
         Returns:
             OrderedDict: The arbin step resulting from the conversion of the

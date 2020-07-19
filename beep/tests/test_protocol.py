@@ -6,6 +6,7 @@ import unittest
 import json
 import numpy as np
 import datetime
+import shutil
 
 import pandas as pd
 from beep.utils.secrets_manager import event_setup
@@ -325,7 +326,7 @@ class ProcedureToScheduleTest(unittest.TestCase):
         test_file = 'diagnosticV3.000'
         json_file = 'test.json'
         sdu_test_input = os.path.join(SCHEDULE_TEMPLATE_DIR, '20170630-3_6C_9per_5C.sdu')
-        sdu_test_output = os.path.join(TEST_FILE_DIR, 'schedule_test_output.sdu')
+        converted_sdu_name = 'schedule_test_output.sdu'
 
         proc_dict = procedure.from_file(os.path.join(templates, test_file))
         with ScratchDir('.') as scratch_dir:
@@ -333,7 +334,9 @@ class ProcedureToScheduleTest(unittest.TestCase):
             test_step_dict = proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep']
 
             converter = ProcedureToSchedule(test_step_dict)
-            converter.create_sdu(sdu_test_input, sdu_test_output, current_range='Range4')
+            converter.create_sdu(sdu_test_input, sdu_test_output, current_range='Range2',
+                                 global_v_range=[2.5, 4.5], global_temp_range=[0, 60],
+                                 global_current_range=[-30, 30])
             parsed = open(sdu_test_output, encoding='latin-1').readlines()
             self.assertEqual(parsed[328], '[Schedule_Step3_Limit0]\n')
             self.assertEqual(parsed[6557], '[Schedule_UserDefineSafety15]\n')
@@ -342,7 +345,8 @@ class ProcedureToScheduleTest(unittest.TestCase):
             self.assertEqual(schedule['Schedule']['Step14']['m_uLimitNum'], '6')
             self.assertEqual(schedule['Schedule']['m_uStepNum'], '96')
             #
-            # shutil.copyfile(os.path.join(scratch_dir, sdu_test_output), os.path.join(TEST_FILE_DIR, sdu_test_output))
+            shutil.copyfile(os.path.join(TEST_FILE_DIR, converted_sdu_name),
+                            os.path.join(scratch_dir, converted_sdu_name))
 
 
 class ArbinScheduleTest(unittest.TestCase):
