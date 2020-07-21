@@ -9,7 +9,7 @@ If you're already familiar with our workflow, maybe have a quick look at the [pr
 
 Before you commit any code, please perform the following checks:
 
-- [All tests pass](#testing): `$ nosetests beep`
+- [All tests pass](#testing): `$ pytest beep`
 - [No style issues](#coding-style-guidelines): `$ flake8`
 
 ## Workflow
@@ -24,7 +24,7 @@ When making any kind of update, we try to follow the procedure below.
 3. Download the source code onto your local system, by [cloning](https://help.github.com/articles/cloning-a-repository/) the repository (or your fork of the repository).
 4. Create a [branch](https://help.github.com/articles/creating-and-deleting-branches-within-your-repository/) of this repo on your own fork where all changes will be made
 5. [Install](#installation) BEEP with the developer options.
-6. Test if your installation worked. `nosetests beep`.
+6. Test if your installation worked. `pytest beep`.
 
 You now have everything you need to start making changes!
 
@@ -47,7 +47,7 @@ You now have everything you need to start making changes!
 To install BEEP with all developer options, type:
 
 ```bash
-pip install -e .[dev,docs]
+pip install -e .
 ```
 
 This will
@@ -55,41 +55,10 @@ This will
 1. Install all the dependencies for BEEP, including the ones for documentation (docs) and development (dev).
 2. Tell Python to use your local beep files when you use `import beep` anywhere on your system.
 
+
 ## Coding style guidelines
 
 BEEP follows the [PEP8 recommendations](https://www.python.org/dev/peps/pep-0008/) for coding style. These are very common guidelines, and community tools have been developed to check how well projects implement them.
-
-### Flake8
-
-We use [flake8](http://flake8.pycqa.org/en/latest/) to check our PEP8 adherence. To try this on your system, navigate to the BEEP directory in a console and type
-
-```bash
-flake8
-```
-The configuration file
-```
-.flake8
-```
-allows us to ignore some errors. If you think this should be added or removed, please submit an [issue](#issues)
-
-When you commit your changes they will be checked against flake8 automatically (see [infrastructure](#infrastructure)).
-
-
-### Black
-
-We use [black](https://black.readthedocs.io/en/stable/) to automatically configure our code to adhere to PEP8. Black can be used in two ways:
-
-1. Command line: navigate to the BEEP directory in a console and type
-
-```bash
-black {source_file_or_directory}
-```
-
-2. Editor: black can be [configured](https://black.readthedocs.io/en/stable/editor_integration.html) to automatically reformat a python script each time the script is saved in an editor.
-
-If you want to use black in your editor, you may need to change the max line length in your editor settings.
-
-Even when code has been formatted by black, you should still make sure that it adheres to the PEP8 standard set by [Flake8](#flake8).
 
 ### Naming
 
@@ -200,8 +169,6 @@ Additionally, Appveyor runs integration tests for windows environment. Tests are
 ### Codecov
 
 Code coverage (how much of the code is actually seen by the (linux) unit tests) is tested using [Codecov](https://docs.codecov.io/).
-
-Configuration file: ``` .coveragerc```
 
 
 ## Acknowledgements
