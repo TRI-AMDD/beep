@@ -11,7 +11,6 @@ Before you commit any code, please perform the following checks:
 
 - [All tests pass](#testing): `$ nosetests beep`
 - [No style issues](#coding-style-guidelines): `$ flake8`
-- [The documentation builds](#building-the-documentation): `$ cd docs` and then `$ make clean; make html`
 
 ## Workflow
 
@@ -25,30 +24,27 @@ When making any kind of update, we try to follow the procedure below.
 3. Download the source code onto your local system, by [cloning](https://help.github.com/articles/cloning-a-repository/) the repository (or your fork of the repository).
 4. Create a [branch](https://help.github.com/articles/creating-and-deleting-branches-within-your-repository/) of this repo on your own fork where all changes will be made
 5. [Install](#installation) BEEP with the developer options.
-6. Test if your installation worked. `$ nosetests beep`.
+6. Test if your installation worked. `nosetests beep`.
 
 You now have everything you need to start making changes!
 
 ### B. Writing your code
 
-7. BEEP is developed in [Python](https://en.wikipedia.org/wiki/Python_(programming_language)). Make sure to follow our [coding style guidelines](#coding-style-guidelines).
+7. BEEP is developed in [Python](https://en.wikipedia.org/wiki/Python_(programming_language). Make sure to follow our [coding style guidelines](#coding-style-guidelines).
 8. Commit your changes to your branch with [useful, descriptive commit messages](https://chris.beams.io/posts/git-commit/). While developing, you can keep using the GitHub issue you're working on as a place for discussion. [Refer to your commits](https://stackoverflow.com/questions/8910271/how-can-i-reference-a-commit-in-an-issue-comment-on-github) when discussing specific lines of code.
 9. If you want to add a dependency on another library, or re-use code you found somewhere else, have a look at [these guidelines](#dependencies-and-reusing-code).
 
 ### C. Merging your changes with BEEP
 
 9. [Test your code!](#testing)
-10. BEEP has online documentation at http://pybamm.readthedocs.io/. To make sure any new methods or classes you added show up there, please read the [documentation](#documentation) section.
 11. If you added a major new feature, perhaps it should be showcased in an [example notebook](#example-notebooks).
-12. When you feel your code is finished, or at least warrants serious discussion, run the [pre-commit checks](#pre-commit-checks) and then create a [pull request](https://help.github.com/articles/about-pull-requests/) (PR) on [PyBaMM's GitHub page](https://github.com/pybamm-team/PyBaMM).
-13. Once a PR has been created, it will be reviewed by any member of the community. Changes might be suggested which you can make by simply adding new commits to the branch. When everything's finished, someone with the right GitHub permissions will merge your changes into PyBaMM master repository.
-
-Finally, if you really, really, _really_ love developing PyBaMM, have a look at the current [project infrastructure](#infrastructure).
+12. When you feel your code is finished, or at least warrants serious discussion, run the [pre-commit checks](#pre-commit-checks) and then create a [pull request](https://help.github.com/articles/about-pull-requests/).
+13. Once a PR has been created, it will be reviewed by the maintainers. Changes might be suggested which you can make by simply adding new commits to the branch. When everything's finished, someone with the right GitHub permissions will merge your changes into BEEP repository.
 
 
 ## Installation
 
-To install PyBaMM with all developer options, type:
+To install BEEP with all developer options, type:
 
 ```bash
 pip install -e .[dev,docs]
@@ -56,16 +52,16 @@ pip install -e .[dev,docs]
 
 This will
 
-1. Install all the dependencies for PyBaMM, including the ones for documentation (docs) and development (dev).
-2. Tell Python to use your local pybamm files when you use `import pybamm` anywhere on your system.
+1. Install all the dependencies for BEEP, including the ones for documentation (docs) and development (dev).
+2. Tell Python to use your local beep files when you use `import beep` anywhere on your system.
 
 ## Coding style guidelines
 
-PyBaMM follows the [PEP8 recommendations](https://www.python.org/dev/peps/pep-0008/) for coding style. These are very common guidelines, and community tools have been developed to check how well projects implement them.
+BEEP follows the [PEP8 recommendations](https://www.python.org/dev/peps/pep-0008/) for coding style. These are very common guidelines, and community tools have been developed to check how well projects implement them.
 
 ### Flake8
 
-We use [flake8](http://flake8.pycqa.org/en/latest/) to check our PEP8 adherence. To try this on your system, navigate to the PyBaMM directory in a console and type
+We use [flake8](http://flake8.pycqa.org/en/latest/) to check our PEP8 adherence. To try this on your system, navigate to the BEEP directory in a console and type
 
 ```bash
 flake8
@@ -224,14 +220,7 @@ Code coverage (how much of the code is actually seen by the (linux) unit tests) 
 
 Configuration file: ``` .coveragerc```
 
-### GitHub
-
-GitHub does some magic with particular filenames. In particular:
-
-- The first page people see when they go to [our GitHub page](https://github.com/pybamm-team/PyBaMM) displays the contents of [README.md](README.md), which is written in the [Markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) format. Some guidelines can be found [here](https://help.github.com/articles/about-readmes/).
-- The license for using BEEP is stored in [LICENSE](LICENSE), and [automatically](https://help.github.com/articles/adding-a-license-to-a-repository/) linked to by GitHub.
-- This file, [CONTRIBUTING.md](CONTRIBUTING.md) is recognised as the contribution guidelines and a link is [automatically](https://github.com/blog/1184-contributing-guidelines) displayed when new issues or pull requests are created.
 
 ## Acknowledgements
 
-This CONTRIBUTING.md file was adapted from [Pints GitHub repo](https://github.com/pints-team/pints) and PyBaMM
+This CONTRIBUTING.md file was adapted from [Pints GitHub repo](https://github.com/pints-team/pints).
