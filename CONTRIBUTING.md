@@ -209,57 +209,29 @@ setup.py
 
 Note that this file must be kept in sync with the version number in [beep/__init__.py](beep/__init__.py).
 
-### Travis CI
+### Continuous integration
 
-All committed code is tested using [Travis CI](https://travis-ci.org/), tests are published on https://travis-ci.org/pybamm-team/PyBaMM.
-
-Configuration files:
-
-```
-.travis.yaml
-```
-
-For every commit, Travis runs unit tests, integration tests, doc tests, flake8 and notebook tests.
+All committed code is tested using [Travis CI](https://travis-ci.org/), tests are published [here](https://travis-ci.com/github/TRI-AMDD/beep/).
+Configuration file: ``` .travis.yaml```. For every commit, Travis runs all the unit tests, end to end tests, doc tests and flake8.
 <!-- Unit tests and flake8 testing is done for every commit. A nightly cronjob also tests the notebooks. Notebooks listed in `.slow-books` are excluded from these tests. -->
 
-<!-- ### Appveyor
-
- -->
+Additionally, Appveyor runs integration tests for windows environment. Tests are published [here](https://ci.appveyor.com/project/TRI-AMDD/beep)
 
 
 ### Codecov
 
-Code coverage (how much of our code is actually seen by the (linux) unit tests) is tested using [Codecov](https://docs.codecov.io/), a report is visible on https://codecov.io/gh/pybamm-team/PyBaMM.
+Code coverage (how much of the code is actually seen by the (linux) unit tests) is tested using [Codecov](https://docs.codecov.io/).
 
-Configuration files:
-
-```
-.coveragerc
-```
-
-### Read the Docs
-
-Documentation is built using https://readthedocs.org/ and published on http://pybamm.readthedocs.io/.
-
-### Binder
-
-Editable notebooks are made available using [Binder](mybinder.readthedocs.io) at https://mybinder.org/v2/gh/pybamm-team/PyBaMM/master.
-
-Configuration files:
-
-```
-postBuild
-```
+Configuration file: ``` .coveragerc```
 
 ### GitHub
 
 GitHub does some magic with particular filenames. In particular:
 
 - The first page people see when they go to [our GitHub page](https://github.com/pybamm-team/PyBaMM) displays the contents of [README.md](README.md), which is written in the [Markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) format. Some guidelines can be found [here](https://help.github.com/articles/about-readmes/).
-- The license for using PyBaMM is stored in [LICENSE](LICENSE), and [automatically](https://help.github.com/articles/adding-a-license-to-a-repository/) linked to by GitHub.
+- The license for using BEEP is stored in [LICENSE](LICENSE), and [automatically](https://help.github.com/articles/adding-a-license-to-a-repository/) linked to by GitHub.
 - This file, [CONTRIBUTING.md](CONTRIBUTING.md) is recognised as the contribution guidelines and a link is [automatically](https://github.com/blog/1184-contributing-guidelines) displayed when new issues or pull requests are created.
 
 ## Acknowledgements
 
-This CONTRIBUTING.md file, along with large sections of the code infrastructure,
-was copied from the excellent [Pints GitHub repo](https://github.com/pints-team/pints)
+This CONTRIBUTING.md file was adapted from [Pints GitHub repo](https://github.com/pints-team/pints) and PyBaMM
