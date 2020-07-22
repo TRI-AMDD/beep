@@ -1,0 +1,29 @@
+RPTdQdVFeatures:
+  diag_ref: 0
+  diag_nr: 1
+  charge_y_n: 1
+  rpt_type: 'rpt_0.2C'
+  plotting_y_n: 0
+HPPCResistanceVoltageFeatures:
+  diag_pos: 1
+  soc_window: 8
+HPPCRelaxationFeatures:
+  n_soc_windows: 8
+  soc_list: [90, 80, 70, 60, 50, 40, 30, 20, 10]
+  percentage_list: [50, 80, 99]
+  hppc_list: [0, 1]
+DiagnosticSummaryStats:
+  diagnostic_cycle_type: 'rpt_0.2C'
+  cycle_comp_num: [0, 1]
+  Q_seg: 500
+DeltaQFastCharge:
+  init_pred_cycle: 10
+  mid_pred_cycle: 91
+  final_pred_cycle: 100
+  n_nominal_cycles: 40
+TrajectoryFastCharge:
+  thresh_max_cap: 0.98
+  thresh_min_cap: 0.78
+  interval_cap: 0.03
+DiagnosticProperties:
+  quantities: ['discharge_energy', 'discharge_capacity']

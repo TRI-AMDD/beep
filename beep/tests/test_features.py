@@ -4,12 +4,11 @@
 import unittest
 import os
 import json
-import shutil
-
 import numpy as np
 from beep.utils.secrets_manager import event_setup
 from beep.featurize import process_file_list_from_json, \
-    DeltaQFastCharge, TrajectoryFastCharge, DegradationPredictor, DiagnosticCyclesFeatures, DiagnosticProperties
+    DeltaQFastCharge, TrajectoryFastCharge, DegradationPredictor, RPTdQdVFeatures, \
+    HPPCResistanceVoltageFeatures, HPPCRelaxationFeatures, DiagnosticProperties, DiagnosticSummaryStats
 from monty.serialization import dumpfn, loadfn
 from monty.tempfile import ScratchDir
 
@@ -146,12 +145,13 @@ class TestFeaturizer(unittest.TestCase):
             self.assertIsInstance(reloaded['file_list'][-1], str)
 
             # Ensure first is correct
-            features_reloaded = loadfn(reloaded['file_list'][0])
+            features_reloaded = loadfn(reloaded['file_list'][4])
             self.assertIsInstance(features_reloaded, DeltaQFastCharge)
             self.assertEqual(features_reloaded.X.loc[0, 'nominal_capacity_by_median'], 0.07114775279999999)
             features_reloaded = loadfn(reloaded['file_list'][-1])
             self.assertIsInstance(features_reloaded, DiagnosticProperties)
-            self.assertListEqual(list(features_reloaded.X.iloc[2,:]), [143, 0.9753520623934744, 'rpt_0.2C','discharge_energy'])
+            self.assertListEqual(list(features_reloaded.X.iloc[2,:]),
+                                 [143, 0.9753520623934744, 'rpt_0.2C','discharge_energy'])
 
     def test_insufficient_data_file(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE_INSUF)
@@ -171,20 +171,73 @@ class TestFeaturizer(unittest.TestCase):
             self.assertEqual(output_obj['message_list'][0]['comment'],
                              'Insufficient or incorrect data for featurization')
 
-    def test_DiagnosticCyclesFeatures_class(self):
+    def test_RPTdQdVFeatures_class(self):
         with ScratchDir('.'):
             os.environ['BEEP_PROCESSING_DIR'] = TEST_FILE_DIR
             pcycler_run_loc = os.path.join(TEST_FILE_DIR, 'PreDiag_000240_000227_truncated_structure.json')
             pcycler_run = loadfn(pcycler_run_loc)
-            featurizer = DiagnosticCyclesFeatures.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
+            params_dict = {'diag_ref': 0,
+                           'diag_nr': 2,
+                           'charge_y_n': 1,
+                           'rpt_type': 'rpt_2C',
+                           'plotting_y_n': 0}
+            featurizer = RPTdQdVFeatures.from_run(pcycler_run_loc, os.getcwd(), pcycler_run, params_dict)
             path, local_filename = os.path.split(featurizer.name)
             folder = os.path.split(path)[-1]
             dumpfn(featurizer, featurizer.name)
-            self.assertEqual(folder, 'DiagnosticCyclesFeatures')
-            self.assertEqual(featurizer.X.shape[1], 90)
-            self.assertTrue(all(x in featurizer.X.columns for x in ['m0_Mu','var(ocv)','var_charging_dQdV'])
+            self.assertEqual(folder, 'RPTdQdVFeatures')
+            self.assertEqual(featurizer.X.shape[1], 12)
+            self.assertEqual(featurizer.metadata['parameters'], params_dict)
 
-)
+    def test_HPPCResistanceVoltageFeatures_class(self):
+        with ScratchDir('.'):
+            os.environ['BEEP_PROCESSING_DIR'] = TEST_FILE_DIR
+            pcycler_run_loc = os.path.join(TEST_FILE_DIR, 'PreDiag_000240_000227_truncated_structure.json')
+            pcycler_run = loadfn(pcycler_run_loc)
+            featurizer = HPPCResistanceVoltageFeatures.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
+            path, local_filename = os.path.split(featurizer.name)
+            folder = os.path.split(path)[-1]
+            dumpfn(featurizer, featurizer.name)
+            self.assertEqual(folder, 'HPPCResistanceVoltageFeatures')
+            self.assertEqual(featurizer.X.shape[1], 64)
+            self.assertListEqual([featurizer.X.columns[0], featurizer.X.columns[-1]], ['ohmic_r_d0','D_8'])
+
+
+    def test_HPPCRelaxationFeatures_class(self):
+        with ScratchDir('.'):
+            os.environ['BEEP_PROCESSING_DIR'] = TEST_FILE_DIR
+            pcycler_run_loc = os.path.join(TEST_FILE_DIR, 'PreDiag_000240_000227_truncated_structure.json')
+            pcycler_run = loadfn(pcycler_run_loc)
+            featurizer = HPPCRelaxationFeatures.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
+            path, local_filename = os.path.split(featurizer.name)
+            folder = os.path.split(path)[-1]
+            dumpfn(featurizer, featurizer.name)
+            params_dict = {'n_soc_windows': 8,
+                           'soc_list': [90, 80, 70, 60, 50, 40, 30, 20, 10],
+                           'percentage_list': [50, 80, 99],
+                           'hppc_list': [0, 1]
+                           }
+
+            self.assertEqual(folder, 'HPPCRelaxationFeatures')
+            self.assertEqual(featurizer.X.shape[1], 30)
+            self.assertListEqual([featurizer.X.columns[0], featurizer.X.columns[-1]], ['var_50%', 'SOC10%_degrad99%'])
+            self.assertEqual(featurizer.metadata['parameters'], params_dict)
+
+
+    def test_DiagnosticSummaryStats_class(self):
+        with ScratchDir('.'):
+            os.environ['BEEP_PROCESSING_DIR'] = TEST_FILE_DIR
+            pcycler_run_loc = os.path.join(TEST_FILE_DIR, 'PreDiag_000240_000227_truncated_structure.json')
+            pcycler_run = loadfn(pcycler_run_loc)
+            featurizer = DiagnosticSummaryStats.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
+            path, local_filename = os.path.split(featurizer.name)
+            folder = os.path.split(path)[-1]
+            dumpfn(featurizer, featurizer.name)
+            self.assertEqual(folder, 'DiagnosticSummaryStats')
+            self.assertEqual(featurizer.X.shape[1], 42)
+            self.assertListEqual([featurizer.X.columns[0], featurizer.X.columns[-1]],
+                                 ['var_charging_capacity', 'square_discharging_dQdV'])
+
     def test_DiagnosticProperties_class(self):
         with ScratchDir('.'):
             os.environ['BEEP_PROCESSING_DIR'] = TEST_FILE_DIR

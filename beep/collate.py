@@ -262,17 +262,18 @@ def process_files_json():
         else:
             raise ValueError("Unsupported PROJECT_NAME: {}".format(PROJECT_NAME))
 
-        df_dup = mapdf.set_index(['protocol', 'date'])
-        if (protocol, date) in df_dup.index:
-            row = mapdf[(mapdf['protocol'] == protocol) & (mapdf['date'] == date)]
+        # Look for an existing row with the protocol and date and use that row if it
+        # already exists
+        row = mapdf[(mapdf['protocol'] == protocol) & (mapdf['date'] == date)]
+        if len(row) > 0:
             file_id = row['fid'].iloc[0]
             protocol = row['protocol'].iloc[0]
             date = row['date'].iloc[0]
             strname = row['strname'].iloc[0]
+        # Otherwise create a new file
         else:
             file_id = new_file_index
             new_file_index = new_file_index + 1
-
         new_name = "{}_{}_{}".format(PROJECT_NAME, f'{file_id:06}', channel_no)
         new_file = os.path.join(DEST_DIR, PROJECT_NAME, "{}.csv".format(new_name))
 

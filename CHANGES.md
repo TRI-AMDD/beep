@@ -1,5 +1,59 @@
 
 
+v2020.7.17
+----------
+* Add blurb about looking for python dev
+* Refactored featurize module to split up DiagnosticCycleFeatures class into separate classes for 
+each set of features from different diagnostic cycles.
+* Added a yaml file to set default hyperparameters for feature generation. Alternately, a hyperparameter
+dict can be passed as an argument (`params_dict`) to the `from_run()` method
+* Metadata for features includes hyperparameter information 
+
+v2020.7.8
+---------
+* Fix missing modules in package
+
+v2020.7.8
+---------
+* HPPC feature update - Thanks to Xiao Cui
+* Resolve warnings during tests - Thanks to Tino Sulzer
+* Change logging options in the config for local to eliminate some errors
+* Add additional test to expand coverage
+* Add changes for validation based on project name with test
+* Add project look up for validation schema
+* make corresponding changes in the final get hppc feature function, soc is changed to 8, and added some one new diffusion feature.
+* a new set of helper functions to calculate the diffusion coefficient for  the 40s rests in hppc
+* changed the v_diff function a bit to make it more consistent with others
+* the new function will give you 54 different values of resistances based on soc and time scale
+* a new helper function for calculating resistance
+* deleting something
+* changing soc=7 to soc=8
+* Include notebook used to demonstrate the use of beep with a fast charge file
+* update comments and docstring
+* add validation criteria for featurize
+* Update docstring for to_file method
+* Add docstring for to_file method
+* try pytest-cov removal
+* Clean up and commenting
+* Finish writing initial tests for the parser
+* Creating ordered dict for the steps
+* Alter connection try to avoid tests when AWS not present
+* Remove repeated method
+* Fix assertions
+* Expand coverage of tests
+* Change to optional argument for protocol directory
+* Removing reptitive method
+* Remove spaces around step type
+* Fix step headers
+* Working tests, wrong step headers
+* Working version of the initialization
+* Intermediate fix to some import statements
+* Remove import statement
+* Adding protocol schema dir
+* Adding procedure directory
+* Fix imports
+* Refactor of protocol generation by sub-classing DashOrderedDict - Thanks to Joseph Montoya
+
 v2020.6.2
 ---------
 * New feature classes based on diagnostic cycles.

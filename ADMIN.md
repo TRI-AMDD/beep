@@ -46,8 +46,6 @@ token.
 	export TWINE_PASSWORD=PYPIPASSWORD
 	export GITHUB_RELEASES_TOKEN=TOKEN_YOU_GET_FROM_GITHUB
 
-You may want to add these to your .bash_profile to avoid having to type these 
-each time.
 
 Doing the release
 -----------------
