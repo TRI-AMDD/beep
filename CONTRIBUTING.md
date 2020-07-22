@@ -64,17 +64,17 @@ BEEP follows the [PEP8 recommendations](https://www.python.org/dev/peps/pep-0008
 
 In general, we aim for descriptive class, method, and argument names.
 2. Avoid abbreviations when possible without making names overly long, so `mean` is better than `mu`, but a class name like `MyClass` is fine.
-3. Class names are CamelCase, and start with an upper case letter, for example `FastChargeFeatures` or `ProcessedCyclerRun`. 
-4. Method and variable names are lower case, and use underscores for word separation, for example `x` or `calculate_cycle_life`.
+3. Class names use CamelCase, and start with an upper case letter, for example `FastChargeFeatures` or `ProcessedCyclerRun`. 
+4. Method and variable names use snake_case, and use underscores for word separation, for example `x` or `calculate_cycle_life`.
 
 ### Docstrings
 Every method and every class should have a [docstring](https://www.python.org/dev/peps/pep-0257/) that
  describes in plain terms what it does, and what the expected input and output is. Likewise, while performing
- any complex operations in a piece of code, or putting in decision logic, please use in-line comments.
+ any complex operation in a piece of code, or putting in decision logic, please use in-line comments.
 
 ## Dependencies and reusing code
 
-While it's a bad idea for developers to "reinvent the wheel", it's important for users to get a _reasonably sized download and an easy install_. In addition, external libraries can sometimes cease to be supported, and when they contain bugs it might take a while before fixes become available as automatic downloads to BEEP users.
+While it is a bad idea for developers to "reinvent the wheel", it is also important for users to get a reasonably sized download and an easy install_. In addition, external libraries can sometimes cease to be supported, and when they contain bugs it might take a while before fixes become available as automatic downloads to BEEP users.
 For these reasons, all dependencies in BEEP should be thought about carefully, and discussed on GitHub.
 
 Direct inclusion of code from other packages is possible, as long as their license permits it and is compatible with ours, but again should be considered carefully and discussed in the group. Snippets from blogs and [stackoverflow](https://stackoverflow.com/) can often be included without attribution, but if they solve a particularly nasty problem (or are very hard to read) it's often a good idea to attribute (and document) them, by making a comment with a link in the source code.
@@ -166,9 +166,9 @@ Configuration file: ``` .travis.yaml```. For every commit, Travis runs all the u
 Additionally, Appveyor runs integration tests for windows environment. Tests are published [here](https://ci.appveyor.com/project/TRI-AMDD/beep)
 
 
-### Codecov
+### Code coverage
 
-Code coverage (how much of the code is actually seen by the (linux) unit tests) is tested using [Codecov](https://docs.codecov.io/).
+Code coverage (how much of the code is actually seen by the (linux) unit tests) is tested using [Coveralls](https://coveralls.io/).
 
 
 ## Acknowledgements
