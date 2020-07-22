@@ -38,6 +38,7 @@ class RawCyclerRunTest(unittest.TestCase):
         self.maccor_file_paused = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000151_paused.052")
         self.indigo_file = os.path.join(TEST_FILE_DIR, "indigo_test_sample.h5")
         self.biologic_file = os.path.join(TEST_FILE_DIR, "raw", "biologic_test_file_short.mpt")
+        self.neware_file = os.path.join(TEST_FILE_DIR, "raw", "neware_test.csv")
 
     def test_serialization(self):
         smaller_run = RawCyclerRun.from_file(self.arbin_bad)
@@ -427,6 +428,11 @@ class RawCyclerRunTest(unittest.TestCase):
 
         self.assertEqual(set({"_today_datetime", "filename"}),
                          set(raw_cycler_run.metadata.keys()))
+
+    def test_ingestion_neware(self):
+        raw_cycler_run = RawCyclerRun.from_file(self.neware_file)
+        print(raw_cycler_run.data.columns)
+        self.assertEqual(1, 2)
 
     def test_get_project_name(self):
         project_name_parts = get_project_sequence(os.path.join(TEST_FILE_DIR,

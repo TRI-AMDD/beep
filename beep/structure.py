@@ -60,7 +60,7 @@ from beep.validate import ValidatorBeep, BeepValidationError
 from beep.collate import add_suffix_to_filename
 from beep.conversion_schemas import ARBIN_CONFIG, MACCOR_CONFIG, \
     FastCharge_CONFIG, xTesladiag_CONFIG, INDIGO_CONFIG, BIOLOGIC_CONFIG, \
-    STRUCTURE_DTYPES
+    NEWARE_CONFIG, STRUCTURE_DTYPES
 from beep.utils import KinesisEvents
 from beep import logger, __version__
 
@@ -133,6 +133,9 @@ class RawCyclerRun(MSONable):
 
         elif re.match(BIOLOGIC_CONFIG['file_pattern'], path):
             return cls.from_biologic_file(path, validate)
+
+        elif re.match(NEWARE_CONFIG['file_pattern'], path):
+            return cls.from_neware_file(path, validate)
 
         else:
             raise ValueError("{} does not match any known file pattern".format(path))
@@ -591,6 +594,24 @@ class RawCyclerRun(MSONable):
         metadata['start_datetime'] = data.sort_values(by='system_time_us')['date_time_iso'].iloc[0]
 
         return cls(data, metadata, None, validate, filename=path)
+
+    @classmethod
+    def from_neware_file(cls, filename, validate=False):
+        """
+        Method for ingestion of Neware format files.
+
+        Args:
+            filename (str): file path for neware format file.
+            validate (bool): whether to validate on instantiation.
+        """
+        with open(filename, encoding='ISO-8859-1') as input:
+            input.readline()
+            for row, line in enumerate(input):
+                print(line)
+                if row[:2] == r',,':
+                    break
+        data = pd.read_csv(filename, sep=',', skiprows=0, encoding='ISO-8859-1')
+
 
     @classmethod
     def from_biologic_file(cls, path, validate=False):
