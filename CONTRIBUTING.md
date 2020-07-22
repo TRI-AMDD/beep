@@ -37,9 +37,8 @@ You now have everything you need to start making changes!
 ### C. Merging your changes with BEEP
 
 9. [Test your code!](#testing)
-11. If you added a major new feature, perhaps it should be showcased in an [example notebook](#example-notebooks).
 12. When you feel your code is finished, or at least warrants serious discussion, run the [pre-commit checks](#pre-commit-checks) and then create a [pull request](https://help.github.com/articles/about-pull-requests/).
-13. Once a PR has been created, it will be reviewed by the maintainers. Changes might be suggested which you can make by simply adding new commits to the branch. When everything's finished, someone with the right GitHub permissions will merge your changes into BEEP repository.
+13. Once a PR has been created, it will be reviewed by the maintainers. Changes might be suggested which you can make by simply adding new commits to the branch. When everything's finished, someone with the right GitHub permissions will merge your changes into the BEEP repository.
 
 
 ## Installation
@@ -53,12 +52,12 @@ pip install -e .
 This will
 
 1. Install all the dependencies for BEEP, including the ones for documentation (docs) and development (dev).
-2. Tell Python to use your local beep files when you use `import beep` anywhere on your system.
+2. Tell Python to use your local beep files when you use `import beep` anywhere in your system.
 
 
 ## Coding style guidelines
 
-BEEP follows the [PEP8 recommendations](https://www.python.org/dev/peps/pep-0008/) for coding style. These are very common guidelines, and community tools have been developed to check how well projects implement them.
+BEEP follows the [PEP8 recommendations](https://www.python.org/dev/peps/pep-0008/) for coding style.
 
 ### Naming
 
