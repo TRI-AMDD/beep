@@ -46,6 +46,9 @@ class ProcedureToSchedule:
             sdu_input_name (str): the full path of the schedule file to use as a
                 shell for the steps
             sdu_output_name (str): the full path of the schedule file to output
+            global_v_range (list): Global safety range for voltage in volts [min, max]
+            global_temp_range (list): Global safety range for temperature in Celcius [min, max]
+            global_current_range (list): Global safety range for current in Amps [min, max]
 
         """
         schedule = Schedule.from_file(sdu_input_name)
@@ -64,12 +67,16 @@ class ProcedureToSchedule:
 
         step_name_list, step_flow_ctrl = self.create_metadata()
         schedule.set("Schedule.m_uStepNum", str(len(step_name_list)))
+        # Set global safety limits
         schedule.set("Schedule.m_VoltageSafetyScope",
                      "{:.6f}".format(global_v_range[0]) + "^" + "{:.6f}".format(global_v_range[1]))
         schedule.set("Schedule.m_AuxTempSafetyScope",
                      "{:.6f}".format(global_temp_range[0]) + '^' + "{:.6f}".format(global_temp_range[1]))
         schedule.set("Schedule.m_CurrentSafetyScope",
                      "{:.6f}".format(global_current_range[0]) + '^' + "{:.6f}".format(global_current_range[1]))
+        if global_temp_range != [-100, 100]:
+            schedule.set("Schedule.m_AuxSafetyEnabled",
+                         '0^0 ; 1^1 ; 2^0 ; 3^0 ; 4^0 ; 5^0 ; 6^0 ; 7^0 ; 8^0 ; 9^0 ; 10^0 ; 11^0')
         for step_index, step in enumerate(self.procedure_dict_steps):
             ## TODO develop method for setting range automatically
             step_arbin = self.compile_to_arbin(self.procedure_dict_steps[step_index],
