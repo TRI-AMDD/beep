@@ -3,9 +3,7 @@
 
 # Battery Evaluation and Early Prediction (BEEP)
 
-BEEP is a set of tools designed to support Battery Evaluation and Early Prediction of cycle life corresponding to the research of 
-the [d3batt program](https://d3batt.mit.edu/) and the 
-[Toyota Research Institute](http://www.tri.global/accelerated-materials-design-and-discovery/).
+BEEP is a set of tools designed to support Battery Evaluation and Early Prediction of cycle life corresponding to the research of the [d3batt program](https://d3batt.mit.edu/) and the [Toyota Research Institute](http://www.tri.global/accelerated-materials-design-and-discovery/).
 
 
 BEEP enables parsing and handing of electrochemical battery cycling data

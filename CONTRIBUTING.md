@@ -24,6 +24,7 @@ When making any kind of update, we try to follow the procedure below.
 4. Create a [branch](https://help.github.com/articles/creating-and-deleting-branches-within-your-repository/) of this repo on your own fork where all changes will be made
 5. [Install](#installation) BEEP with the developer options.
 6. Test if your installation worked. `pytest beep`.
+
 You now have everything you need to start making changes!
 
 ### B. Writing your code
@@ -50,7 +51,7 @@ pip install -e .
 This will
 
 1. Install all the dependencies for BEEP, including the ones for documentation (docs) and development (dev).
-2. Tell Python to use your local BEEP files when you use import beep anywhere on your system.
+2. Tell Python to use your local BEEP files when you use `import beep` anywhere on your system.
 
 
 ## Coding style guidelines
