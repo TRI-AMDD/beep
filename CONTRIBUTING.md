@@ -1,7 +1,6 @@
 # Contributing to BEEP
 
-We are striving for community-driven adoption and development of BEEP. If you would like to 
-contribute (thank you!), please have a look at the [guidelines below](#workflow).
+We are striving for community-driven adoption and development of BEEP. If you would like to contribute (thank you!), please have a look at the [guidelines below](#workflow).
 
 If you're already familiar with our workflow, maybe have a quick look at the [pre-commit checks](#pre-commit-checks) directly below.
 
@@ -14,7 +13,7 @@ Before you commit any code, please perform the following checks:
 
 ## Workflow
 
-We use [GitHub](https://en.wikipedia.org/wiki/GitHub) standard [Fork and Pull Request workflow](https://gist.github.com/Chaser324/ce0505fbed06b947d962) to coordinate our work. 
+We use a standard Fork and Pull Request workflow to coordinate our work. 
 When making any kind of update, we try to follow the procedure below.
 
 ### A. Before you begin
@@ -25,20 +24,19 @@ When making any kind of update, we try to follow the procedure below.
 4. Create a [branch](https://help.github.com/articles/creating-and-deleting-branches-within-your-repository/) of this repo on your own fork where all changes will be made
 5. [Install](#installation) BEEP with the developer options.
 6. Test if your installation worked. `pytest beep`.
-
 You now have everything you need to start making changes!
 
 ### B. Writing your code
 
-7. BEEP is developed in [Python](https://en.wikipedia.org/wiki/Python_(programming_language). Make sure to follow our [coding style guidelines](#coding-style-guidelines).
-8. Commit your changes to your branch with [useful, descriptive commit messages](https://chris.beams.io/posts/git-commit/). While developing, you can keep using the GitHub issue you're working on as a place for discussion. [Refer to your commits](https://stackoverflow.com/questions/8910271/how-can-i-reference-a-commit-in-an-issue-comment-on-github) when discussing specific lines of code.
+7. BEEP is developed in Python. Make sure to follow our [coding style guidelines](#coding-style-guidelines).
+8. Commit your changes to your branch with useful, descriptive commit messages. While developing, you can keep using the GitHub issue you're working on as a place for discussion. [Refer to your commits](https://stackoverflow.com/questions/8910271/how-can-i-reference-a-commit-in-an-issue-comment-on-github) when discussing specific lines of code.
 9. If you want to add a dependency on another library, or re-use code you found somewhere else, have a look at [these guidelines](#dependencies-and-reusing-code).
 
 ### C. Merging your changes with BEEP
 
 9. [Test your code!](#testing)
 12. When you feel your code is finished, or at least warrants serious discussion, run the [pre-commit checks](#pre-commit-checks) and then create a [pull request](https://help.github.com/articles/about-pull-requests/).
-13. Once a PR has been created, it will be reviewed by the maintainers. Changes might be suggested which you can make by simply adding new commits to the branch. When everything's finished, someone with the right GitHub permissions will merge your changes into the BEEP repository.
+13. Once a PR has been created, it will be reviewed by the maintainers. Changes might be suggested which you can make by simply adding new commits to the branch. When everything's finished, someone with the right GitHub permissions will merge your changes into the repository.
 
 
 ## Installation
@@ -52,7 +50,7 @@ pip install -e .
 This will
 
 1. Install all the dependencies for BEEP, including the ones for documentation (docs) and development (dev).
-2. Tell Python to use your local beep files when you use `import beep` anywhere in your system.
+2. Tell Python to use your local BEEP files when you use import beep anywhere on your system.
 
 
 ## Coding style guidelines
@@ -81,15 +79,12 @@ Direct inclusion of code from other packages is possible, as long as their licen
 
 ## Testing
 
-All code requires testing. We use the nosetests package for our tests. IF nose is not installed yet, run
-```bash 
-pip install nose
-``` 
+All code requires testing. We use the pytest package for our tests. 
 ### Writing tests
 
-Every new feature should have its own test. To create ones, have a look at the `test` directory and see if there's a test for a similar method. Copy-pasting this is a good way to start.
+Every new feature should have its own test. To create one, have a look at the `test` directory and see if there's a test for a similar method. Copy-pasting this is a good way to start.
 
-Next, add some simple (and speedy!) tests of your main features. If these run without exceptions that's a good start! Next, check the output of your methods using any of these [assert methods](https://docs.python.org/3.3/library/unittest.html#assert-methods).
+Next, add some simple tests of your main features. If these run without exceptions that's a good start! Next, confirm the output of your methods using any of these [assert methods](https://docs.python.org/3.3/library/unittest.html#assert-methods).
 
 ### Running tests
 
@@ -97,15 +92,15 @@ The tests are divided into `unit` tests, whose aim is to check individual bits o
 
 To run all tests,
 ```bash
-nosetests beep
+pytest beep
 ```
 To run a specific test script
 ```bash
-nosetests test_featurize.py
+pytest test_featurize.py
 ```
 To run a specific test from a test class,
 ``` bash
-nosetests test_structure.py:TestFeaturizer.test_insufficient_data_file
+pytest test_structure.py:TestFeaturizer.test_insufficient_data_file
 ```
 If you want to run several, but not all, the tests from a script, you can restrict which tests are run from a particular script by using the skipping decorator:
 ```python
@@ -122,21 +117,13 @@ or by just commenting out all the tests you don't want to run
 import ipdb; ipdb.set_trace()
 ```
 - Warnings: If functions are raising warnings instead of errors, it can be hard to pinpoint where this is coming from. Here, you can use the `warnings` module to convert warnings to errors:
-  ```python
-  import warnings
-  warnings.simplefilter("error")
-  ```
-  Then you can use a try-except block, as in a., but with, for example, `RuntimeWarning` instead of `ValueError`.
-
-### Profiling
+ ```python
+import warnings
+warnings.simplefilter("error")
+ ```
 
 
-## Documentation
-
-### Building the documentation
-
-
-### Tutorial notebooks
+## Tutorial notebooks
 
 Specific use-cases and capabilities of BEEP are showcased in Jupyter notebooks stored in the [examples directory](beep/tutorials). 
 All example notebooks should be listed in [tutorials/README.md](https://github.com/TRI-AMDD/beep/tree/master/beep/tutorials). 

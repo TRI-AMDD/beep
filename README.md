@@ -1,11 +1,10 @@
 [![Build Status](https://travis-ci.com/TRI-AMDD/beep.svg?branch=master)](https://travis-ci.com/TRI-AMDD/beep)
 [![Coverage Status](https://coveralls.io/repos/github/TRI-AMDD/beep/badge.svg?branch=master)](https://coveralls.io/github/TRI-AMDD/beep?branch=master)
 
-# BEEP
+# Battery Evaluation and Early Prediction (BEEP)
 
-BEEP is a software designed to support Battery Evaluation and Early Prediction
-of cycle life corresponding to the research of the
-[d3batt program](https://d3batt.mit.edu/) and the 
+BEEP is a set of tools designed to support Battery Evaluation and Early Prediction of cycle life corresponding to the research of 
+the [d3batt program](https://d3batt.mit.edu/) and the 
 [Toyota Research Institute](http://www.tri.global/accelerated-materials-design-and-discovery/).
 
 
