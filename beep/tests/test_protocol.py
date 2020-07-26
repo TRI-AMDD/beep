@@ -326,15 +326,15 @@ class ProcedureToScheduleTest(unittest.TestCase):
          'charge_constant_current_1': [1],
          'charge_percent_limit_1': [30],
          'charge_constant_current_2': [1],
-         'charge_cutoff_voltage': [4.0],
+         'charge_cutoff_voltage': [3.6],
          'charge_constant_voltage_time': [30],
          'charge_rest_time': [5],
          'discharge_constant_current': [1],
-         'discharge_cutoff_voltage': [3.3],
+         'discharge_cutoff_voltage': [3.0],
          'discharge_rest_time': [15],
          'cell_temperature_nominal': [25],
          'cell_type': ['Tesla_Model3_21700'],
-         'capacity_nominal': [4.5],
+         'capacity_nominal': [1.1],
          'diagnostic_type': ['HPPC+RPT'],
          'diagnostic_parameter_set': ['Tesla21700'],
          'diagnostic_start_cycle': [30],
@@ -347,25 +347,32 @@ class ProcedureToScheduleTest(unittest.TestCase):
 
             diag_params_df = pd.read_csv(os.path.join(PROCEDURE_TEMPLATE_DIR,
                                                       "PreDiag_parameters - DP.csv"))
-            diagnostic_params = diag_params_df[diag_params_df['diagnostic_parameter_set'] == 'Tesla21700']
+            diagnostic_params = diag_params_df[diag_params_df['diagnostic_parameter_set'] == 'A123LFP']
 
             procedure = Procedure.generate_procedure_regcyclev3(0, protocol_params)
             procedure.generate_procedure_diagcyclev3(
                 protocol_params["capacity_nominal"], diagnostic_params
             )
+            procedure.set_skip_to_end_diagnostic(3.8, 2.0, step_key='070')
+            self.assertEqual(procedure['MaccorTestProcedure']['ProcSteps']['TestStep'][0]\
+                                 ['Ends']['EndEntry'][1]['Value'], 3.8)
+            self.assertEqual(procedure['MaccorTestProcedure']['ProcSteps']['TestStep'][0]\
+                                 ['Ends']['EndEntry'][2]['Value'], 2.0)
             procedure.to_file(os.path.join(scratch_dir, procedure_to_convert))
 
             sdu_test_input = os.path.join(SCHEDULE_TEMPLATE_DIR, '20170630-3_6C_9per_5C.sdu')
-            converted_sdu_name = 'schedule_test_output.sdu'
+            converted_sdu_name = 'schedule_test_20200724.sdu'
             proc_dict = procedure.from_file(os.path.join(scratch_dir, procedure_to_convert))
 
-            sdu_test_output = os.path.join(TEST_FILE_DIR, 'schedule_test_output.sdu')
+            sdu_test_output = os.path.join(TEST_FILE_DIR, converted_sdu_name)
             test_step_dict = proc_dict['MaccorTestProcedure']['ProcSteps']['TestStep']
 
             converter = ProcedureToSchedule(test_step_dict)
-            converter.create_sdu(sdu_test_input, sdu_test_output, current_range='Range1',
-                                 global_v_range=[2.5, 4.5], global_temp_range=[0, 60],
-                                 global_current_range=[-30, 30])
+            global_min_cur = -2 * 1.5 * protocol_params['capacity_nominal']
+            global_max_cur = 2 * 1.5 * protocol_params['capacity_nominal']
+            converter.create_sdu(sdu_test_input, sdu_test_output, current_range='Range2',
+                                 global_v_range=[2.0, 3.8], global_temp_range=[0, 60],
+                                 global_current_range=[global_min_cur, global_max_cur])
             parsed = open(sdu_test_output, encoding='latin-1').readlines()
             self.assertEqual(parsed[328], '[Schedule_Step3_Limit0]\n')
             self.assertEqual(parsed[6557], '[Schedule_UserDefineSafety15]\n')
