@@ -37,16 +37,12 @@ export BEEP_PROCESSING_DIR='/path/to/beep/data/'
 ```
 
 ## Testing
-You can use nose or pytests for running unittests (use `pip install nose` 
-to install nose if not installed). In order to run tests the environment variable
-needs to be set (ie. `export BEEP_ENV='dev'`)
+You can use pytest for running unittests. In order to run tests the environment variable
+needs to be set (i.e. `export BEEP_ENV='dev'`)
 
 ```bash
 pytest beep
 ```
-
-Note that the editable install (as prescribed above), is necessary
-for nosetests.
 
 ## Using scripts
 

@@ -113,7 +113,7 @@ or by just commenting out all the tests you don't want to run
 
 ### Debugging tests
 
--  Set break points, either in your IDE or using the python debugging module. To use the latter, add the following line where you want to set the break point This will start the [Python interactive debugger](https://gist.github.com/mono0926/6326015).
+-  Set break points, either in your IDE or using the python debugging module. To use the latter, add the following line where you want to set the break point. This will start the [Python interactive debugger](https://gist.github.com/mono0926/6326015).
 ```python
 import ipdb; ipdb.set_trace()
 ```
