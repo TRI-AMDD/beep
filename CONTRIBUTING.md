@@ -45,7 +45,7 @@ You now have everything you need to start making changes!
 To install BEEP with all developer options, type:
 
 ```bash
-pip install -e .
+pip install -e .[tests]
 ```
 
 This will

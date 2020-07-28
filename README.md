@@ -23,8 +23,7 @@ pip (or `python setup.py develop`)  for an editable install:
 ```bash
 git clone git@github.com:ToyotaResearchInstitute/BEEP.git
 cd BEEP
-pip install -e .
-
+pip install -e .[tests]
 ```
 ## Environment
 To configure the use of AWS resources its necessary to set the environment variable `BEEP_ENV`. For most users `'dev'`
@@ -40,10 +39,10 @@ export BEEP_PROCESSING_DIR='/path/to/beep/data/'
 ## Testing
 You can use nose or pytests for running unittests (use `pip install nose` 
 to install nose if not installed). In order to run tests the environment variable
-needs to be set (ie. export BEEP_ENV='dev')
+needs to be set (ie. `export BEEP_ENV='dev'`)
 
 ```bash
-nosetests beep
+pytest beep
 ```
 
 Note that the editable install (as prescribed above), is necessary
