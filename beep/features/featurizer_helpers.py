@@ -248,7 +248,7 @@ def generate_dQdV_peak_fits(processed_cycler_run, rpt_type, diag_nr, charge_y_n,
     color_list = ['g', 'b', 'r', 'k', 'c']
     for peak_nr in np.arange(0, max_nr_peaks - 1):
         between_outer_peak_data = no_filter_data[
-            (no_filter_data.Volt > peak_voltages[peak_nr]) & (no_filter_data.Volt < peak_voltages[peak_nr + 1])]
+            (no_filter_data.voltage > peak_voltages[peak_nr]) & (no_filter_data.voltage < peak_voltages[peak_nr + 1])]
         pct = 0.05
         lowest_dQdV_pct_between_peaks = (between_outer_peak_data.dQdV.sort_values(ascending=False)).tail(
             round(len(between_outer_peak_data.dQdV) * pct))
