@@ -20,35 +20,45 @@ file_pattern: ".*neware.*\\.csv"
 #  m_ncanconfigmd5: _m_ncanconfigmd5
 #  value: _value
 #  value2: _value2
-#data_columns:
-#  data_point: data_point
+data_columns:
+  Record ID: data_point
 #  test_time: test_time
-#  datetime: date_time
-#  step_time: step_time
-#  step_index: step_index
-#  cycle_index: cycle_index
-#  current: current
-#  voltage: voltage
-#  charge_capacity: charge_capacity
-#  discharge_capacity: discharge_capacity
-#  charge_energy: charge_energy
-#  discharge_energy: discharge_energy
+  Realtime: date_time
+  Time(h:min:s.ms): step_time
+  Step ID: step_index
+  Cycle ID: cycle_index
+  Current(mA): current
+  Voltage(V): voltage
+  Capacitance_Chg(mAh): charge_capacity
+  Capacitance_DChg(mAh): discharge_capacity
+  Engy_Chg(mWh): charge_energy
+  Engy_DChg(mWh): discharge_energy
 #  dv/dt: _dv/dt
 #  internal_resistance: internal_resistance
-#  temperature: temperature
-#data_types:
-#  data_point: 'int32'
+  Capacity(mAh): _capacity(mAh)
+  Capacity Density(mAh/g): _capacity_density(mAh/g)
+  Energy(mWh): _energy(mWh)
+  CmpEng(mWh/g): _cmpeng(mWh/g)
+  Min-T(Â°C): _min-T(Â°C)
+  Max-T(Â°C): _max-T(Â°C)
+  Avg-T(Â°C): _avg-T(Â°C)
+  Power(mW): _power(mW)
+  dQ/dV(mAh/V): _dQ/dV(mAh/V)
+  dQm/dV(mAh/V.g): _dQm/dV(mAh/V.g)
+  Temperature(Â°C): temperature
+data_types:
+  Record ID: 'int32'
 #  test_time: 'float32'
-#  datetime: 'float32'
-#  step_time: 'float32'
-#  step_index: 'int16'
-#  cycle_index: 'int32'
-#  current: 'float32'
-#  voltage: 'float32'
-#  charge_capacity: 'float64'
-#  discharge_capacity: 'float64'
-#  charge_energy: 'float64'
-#  discharge_energy: 'float64'
+#  Realtime: 'float32'
+  Time(h:min:s.ms): 'float32'
+  Step ID: 'int16'
+  Cycle ID: 'int32'
+  Current(mA): 'float32'
+  Voltage(V): 'float32'
+  Capacitance_Chg(mAh): 'float64'
+  Capacitance_DChg(mAh): 'float64'
+  Engy_Chg(mWh): 'float64'
+  Engy_DChg(mWh): 'float64'
 #  dv/dt: 'float32'
 #  internal_resistance: 'float32'
-#  temperature: 'float32'
+  Temperature(Â°C): 'float32'

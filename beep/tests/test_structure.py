@@ -431,7 +431,7 @@ class RawCyclerRunTest(unittest.TestCase):
 
     def test_ingestion_neware(self):
         raw_cycler_run = RawCyclerRun.from_file(self.neware_file)
-        print(raw_cycler_run.data.columns)
+        print(raw_cycler_run.data.head())
         self.assertEqual(1, 2)
 
     def test_get_project_name(self):
