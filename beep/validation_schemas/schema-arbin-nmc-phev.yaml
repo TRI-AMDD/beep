@@ -18,7 +18,7 @@ discharge_capacity:
   type: list
 temperature:
   schema:
-    max: 80.0
+    max: 500.0
     min: 0.0
     type: float
   type: list

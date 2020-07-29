@@ -414,7 +414,7 @@ class RawCyclerRunTest(unittest.TestCase):
                           "charge_energy", "discharge_energy"},
                          set(raw_cycler_run.data.columns))
 
-        self.assertEqual(set({"_today_datetime", "filename"}),
+        self.assertEqual(set({"_today_datetime", "filename", "barcode", "protocol", "channel_id"}),
                          set(raw_cycler_run.metadata.keys()))
 
         # general
@@ -425,7 +425,7 @@ class RawCyclerRunTest(unittest.TestCase):
                           "charge_energy", "discharge_energy"},
                          set(raw_cycler_run.data.columns))
 
-        self.assertEqual(set({"_today_datetime", "filename"}),
+        self.assertEqual(set({"_today_datetime", "filename", "barcode", "protocol", "channel_id"}),
                          set(raw_cycler_run.metadata.keys()))
 
     def test_get_project_name(self):
