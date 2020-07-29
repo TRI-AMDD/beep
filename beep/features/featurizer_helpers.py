@@ -91,7 +91,7 @@ def isolate_dQdV_peaks(processed_cycler_run, diag_nr, charge_y_n, cwt_range, max
 
 def generate_model(spec):
     """
-    Method that generates a model to fit the hppc data to for peak extraction, using spec dictionary
+    Method that generates a model to fit the RPT data to for peak extraction, using spec dictionary
     :param spec (dict): dictionary containing X, y model types.
     :return: composite model objects of lmfit Model class and a parameter object as defined in lmfit.
     """
@@ -160,7 +160,7 @@ def update_spec_from_peaks(spec, model_indices, peak_voltages, peak_dQdVs, peak_
     return
 
 
-def generate_dQdV_peak_fits(processed_cycler_run, rpt_type, diag_nr, charge_y_n, plotting_y_n=0, max_nr_peaks=4):
+def generate_dQdV_peak_fits(processed_cycler_run, rpt_type, diag_nr, charge_y_n, plotting_y_n=0, max_nr_peaks=4, cwt_range = np.arange(10,30)):
     """
     Generate fits characteristics from dQdV peaks
 
@@ -175,9 +175,9 @@ def generate_dQdV_peak_fits(processed_cycler_run, rpt_type, diag_nr, charge_y_n,
     """
     # Uses isolate_dQdV_peaks function to filter out peaks and returns x(Volt) and y(dQdV) values from peaks
 
-    data, no_filter_data, peak_voltages, peak_dQdVs = isolate_dQdV_peaks(processed_cycler_run, rpt_type=rpt_type, \
+    data, no_filter_data, peak_voltages, peak_dQdVs = isolate_dQdV_peaks(processed_cycler_run, rpt_type=rpt_type,
                                                                          charge_y_n=charge_y_n, diag_nr=diag_nr,
-                                                                         cwt_range = np.arange(10,30),
+                                                                         cwt_range = cwt_range,
                                                                          max_nr_peaks=max_nr_peaks,
                                                                          half_peak_width=0.07)
 
@@ -240,10 +240,23 @@ def generate_dQdV_peak_fits(processed_cycler_run, rpt_type, diag_nr, charge_y_n,
         prefix = f'm{i}_'
         peak_fit_dict[prefix+"Amp"+"_"+rpt_type+"_"+str(charge_y_n)] = [peak_dQdVs[i]]
         peak_fit_dict[prefix+"Mu"+"_"+rpt_type+"_"+str(charge_y_n)] = [peak_voltages[i]]
-        #peak_fit_dict[prefix + "Sig"] = [best_values[prefix + "sigma"]]
 
     # Make dataframe out of dict
     peak_fit_df = pd.DataFrame(peak_fit_dict)
+
+    # Incorporate troughs of dQdV curve
+    color_list = ['g', 'b', 'r', 'k', 'c']
+    for peak_nr in np.arange(0, max_nr_peaks - 1):
+        between_outer_peak_data = no_filter_data[
+            (no_filter_data.Volt > peak_voltages[peak_nr]) & (no_filter_data.Volt < peak_voltages[peak_nr + 1])]
+        pct = 0.05
+        lowest_dQdV_pct_between_peaks = (between_outer_peak_data.dQdV.sort_values(ascending=False)).tail(
+            round(len(between_outer_peak_data.dQdV) * pct))
+
+        if plotting_y_n:
+            ax.axhline(y=lowest_dQdV_pct_between_peaks.mean(), color=color_list[peak_nr], linestyle='-')
+        # Add belly feature to dataframe
+        peak_fit_df[f'trough_height_{peak_nr}_{rpt_type}_{charge_y_n}'] = lowest_dQdV_pct_between_peaks.mean()
 
     return peak_fit_df
 

@@ -230,21 +230,27 @@ class RPTdQdVFeatures(BeepFeatures):
 
         if ((params_dict['rpt_type'] == 'rpt_0.2C') and (params_dict['charge_y_n'] == 1)):
             max_nr_peaks = 4
+            cwt_range_input = np.arange(10, 30)
 
         elif ((params_dict['rpt_type']  == 'rpt_0.2C') and (params_dict['charge_y_n'] == 0)):
             max_nr_peaks = 4
+            cwt_range_input = np.arange(10, 30)
 
         elif ((params_dict['rpt_type'] == 'rpt_1C') and (params_dict['charge_y_n'] == 1)):
             max_nr_peaks = 4
+            cwt_range_input = np.arange(10, 30)
 
         elif ((params_dict['rpt_type'] == 'rpt_1C') and (params_dict['charge_y_n'] == 0)):
             max_nr_peaks = 3
+            cwt_range_input = np.arange(10, 30)
 
         elif ((params_dict['rpt_type']  == 'rpt_2C') and (params_dict['charge_y_n'] == 1)):
             max_nr_peaks = 4
+            cwt_range_input = np.arange(10, 30)
 
         elif ((params_dict['rpt_type'] == 'rpt_2C') and (params_dict['charge_y_n'] == 0)):
             max_nr_peaks = 3
+            cwt_range_input = np.arange(10, 50)
 
 
         peak_fit_df_ref = featurizer_helpers.generate_dQdV_peak_fits(processed_cycler_run,
@@ -252,13 +258,15 @@ class RPTdQdVFeatures(BeepFeatures):
                                                                      charge_y_n=params_dict['charge_y_n'],
                                                                      rpt_type=params_dict['rpt_type'],
                                                                      plotting_y_n=params_dict['plotting_y_n'],
-                                                                     max_nr_peaks=max_nr_peaks)
+                                                                     max_nr_peaks=max_nr_peaks,
+                                                                     cwt_range = cwt_range_input)
         peak_fit_df = featurizer_helpers.generate_dQdV_peak_fits(processed_cycler_run,
                                                                  diag_nr=params_dict['diag_nr'],
                                                                  charge_y_n=params_dict['charge_y_n'],
                                                                  rpt_type=params_dict['rpt_type'],
                                                                  plotting_y_n=params_dict['plotting_y_n'],
-                                                                 max_nr_peaks=max_nr_peaks)
+                                                                 max_nr_peaks=max_nr_peaks,
+                                                                     cwt_range = cwt_range_input)
 
         return 1 + (peak_fit_df - peak_fit_df_ref) / peak_fit_df_ref
 
