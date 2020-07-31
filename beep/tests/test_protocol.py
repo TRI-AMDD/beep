@@ -143,7 +143,7 @@ class ProcedureTest(unittest.TestCase):
             local_name = "test_mwf_LA4_lim.000"
             procedure.to_file(os.path.join(scratch_dir, local_name))
             # Uncomment line below to keep the output in the test file directory
-            shutil.copyfile(os.path.join(scratch_dir, local_name), os.path.join(TEST_FILE_DIR, local_name))
+            # shutil.copyfile(os.path.join(scratch_dir, local_name), os.path.join(TEST_FILE_DIR, local_name))
 
     def test_generate_maccor_waveform_from_power(self):
         power_waveform_file = os.path.join(TEST_FILE_DIR, "LA4_power_profile.csv")
@@ -284,8 +284,8 @@ class GenerateProcedureTest(unittest.TestCase):
             driving_test_name = 'Drive_test20200716.000'
             procedure.to_file(driving_test_name)
             # Uncomment line below to keep the output in the test file directory
-            shutil.copyfile(os.path.join(scratch_dir, driving_test_name),
-                            os.path.join(TEST_FILE_DIR, driving_test_name))
+            # shutil.copyfile(os.path.join(scratch_dir, driving_test_name),
+            #                 os.path.join(TEST_FILE_DIR, driving_test_name))
 
     def test_from_csv(self):
         csv_file = os.path.join(TEST_FILE_DIR, "parameter_test.csv")
