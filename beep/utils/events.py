@@ -13,6 +13,7 @@ import numpy as np
 import boto3
 import pytz
 import time
+from pathlib import Path
 from botocore.exceptions import NoCredentialsError
 from beep import LOG_DIR, ENVIRONMENT, MAX_RETRIES
 from beep.config import config
@@ -352,6 +353,66 @@ class KinesisEvents:
         response = self.put_service_event("generating_protocol", generate_status, data)
 
         return response
+
+
+class WorkflowOutputs:
+    """
+    Attributes:
+        service (str): default: Which service is instantiating the class so that
+        we know who is sending events. Defaults to 'Testing'.
+        mode (str): Mode for events, test will only put test message. Defaults to 'run'.
+    """
+
+    def get_local_file_size(self, filename):
+        """
+        Basic function get the local file size. Returns -1 for non-existent files
+
+        Parameters
+        ----------
+        filename: str
+            Full name of the file (path).
+        """
+        try:
+            file_size = os.path.getsize(filename)
+        except FileNotFoundError:
+            file_size = -1
+        return file_size
+
+    def put_workflow_outputs(self, filename, run_id, action, status):
+        """
+        Function to create workflow outputs json file on local file system.
+
+        Args:
+            filename (str): name of the file
+            run_id (int): run_id of file
+            action (str): workflow action
+            status (str): workflow status
+        """
+        if not Path(filename).exists():
+            raise FileNotFoundError()
+
+        size = self.get_local_file_size(filename)
+
+        tmp_dir = Path("/tmp")
+        output_file_path = tmp_dir / "output.json"
+
+        # Most operating systems should have a /tmp directory
+        if not tmp_dir.exists:
+            try:
+                tmp_dir.mkdir()
+            except OSError:
+                print("creation of tmp directory failed")
+
+        output_data = {
+            "filename": filename,
+            "size": size,
+            "run_id": run_id,
+            "action": action,
+            "status": status,
+        }
+
+        output_list = [output_data]
+        output_file_path.write_text(json.dumps(output_list))
 
 
 def setup_logger(

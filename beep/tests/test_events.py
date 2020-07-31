@@ -5,11 +5,13 @@ import os
 import unittest
 import warnings
 import datetime
+import json
 import pytz
 import numpy as np
 import boto3
+from pathlib import Path
 from dateutil.tz import tzutc
-from beep.utils import KinesisEvents, Logger
+from beep.utils import KinesisEvents, WorkflowOutputs, Logger
 from beep.utils.secrets_manager import get_secret
 from beep.config import config
 from beep.utils.secrets_manager import event_setup
@@ -221,6 +223,44 @@ class KinesisEventsTest(unittest.TestCase):
 
         response_valid = events.put_generate_event(output_data, "complete")
         assert response_valid["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+
+class WorkflowOutputsTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.outputs = WorkflowOutputs()
+        self.temp_dir = Path("/tmp")
+
+        self.test_file_path = Path(TEST_FILE_DIR) / "2017-12-04_4_65C-69per_6C_CH29.csv"
+        self.file_size = 37878198
+        self.run_id = 123
+        self.action = "structuring"
+        self.status = "complete"
+
+        self.output_file_path = self.temp_dir / "output.json"
+
+    def tearDown(self):
+        if self.output_file_path.exists():
+            self.output_file_path.unlink()
+
+    def test_get_local_file_size(self):
+        file_size = self.outputs.get_local_file_size(self.test_file_path)
+
+        self.assertEqual(37878198, file_size)
+
+    def test_put_workflow_output(self):
+        self.outputs.put_workflow_outputs(
+            str(self.test_file_path), self.run_id, self.action, self.status
+        )
+
+        self.assertTrue(self.output_file_path.exists())
+        output_list = json.loads(self.output_file_path.read_text())
+        output_json = output_list[0]
+
+        self.assertEqual(str(self.test_file_path), output_json["filename"])
+        self.assertEqual(self.file_size, output_json["size"])
+        self.assertEqual(self.run_id, output_json["run_id"])
+        self.assertEqual(self.action, output_json["action"])
+        self.assertEqual(self.status, output_json["status"])
 
 
 class CloudWatchLoggingTest(unittest.TestCase):
