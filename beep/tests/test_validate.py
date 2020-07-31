@@ -271,6 +271,25 @@ class SimpleValidatorTest(unittest.TestCase):
         self.assertTrue(validity)
         self.assertEqual(reason, '')
 
+    def test_project_name(self):
+        with ScratchDir('.'):
+            os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
+            os.mkdir("data-share")
+            os.mkdir(os.path.join("data-share", "validation"))
+
+            v = SimpleValidator()
+            paths = ["FastCharge_000000_CH29.csv",
+                     "FastCharge_000025_CH8.csv",
+                     "PredictionDiagnostics_000151_test.052"]
+            paths = [os.path.join(TEST_FILE_DIR, path) for path in paths]
+            validate_record = v.validate_from_paths(paths, record_results=True,
+                                                    skip_existing=False)
+
+            self.assertEqual(validate_record['FastCharge_000000_CH29.csv']['method'], 'schema-arbin-lfp.yaml')
+            self.assertEqual(validate_record['FastCharge_000025_CH8.csv']['method'], 'schema-arbin-lfp.yaml')
+            self.assertEqual(validate_record['PredictionDiagnostics_000151_test.052']['method'],
+                             'schema-maccor-2170.yaml')
+
     def test_validation_from_json(self):
         with ScratchDir('.'):
             os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()

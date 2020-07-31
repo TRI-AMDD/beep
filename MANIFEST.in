@@ -1,3 +1,3 @@
 include LICENSE README.md requirements*.txt
-recursive-include beep *.py *.json *.000 *.yaml *.csv *.model
+recursive-include beep *.py *.json *.000 *.yaml *.csv *.model *.mps *.mpl *.mwf *.sdu
 prune beep/tests

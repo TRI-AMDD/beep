@@ -18,7 +18,7 @@ arbin and maccor cyclers.
 
 setup(name="beep",
       url="https://github.com/TRI-AMDD/beep",
-      version="2020.6.2",
+      version="2020.7.29",
       description=DESCRIPTION,
       long_description=LONG_DESCRIPTION,
       long_description_content_type='text/markdown',
@@ -45,8 +45,7 @@ setup(name="beep",
 
                         ],
       extras_require={
-          "tests": ["pytest",
-                    "pytest-cov",
+          "tests": ["pytest-cov",
                     "coveralls",
                     "memory_profiler",
                     "matplotlib"]
@@ -68,9 +67,14 @@ setup(name="beep",
       ],
       package_data={
           "beep.conversion_schemas": ["*.yaml", "*.md"],
-          "beep.procedure_templates": ["*.000", "*.csv", "*.json"],
+          "beep.protocol.biologic_templates": ["*.mps", "*.csv", "*.json"],
+          "beep.protocol.procedure_templates": ["*.000", "*.csv", "*.json"],
+          "beep.protocol.protocol_schemas": ["*.yaml"],
+          "beep.protocol.schedule_templates": ["*.sdu", "*.csv", "*.json"],
           "beep.validation_schemas": ["*.yaml"],
           "beep.model": ["*.model"],
+          "beep.features": ["*.yaml"]
+
       },
       include_package_data=True,
       author="AMDD - Toyota Research Institute",

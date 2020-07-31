@@ -48,6 +48,7 @@ import pytz
 import time
 from scipy import integrate
 import itertools
+import hashlib
 
 from monty.json import MSONable
 from docopt import docopt
@@ -165,7 +166,7 @@ class RawCyclerRun(MSONable):
         cycle_indices = [c for c in cycle_indices if c in reg_cycles]
         cycle_indices.sort()
         for cycle_index in tqdm(cycle_indices):
-            # Use a cycle_index mask instead of a global groupby to save memory
+            # Use a cycle_index mask instead of a global groupby to save memoryÍ
             new_df = self.data.loc[self.data["cycle_index"] == cycle_index].groupby("step_index").filter(step_filter)
             if new_df.size == 0:
                 continue
@@ -652,11 +653,85 @@ class RawCyclerRun(MSONable):
         data.loc[data.step_index % 2 == 1, 'discharge_capacity'] = abs(data.discharge_capacity)
         data.loc[data.step_index % 2 == 0, 'discharge_capacity'] = 0
 
-        metadata = dict()
+        metadata_path = path.replace('.mpt', '.mpl')
+        metadata = cls.extract_biologic_metadata(metadata_path)
         metadata['filename'] = path
         metadata['_today_datetime'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         return cls(data, metadata, None, validate, filename=path)
+
+    @staticmethod
+    def extract_biologic_metadata(metadata_path):
+        """
+        Iterates through a biologic metadata file and extracts the meta fields:
+            - cell_id
+            - barcode
+            - protocol
+
+        Args:
+            metadata_path (str):                path to metadata file
+
+        Returns:
+            dict:                               dictionary with metadata fields
+        """
+
+        flag_cell_id = False
+        flag_barcode = False
+        flag_protocol = False
+        flag_protocol_start = False
+        protocol_text = ''
+        max_lines = 10000
+
+        metadata = dict()
+
+        with open(metadata_path, 'rb') as f:
+
+            i = 0
+            while True:
+                line = f.readline()
+                line = str(line)
+                if line.startswith('b\''):
+                    line = line[2:]
+                if line.endswith('\''):
+                    line = line[:-1]
+                if line.endswith('\\r\\n'):
+                    line = line[:-4]
+
+                if line.strip().split(' : ')[0] == 'Run on channel':
+                    channel_id = line.strip().split(' : ')[1]
+                    channel_id = channel_id.split(' ')[0]
+                    if channel_id[0] != 'C':
+                        raise RuntimeError('Unexpected channel id format in biologic log file.')
+                    channel_id = int(channel_id[1:])
+                    metadata['channel_id'] = channel_id
+                    flag_cell_id = True
+
+                if 'Comments' in line.strip().split(' : ')[0]:
+                    barcode = line.strip().split(' : ')[-1]
+                    metadata['barcode'] = barcode
+                    flag_barcode = True
+
+                if 'Cycle Definition' in line.strip().split(' : ')[0]:
+                    protocol_text += line + '\n'
+                    flag_protocol_start = True
+
+                if flag_protocol_start:
+                    if line == '':
+                        flag_protocol = True
+                        protocol = hashlib.md5(protocol_text.encode()).digest()
+                        metadata['protocol'] = protocol
+                    else:
+                        protocol_text += line + '\n'
+
+                done = flag_cell_id and flag_barcode and flag_protocol
+                if done:
+                    break
+
+                i += 1
+                if i > max_lines:
+                    break
+
+        return metadata
 
     @staticmethod
     def get_maccor_quantity_sum(data, quantity, state_type):
@@ -749,7 +824,8 @@ class RawCyclerRun(MSONable):
         return cls(data, metadata, eis, validate, filename=filename)
 
     def determine_structuring_parameters(self, v_range=None, resolution=1000,
-                                         nominal_capacity=1.1, full_fast_charge=0.8):
+                                         nominal_capacity=1.1, full_fast_charge=0.8,
+                                         parameters_path='data-share/raw/parameters'):
         """
         Method for determining what values to use to convert raw run into processed run
 
@@ -758,6 +834,7 @@ class RawCyclerRun(MSONable):
             resolution (int): resolution for interpolation
             nominal_capacity (float): nominal capacity for summary stats
             full_fast_charge (float): full fast charge for summary stats
+            parameters_path (str): path to parameters file
 
         Returns:
             v_range ([float, float]): voltage range for interpolation
@@ -768,7 +845,7 @@ class RawCyclerRun(MSONable):
                 finding and using the diagnostic cycles
 
         """
-        run_parameter, all_parameters = get_protocol_parameters(self.filename)
+        run_parameter, all_parameters = get_protocol_parameters(self.filename, parameters_path)
         # Logic for interpolation variables and diagnostic cycles
         diagnostic_available = False
         if run_parameter is not None:
