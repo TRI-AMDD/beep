@@ -1,5 +1,12 @@
 
 
+v2020.7.29
+----------
+* Opening up the validation limits for the xIris project
+* change nose to pytest in readme
+* add CI infrastructure to contributions
+* adding contribution guidelines - Thanks Chirru!
+
 v2020.7.17
 ----------
 * Add blurb about looking for python dev
