@@ -13,7 +13,7 @@ jobs:
           macos-latest,
           windows-latest
         ]
-        python-version: [3.6, 3.7, 3.8]
+        python-version: [3.6, 3.7]
 
     runs-on: ${{ matrix.os }}
 
@@ -33,7 +33,7 @@ jobs:
         MPLBACKEND: "Agg"
         BEEP_ENV: "dev"
       run: |
-        pytest beep --color=yes --cov=camd --cov-report html:coverage_reports
+        pytest beep --color=yes --cov=beep --cov-report html:coverage_reports
     - name: Coveralls
       uses: coverallsapp/github-action@master
       with:
