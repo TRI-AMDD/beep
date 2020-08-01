@@ -25,7 +25,7 @@ def isolate_dQdV_peaks(processed_cycler_run, diag_nr, charge_y_n, cwt_range, max
         rpt_type: string indicating which rpt to pick
         charge_y_n: if 1 (default), takes charge dQdV, if 0, takes discharge dQdV
         diag_nr: if 1 (default), takes dQdV of 1st RPT past the initial diagnostic
-        cwt_range: parameter for peakfinder
+        cwt_range: range for scaling parameter to use in Continuous Wave Transform method - used for peak finding
     Returns:
         dataframe with Voltage and dQdV columns for charge or discharge curve in the rpt_type diagnostic cycle.
         The peaks will be isolated
