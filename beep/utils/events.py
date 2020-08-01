@@ -30,12 +30,13 @@ class Logger:
         _terminal_logger: logger instance that prints to console.
     """
 
-    def __init__(self, log_level='INFO', log_file=None, log_cloudwatch=False, service='Testing'):
+    def __init__(
+        self, log_level="INFO", log_file=None, log_cloudwatch=False, service="Testing"
+    ):
         self.service = service
-        self._terminal_logger = setup_logger(log_level,
-                                             log_file=log_file,
-                                             log_cloudwatch=log_cloudwatch,
-                                             service=service)
+        self._terminal_logger = setup_logger(
+            log_level, log_file=log_file, log_cloudwatch=log_cloudwatch, service=service
+        )
 
     def info(self, *args):
         self._terminal_logger.info(args)
@@ -58,34 +59,35 @@ class KinesisEvents:
         mode (str): Mode for events, test will only put test message. Defaults to 'run'.
     """
 
-    def __init__(self,
-                 service='Testing',
-                 mode='run'
-                 ):
+    def __init__(self, service="Testing", mode="run"):
 
         self.service = service
         self.mode = mode
 
-        if self.mode == 'run':
+        if self.mode == "run":
             for i in range(MAX_RETRIES):
                 try:
-                    self.stream = get_secret(config[ENVIRONMENT]['kinesis']['stream'])['streamName']
+                    self.stream = get_secret(config[ENVIRONMENT]["kinesis"]["stream"])[
+                        "streamName"
+                    ]
                 except NoCredentialsError:
-                    print('Credential retry:' + str(i))
+                    print("Credential retry:" + str(i))
                     time.sleep(10)
                     continue
                 else:
                     break
             else:
-                raise NoCredentialsError("Unable to get credentials in specified number of retries")
+                raise NoCredentialsError(
+                    "Unable to get credentials in specified number of retries"
+                )
 
-            self.kinesis = boto3.client('kinesis', region_name='us-west-2')
+            self.kinesis = boto3.client("kinesis", region_name="us-west-2")
 
-        if self.mode == 'test':
-            self.stream = get_secret(config['test']['kinesis']['stream'])['streamName']
-            self.kinesis = boto3.client('kinesis', region_name='us-west-2')
+        if self.mode == "test":
+            self.stream = get_secret(config["test"]["kinesis"]["stream"])["streamName"]
+            self.kinesis = boto3.client("kinesis", region_name="us-west-2")
 
-        if self.mode == 'events_off':
+        if self.mode == "events_off":
             self.logger = Logger(log_file=os.path.join(LOG_DIR, "Event_logger.log"))
 
     def get_file_size(self, file_list):
@@ -110,27 +112,32 @@ class KinesisEvents:
             record (blob): Data blob to be written to the Kinesis stream. Under 1MB.
         """
 
-        if self.mode == 'test':
-            response = self.kinesis.put_record(StreamName=self.stream,
-                                               Data=record + "\n",
-                                               PartitionKey=str(hash('test'))
-                                               )
-        elif self.mode == 'events_off':
-            self.logger.warning(dict(level="WARNING",
-                                     details={
-                                         "mode": self.mode,
-                                         "datetime": datetime.datetime.now(pytz.utc).isoformat(),
-                                         "Data": record,
-                                         "PartitionKey": str(hash('test'))
-                                     }
-                                     ))
+        if self.mode == "test":
+            response = self.kinesis.put_record(
+                StreamName=self.stream,
+                Data=record + "\n",
+                PartitionKey=str(hash("test")),
+            )
+        elif self.mode == "events_off":
+            self.logger.warning(
+                dict(
+                    level="WARNING",
+                    details={
+                        "mode": self.mode,
+                        "datetime": datetime.datetime.now(pytz.utc).isoformat(),
+                        "Data": record,
+                        "PartitionKey": str(hash("test")),
+                    },
+                )
+            )
             response = None
 
         else:
-            response = self.kinesis.put_record(StreamName=self.stream,
-                                               Data=record + "\n",
-                                               PartitionKey=str(hash(module_name))
-                                               )
+            response = self.kinesis.put_record(
+                StreamName=self.stream,
+                Data=record + "\n",
+                PartitionKey=str(hash(module_name)),
+            )
         return response
 
     def put_service_event(self, action, status, data):
@@ -158,42 +165,51 @@ class KinesisEvents:
         # Attempt to encode the data into a base64 format and return the type error
         # if the data type is not supported
         try:
-            data_base64 = base64.b64encode(json.dumps(data).encode('utf-8')).decode('utf-8')
+            data_base64 = base64.b64encode(json.dumps(data).encode("utf-8")).decode(
+                "utf-8"
+            )
         except TypeError as error:
             print(error)
             return error
 
         # Create the dict that contains the standard format for all services in beep
         record = {
-            "timestamp": datetime.datetime.now(pytz.utc).isoformat(),  # Example: '2019-02-27T17:37:40.626564+00:00'
+            "timestamp": datetime.datetime.now(
+                pytz.utc
+            ).isoformat(),  # Example: '2019-02-27T17:37:40.626564+00:00'
             "service": self.service,  # Example 'DataSyncer'
             "action": action,  # Example 'sync out'
             "status": status,  # Example 'writing to database'
-            "data": json.dumps(data)
+            "data": json.dumps(data),
         }
 
-        if self.mode == 'test':
-            response = self.kinesis.put_record(StreamName=self.stream,
-                                               Data=json.dumps(record) + "\n",
-                                               PartitionKey=str(hash('test'))
-                                               )
+        if self.mode == "test":
+            response = self.kinesis.put_record(
+                StreamName=self.stream,
+                Data=json.dumps(record) + "\n",
+                PartitionKey=str(hash("test")),
+            )
 
-        elif self.mode == 'events_off':
-            self.logger.warning(dict(level="WARNING",
-                                     details={
-                                         "mode": self.mode,
-                                         "datetime": datetime.datetime.now(pytz.utc).isoformat(),
-                                         "Data": record,
-                                         "PartitionKey": str(hash('test'))
-                                     }
-                                     ))
+        elif self.mode == "events_off":
+            self.logger.warning(
+                dict(
+                    level="WARNING",
+                    details={
+                        "mode": self.mode,
+                        "datetime": datetime.datetime.now(pytz.utc).isoformat(),
+                        "Data": record,
+                        "PartitionKey": str(hash("test")),
+                    },
+                )
+            )
             response = None
 
         else:
-            response = self.kinesis.put_record(StreamName=self.stream,
-                                               Data=json.dumps(record) + "\n",
-                                               PartitionKey=str(hash(self.service))
-                                               )
+            response = self.kinesis.put_record(
+                StreamName=self.stream,
+                Data=json.dumps(record) + "\n",
+                PartitionKey=str(hash(self.service)),
+            )
         return response
 
     def put_upload_retrigger_event(self, upload_status, retrigger_data):
@@ -207,7 +223,7 @@ class KinesisEvents:
             retrigger_data  (dict): data payload for the event.
         """
 
-        response = self.put_service_event('upload', upload_status, retrigger_data)
+        response = self.put_service_event("upload", upload_status, retrigger_data)
 
         return response
 
@@ -222,23 +238,21 @@ class KinesisEvents:
             validator_status (str): starting|complete|error.
         """
         files = []
-        size_list = self.get_file_size(output_data['file_list'])
+        size_list = self.get_file_size(output_data["file_list"])
 
-        for indx, file in enumerate(output_data['file_list']):
+        for indx, file in enumerate(output_data["file_list"]):
             obj_json = {
-                "filename": output_data['file_list'][indx],
+                "filename": output_data["file_list"][indx],
                 "size": size_list[indx],
-                "run_id": output_data['run_list'][indx],
-                "result": output_data['validity'][indx],
-                "message": output_data['message_list'][indx]
+                "run_id": output_data["run_list"][indx],
+                "result": output_data["validity"][indx],
+                "message": output_data["message_list"][indx],
             }
             files.append(obj_json)
 
-        data = {
-            "files": files
-        }
+        data = {"files": files}
 
-        response = self.put_service_event('validating', validator_status, data)
+        response = self.put_service_event("validating", validator_status, data)
 
         return response
 
@@ -253,23 +267,21 @@ class KinesisEvents:
             structure_status (str): starting|complete|error
         """
         files = []
-        size_list = self.get_file_size(output_data['file_list'])
+        size_list = self.get_file_size(output_data["file_list"])
 
-        for indx, file in enumerate(output_data['file_list']):
+        for indx, file in enumerate(output_data["file_list"]):
             obj_json = {
-                "filename": output_data['file_list'][indx],
+                "filename": output_data["file_list"][indx],
                 "size": size_list[indx],
-                "run_id": output_data['run_list'][indx],
-                "result": output_data['result_list'][indx],
-                "message": output_data['message_list'][indx]
+                "run_id": output_data["run_list"][indx],
+                "result": output_data["result_list"][indx],
+                "message": output_data["message_list"][indx],
             }
             files.append(obj_json)
 
-        data = {
-            "files": files
-        }
+        data = {"files": files}
 
-        response = self.put_service_event('structuring', structure_status, data)
+        response = self.put_service_event("structuring", structure_status, data)
 
         return response
 
@@ -285,38 +297,36 @@ class KinesisEvents:
             analyzer_status (str): starting|complete|error.
         """
         files = []
-        size_list = self.get_file_size(output_data['file_list'])
+        size_list = self.get_file_size(output_data["file_list"])
 
-        if analyzer_action == 'fitting':
-            for indx, file in enumerate(output_data['file_list']):
+        if analyzer_action == "fitting":
+            for indx, file in enumerate(output_data["file_list"]):
                 obj_json = {
-                    "filename": output_data['file_list'][indx],
+                    "filename": output_data["file_list"][indx],
                     "size": size_list[indx],
-                    "run_id": output_data['run_list'][indx],
-                    "message": output_data['message_list'][indx]
+                    "run_id": output_data["run_list"][indx],
+                    "message": output_data["message_list"][indx],
                 }
                 files.append(obj_json)
             data = {
                 "files": files,
-                "model": output_data['model'],
-                "result": output_data['result'],
-                "message": output_data['model_message']
+                "model": output_data["model"],
+                "result": output_data["result"],
+                "message": output_data["model_message"],
             }
 
         else:
-            for indx, file in enumerate(output_data['file_list']):
+            for indx, file in enumerate(output_data["file_list"]):
                 obj_json = {
-                    "filename": output_data['file_list'][indx],
+                    "filename": output_data["file_list"][indx],
                     "size": size_list[indx],
-                    "run_id": output_data['run_list'][indx],
-                    "result": output_data['result_list'][indx],
-                    "message": output_data['message_list'][indx]
+                    "run_id": output_data["run_list"][indx],
+                    "result": output_data["result_list"][indx],
+                    "message": output_data["message_list"][indx],
                 }
                 files.append(obj_json)
 
-            data = {
-                "files": files
-            }
+            data = {"files": files}
 
         response = self.put_service_event(analyzer_action, analyzer_status, data)
 
@@ -334,18 +344,23 @@ class KinesisEvents:
         """
 
         data = {
-            "files": output_data['file_list'],
-            "result": output_data['result'],
-            "message": output_data['message']
+            "files": output_data["file_list"],
+            "result": output_data["result"],
+            "message": output_data["message"],
         }
 
-        response = self.put_service_event('generating_protocol', generate_status, data)
+        response = self.put_service_event("generating_protocol", generate_status, data)
 
         return response
 
 
-def setup_logger(log_level='INFO', log_file=None, log_cloudwatch=False,
-                 service='Testing', np_precision=3):
+def setup_logger(
+    log_level="INFO",
+    log_file=None,
+    log_cloudwatch=False,
+    service="Testing",
+    np_precision=3,
+):
     """
     Creates and configures a logger object.
 
@@ -365,7 +380,9 @@ def setup_logger(log_level='INFO', log_file=None, log_cloudwatch=False,
     np.set_printoptions(precision=np_precision)
 
     # Python logger config
-    logger = logging.getLogger(__name__ + '.' + service)  # '' or None is the root logger
+    logger = logging.getLogger(
+        __name__ + "." + service
+    )  # '' or None is the root logger
 
     # Remove all previous filters and handlers
     logger.handlers = []
@@ -373,7 +390,7 @@ def setup_logger(log_level='INFO', log_file=None, log_cloudwatch=False,
 
     # Get handler on log
     if log_file is not None:
-        hdlr = logging.FileHandler(log_file, 'a')
+        hdlr = logging.FileHandler(log_file, "a")
     else:
         hdlr = logging.StreamHandler(sys.stdout)
 
@@ -385,10 +402,10 @@ def setup_logger(log_level='INFO', log_file=None, log_cloudwatch=False,
 
     logger.addHandler(hdlr)
 
-    fmt_str = '# {cols[y]}%(asctime)s{cols[reset]}'
+    fmt_str = "# {cols[y]}%(asctime)s{cols[reset]}"
     fmt_str += " %(levelname)-8s"
     fmt_str += " {cols[c]}%(funcName)-3s{cols[reset]} %(message)s"
 
-    logger.setLevel(1 if log_level == 'ALL' else getattr(logging, log_level))
+    logger.setLevel(1 if log_level == "ALL" else getattr(logging, log_level))
     logger.propagate = False
     return logger

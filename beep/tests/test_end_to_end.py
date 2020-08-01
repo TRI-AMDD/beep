@@ -11,10 +11,10 @@ import pandas as pd
 from tempfile import mkdtemp
 from monty.serialization import loadfn
 
-from beep import collate, validate, structure, featurize,\
-    run_model
+from beep import collate, validate, structure, featurize, run_model
 from beep.utils import os_format
 from beep.utils.secrets_manager import event_setup
+
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
@@ -31,7 +31,7 @@ class EndToEndTest(unittest.TestCase):
         self.scratch_dir = scratch_dir
 
         # Set BEEP_PROCESSING_DIR directory to scratch_dir
-        os.environ['BEEP_PROCESSING_DIR'] = scratch_dir
+        os.environ["BEEP_PROCESSING_DIR"] = scratch_dir
 
         # Create data-share and subfolders
         os.mkdir("data-share")
@@ -45,16 +45,14 @@ class EndToEndTest(unittest.TestCase):
             "2017-12-04_4_65C-69per_6C_CH29.csv",
             "2017-05-09_test-TC-contact_CH33.csv",  # Fails for not meeting naming convention
             "2017-08-14_8C-5per_3_47C_CH44.csv",
-            ]
-        starting_files = [os.path.join(TEST_FILE_DIR, path)
-                          for path in starting_files]
+        ]
+        starting_files = [os.path.join(TEST_FILE_DIR, path) for path in starting_files]
         for file in starting_files:
             shutil.copy(file, "raw_cycler_files")
-            shutil.copy(file.replace(".csv", "_Metadata.csv"),
-                        "raw_cycler_files")
+            shutil.copy(file.replace(".csv", "_Metadata.csv"), "raw_cycler_files")
 
         # Go back into test directory
-        os.chdir('..')
+        os.chdir("..")
 
     def tearDown(self):
         # Go back to initial directory and tear down test dir
@@ -66,32 +64,29 @@ class EndToEndTest(unittest.TestCase):
         # Copy
         mapped = collate.process_files_json()
         rename_output = json.loads(mapped)
-        rename_output['mode'] = self.events_mode  # mode run|test|events_off
-        rename_output['run_list'] = list(range(len(rename_output['file_list'])))
+        rename_output["mode"] = self.events_mode  # mode run|test|events_off
+        rename_output["run_list"] = list(range(len(rename_output["file_list"])))
         mapped = json.dumps(rename_output)
 
         # Validation
-        validated = validate.validate_file_list_from_json(
-            mapped)
+        validated = validate.validate_file_list_from_json(mapped)
         validated_output = json.loads(validated)
-        validated_output['mode'] = self.events_mode  # mode run|test|events_off
-        validated_output['run_list'] = list(range(len(validated_output['file_list'])))
+        validated_output["mode"] = self.events_mode  # mode run|test|events_off
+        validated_output["run_list"] = list(range(len(validated_output["file_list"])))
         validated = json.dumps(validated_output)
 
         # Data structuring
-        structured = structure.process_file_list_from_json(
-            validated)
+        structured = structure.process_file_list_from_json(validated)
         structured_output = json.loads(structured)
-        structured_output['mode'] = self.events_mode  # mode run|test|events_off
-        structured_output['run_list'] = list(range(len(structured_output['file_list'])))
+        structured_output["mode"] = self.events_mode  # mode run|test|events_off
+        structured_output["run_list"] = list(range(len(structured_output["file_list"])))
         structured = json.dumps(structured_output)
 
         # Featurization
-        featurized = featurize.process_file_list_from_json(
-            structured)
+        featurized = featurize.process_file_list_from_json(structured)
         featurized_output = json.loads(featurized)
-        featurized_output['mode'] = self.events_mode  # mode run|test|events_off
-        featurized_output['run_list'] = list(range(len(featurized_output['file_list'])))
+        featurized_output["mode"] = self.events_mode  # mode run|test|events_off
+        featurized_output["run_list"] = list(range(len(featurized_output["file_list"])))
         featurized = json.dumps(featurized_output)
 
         # Prediction
@@ -108,41 +103,58 @@ class EndToEndTest(unittest.TestCase):
         >>> collate | validate | structure | featurize | run_model
         """
 
-        rename_output = subprocess.check_output("collate", shell=True).decode('utf-8')
+        rename_output = subprocess.check_output("collate", shell=True).decode("utf-8")
 
         # Validation console test
         rename_output = json.loads(rename_output)
         validation_input = {
             "mode": self.events_mode,  # mode run|test|events_off
-            "file_list": rename_output['file_list'],  # list of file paths ['path/test1.csv', 'path/test2.csv']
-            'run_list': list(range(len(rename_output['file_list'])))  # list of run_ids [0, 1]
-            }
+            "file_list": rename_output[
+                "file_list"
+            ],  # list of file paths ['path/test1.csv', 'path/test2.csv']
+            "run_list": list(
+                range(len(rename_output["file_list"]))
+            ),  # list of run_ids [0, 1]
+        }
         validation_input = os_format(json.dumps(validation_input))
-        validation_output = subprocess.check_output("validate {}".format(validation_input),
-                                                    shell=True).decode('utf-8')
+        validation_output = subprocess.check_output(
+            "validate {}".format(validation_input), shell=True
+        ).decode("utf-8")
 
         # Structure console test
         validation_output = json.loads(validation_output)
         structure_input = {
             "mode": self.events_mode,  # mode run|test|events_off
-            "file_list": validation_output['file_list'],  # list of file paths ['path/test1.json', 'path/test2.json']
-            'run_list': list(range(len(validation_output['file_list']))),  # list of run_ids [0, 1]
-            "validity": validation_output['validity']  # list of validities ['valid', 'invalid']
-            }
+            "file_list": validation_output[
+                "file_list"
+            ],  # list of file paths ['path/test1.json', 'path/test2.json']
+            "run_list": list(
+                range(len(validation_output["file_list"]))
+            ),  # list of run_ids [0, 1]
+            "validity": validation_output[
+                "validity"
+            ],  # list of validities ['valid', 'invalid']
+        }
         structure_input = os_format(json.dumps(structure_input))
-        structure_output = subprocess.check_output("structure {}".format(structure_input),
-                                                   shell=True).decode('utf-8')
+        structure_output = subprocess.check_output(
+            "structure {}".format(structure_input), shell=True
+        ).decode("utf-8")
 
         # Featurizing console test
         structure_output = json.loads(structure_output)
         feature_input = {
             "mode": self.events_mode,  # mode run|test|events_off
-            "file_list": structure_output['file_list'],  # list of file paths ['path/test1.json', 'path/test2.json']
-            'run_list': list(range(len(structure_output['file_list'])))  # list of run_ids [0, 1]
-            }
+            "file_list": structure_output[
+                "file_list"
+            ],  # list of file paths ['path/test1.json', 'path/test2.json']
+            "run_list": list(
+                range(len(structure_output["file_list"]))
+            ),  # list of run_ids [0, 1]
+        }
         feature_input = os_format(json.dumps(feature_input))
-        feature_output = subprocess.check_output("featurize {}".format(feature_input),
-                                                 shell=True).decode('utf-8')
+        feature_output = subprocess.check_output(
+            "featurize {}".format(feature_input), shell=True
+        ).decode("utf-8")
 
         # Fitting console test
         # feature_output = json.loads(feature_output)
@@ -162,17 +174,31 @@ class EndToEndTest(unittest.TestCase):
         """Single routine to validate file results from end-to-end tests"""
         # Validate that files are in the right place
         rename_map = pd.read_csv(
-            os.path.join("data-share", "renamed_cycler_files", "FastCharge", "FastCharge" + "map.csv"))
+            os.path.join(
+                "data-share",
+                "renamed_cycler_files",
+                "FastCharge",
+                "FastCharge" + "map.csv",
+            )
+        )
 
         self.assertEqual(rename_map.channel_no.tolist(), ["CH33", "CH44", "CH29"])
 
         loaded_structure = loadfn(
-            os.path.join("data-share", "structure", "FastCharge_000002_CH29_structure.json"))
+            os.path.join(
+                "data-share", "structure", "FastCharge_000002_CH29_structure.json"
+            )
+        )
         self.assertIsInstance(loaded_structure, structure.ProcessedCyclerRun)
 
         loaded_features = loadfn(
-            os.path.join("data-share", "features", "DeltaQFastCharge",
-                         "FastCharge_000002_CH29_features_DeltaQFastCharge.json"))
+            os.path.join(
+                "data-share",
+                "features",
+                "DeltaQFastCharge",
+                "FastCharge_000002_CH29_features_DeltaQFastCharge.json",
+            )
+        )
         self.assertIsInstance(loaded_features, featurize.DeltaQFastCharge)
 
         # loaded_prediction = loadfn(

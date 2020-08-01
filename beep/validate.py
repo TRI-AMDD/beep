@@ -60,8 +60,10 @@ DEFAULT_ARBIN_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-arbin-lfp.yam
 DEFAULT_MACCOR_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-maccor-lfp.yaml")
 DEFAULT_EIS_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-maccor-eis.yaml")
 PROJECT_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-projects.yaml")
-DEFAULT_VALIDATION_RECORDS = os.path.join(VALIDATION_SCHEMA_DIR, "validation_records.json")
-s = {'service': 'DataValidator'}
+DEFAULT_VALIDATION_RECORDS = os.path.join(
+    VALIDATION_SCHEMA_DIR, "validation_records.json"
+)
+s = {"service": "DataValidator"}
 
 
 class ValidatorBeep(Validator):
@@ -89,12 +91,12 @@ class ValidatorBeep(Validator):
             schema = loadfn(schema)
             self.arbin_schema = schema
         except Exception as e:
-            warnings.warn('Arbin schema could not be found: {}'.format(e))
+            warnings.warn("Arbin schema could not be found: {}".format(e))
 
-        df = df.rename(str.lower, axis='columns')
+        df = df.rename(str.lower, axis="columns")
 
         # Validation cycle index data and cast to int
-        if not self._prevalidate_nonnull_column(df, 'cycle_index'):
+        if not self._prevalidate_nonnull_column(df, "cycle_index"):
             return False
         df.cycle_index = df.cycle_index.astype(int, copy=False)
 
@@ -102,7 +104,7 @@ class ValidatorBeep(Validator):
         self.schema = self.arbin_schema
 
         for cycle_index, cycle_df in tqdm(df.groupby("cycle_index")):
-            cycle_dict = cycle_df.replace({np.nan, 'None'}).to_dict(orient='list')
+            cycle_dict = cycle_df.replace({np.nan, "None"}).to_dict(orient="list")
             result = self.validate(cycle_dict)
             if not result:
                 return False
@@ -126,20 +128,20 @@ class ValidatorBeep(Validator):
             schema = loadfn(schema)
             self.maccor_schema = schema
         except Exception as e:
-            warnings.warn('Maccor schema could not be found: {}'.format(e))
+            warnings.warn("Maccor schema could not be found: {}".format(e))
 
-        df = df.rename(str.lower, axis='columns')
+        df = df.rename(str.lower, axis="columns")
 
         # Validation cycle index data and cast to int
-        if not self._prevalidate_nonnull_column(df, 'cyc#'):
+        if not self._prevalidate_nonnull_column(df, "cyc#"):
             return False
-        df['cyc#'] = df['cyc#'].astype(int, copy=False)
+        df["cyc#"] = df["cyc#"].astype(int, copy=False)
 
         # Validation starts here
         self.schema = self.maccor_schema
 
         for cycle_index, cycle_df in tqdm(df.groupby("cyc#")):
-            cycle_dict = cycle_df.replace({np.nan, 'None'}).to_dict(orient='list')
+            cycle_dict = cycle_df.replace({np.nan, "None"}).to_dict(orient="list")
             result = self.validate(cycle_dict)
             if not result:
                 return False
@@ -160,15 +162,20 @@ class ValidatorBeep(Validator):
             schema = loadfn(schema)
             self.eis_schema = schema
         except Exception as e:
-            warnings.warn('Maccor EIS schema could not be found: {}'.format(e))
+            warnings.warn("Maccor EIS schema could not be found: {}".format(e))
 
-        df = df.rename(str.lower, axis='columns')
+        df = df.rename(str.lower, axis="columns")
         self.schema = self.eis_schema
 
-        return self.validate(df.replace(np.nan, 'None').to_dict(orient='list'), )
+        return self.validate(df.replace(np.nan, "None").to_dict(orient="list"),)
 
-    def validate_from_paths(self, paths, record_results=False, skip_existing=False,
-                            record_path=DEFAULT_VALIDATION_RECORDS):
+    def validate_from_paths(
+        self,
+        paths,
+        record_results=False,
+        skip_existing=False,
+        record_path=DEFAULT_VALIDATION_RECORDS,
+    ):
         """
         This method streamlines validation of multiple Arbin csv files given a list of paths.
 
@@ -194,8 +201,11 @@ class ValidatorBeep(Validator):
             if os.path.isfile(record_path):
                 self.validation_records = loadfn(record_path)
                 if skip_existing:
-                    paths = [path for path in paths if os.path.basename(path)
-                             not in self.validation_records]
+                    paths = [
+                        path
+                        for path in paths
+                        if os.path.basename(path) not in self.validation_records
+                    ]
             else:
                 self.validation_records = {}
 
@@ -203,26 +213,32 @@ class ValidatorBeep(Validator):
         for path in paths:
             name = os.path.basename(path)
             results[name] = {}
-            if re.match(ARBIN_CONFIG['file_pattern'], path):
+            if re.match(ARBIN_CONFIG["file_pattern"], path):
                 df = pd.read_csv(path, index_col=0)
-                if 'Iris' in name:
-                    iris_schema = os.path.join(VALIDATION_SCHEMA_DIR, "schema-arbin-nmc-phev.yaml")
-                    results[name]['validated'] = self.validate_arbin_dataframe(df, schema=iris_schema)
-                    results[name]['method'] = self.validate_arbin_dataframe.__name__
+                if "Iris" in name:
+                    iris_schema = os.path.join(
+                        VALIDATION_SCHEMA_DIR, "schema-arbin-nmc-phev.yaml"
+                    )
+                    results[name]["validated"] = self.validate_arbin_dataframe(
+                        df, schema=iris_schema
+                    )
+                    results[name]["method"] = self.validate_arbin_dataframe.__name__
                 else:
-                    results[name]['validated'] = self.validate_arbin_dataframe(df)
-                    results[name]['method'] = self.validate_arbin_dataframe.__name__
-            elif re.match(MACCOR_CONFIG['file_pattern'], path):
-                df = pd.read_csv(path, delimiter='\t', skiprows=1)
-                results[name]['validated'] = self.validate_maccor_dataframe(df)
-                results[name]['method'] = self.validate_maccor_dataframe.__name__
+                    results[name]["validated"] = self.validate_arbin_dataframe(df)
+                    results[name]["method"] = self.validate_arbin_dataframe.__name__
+            elif re.match(MACCOR_CONFIG["file_pattern"], path):
+                df = pd.read_csv(path, delimiter="\t", skiprows=1)
+                results[name]["validated"] = self.validate_maccor_dataframe(df)
+                results[name]["method"] = self.validate_maccor_dataframe.__name__
             else:
-                results[name]['validated'] = False
-                results[name]['method'] = None
+                results[name]["validated"] = False
+                results[name]["method"] = None
                 self.errors = ["File type not recognized"]
 
-            results[name]['time'] = json.dumps(datetime.now(), indent=4, sort_keys=True, default=str)
-            results[name]['errors'] = self.errors
+            results[name]["time"] = json.dumps(
+                datetime.now(), indent=4, sort_keys=True, default=str
+            )
+            results[name]["errors"] = self.errors
 
         if record_results:
             self.validation_records.update(results)
@@ -250,10 +266,11 @@ class ValidatorBeep(Validator):
         null_index_mask = df[column_name].isnull()
         if null_index_mask.any():
 
-            non_numeric_schema = {column_name : {'type': 'list',
-                                                 'schema': {'type': 'number'}}}
-            dummy_df = df[null_index_mask].iloc[0:1].replace({np.nan: 'None'})
-            dummy_doc = dummy_df.to_dict(orient='list')
+            non_numeric_schema = {
+                column_name: {"type": "list", "schema": {"type": "number"}}
+            }
+            dummy_df = df[null_index_mask].iloc[0:1].replace({np.nan: "None"})
+            dummy_doc = dummy_df.to_dict(orient="list")
             self.validate(dummy_doc, schema=non_numeric_schema)
             return False
         else:
@@ -290,6 +307,7 @@ class SimpleValidator(object):
     not equivalent to checking types, and may involve custom
     logic which is defined in the check_type method below.
     """
+
     def __init__(self, schema_filename=DEFAULT_ARBIN_SCHEMA):
         """
         Args:
@@ -316,15 +334,20 @@ class SimpleValidator(object):
             str: verbose description of reason
         """
         if type_rule not in ["integer", "float", "numeric", "string"]:
-            raise ValueError("type_rule {} not supported, please choose one "
-                             "of integer, float, numeric, or string")
+            raise ValueError(
+                "type_rule {} not supported, please choose one "
+                "of integer, float, numeric, or string"
+            )
         # Integer: Check residual from rounding
         if type_rule == "integer":
             nonint_indices = np.arange(len(df))[(df != np.round(df))]
             if nonint_indices.size > 0:
                 value = df.iloc[nonint_indices[0]]
-                return False, "integer type check failed at index {} with value {}".format(
-                    nonint_indices[0], value
+                return (
+                    False,
+                    "integer type check failed at index {} with value {}".format(
+                        nonint_indices[0], value
+                    ),
                 )
         # Float: just check numpy dtyping
         elif type_rule == "float":
@@ -338,7 +361,10 @@ class SimpleValidator(object):
 
         # String: check string/unicode subdtype
         elif type_rule == "string":
-            if not (np.issubdtype(df.dtype, np.object_) or np.issubdtype(df.dtype, np.unicode_)):
+            if not (
+                np.issubdtype(df.dtype, np.object_)
+                or np.issubdtype(df.dtype, np.unicode_)
+            ):
                 return False, "string type check failed, type is {}".format(df.dtype)
         return True, ""
 
@@ -356,18 +382,20 @@ class SimpleValidator(object):
             str: reason for report validation failure, empty string on report
                 validation success
         """
-        dataframe = dataframe.rename(str.lower, axis='columns')
+        dataframe = dataframe.rename(str.lower, axis="columns")
         for column_name, value in self.schema.items():
-            column_schema = value['schema']
-            max_at_least_rule = column_schema.get('max_at_least')
-            min_is_below_rule = column_schema.get('min_is_below')
-            max_rule = column_schema.get('max')
-            min_rule = column_schema.get('min')
-            type_rule = column_schema.get('type')
+            column_schema = value["schema"]
+            max_at_least_rule = column_schema.get("max_at_least")
+            min_is_below_rule = column_schema.get("min_is_below")
+            max_rule = column_schema.get("max")
+            min_rule = column_schema.get("min")
+            type_rule = column_schema.get("type")
 
             # Check type
             if type_rule is not None:
-                validity, reason = self.check_type(dataframe[column_name], type_rule=type_rule)
+                validity, reason = self.check_type(
+                    dataframe[column_name], type_rule=type_rule
+                )
                 if not validity:
                     reason = "Column {}: {}".format(column_name, reason)
                     return validity, reason
@@ -378,9 +406,9 @@ class SimpleValidator(object):
                 if comp[0].size > 0:
                     index = comp[0][0]
                     value = dataframe[column_name].iloc[index]
-                    reason = "{} is higher than allowed max {} at index {}: " \
-                             "value={}".format(
-                        column_name, max_rule, index, value
+                    reason = (
+                        "{} is higher than allowed max {} at index {}: "
+                        "value={}".format(column_name, max_rule, index, value)
                     )
                     return False, reason
 
@@ -390,9 +418,9 @@ class SimpleValidator(object):
                 if comp[0].size > 0:
                     index = comp[0][0]
                     value = dataframe[column_name].iloc[index]
-                    reason = "{} is lower than allowed min {} at index {}:" \
-                             "value={}".format(
-                        column_name, min_rule, index, value
+                    reason = (
+                        "{} is lower than allowed min {} at index {}:"
+                        "value={}".format(column_name, min_rule, index, value)
                     )
                     return False, reason
 
@@ -402,9 +430,9 @@ class SimpleValidator(object):
                 if comp[0].size > 0:
                     index = comp[0][0]
                     value = dataframe[column_name].iloc[index]
-                    reason = "{} needs to reach at least {} for processing, instead found:" \
-                             "value={}".format(
-                        column_name, max_at_least_rule, value
+                    reason = (
+                        "{} needs to reach at least {} for processing, instead found:"
+                        "value={}".format(column_name, max_at_least_rule, value)
                     )
                     return False, reason
 
@@ -414,16 +442,21 @@ class SimpleValidator(object):
                 if comp[0].size > 0:
                     index = comp[0][0]
                     value = dataframe[column_name].iloc[index]
-                    reason = "{} needs to reach under {} for processing, instead found:" \
-                             "value={}".format(
-                        column_name, max_at_least_rule, value
+                    reason = (
+                        "{} needs to reach under {} for processing, instead found:"
+                        "value={}".format(column_name, max_at_least_rule, value)
                     )
                     return False, reason
 
-        return True, ''
+        return True, ""
 
-    def validate_from_paths(self, paths, record_results=False, skip_existing=False,
-                            record_path=DEFAULT_VALIDATION_RECORDS):
+    def validate_from_paths(
+        self,
+        paths,
+        record_results=False,
+        skip_existing=False,
+        record_path=DEFAULT_VALIDATION_RECORDS,
+    ):
         """
         This method streamlines validation of multiple Arbin csv files given a list of paths.
 
@@ -448,8 +481,11 @@ class SimpleValidator(object):
             if os.path.isfile(record_path):
                 self.validation_records = loadfn(record_path)
                 if skip_existing:
-                    paths = [path for path in paths if os.path.basename(path)
-                             not in self.validation_records]
+                    paths = [
+                        path
+                        for path in paths
+                        if os.path.basename(path) not in self.validation_records
+                    ]
             else:
                 self.validation_records = {}
 
@@ -458,44 +494,58 @@ class SimpleValidator(object):
             name = os.path.basename(path)
             results[name] = {}
             project_schema = loadfn(PROJECT_SCHEMA)
-            if re.match(ARBIN_CONFIG['file_pattern'], path):
-                if project_schema.get(name.split('_')[0]):
-                    schema_filename = os.path.join(VALIDATION_SCHEMA_DIR, project_schema.get(name.split('_')[0]))
+            if re.match(ARBIN_CONFIG["file_pattern"], path):
+                if project_schema.get(name.split("_")[0]):
+                    schema_filename = os.path.join(
+                        VALIDATION_SCHEMA_DIR, project_schema.get(name.split("_")[0])
+                    )
                     self.schema = loadfn(schema_filename)
-                    method = project_schema.get(name.split('_')[0])
+                    method = project_schema.get(name.split("_")[0])
                 else:
-                    schema_filename = os.path.join(VALIDATION_SCHEMA_DIR, "schema-arbin-lfp.yaml")
+                    schema_filename = os.path.join(
+                        VALIDATION_SCHEMA_DIR, "schema-arbin-lfp.yaml"
+                    )
                     self.schema = loadfn(schema_filename)
                     method = "simple_arbin"
 
                 df = pd.read_csv(path, index_col=0)
                 validated, reason = self.validate(df)
-            elif re.match(MACCOR_CONFIG['file_pattern'], path):
-                if project_schema.get(name.split('_')[0]):
-                    schema_filename = os.path.join(VALIDATION_SCHEMA_DIR, project_schema.get(name.split('_')[0]))
+            elif re.match(MACCOR_CONFIG["file_pattern"], path):
+                if project_schema.get(name.split("_")[0]):
+                    schema_filename = os.path.join(
+                        VALIDATION_SCHEMA_DIR, project_schema.get(name.split("_")[0])
+                    )
                     self.schema = loadfn(schema_filename)
-                    method = project_schema.get(name.split('_')[0])
+                    method = project_schema.get(name.split("_")[0])
                 else:
-                    schema_filename = os.path.join(VALIDATION_SCHEMA_DIR, "schema-maccor-2170.yaml")
+                    schema_filename = os.path.join(
+                        VALIDATION_SCHEMA_DIR, "schema-maccor-2170.yaml"
+                    )
                     self.schema = loadfn(schema_filename)
                     method = "simple_maccor"
                 self.allow_unknown = True
-                df = pd.read_csv(path, delimiter='\t', skiprows=1)
+                df = pd.read_csv(path, delimiter="\t", skiprows=1)
 
                 # Columns need to be retyped and renamed for validation,
                 # conversion will happen during structuring
-                df['State'] = df['State'].astype(str)
-                df['current'] = df['Amps']
+                df["State"] = df["State"].astype(str)
+                df["current"] = df["Amps"]
 
                 validated, reason = self.validate(df)
 
             else:
                 validated, reason = False, "File type not recognized"
                 method = None
-            results[name].update({"validated": validated,
-                                  "method": method,
-                                  "errors": reason,
-                                  "time": json.dumps(datetime.now(), indent=4, sort_keys=True, default=str)})
+            results[name].update(
+                {
+                    "validated": validated,
+                    "method": method,
+                    "errors": reason,
+                    "time": json.dumps(
+                        datetime.now(), indent=4, sort_keys=True, default=str
+                    ),
+                }
+            )
 
             if validated:
                 logger.info("%s method=%s errors=%s", name, method, reason, extra=s)
@@ -513,8 +563,12 @@ class BeepValidationError(Exception):
     """Custom error to raise when validation fails"""
 
 
-def validate_file_list_from_json(file_list_json, record_results=False,
-                                 skip_existing=False, validator_class=SimpleValidator):
+def validate_file_list_from_json(
+    file_list_json,
+    record_results=False,
+    skip_existing=False,
+    validator_class=SimpleValidator,
+):
     """
     Validates a list of files from json input
 
@@ -541,9 +595,9 @@ def validate_file_list_from_json(file_list_json, record_results=False,
         file_list_data = json.loads(file_list_json)
 
     # Setup Events
-    events = KinesisEvents(service='DataValidator', mode=file_list_data['mode'])
+    events = KinesisEvents(service="DataValidator", mode=file_list_data["mode"])
 
-    file_list = file_list_data['file_list']
+    file_list = file_list_data["file_list"]
 
     validator = validator_class()
     all_results = validator.validate_from_paths(
@@ -551,35 +605,36 @@ def validate_file_list_from_json(file_list_json, record_results=False,
     )
 
     # Get validities and recast to strings (valid/invalid) based on result
-    validity = [all_results[os.path.split(file)[-1]]['validated']
-                for file in file_list]
+    validity = [all_results[os.path.split(file)[-1]]["validated"] for file in file_list]
 
-    validity = list(map(lambda x: 'valid' if x else 'invalid', validity))
+    validity = list(map(lambda x: "valid" if x else "invalid", validity))
 
     # Get errors
-    errors = [all_results[os.path.split(file)[-1]]['errors']
-              for file in file_list]
-    messages = [{'comment': '',
-                 'error': error} for error in errors]
-    output_json = {'file_list': file_list, 'run_list': file_list_data['run_list'],
-                   'validity': validity, 'message_list': messages}
+    errors = [all_results[os.path.split(file)[-1]]["errors"] for file in file_list]
+    messages = [{"comment": "", "error": error} for error in errors]
+    output_json = {
+        "file_list": file_list,
+        "run_list": file_list_data["run_list"],
+        "validity": validity,
+        "message_list": messages,
+    }
 
-    events.put_validation_event(output_json, 'complete')
+    events.put_validation_event(output_json, "complete")
 
     return json.dumps(output_json)
 
 
 def main():
-    logger.info('starting', extra=s)
-    logger.info('Running version=%s', __version__, extra=s)
+    logger.info("starting", extra=s)
+    logger.info("Running version=%s", __version__, extra=s)
     try:
         args = docopt(__doc__)
-        input_json = args['INPUT_JSON']
+        input_json = args["INPUT_JSON"]
         print(validate_file_list_from_json(input_json), end="")
     except Exception as e:
         logger.error(str(e), extra=s)
         raise e
-    logger.info('finish', extra=s)
+    logger.info("finish", extra=s)
     return None
 
 

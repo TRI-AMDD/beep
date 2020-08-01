@@ -16,7 +16,14 @@ from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 
 
-def isolate_dQdV_peaks(processed_cycler_run, diag_nr, charge_y_n, max_nr_peaks, rpt_type, half_peak_width=0.075):
+def isolate_dQdV_peaks(
+    processed_cycler_run,
+    diag_nr,
+    charge_y_n,
+    max_nr_peaks,
+    rpt_type,
+    half_peak_width=0.075,
+):
     """
     Determine the number of cycles to reach a certain level of degradation
 
@@ -31,26 +38,36 @@ def isolate_dQdV_peaks(processed_cycler_run, diag_nr, charge_y_n, max_nr_peaks, 
         The peaks will be isolated
     """
 
-    rpt_type_data = processed_cycler_run.diagnostic_interpolated[(processed_cycler_run.diagnostic_interpolated.cycle_type == rpt_type)]
+    rpt_type_data = processed_cycler_run.diagnostic_interpolated[
+        (processed_cycler_run.diagnostic_interpolated.cycle_type == rpt_type)
+    ]
     cycles = rpt_type_data.cycle_index.unique()
 
-    ## Take charge or discharge from cycle 'diag_nr'
-    data = pd.DataFrame({'dQdV': [], 'voltage': []})
+    # Take charge or discharge from cycle 'diag_nr'
+    data = pd.DataFrame({"dQdV": [], "voltage": []})
 
     if charge_y_n == 1:
         data.dQdV = rpt_type_data[
-            (rpt_type_data.cycle_index == cycles[diag_nr]) & (rpt_type_data.step_type == 0)].charge_dQdV.values
+            (rpt_type_data.cycle_index == cycles[diag_nr])
+            & (rpt_type_data.step_type == 0)
+        ].charge_dQdV.values
         data.voltage = rpt_type_data[
-            (rpt_type_data.cycle_index == cycles[diag_nr]) & (rpt_type_data.step_type == 0)].voltage.values
+            (rpt_type_data.cycle_index == cycles[diag_nr])
+            & (rpt_type_data.step_type == 0)
+        ].voltage.values
     elif charge_y_n == 0:
         data.dQdV = rpt_type_data[
-            (rpt_type_data.cycle_index == cycles[diag_nr]) & (rpt_type_data.step_type == 1)].discharge_dQdV.values
+            (rpt_type_data.cycle_index == cycles[diag_nr])
+            & (rpt_type_data.step_type == 1)
+        ].discharge_dQdV.values
         data.voltage = rpt_type_data[
-            (rpt_type_data.cycle_index == cycles[diag_nr]) & (rpt_type_data.step_type == 1)].voltage.values
+            (rpt_type_data.cycle_index == cycles[diag_nr])
+            & (rpt_type_data.step_type == 1)
+        ].voltage.values
         # Turn values to positive temporarily
         data.dQdV = -data.dQdV
     else:
-        raise NotImplementedError('Charge_y_n must be either 0 or 1')
+        raise NotImplementedError("Charge_y_n must be either 0 or 1")
 
     # Remove NaN from x and y
     data = data.dropna()
@@ -60,7 +77,9 @@ def isolate_dQdV_peaks(processed_cycler_run, diag_nr, charge_y_n, max_nr_peaks, 
     y = data.dQdV
 
     # Remove strong outliers
-    upper_limit = y.sort_values().tail(round(0.01 * len(y))).mean() + y.sort_values().mean()
+    upper_limit = (
+        y.sort_values().tail(round(0.01 * len(y))).mean() + y.sort_values().mean()
+    )
     data = data[(y < upper_limit)]
 
     # Reset x and y to values without outliers
@@ -77,7 +96,9 @@ def isolate_dQdV_peaks(processed_cycler_run, diag_nr, charge_y_n, max_nr_peaks, 
     peak_dQdVs = {}
 
     for count, i in enumerate(peak_indices):
-        temp_filter_data = no_filter_data[((x > x.iloc[i] - half_peak_width) & (x < x.iloc[i] + half_peak_width))]
+        temp_filter_data = no_filter_data[
+            ((x > x.iloc[i] - half_peak_width) & (x < x.iloc[i] + half_peak_width))
+        ]
         peak_voltages[count] = x.iloc[i]
         peak_dQdVs[count] = y.iloc[i]
 
@@ -97,35 +118,40 @@ def generate_model(spec):
     """
     composite_model = None
     params = None
-    x = spec['x']
-    y = spec['y']
+    x = spec["x"]
+    y = spec["y"]
     x_min = np.min(x)
     x_max = np.max(x)
     x_range = x_max - x_min
     y_max = np.max(y)
-    for i, basis_func in enumerate(spec['model']):
-        prefix = f'm{i}_'
+    for i, basis_func in enumerate(spec["model"]):
+        prefix = f"m{i}_"
 
-        #models is an lmfit object
-        model = getattr(models, basis_func['type'])(prefix=prefix)
-        if basis_func['type'] in ['GaussianModel', 'LorentzianModel',
-                                  'VoigtModel']:  # for now VoigtModel has gamma constrained to sigma
-            model.set_param_hint('sigma', min=1e-6, max=x_range)
-            model.set_param_hint('center', min=x_min, max=x_max)
-            model.set_param_hint('height', min=1e-6, max=1.1 * y_max)
-            model.set_param_hint('amplitude', min=1e-6)
+        # models is an lmfit object
+        model = getattr(models, basis_func["type"])(prefix=prefix)
+        if basis_func["type"] in [
+            "GaussianModel",
+            "LorentzianModel",
+            "VoigtModel",
+        ]:  # for now VoigtModel has gamma constrained to sigma
+            model.set_param_hint("sigma", min=1e-6, max=x_range)
+            model.set_param_hint("center", min=x_min, max=x_max)
+            model.set_param_hint("height", min=1e-6, max=1.1 * y_max)
+            model.set_param_hint("amplitude", min=1e-6)
 
             default_params = {
-                prefix + 'center': x_min + x_range * np.random.randn(),
-                prefix + 'height': y_max * np.random.randn(),
-                prefix + 'sigma': x_range * np.random.randn()
+                prefix + "center": x_min + x_range * np.random.randn(),
+                prefix + "height": y_max * np.random.randn(),
+                prefix + "sigma": x_range * np.random.randn(),
             }
         else:
             raise NotImplemented(f'model {basis_func["type"]} not implemented yet')
-        if 'help' in basis_func:  # allow override of settings in parameter
-            for param, options in basis_func['help'].items():
+        if "help" in basis_func:  # allow override of settings in parameter
+            for param, options in basis_func["help"].items():
                 model.set_param_hint(param, **options)
-        model_params = model.make_params(**default_params, **basis_func.get('params', {}))
+        model_params = model.make_params(
+            **default_params, **basis_func.get("params", {})
+        )
         if params is None:
             params = model_params
         else:
@@ -137,30 +163,34 @@ def generate_model(spec):
     return composite_model, params
 
 
-def update_spec_from_peaks(spec, model_indices, peak_voltages, peak_dQdVs, peak_widths=(10,), **kwargs):
-    x = spec['x']
-    y = spec['y']
+def update_spec_from_peaks(
+    spec, model_indices, peak_voltages, peak_dQdVs, peak_widths=(10,), **kwargs
+):
+    x = spec["x"]
+    y = spec["y"]
     x_range = np.max(x) - np.min(x)
 
     for i, j, model_index in zip(peak_voltages, peak_dQdVs, model_indices):
-        model = spec['model'][model_index]
+        model = spec["model"][model_index]
 
-        if model['type'] in ['GaussianModel', 'LorentzianModel', 'VoigtModel']:
+        if model["type"] in ["GaussianModel", "LorentzianModel", "VoigtModel"]:
             params = {
-                'height': peak_dQdVs[j],
-                'sigma': x_range / len(x) * np.min(peak_widths),
-                'center': peak_voltages[i]
+                "height": peak_dQdVs[j],
+                "sigma": x_range / len(x) * np.min(peak_widths),
+                "center": peak_voltages[i],
             }
-            if 'params' in model:
+            if "params" in model:
                 model.update(params)
             else:
-                model['params'] = params
+                model["params"] = params
         else:
             raise NotImplemented(f'model {basis_func["type"]} not implemented yet')
     return
 
 
-def generate_dQdV_peak_fits(processed_cycler_run, rpt_type, diag_nr, charge_y_n, plotting_y_n=0, max_nr_peaks=4):
+def generate_dQdV_peak_fits(
+    processed_cycler_run, rpt_type, diag_nr, charge_y_n, plotting_y_n=0, max_nr_peaks=4
+):
     """
     Generate fits characteristics from dQdV peaks
 
@@ -175,15 +205,19 @@ def generate_dQdV_peak_fits(processed_cycler_run, rpt_type, diag_nr, charge_y_n,
     """
     # Uses isolate_dQdV_peaks function to filter out peaks and returns x(Volt) and y(dQdV) values from peaks
 
-    data, no_filter_data, peak_voltages, peak_dQdVs = isolate_dQdV_peaks(processed_cycler_run, rpt_type=rpt_type, \
-                                                                         charge_y_n=charge_y_n, diag_nr=diag_nr,
-                                                                         max_nr_peaks=max_nr_peaks,
-                                                                         half_peak_width=0.07)
+    data, no_filter_data, peak_voltages, peak_dQdVs = isolate_dQdV_peaks(
+        processed_cycler_run,
+        rpt_type=rpt_type,
+        charge_y_n=charge_y_n,
+        diag_nr=diag_nr,
+        max_nr_peaks=max_nr_peaks,
+        half_peak_width=0.07,
+    )
 
     no_filter_x = no_filter_data.voltage
     no_filter_y = no_filter_data.dQdV
 
-    ####### Setting spec for gaussian model generation
+    # Setting spec for gaussian model generation
 
     x = data.voltage
     y = data.dQdV
@@ -191,52 +225,48 @@ def generate_dQdV_peak_fits(processed_cycler_run, rpt_type, diag_nr, charge_y_n,
     # Set construct spec using number of peaks
     model_types = []
     for i in np.arange(max_nr_peaks):
-        model_types.append({'type': 'GaussianModel', 'help': {'sigma': {'max': 0.1}}})
+        model_types.append({"type": "GaussianModel", "help": {"sigma": {"max": 0.1}}})
 
-    spec = {
-        'x': x,
-        'y': y,
-        'model': model_types
-    }
+    spec = {"x": x, "y": y, "model": model_types}
 
     # Update spec using the found peaks
     update_spec_from_peaks(spec, np.arange(max_nr_peaks), peak_voltages, peak_dQdVs)
     if plotting_y_n:
         fig, ax = plt.subplots()
-        ax.scatter(spec['x'], spec['y'], s=4)
+        ax.scatter(spec["x"], spec["y"], s=4)
         for i in peak_voltages:
-            ax.axvline(x=peak_voltages[i], c='black', linestyle='dotted')
-            ax.scatter(peak_voltages[i], peak_dQdVs[i], s=30, c='red')
+            ax.axvline(x=peak_voltages[i], c="black", linestyle="dotted")
+            ax.scatter(peak_voltages[i], peak_dQdVs[i], s=30, c="red")
 
-    #### Generate fitting model
+    # Generate fitting model
 
     model, params = generate_model(spec)
-    output = model.fit(spec['y'], params, x=spec['x'])
+    output = model.fit(spec["y"], params, x=spec["x"])
     if plotting_y_n:
-        #         #Plot residuals
-        #         fig, gridspec = output.plot(data_kws={'markersize': 1})
+        # Plot residuals
+        # fig, gridspec = output.plot(data_kws={'markersize': 1})
 
-        ### Plot components
+        # Plot components
 
         ax.scatter(no_filter_x, no_filter_y, s=4)
-        ax.set_xlabel('Voltage')
+        ax.set_xlabel("Voltage")
 
         if charge_y_n:
-            ax.set_title(f'dQdV for charge diag cycle {diag_nr}')
-            ax.set_ylabel('dQdV')
+            ax.set_title(f"dQdV for charge diag cycle {diag_nr}")
+            ax.set_ylabel("dQdV")
         else:
-            ax.set_title(f'dQdV for discharge diag cycle {diag_nr}')
-            ax.set_ylabel('- dQdV')
+            ax.set_title(f"dQdV for discharge diag cycle {diag_nr}")
+            ax.set_ylabel("- dQdV")
 
         components = output.eval_components()
-        for i, model in enumerate(spec['model']):
-            ax.plot(spec['x'], components[f'm{i}_'])
+        for i, model in enumerate(spec["model"]):
+            ax.plot(spec["x"], components[f"m{i}_"])
 
     # Construct dictionary of peak fits
     peak_fit_dict = {}
-    for i, model in enumerate(spec['model']):
+    for i, model in enumerate(spec["model"]):
         best_values = output.best_values
-        prefix = f'm{i}_'
+        prefix = f"m{i}_"
         peak_fit_dict[prefix + "Amp"] = [peak_dQdVs[i]]
         peak_fit_dict[prefix + "Mu"] = [best_values[prefix + "center"]]
         peak_fit_dict[prefix + "Sig"] = [best_values[prefix + "sigma"]]
@@ -245,7 +275,6 @@ def generate_dQdV_peak_fits(processed_cycler_run, rpt_type, diag_nr, charge_y_n,
     peak_fit_df = pd.DataFrame(peak_fit_dict)
 
     return peak_fit_df
-
 
 
 def list_minus(list1, list2):
@@ -271,12 +300,14 @@ def get_hppc_ocv_helper(cycle_hppc_0, step_num):
     step_index_counters = chosen1.step_index_counter.unique()[0:9]
     for i in range(len(step_index_counters)):
         df_i = chosen1.loc[chosen1.step_index_counter == step_index_counters[i]]
-        voltage1.append(df_i['voltage'].iloc[-10].mean())  # take the mean of the last 10 points of the voltage value
+        voltage1.append(
+            df_i["voltage"].iloc[-10].mean()
+        )  # take the mean of the last 10 points of the voltage value
     return voltage1
 
 
 def get_hppc_ocv(processed_cycler_run, diag_pos):
-    '''
+    """
     This function calculates the variance of ocv changes between hppc cycle specified by and the first one.
 
     Argument:
@@ -286,12 +317,12 @@ def get_hppc_ocv(processed_cycler_run, diag_pos):
     Returns:
             a dataframe with one entry('variance of ocv'):
                 the variance of the diag_num minus cycle 2 for OCV.
-    '''
+    """
 
     hppc_ocv_features = pd.DataFrame()
 
     data = processed_cycler_run.diagnostic_interpolated
-    cycle_hppc = data.loc[data.cycle_type == 'hppc']
+    cycle_hppc = data.loc[data.cycle_type == "hppc"]
     cycle_hppc = cycle_hppc.loc[cycle_hppc.current.notna()]
     cycles = cycle_hppc.cycle_index.unique()
 
@@ -310,7 +341,7 @@ def get_hppc_ocv(processed_cycler_run, diag_pos):
 
     var_dv = np.var(dv)
 
-    hppc_ocv_features['variance of ocv'] = [var_dv]
+    hppc_ocv_features["variance of ocv"] = [var_dv]
 
     return hppc_ocv_features
 
@@ -331,14 +362,14 @@ def get_chosen_df(processed_cycler_run, diag_pos):
     """
 
     data = processed_cycler_run.diagnostic_interpolated
-    hppc_cycle = data.loc[data.cycle_type == 'hppc']
+    hppc_cycle = data.loc[data.cycle_type == "hppc"]
     hppc_cycle = hppc_cycle.loc[hppc_cycle.current.notna()]
     cycles = hppc_cycle.cycle_index.unique()
     diag_num = cycles[diag_pos]
 
     chosen = hppc_cycle.loc[hppc_cycle.cycle_index == diag_num]
-    chosen = chosen.sort_values(by='test_time')
-    chosen['diagnostic_time'] = (chosen.test_time - chosen.test_time.min()) / 3600
+    chosen = chosen.sort_values(by="test_time")
+    chosen["diagnostic_time"] = (chosen.test_time - chosen.test_time.min()) / 3600
 
     return chosen
 
@@ -369,23 +400,38 @@ def res_calc(chosen, diag_pos, soc, step_ocv, step_cur, index):
         steps = [43, 44, 45, 46, 47]
 
     for step in steps:
-        counters.append(chosen[chosen.step_index == step].step_index_counter.unique().tolist())
+        counters.append(
+            chosen[chosen.step_index == step].step_index_counter.unique().tolist()
+        )
 
-    if index == 'last':
+    if index == "last":
         index = -1
     else:
-        start = chosen[(chosen.step_index_counter == counters[step_cur][soc])].diagnostic_time.min()
+        start = chosen[
+            (chosen.step_index_counter == counters[step_cur][soc])
+        ].diagnostic_time.min()
         stop = start + index / 3600
-        index = len(chosen[(chosen.step_index_counter == counters[step_cur][soc]) & (chosen.diagnostic_time > start) & (
-                    chosen.diagnostic_time < stop)])
+        index = len(
+            chosen[
+                (chosen.step_index_counter == counters[step_cur][soc])
+                & (chosen.diagnostic_time > start)
+                & (chosen.diagnostic_time < stop)
+            ]
+        )
 
     if len(counters[step_ocv]) < soc - 1:
         return None
 
-    v_ocv = chosen[(chosen.step_index_counter == counters[step_ocv][soc])].voltage.iloc[-1]
+    v_ocv = chosen[(chosen.step_index_counter == counters[step_ocv][soc])].voltage.iloc[
+        -1
+    ]
     #     i_ocv = chosen[(chosen.step_index_counter == counters[step_ocv][soc])].current.tail(5).mean()
-    v_dis = chosen[(chosen.step_index_counter == counters[step_cur][soc])].voltage.iloc[index]
-    i_dis = chosen[(chosen.step_index_counter == counters[step_cur][soc])].current.iloc[index]
+    v_dis = chosen[(chosen.step_index_counter == counters[step_cur][soc])].voltage.iloc[
+        index
+    ]
+    i_dis = chosen[(chosen.step_index_counter == counters[step_cur][soc])].current.iloc[
+        index
+    ]
     res = (v_dis - v_ocv) / i_dis
 
     return res
@@ -412,49 +458,58 @@ def get_resistance_soc_duration_hppc(processed_cycler_run, diag_pos):
 
     resistance = []
     for i in range(9):
-        res = res_calc(chosen, diag_pos, i, 0, 1, 'last')
+        res = res_calc(chosen, diag_pos, i, 0, 1, "last")
         resistance.append(res)
-    resistances['discharge_pulse_last'] = resistance
+    resistances["discharge_pulse_last"] = resistance
 
     resistance = []
     for i in range(9):
         res = res_calc(chosen, diag_pos, i, 0, 1, 0.001)
         resistance.append(res)
-    resistances['discharge_pulse_0.001s'] = resistance
+    resistances["discharge_pulse_0.001s"] = resistance
 
     resistance = []
     for i in range(9):
         res = res_calc(chosen, diag_pos, i, 0, 1, 2)
         resistance.append(res)
-    resistances['discharge_pulse_2s'] = resistance
+    resistances["discharge_pulse_2s"] = resistance
 
     resistance = []
     for i in range(9):
-        res = res_calc(chosen, diag_pos, i, 2, 3, 'last')
+        res = res_calc(chosen, diag_pos, i, 2, 3, "last")
         resistance.append(res)
-    resistances['charge_pulse_last'] = resistance
+    resistances["charge_pulse_last"] = resistance
 
     resistance = []
     for i in range(9):
         res = res_calc(chosen, diag_pos, i, 2, 3, 2)
         resistance.append(res)
-    resistances['charge_pulse_2s'] = resistance
+    resistances["charge_pulse_2s"] = resistance
 
     resistance = []
     for i in range(9):
         res = res_calc(chosen, diag_pos, i, 2, 3, 0.001)
         resistance.append(res)
-    resistances['charge_pulse_0.001s'] = resistance
+    resistances["charge_pulse_0.001s"] = resistance
 
     result = pd.DataFrame()
-    result['ohmic_r_d'] = resistances['discharge_pulse_0.001s']
-    result['ohmic_r_c'] = resistances['charge_pulse_0.001s']
-    result['ct_r_d'] = resistances['discharge_pulse_2s'] - resistances['discharge_pulse_0.001s']
-    result['ct_r_c'] = resistances['charge_pulse_2s'] - resistances['charge_pulse_0.001s']
-    result['polar_r_d'] = resistances['discharge_pulse_last'] - resistances['discharge_pulse_2s']
-    result['polar_r_c'] = resistances['charge_pulse_last'] - resistances['charge_pulse_2s']
+    result["ohmic_r_d"] = resistances["discharge_pulse_0.001s"]
+    result["ohmic_r_c"] = resistances["charge_pulse_0.001s"]
+    result["ct_r_d"] = (
+        resistances["discharge_pulse_2s"] - resistances["discharge_pulse_0.001s"]
+    )
+    result["ct_r_c"] = (
+        resistances["charge_pulse_2s"] - resistances["charge_pulse_0.001s"]
+    )
+    result["polar_r_d"] = (
+        resistances["discharge_pulse_last"] - resistances["discharge_pulse_2s"]
+    )
+    result["polar_r_c"] = (
+        resistances["charge_pulse_last"] - resistances["charge_pulse_2s"]
+    )
 
     return result
+
 
 def get_dr_df(processed_cycler_run, diag_pos):
     """
@@ -477,6 +532,7 @@ def get_dr_df(processed_cycler_run, diag_pos):
 
     return dr_df
 
+
 def get_V_I(df):
     """
     this helper functiion takes in a specific step in the first hppc cycle and gives you the voltage values as
@@ -488,11 +544,12 @@ def get_V_I(df):
     step_index_counters = df.step_index_counter.unique()[0:9]
     for i in range(len(step_index_counters)):
         df_i = df.loc[df.step_index_counter == step_index_counters[i]]
-        voltage.append(df_i['voltage'].iloc[-1])  # the last point of the voltage value
-        current.append(df_i['current'].mean())
-    result['voltage'] = voltage
-    result['current'] = current
+        voltage.append(df_i["voltage"].iloc[-1])  # the last point of the voltage value
+        current.append(df_i["current"].mean())
+    result["voltage"] = voltage
+    result["current"] = current
     return result
+
 
 def get_v_diff(processed_cycler_run, diag_pos, soc_window):
     """
@@ -512,7 +569,7 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window):
     result = pd.DataFrame()
 
     data = processed_cycler_run.diagnostic_interpolated
-    hppc_data = data.loc[data.cycle_type == 'hppc']
+    hppc_data = data.loc[data.cycle_type == "hppc"]
     cycles = hppc_data.cycle_index.unique()
 
     hppc_data_2 = hppc_data.loc[hppc_data.cycle_index == cycles[diag_pos]]
@@ -526,34 +583,39 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window):
     hppc_data_1_d = hppc_data_1.loc[hppc_data_1.step_index == 15]
     step_counters_1 = hppc_data_1_d.step_index_counter.unique()
     step_counters_2 = hppc_data_2_d.step_index_counter.unique()
-    chosen_1 = hppc_data_1_d.loc[hppc_data_1_d.step_index_counter == step_counters_1[soc_window]]
-    chosen_2 = hppc_data_2_d.loc[hppc_data_2_d.step_index_counter == step_counters_2[soc_window]]
+    chosen_1 = hppc_data_1_d.loc[
+        hppc_data_1_d.step_index_counter == step_counters_1[soc_window]
+    ]
+    chosen_2 = hppc_data_2_d.loc[
+        hppc_data_2_d.step_index_counter == step_counters_2[soc_window]
+    ]
     chosen_1 = chosen_1.loc[chosen_1.discharge_capacity.notna()]
     chosen_2 = chosen_2.loc[chosen_2.discharge_capacity.notna()]
 
     V = chosen_1.voltage.values
     Q = chosen_1.discharge_capacity.values
-    f = interp1d(Q, V, kind='cubic', fill_value="extrapolate")
+    f = interp1d(Q, V, kind="cubic", fill_value="extrapolate")
 
     v_2 = chosen_2.voltage.tolist()
     v_1 = f(chosen_2.discharge_capacity).tolist()
     v_diff = list_minus(v_1, v_2)
     if abs(np.var(v_diff)) > 1:
-        print('weird voltage')
+        print("weird voltage")
         return None
     else:
-        result['var(v_diff)'] = [np.var(v_diff)]
+        result["var(v_diff)"] = [np.var(v_diff)]
         return result
 
+
 def d_curve_fitting(x, y):
-    '''
+    """
     This function fits given data x and y into a linear function.
 
     Argument:
            relevant data x and y.
     Returns:
             the slope of the curve.
-    '''
+    """
 
     def test(x, a, b):
         return a * x + b
@@ -582,12 +644,12 @@ def get_diffusion_coeff(processed_cycler_run, diag_pos):
     """
 
     data = processed_cycler_run.diagnostic_interpolated
-    hppc_cycle = data.loc[data.cycle_type == 'hppc']
+    hppc_cycle = data.loc[data.cycle_type == "hppc"]
     cycles = hppc_cycle.cycle_index.unique()
     diag_num = cycles[diag_pos]
 
     chosen = hppc_cycle.loc[hppc_cycle.cycle_index == diag_num]
-    chosen = chosen.sort_values(by='test_time')
+    chosen = chosen.sort_values(by="test_time")
 
     counters = []
 
@@ -597,23 +659,25 @@ def get_diffusion_coeff(processed_cycler_run, diag_pos):
         steps = [43, 44, 45, 46, 47]
 
     for step in steps:
-        counters.append(chosen[chosen.step_index == step].step_index_counter.unique().tolist())
+        counters.append(
+            chosen[chosen.step_index == step].step_index_counter.unique().tolist()
+        )
 
     result = pd.DataFrame()
-
 
     for i in range(1, min(len(counters[1]), 9)):
         discharge = chosen.loc[chosen.step_index_counter == counters[1][i]]
         rest = chosen.loc[chosen.step_index_counter == counters[2][i]]
-        rest['diagnostic_time'] = (rest.test_time - rest.test_time.min())
+        rest["diagnostic_time"] = rest.test_time - rest.test_time.min()
         t_d = discharge.test_time.max() - discharge.test_time.min()
         v = rest.voltage
         t = rest.diagnostic_time
         x = np.sqrt(t + t_d) - np.sqrt(t)
         y = v - v.min()
-        a = d_curve_fitting(x[round(3 * len(x) / 4):len(x)], y[round(3 * len(x) / 4):len(x)])
-        #         d = 1/(a**2)
-        result['D_' + str(i)] = [a]
+        a = d_curve_fitting(
+            x[round(3 * len(x) / 4): len(x)], y[round(3 * len(x) / 4): len(x)]
+        )
+        result["D_" + str(i)] = [a]
 
     return result
 
@@ -637,7 +701,8 @@ def get_diffusion_features(processed_cycler_run, diag_pos):
     result = df_0.subtract(df)
     return result
 
-def get_relaxation_times(voltage_data, time_data, decay_percentage = [0.5, 0.8, 0.99]):
+
+def get_relaxation_times(voltage_data, time_data, decay_percentage=[0.5, 0.8, 0.99]):
     """
     This function takes in the voltage data and time data of a voltage relaxation curve
     and calculates out the time it takes to reach 50%, 80% and 99% of the OCV relaxation.
@@ -656,7 +721,9 @@ def get_relaxation_times(voltage_data, time_data, decay_percentage = [0.5, 0.8, 
     # Scaling the voltage data to between 0-1
     final_voltage = voltage_data[-1]
     initial_voltage = voltage_data[0]
-    scaled_voltage_data = (voltage_data - initial_voltage) / (final_voltage - initial_voltage)
+    scaled_voltage_data = (voltage_data - initial_voltage) / (
+        final_voltage - initial_voltage
+    )
 
     # shifting the time data to start at 0
     shifted_time_data = time_data - time_data[0]
@@ -672,7 +739,7 @@ def get_relaxation_times(voltage_data, time_data, decay_percentage = [0.5, 0.8, 
     return np.array(time_array)
 
 
-def get_relaxation_features(processed_cycler_run, hppc_list = [0, 1]):
+def get_relaxation_features(processed_cycler_run, hppc_list=[0, 1]):
     """
 
     This function takes in the processed structure data and retrieves the fractional change in
@@ -696,14 +763,18 @@ def get_relaxation_features(processed_cycler_run, hppc_list = [0, 1]):
     for hppc_chosen in hppc_list:
 
         # Getting just the HPPC cycles
-        hppc_diag_cycles = processed_cycler_run.diagnostic_interpolated[processed_cycler_run.diagnostic_interpolated.cycle_type == "hppc"]
+        hppc_diag_cycles = processed_cycler_run.diagnostic_interpolated[
+            processed_cycler_run.diagnostic_interpolated.cycle_type == "hppc"
+        ]
 
         # Getting unique and ordered cycle index list for HPPC cycles, and choosing the hppc cycle
         hppc_cycle_list = list(set(hppc_diag_cycles.cycle_index))
         hppc_cycle_list.sort()
 
         # Getting unique and ordered Regular Step List (Non-unique identifier)
-        reg_step_list = hppc_diag_cycles[hppc_diag_cycles.cycle_index == hppc_cycle_list[hppc_chosen]].step_index
+        reg_step_list = hppc_diag_cycles[
+            hppc_diag_cycles.cycle_index == hppc_cycle_list[hppc_chosen]
+        ].step_index
         reg_step_list = list(set(reg_step_list))
         reg_step_list.sort()
 
@@ -711,8 +782,10 @@ def get_relaxation_features(processed_cycler_run, hppc_list = [0, 1]):
         reg_step_relax = 1
 
         # Getting unique and ordered Step Counter List (unique identifier)
-        step_count_list = hppc_diag_cycles[(hppc_diag_cycles.cycle_index == hppc_cycle_list[hppc_chosen]) &
-                                           (hppc_diag_cycles.step_index == reg_step_list[reg_step_relax])].step_index_counter
+        step_count_list = hppc_diag_cycles[
+            (hppc_diag_cycles.cycle_index == hppc_cycle_list[hppc_chosen])
+            & (hppc_diag_cycles.step_index == reg_step_list[reg_step_relax])
+        ].step_index_counter
         step_count_list = list(set(step_count_list))
         step_count_list.sort()
         # The first one isn't a proper relaxation curve(comes out of CV) so we ignore it
@@ -724,10 +797,14 @@ def get_relaxation_features(processed_cycler_run, hppc_list = [0, 1]):
 
         # gets all the times for a single SOC per loop
         for soc_num in range(0, len(step_count_list)):
-            relax_curve_df = hppc_diag_cycles[(hppc_diag_cycles.cycle_index == hppc_cycle_list[hppc_chosen]) &\
-                                          (hppc_diag_cycles.step_index_counter == step_count_list[soc_num])]
+            relax_curve_df = hppc_diag_cycles[
+                (hppc_diag_cycles.cycle_index == hppc_cycle_list[hppc_chosen])
+                & (hppc_diag_cycles.step_index_counter == step_count_list[soc_num])
+            ]
 
-            time_array = get_relaxation_times(np.array(relax_curve_df.voltage), np.array(relax_curve_df.test_time))
+            time_array = get_relaxation_times(
+                np.array(relax_curve_df.voltage), np.array(relax_curve_df.test_time)
+            )
             all_time_array[soc_num][:] = time_array
 
         total_time_array.append(all_time_array)
@@ -735,8 +812,9 @@ def get_relaxation_features(processed_cycler_run, hppc_list = [0, 1]):
     return total_time_array[1] / total_time_array[0]
 
 
-def get_fractional_quantity_remaining(processed_cycler_run, metric='discharge_energy',
-                                      diagnostic_cycle_type='rpt_0.2C'):
+def get_fractional_quantity_remaining(
+    processed_cycler_run, metric="discharge_energy", diagnostic_cycle_type="rpt_0.2C"
+):
     """
     Determine relative loss of <metric> in diagnostic_cycles of type <diagnostic_cycle_type> after 100 regular cycles
 
@@ -750,9 +828,12 @@ def get_fractional_quantity_remaining(processed_cycler_run, metric='discharge_en
     """
     summary_diag_cycle_type = processed_cycler_run.diagnostic_summary[
         (processed_cycler_run.diagnostic_summary.cycle_type == diagnostic_cycle_type)
-        & (processed_cycler_run.diagnostic_summary.cycle_index > 100)].reset_index()
-    summary_diag_cycle_type = summary_diag_cycle_type[['cycle_index', metric]]
-    summary_diag_cycle_type[metric] = summary_diag_cycle_type[metric] / \
-                                      processed_cycler_run.diagnostic_summary[metric].iloc[0]
-    summary_diag_cycle_type.columns = ['cycle_index', 'fractional_metric']
+        & (processed_cycler_run.diagnostic_summary.cycle_index > 100)
+    ].reset_index()
+    summary_diag_cycle_type = summary_diag_cycle_type[["cycle_index", metric]]
+    summary_diag_cycle_type[metric] = (
+        summary_diag_cycle_type[metric]
+        / processed_cycler_run.diagnostic_summary[metric].iloc[0]
+    )
+    summary_diag_cycle_type.columns = ["cycle_index", "fractional_metric"]
     return summary_diag_cycle_type

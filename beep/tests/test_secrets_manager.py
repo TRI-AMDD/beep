@@ -18,7 +18,7 @@ class SecretTest(unittest.TestCase):
     def test_secret_accessible(self):
         available = secret_accessible(ENVIRONMENT)
         if available:
-            secret_name = config[ENVIRONMENT]['kinesis']['stream']
+            secret_name = config[ENVIRONMENT]["kinesis"]["stream"]
             get_secret(secret_name)
         else:
             self.assertFalse(available)

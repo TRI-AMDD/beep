@@ -28,7 +28,10 @@ The script output is a json string that contains the following fields:
 
 Example:
 >>> collate
-... {"fid": [0, 1, 2], "strname": ["2017-05-09_test-TC-contact", "2017-08-14_8C-5per_3_47C", "2017-12-04_4_65C-69per_6C"],
+... {"fid": [0, 1, 2],
+...  "strname": ["2017-05-09_test-TC-contact",
+...              "2017-08-14_8C-5per_3_47C",
+...              "2017-12-04_4_65C-69per_6C"],
 ...  "file_list": ["/data-share/renamed_cycler_files/FastCharge/FastCharge_0_CH33.csv",
 ...                "/data-share/renamed_cycler_files/FastCharge/FastCharge_1_CH44.csv",
 ...                "/data-share/renamed_cycler_files/FastCharge/FastCharge_2_CH29.csv"],
@@ -54,9 +57,16 @@ from docopt import docopt
 
 SRC_DIR = os.path.join("data-share", "raw_cycler_files")
 DEST_DIR = os.path.join("data-share", "renamed_cycler_files")
-PROJECT_NAME = 'FastCharge'
-METADATA_COLUMN_NAMES = ['fid', 'protocol', 'channel_no', 'date',
-                         'strname', 'filename', 'file_list']
+PROJECT_NAME = "FastCharge"
+METADATA_COLUMN_NAMES = [
+    "fid",
+    "protocol",
+    "channel_no",
+    "date",
+    "strname",
+    "filename",
+    "file_list",
+]
 
 
 def get_parameters_fastcharge(filename, source_directory):
@@ -71,18 +81,18 @@ def get_parameters_fastcharge(filename, source_directory):
         Returns the date, the channel number, the name of the file, and the protocol (CC1, Q1, CC2) as str.
 
     """
-    filename = filename.rsplit('.', 1)[0]
-    strname = filename.rsplit('_CH', 1)[0]
+    filename = filename.rsplit(".", 1)[0]
+    strname = filename.rsplit("_CH", 1)[0]
 
     # Get date
-    date = re.match(r'(\d+)-(\d+)-(\d+)', strname)
+    date = re.match(r"(\d+)-(\d+)-(\d+)", strname)
     if date is None:
         warnings.warn("Date could not be parsed from {}".format(filename))
     else:
         date = date.group()
 
     # Get channel number
-    chno = re.findall(r'(CH+\d*)', filename)
+    chno = re.findall(r"(CH+\d*)", filename)
     if chno:
         chno = chno[0]
     else:
@@ -90,16 +100,16 @@ def get_parameters_fastcharge(filename, source_directory):
         warnings.warn("Channel number could not be parsed from {}".format(filename))
 
     try:
-        param_str = strname.rsplit(date + '_', 1)[1]
-        param = param_str.replace('_', '.')
+        param_str = strname.rsplit(date + "_", 1)[1]
+        param = param_str.replace("_", ".")
 
-        if param.find('.') < 0:
+        if param.find(".") < 0:
             param = find_meta(filename, source_directory)
 
-        q1 = re.findall(r'(\d+per)', param)[0].split('per')[0]
-        cc1 = re.findall(r'(\d*\.?\d+C)', param.split(q1 + 'per.')[0])[0]
-        cc2 = re.findall(r'(\d*\.?\d+C)', param.split(q1 + 'per.')[1])[0]
-        protocol = cc1+'('+q1+'%)-'+cc2
+        q1 = re.findall(r"(\d+per)", param)[0].split("per")[0]
+        cc1 = re.findall(r"(\d*\.?\d+C)", param.split(q1 + "per.")[0])[0]
+        cc2 = re.findall(r"(\d*\.?\d+C)", param.split(q1 + "per.")[1])[0]
+        protocol = cc1 + "(" + q1 + "%)-" + cc2
     except Exception as e:
         warnings.warn("Failed to parse protocol for {}: {}".format(filename, e))
         protocol = None
@@ -119,18 +129,18 @@ def get_parameters_oed(filename, source_directory):
         str: Returns the date, the channel number, the name of the file, and the protocol (CC1, Q1, CC2) as str.
 
     """
-    filename = filename.rsplit('.', 1)[0]
-    strname = filename.rsplit('_CH', 1)[0]
+    filename = filename.rsplit(".", 1)[0]
+    strname = filename.rsplit("_CH", 1)[0]
 
     # Get date
-    date = re.match(r'(\d+)-(\d+)-(\d+)', strname)
+    date = re.match(r"(\d+)-(\d+)-(\d+)", strname)
     if date is None:
         warnings.warn("Date could not be parsed from {}".format(filename))
     else:
         date = date.group()
 
     # Get channel number
-    chno = re.findall(r'(CH+\d*)', filename)
+    chno = re.findall(r"(CH+\d*)", filename)
     if chno:
         chno = chno[0]
     else:
@@ -138,22 +148,17 @@ def get_parameters_oed(filename, source_directory):
         warnings.warn("Channel number could not be parsed from {}".format(filename))
 
     try:
-        param_str = strname.rsplit(date + '_', 1)[1]
-        param = param_str.replace('_', '.')
+        param_str = strname.rsplit(date + "_", 1)[1]
+        param = param_str.replace("_", ".")
 
-        if param.find('.') < 0 or param.find('oed') >= 0:
+        if param.find(".") < 0 or param.find("oed") >= 0:
             param = find_meta(filename, source_directory)
 
-        cc1 = param.split('.')[0].lower().replace('pt',  '.')
-        cc2 = param.split('.')[1].lower().replace('pt', '.')
-        cc3 = param.split('.')[2].lower().replace('pt', '.')
-        cc4 = param.split('.')[3].lower().replace('pt', '.')
-        protocol = {
-            "cc1": cc1,
-            "cc2": cc2,
-            "cc3": cc3,
-            "cc4": cc4
-                  }
+        cc1 = param.split(".")[0].lower().replace("pt", ".")
+        cc2 = param.split(".")[1].lower().replace("pt", ".")
+        cc3 = param.split(".")[2].lower().replace("pt", ".")
+        cc4 = param.split(".")[3].lower().replace("pt", ".")
+        protocol = {"cc1": cc1, "cc2": cc2, "cc3": cc3, "cc4": cc4}
         protocol = json.dumps(protocol)
     except Exception as e:
         warnings.warn("Failed to parse protocol for {}: {}".format(filename, e))
@@ -175,12 +180,14 @@ def find_meta(filename, source_directory):
         str: string containing parameters, to be parsed in GetParameters.
 
     """
-    metafile = os.path.join(source_directory, filename + '_Metadata.csv')
+    metafile = os.path.join(source_directory, filename + "_Metadata.csv")
     metadf = pd.read_csv(metafile)
-    metadf = metadf.rename(str.lower, axis='columns')
+    metadf = metadf.rename(str.lower, axis="columns")
 
-    schfile = metadf['schedule_file_name'][0].split('\\')[-1].split('.sdu')[0].split('-')[1]
-    param = schfile.replace('_', '.')
+    schfile = (
+        metadf["schedule_file_name"][0].split("\\")[-1].split(".sdu")[0].split("-")[1]
+    )
+    param = schfile.replace("_", ".")
 
     return param
 
@@ -205,14 +212,14 @@ def init_map(project_name, destination_directory):
         os.makedirs(os.path.join(destination_directory, project_name))
         file_id = 0
         mapdf = pd.DataFrame(columns=METADATA_COLUMN_NAMES)
-        open(map_filename, 'a').close()
+        open(map_filename, "a").close()
     elif len(os.listdir(project_path)) == 1:
         file_id = 0
         mapdf = pd.DataFrame(columns=METADATA_COLUMN_NAMES)
     else:
         mapdf = pd.read_csv(map_filename)
         mapdf.columns = METADATA_COLUMN_NAMES
-        file_id = mapdf['fid'].max() + 1
+        file_id = mapdf["fid"].max() + 1
     return file_id, mapdf
 
 
@@ -235,9 +242,13 @@ def process_files_json():
     if not os.path.exists(DEST_DIR):
         os.makedirs(DEST_DIR)
 
-    meta_list = list(filter(lambda x: '_Metadata.csv' in x, os.listdir(SRC_DIR)))
-    file_list = list(filter(lambda x: '.csv' in x if x not in meta_list else None, os.listdir(SRC_DIR)))
-    all_list = list(filter(lambda x: '.csv' in x, os.listdir(SRC_DIR)))
+    meta_list = list(filter(lambda x: "_Metadata.csv" in x, os.listdir(SRC_DIR)))
+    file_list = list(
+        filter(
+            lambda x: ".csv" in x if x not in meta_list else None, os.listdir(SRC_DIR)
+        )
+    )
+    all_list = list(filter(lambda x: ".csv" in x, os.listdir(SRC_DIR)))
 
     all_list = sorted(all_list)
     dumpfn(all_list, "all_files.json")
@@ -248,46 +259,68 @@ def process_files_json():
 
     for filename in tqdm(sorted(file_list)):
         # If the file has already been renamed another entry should not be made
-        if mapdf['filename'].str.contains(filename).sum() > 0:
+        if mapdf["filename"].str.contains(filename).sum() > 0:
             continue
         old_file = os.path.join(SRC_DIR, filename)
         new_path = os.path.join(DEST_DIR, PROJECT_NAME)
         shutil.copy(old_file, new_path)  # copy main data file
-        shutil.copy(old_file.replace(".csv", '_Metadata.csv'), new_path)  # copy meta data file
+        shutil.copy(
+            old_file.replace(".csv", "_Metadata.csv"), new_path
+        )  # copy meta data file
 
-        if PROJECT_NAME == 'FastCharge':
-            [date, channel_no, strname, protocol] = get_parameters_fastcharge(filename, SRC_DIR)
-        elif PROJECT_NAME == 'ClosedLoopOED':
-            [date, channel_no, strname, protocol] = get_parameters_oed(filename, SRC_DIR)
+        if PROJECT_NAME == "FastCharge":
+            [date, channel_no, strname, protocol] = get_parameters_fastcharge(
+                filename, SRC_DIR
+            )
+        elif PROJECT_NAME == "ClosedLoopOED":
+            [date, channel_no, strname, protocol] = get_parameters_oed(
+                filename, SRC_DIR
+            )
         else:
             raise ValueError("Unsupported PROJECT_NAME: {}".format(PROJECT_NAME))
 
         # Look for an existing row with the protocol and date and use that row if it
         # already exists
-        row = mapdf[(mapdf['protocol'] == protocol) & (mapdf['date'] == date)]
+        row = mapdf[(mapdf["protocol"] == protocol) & (mapdf["date"] == date)]
         if len(row) > 0:
-            file_id = row['fid'].iloc[0]
-            protocol = row['protocol'].iloc[0]
-            date = row['date'].iloc[0]
-            strname = row['strname'].iloc[0]
+            file_id = row["fid"].iloc[0]
+            protocol = row["protocol"].iloc[0]
+            date = row["date"].iloc[0]
+            strname = row["strname"].iloc[0]
         # Otherwise create a new file
         else:
             file_id = new_file_index
             new_file_index = new_file_index + 1
-        new_name = "{}_{}_{}".format(PROJECT_NAME, f'{file_id:06}', channel_no)
+        new_name = "{}_{}_{}".format(PROJECT_NAME, f"{file_id:06}", channel_no)
         new_file = os.path.join(DEST_DIR, PROJECT_NAME, "{}.csv".format(new_name))
 
-        new_row = pd.DataFrame([[file_id, protocol, channel_no, date, strname,
-                                os.path.abspath(old_file),
-                                os.path.abspath(new_file)]],
-                               columns=METADATA_COLUMN_NAMES)
+        new_row = pd.DataFrame(
+            [
+                [
+                    file_id,
+                    protocol,
+                    channel_no,
+                    date,
+                    strname,
+                    os.path.abspath(old_file),
+                    os.path.abspath(new_file),
+                ]
+            ],
+            columns=METADATA_COLUMN_NAMES,
+        )
         mapdf = mapdf.append(new_row)
 
         os.rename(os.path.join(DEST_DIR, PROJECT_NAME, filename), new_file)
-        os.rename(os.path.join(DEST_DIR, PROJECT_NAME, filename).replace(".csv", "_Metadata.csv"),
-                  new_file.replace(".csv", "_Metadata.csv"))
+        os.rename(
+            os.path.join(DEST_DIR, PROJECT_NAME, filename).replace(
+                ".csv", "_Metadata.csv"
+            ),
+            new_file.replace(".csv", "_Metadata.csv"),
+        )
 
-        mapdf.to_csv(os.path.join(DEST_DIR, PROJECT_NAME, PROJECT_NAME + "map.csv"), index=False)
+        mapdf.to_csv(
+            os.path.join(DEST_DIR, PROJECT_NAME, PROJECT_NAME + "map.csv"), index=False
+        )
     mapdf = mapdf.reset_index(drop=True)
     os.chdir(pwd)
     return json.dumps(mapdf.to_dict("list"))
@@ -320,7 +353,7 @@ def add_suffix_to_filename(filename, suffix):
 
     """
     name, ext = os.path.splitext(filename)
-    return ''.join([name, suffix, ext])
+    return "".join([name, suffix, ext])
 
 
 def scrub_underscore_suffix(filename):
@@ -339,5 +372,5 @@ def scrub_underscore_suffix(filename):
     return scrubbed
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -52,7 +52,7 @@ class MaccorSplice:
         data_lines = lines[1:]
 
         # Parse data
-        data_text = '\n'.join(data_lines)
+        data_text = "\n".join(data_lines)
         tsv_part = pd.read_csv(StringIO(data_text), delimiter="\t")
         return metadata_line, tsv_part
 
@@ -66,9 +66,9 @@ class MaccorSplice:
             output (str): output file name.
             output (str): output file name.
         """
-        with open(output, 'w') as write_tsv:
+        with open(output, "w") as write_tsv:
             write_tsv.writelines(metadata_line)
-            write_tsv.write(dataframe.to_csv(sep='\t', index=False))
+            write_tsv.write(dataframe.to_csv(sep="\t", index=False))
 
     def column_increment(self, data_1, data_2):
         """
@@ -82,7 +82,15 @@ class MaccorSplice:
             pandas.DataFrame: data_1 transformed (incremented)
             pandas.DataFrame: data_2 transformed (incremented)
         """
-        columns_to_update = ['Rec#', 'Cyc#', 'Test (Sec)', 'Loop1', 'Loop2', 'Loop3', 'Loop4']
+        columns_to_update = [
+            "Rec#",
+            "Cyc#",
+            "Test (Sec)",
+            "Loop1",
+            "Loop2",
+            "Loop3",
+            "Loop4",
+        ]
         for column in columns_to_update:
             if data_2[column].iloc[0] < data_1[column].iloc[-1]:
                 data_2[column] = data_2[column] + data_1[column].iloc[-1]

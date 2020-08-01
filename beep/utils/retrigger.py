@@ -51,10 +51,11 @@ def eval_args(args):
     Args:
         args (dict): Dictionary of arguments parsed by docopt.
     """
+
     def _fix_boolean(x):
-        if x == 'True':
+        if x == "True":
             return True
-        elif x == 'False':
+        elif x == "False":
             return False
         else:
             return x
@@ -68,11 +69,13 @@ def eval_args(args):
         except SyntaxError:
             return x
 
-    return DotDict(dict(zip(map(lambda x: x[2:], args.keys()), map(_parse_args, args.values()))))
+    return DotDict(
+        dict(zip(map(lambda x: x[2:], args.keys()), map(_parse_args, args.values())))
+    )
 
 
 def get_structure_name(object):
-    file_name = object['Key'].split("/")[-1]
+    file_name = object["Key"].split("/")[-1]
     structure_name = file_name.split(".")[0] + "_structure.json"
     return structure_name
 
@@ -82,24 +85,29 @@ def scan(config):
     s3 = boto3.client("s3")
     all_objects = s3.list_objects_v2(Bucket=S3_BUCKET_IN, Prefix=config.s3_prefix)
 
-    objects = [obj for obj in all_objects['Contents']
-               if obj['Size'] > 1000]
+    objects = [obj for obj in all_objects["Contents"] if obj["Size"] > 1000]
 
-    objects = [obj for obj in objects if "PredictionDiagnostics" in obj['Key']
-               and "x" not in obj['Key']
-               and "Complete" not in obj['Key']
-               # and obj['LastModified'] < datetime.datetime(2020, 3, 24, 5, 35, 43, tzinfo=tzutc())
-               # and "_000175_" in obj['Key']
-               ]
+    objects = [
+        obj
+        for obj in objects
+        if "PredictionDiagnostics" in obj["Key"]
+        and "x" not in obj["Key"]
+        and "Complete" not in obj["Key"]
+        # and obj['LastModified'] < datetime.datetime(2020, 3, 24, 5, 35, 43, tzinfo=tzutc())
+        # and "_000175_" in obj['Key']
+    ]
 
     old_objects = []
     old = datetime.datetime.now(pytz.utc) - datetime.timedelta(hours=6)
     for obj in objects:
-        name = config.s3_output + '/' + get_structure_name(obj)
+        name = config.s3_output + "/" + get_structure_name(obj)
         structure_objects = s3.list_objects_v2(Bucket=S3_BUCKET_OUT, Prefix=name)
         # print(structure_objects)
-        if 'Contents' in structure_objects.keys() and len(structure_objects['Contents']) == 1:
-            if structure_objects['Contents'][0]['LastModified'] < old:
+        if (
+            "Contents" in structure_objects.keys()
+            and len(structure_objects["Contents"]) == 1
+        ):
+            if structure_objects["Contents"][0]["LastModified"] < old:
                 old_objects.append(obj)
         else:
             old_objects.append(obj)
@@ -107,21 +115,21 @@ def scan(config):
     objects = old_objects
     print(len(objects))
 
-    events = KinesisEvents(service='S3Syncer', mode=config.mode)
+    events = KinesisEvents(service="S3Syncer", mode=config.mode)
     objects.reverse()
     for obj in objects:
         retrigger_data = {
-            "filename": obj['Key'],
+            "filename": obj["Key"],
             "bucket": S3_BUCKET_IN,
-            "size": obj['Size'],
-            "hash": obj["ETag"].strip('\"')
+            "size": obj["Size"],
+            "hash": obj["ETag"].strip('"'),
         }
-        events.put_upload_retrigger_event('complete', retrigger_data)
+        events.put_upload_retrigger_event("complete", retrigger_data)
         print(retrigger_data)
         time.sleep(0.1)
 
 
 if __name__ == "__main__":
-    docopt_args = docopt(__doc__, version='BEEP Re-Trigger')
+    docopt_args = docopt(__doc__, version="BEEP Re-Trigger")
     parsed_args = eval_args(docopt_args)
     scan(parsed_args)
