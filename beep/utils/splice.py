@@ -17,8 +17,6 @@ Options:
 """
 import pandas as pd
 from beep import StringIO
-from beep import LOG_DIR
-import os
 
 
 class MaccorSplice:

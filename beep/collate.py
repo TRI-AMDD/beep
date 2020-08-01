@@ -52,7 +52,6 @@ import warnings
 import pandas as pd
 from monty.serialization import dumpfn
 from beep import tqdm
-from docopt import docopt
 
 
 SRC_DIR = os.path.join("data-share", "raw_cycler_files")
@@ -332,7 +331,6 @@ def main():
     to get the output into stdout.
     """
     # There are no args, but parse them just so help works
-    args = docopt(__doc__)
     print(process_files_json(), end="")
     return None
 

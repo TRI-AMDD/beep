@@ -51,7 +51,7 @@ from sklearn.linear_model import (
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
 from beep.utils import KinesisEvents
-from beep import MODEL_DIR, ENVIRONMENT, logger, __version__
+from beep import MODEL_DIR, logger, __version__
 
 s = {"service": "DataAnalyzer"}
 # Projects that have cycling profiles compatible with the FastCharge model should be included in the list below

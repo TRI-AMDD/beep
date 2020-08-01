@@ -168,6 +168,7 @@ class KinesisEvents:
             data_base64 = base64.b64encode(json.dumps(data).encode("utf-8")).decode(
                 "utf-8"
             )
+            assert data_base64 is not None
         except TypeError as error:
             print(error)
             return error

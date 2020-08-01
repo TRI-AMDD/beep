@@ -21,7 +21,6 @@ Options:
 import time
 import datetime
 import pytz
-from dateutil.tz import tzutc
 import boto3
 import collections
 import ast

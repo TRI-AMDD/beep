@@ -45,8 +45,7 @@ from scipy.stats import skew, kurtosis
 from beep.collate import scrub_underscore_suffix, add_suffix_to_filename
 from beep.utils import KinesisEvents
 from beep.features import featurizer_helpers
-from beep import logger, ENVIRONMENT, __version__
-from beep.structure import get_protocol_parameters
+from beep import logger, __version__
 
 MODULE_DIR = os.path.dirname(__file__)
 FEATURE_HYPERPARAMS = loadfn(
@@ -828,7 +827,6 @@ class DeltaQFastCharge(BeepFeatures):
 
         i_final = params_dict["final_pred_cycle"] - 1  # python indexing
         i_mid = params_dict["mid_pred_cycle"] - 1
-        i_ini = params_dict["init_pred_cycle"] - 1
 
         summary = processed_cycler_run.summary
         params_dict[
@@ -872,7 +870,6 @@ class DeltaQFastCharge(BeepFeatures):
         ]
         Qd_10 = interpolated_df.discharge_capacity[interpolated_df.cycle_index == 9]
 
-        Vd = interpolated_df.voltage[interpolated_df.cycle_index == i_ini]
         Qd_diff = Qd_final.values - Qd_10.values
 
         # If DeltaQ(V) is not an empty array, compute summary stats, else initialize with np.nan
@@ -1195,7 +1192,6 @@ class DegradationPredictor(MSONable):
         ), "Must have final_pred_cycle > mid_pred_cycle"
         i_final = final_pred_cycle - 1  # python indexing
         i_mid = mid_pred_cycle - 1
-        i_ini = init_pred_cycle - 1
         summary = processed_cycler_run.summary
         assert (
             len(processed_cycler_run.summary) > final_pred_cycle
@@ -1245,7 +1241,6 @@ class DegradationPredictor(MSONable):
         ]
         Qd_10 = interpolated_df.discharge_capacity[interpolated_df.cycle_index == 9]
 
-        Vd = interpolated_df.voltage[interpolated_df.cycle_index == i_ini]
         Qd_diff = Qd_final.values - Qd_10.values
 
         X[5] = np.log10(np.abs(np.min(Qd_diff)))  # Minimum

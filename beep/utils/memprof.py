@@ -43,7 +43,6 @@ def memory_profile(s3_objs=None):
 
     # Cache s3 objects
     cache_s3_objs(s3_objs, filter_existing_files=True)
-    starting_dir = os.getcwd()
 
     with ScratchDir("."):
         # Copy all pre-defined s3 objects
@@ -73,7 +72,7 @@ def memory_profile(s3_objs=None):
         ]
 
         # Prediction
-        predictions = [
+        [
             DegradationModel.init_full_model().predict(predictor)
             for predictor in predictors
         ]

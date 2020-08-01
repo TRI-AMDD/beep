@@ -4,20 +4,11 @@ Module for generating maccor procedure files from
 input parameters and procedure templates
 """
 
-import os
-import warnings
-import json
-import time
-import datetime
-import csv
 import re
 from collections import OrderedDict
 from copy import deepcopy
 
-from beep import logger, __version__
-from beep.protocol import PROCEDURE_TEMPLATE_DIR
-
-from beep.utils import KinesisEvents, DashOrderedDict
+from beep.utils import DashOrderedDict
 
 s = {"service": "ProtocolGenerator"}
 

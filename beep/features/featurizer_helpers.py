@@ -145,7 +145,7 @@ def generate_model(spec):
                 prefix + "sigma": x_range * np.random.randn(),
             }
         else:
-            raise NotImplemented(f'model {basis_func["type"]} not implemented yet')
+            raise NotImplementedError(f'model {basis_func["type"]} not implemented yet')
         if "help" in basis_func:  # allow override of settings in parameter
             for param, options in basis_func["help"].items():
                 model.set_param_hint(param, **options)
@@ -167,7 +167,6 @@ def update_spec_from_peaks(
     spec, model_indices, peak_voltages, peak_dQdVs, peak_widths=(10,), **kwargs
 ):
     x = spec["x"]
-    y = spec["y"]
     x_range = np.max(x) - np.min(x)
 
     for i, j, model_index in zip(peak_voltages, peak_dQdVs, model_indices):
@@ -184,7 +183,7 @@ def update_spec_from_peaks(
             else:
                 model["params"] = params
         else:
-            raise NotImplemented(f'model {basis_func["type"]} not implemented yet')
+            raise NotImplementedError(f'model {basis_func["type"]} not implemented yet')
     return
 
 
@@ -607,12 +606,15 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window):
         return result
 
 
+# TODO: this is a linear fit, we should use something
+#  from a library, e.g. numpy.polyfit
 def d_curve_fitting(x, y):
     """
     This function fits given data x and y into a linear function.
 
     Argument:
            relevant data x and y.
+
     Returns:
             the slope of the curve.
     """
@@ -623,8 +625,6 @@ def d_curve_fitting(x, y):
     param, param_cov = curve_fit(test, x, y)
 
     a = param[0]
-
-    ans = param[0] * (x) + param[1]
 
     return a
 

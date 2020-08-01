@@ -24,6 +24,7 @@ def secret_accessible(environment):
         try:
             _ = get_secret(secret_name)
         except Exception as e:
+            print(e)
             return False
         else:
             return True
@@ -74,8 +75,9 @@ def event_setup():
         try:
             kinesis = boto3.client("kinesis")
             response = kinesis.list_streams()
+            assert response is not None
             events_mode = "test"
         except Exception as e:
-            warnings.warn("Cloud resources not configured")
+            warnings.warn("Cloud resources not configured, error: {}".format(e))
             events_mode = "events_off"
     return events_mode

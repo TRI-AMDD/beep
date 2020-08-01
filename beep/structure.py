@@ -56,7 +56,7 @@ from monty.serialization import loadfn, dumpfn
 from glob import glob
 from beep import tqdm
 
-from beep import StringIO, MODULE_DIR, ENVIRONMENT
+from beep import StringIO, MODULE_DIR
 from beep.validate import ValidatorBeep, BeepValidationError
 from beep.collate import add_suffix_to_filename
 from beep.conversion_schemas import (
@@ -174,9 +174,9 @@ class RawCyclerRun(MSONable):
         Returns:
             pandas.DataFrame: DataFrame corresponding to interpolated values.
         """
-        if step_type is "discharge":
+        if step_type == "discharge":
             step_filter = determine_whether_step_is_discharging
-        elif step_type is "charge":
+        elif step_type == "charge":
             step_filter = determine_whether_step_is_charging
         else:
             raise ValueError("{} is not a recognized step type")

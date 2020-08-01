@@ -51,7 +51,7 @@ from cerberus import Validator
 from beep import tqdm
 from monty.serialization import loadfn, dumpfn
 
-from beep import VALIDATION_SCHEMA_DIR, ENVIRONMENT
+from beep import VALIDATION_SCHEMA_DIR
 from beep.conversion_schemas import ARBIN_CONFIG, MACCOR_CONFIG
 from beep.utils import KinesisEvents
 from beep import logger, __version__
