@@ -35,6 +35,7 @@ jobs:
       run: |
         pytest beep --color=yes --cov=beep --cov-report html:coverage_reports
     - name: Coveralls
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        coveralls
