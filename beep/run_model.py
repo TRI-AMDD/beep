@@ -99,6 +99,17 @@ class DegradationModel(MSONable):
     def from_serialized_model(
         cls, model_dir="data-share/model/", serialized_model=None
     ):
+        """
+        Class method to invoke from serialized model
+
+        Args:
+            model_dir (str): path to model directory
+            serialized_model (str): name of model
+
+        Returns:
+            (DegradationModel): model object from stored model
+
+        """
         if serialized_model is None:
             raise ValueError("Please specify model name stored in {}".format(model_dir))
         elif not os.path.exists(os.path.join(model_dir, serialized_model)):

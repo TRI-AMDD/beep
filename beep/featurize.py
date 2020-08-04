@@ -58,6 +58,7 @@ s = {"service": "DataAnalyzer"}
 class BeepFeatures(MSONable, metaclass=ABCMeta):
     """
     Class corresponding to feature baseline feature object.
+
     Attributes:
         name (str): predictor object name.
         X (pandas.DataFrame): features in DataFrame format.
@@ -68,6 +69,16 @@ class BeepFeatures(MSONable, metaclass=ABCMeta):
     class_feature_name = "Base"
 
     def __init__(self, name, X, metadata):
+        """
+        Invokes BeepFeatures object
+
+        Args:
+            name (str): predictor object name.
+            X (pandas.DataFrame): features in DataFrame format.
+            metadata (dict): information about the conditions, data
+                and code used to produce features
+
+        """
         self.name = name
         self.X = X
         self.metadata = metadata
@@ -109,6 +120,17 @@ class BeepFeatures(MSONable, metaclass=ABCMeta):
     @classmethod
     @abstractmethod
     def validate_data(cls, processed_cycler_run):
+        """
+        Method for validation of input data, e.g. processed_cycler_runs
+
+        Args:
+            processed_cycler_run (ProcessedCyclerRun): processed_cycler_run
+                to validate
+
+        Returns:
+            (bool): boolean for whether data is validated
+
+        """
         raise NotImplementedError
 
     @classmethod
@@ -242,9 +264,10 @@ class RPTdQdVFeatures(BeepFeatures):
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun)
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
-            gets featurized. These could be filters for column or row operations
+                gets featurized. These could be filters for column or row operations
+
         Returns:
-             pd.DataFrame containing features based on gaussian fits to dQdV features in rpt cycles
+             (pd.DataFrame) containing features based on gaussian fits to dQdV features in rpt cycles
         """
         if params_dict is None:
             params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
@@ -299,15 +322,17 @@ class RPTdQdVFeatures(BeepFeatures):
 
 class HPPCResistanceVoltageFeatures(BeepFeatures):
     """
-           Object corresponding to resistance, voltage and diffusion related
-           features generated from hybrid pulse power characterization cycles.
-           Includes constructors to create the features, object names and metadata
-           attributes in the object
-               name (str): predictor object name.
-               X (pandas.DataFrame): features in DataFrame format.
-               metadata (dict): information about the conditions, data
-                   and code used to produce features
-           """
+    Object corresponding to resistance, voltage and diffusion related
+    features generated from hybrid pulse power characterization cycles.
+    Includes constructors to create the features, object names and metadata.
+
+    Attributes:
+        name (str): predictor object name.
+        X (pandas.DataFrame): features in DataFrame format.
+        metadata (dict): information about the conditions, data
+            and code used to produce features
+
+    """
 
     # Class name for the feature object
     class_feature_name = "HPPCResistanceVoltageFeatures"
@@ -316,7 +341,7 @@ class HPPCResistanceVoltageFeatures(BeepFeatures):
         """
         Args:
             name (str): predictor object name
-            feature_object (pandas.DataFrame): features in DataFrame format.
+            X (pandas.DataFrame): features in DataFrame format.
             metadata (dict): information about the data and code used to produce features
         """
         super().__init__(name, X, metadata)
@@ -335,8 +360,9 @@ class HPPCResistanceVoltageFeatures(BeepFeatures):
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
             gets featurized. These could be filters for column or row operations
+
         Returns:
-            bool: True/False indication of ability to proceed with feature generation
+            (bool): True/False indication of ability to proceed with feature generation
         """
         conditions = []
         if not hasattr(processed_cycler_run, "diagnostic_summary") & hasattr(
@@ -959,16 +985,23 @@ class TrajectoryFastCharge(DeltaQFastCharge):
      specific percentages of the initial capacity. Computed on the discharge
      portion of the regular fast charge cycles.
 
-        name (str): predictor object name.
-        X (pandas.DataFrame): features in DataFrame format.
-        metadata (dict): information about the conditions, data
-            and code used to produce features
+
     """
 
     # Class name for the feature object
     class_feature_name = "TrajectoryFastCharge"
 
     def __init__(self, name, X, metadata):
+        """
+        Invokes a TrajectoryFastCharge object
+
+        Args:
+            name (str): predictor object name.
+            X (pandas.DataFrame): features in DataFrame format.
+            metadata (dict): information about the conditions, data
+                and code used to produce features
+
+        """
         super().__init__(name, X, metadata)
         self.name = name
         self.X = X

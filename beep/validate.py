@@ -625,6 +625,13 @@ def validate_file_list_from_json(
 
 
 def main():
+    """
+    Main function for running of this module as a script
+
+    Returns:
+        (None)
+
+    """
     logger.info("starting", extra=s)
     logger.info("Running version=%s", __version__, extra=s)
     try:

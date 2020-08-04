@@ -1612,6 +1612,13 @@ class EISpectrum(MSONable):
         return cls(data=data, metadata=metadata)
 
     def as_dict(self):
+        """
+        Method for serialization as dictionary
+
+        Returns:
+            ({}): dictionary representation of this object
+
+        """
         return {
             "@module": self.__class__.__module__,
             "@class": self.__class__.__name__,
@@ -1621,6 +1628,16 @@ class EISpectrum(MSONable):
 
     @classmethod
     def from_dict(cls, d):
+        """
+        Method of invocation from dictionary
+
+        Args:
+            d ({}): dictionary from which to invoke
+
+        Returns:
+            (EISpectrum): object invoked from dictionary
+
+        """
         data = pd.DataFrame(d["data"])
         data = data.sort_index()
         metadata = pd.DataFrame(d["metadata"])
