@@ -18,7 +18,7 @@ arbin and maccor cyclers.
 
 setup(name="beep",
       url="https://github.com/TRI-AMDD/beep",
-      version="2020.7.8.1",
+      version="2020.7.29",
       description=DESCRIPTION,
       long_description=LONG_DESCRIPTION,
       long_description_content_type='text/markdown',
@@ -73,6 +73,8 @@ setup(name="beep",
           "beep.protocol.schedule_templates": ["*.sdu", "*.csv", "*.json"],
           "beep.validation_schemas": ["*.yaml"],
           "beep.model": ["*.model"],
+          "beep.features": ["*.yaml"]
+
       },
       include_package_data=True,
       author="AMDD - Toyota Research Institute",
