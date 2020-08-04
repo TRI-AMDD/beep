@@ -100,9 +100,7 @@ class ProjectTransfer:
                     new_object_name = os.path.join(
                         directory, name.replace(self.input_project, self.output_project)
                     )
-                    s3.upload_file(
-                        to_file_name, output_bucket, new_object_name
-                    )
+                    s3.upload_file(to_file_name, output_bucket, new_object_name)
                 except ClientError as e:
                     print(e)
 

@@ -275,21 +275,24 @@ class RPTdQdVFeatures(BeepFeatures):
             max_nr_peaks = 3
             cwt_range_input = np.arange(10, 50)
 
-
-        peak_fit_df_ref = featurizer_helpers.generate_dQdV_peak_fits(processed_cycler_run,
-                                                                     diag_nr=params_dict['diag_ref'],
-                                                                     charge_y_n=params_dict['charge_y_n'],
-                                                                     rpt_type=params_dict['rpt_type'],
-                                                                     plotting_y_n=params_dict['plotting_y_n'],
-                                                                     max_nr_peaks=max_nr_peaks,
-                                                                     cwt_range=cwt_range_input)
-        peak_fit_df = featurizer_helpers.generate_dQdV_peak_fits(processed_cycler_run,
-                                                                 diag_nr=params_dict['diag_nr'],
-                                                                 charge_y_n=params_dict['charge_y_n'],
-                                                                 rpt_type=params_dict['rpt_type'],
-                                                                 plotting_y_n=params_dict['plotting_y_n'],
-                                                                 max_nr_peaks=max_nr_peaks,
-                                                                 cwt_range = cwt_range_input)
+        peak_fit_df_ref = featurizer_helpers.generate_dQdV_peak_fits(
+            processed_cycler_run,
+            diag_nr=params_dict["diag_ref"],
+            charge_y_n=params_dict["charge_y_n"],
+            rpt_type=params_dict["rpt_type"],
+            plotting_y_n=params_dict["plotting_y_n"],
+            max_nr_peaks=max_nr_peaks,
+            cwt_range=cwt_range_input,
+        )
+        peak_fit_df = featurizer_helpers.generate_dQdV_peak_fits(
+            processed_cycler_run,
+            diag_nr=params_dict["diag_nr"],
+            charge_y_n=params_dict["charge_y_n"],
+            rpt_type=params_dict["rpt_type"],
+            plotting_y_n=params_dict["plotting_y_n"],
+            max_nr_peaks=max_nr_peaks,
+            cwt_range=cwt_range_input,
+        )
 
         return 1 + (peak_fit_df - peak_fit_df_ref) / peak_fit_df_ref
 
@@ -660,13 +663,13 @@ class DiagnosticSummaryStats(BeepFeatures):
         Qd100_1 = diagnostic_interpolated.discharge_capacity[
             start_list[params_dict["cycle_comp_num"][1]]
             + params_dict["Q_seg"]
-            + 1: start_list[params_dict["cycle_comp_num"][1]]
+            + 1 : start_list[params_dict["cycle_comp_num"][1]]
             + 2 * params_dict["Q_seg"]
         ]
         Qd10_1 = diagnostic_interpolated.discharge_capacity[
             start_list[params_dict["cycle_comp_num"][0]]
             + params_dict["Q_seg"]
-            + 1: start_list[params_dict["cycle_comp_num"][0]]
+            + 1 : start_list[params_dict["cycle_comp_num"][0]]
             + 2 * params_dict["Q_seg"]
         ]
         QdDiff = [a_i - b_i for a_i, b_i in zip(Qd100_1, Qd10_1)]
@@ -686,13 +689,13 @@ class DiagnosticSummaryStats(BeepFeatures):
         Ed100_1 = diagnostic_interpolated.discharge_energy[
             start_list[params_dict["cycle_comp_num"][1]]
             + params_dict["Q_seg"]
-            + 1: start_list[params_dict["cycle_comp_num"][1]]
+            + 1 : start_list[params_dict["cycle_comp_num"][1]]
             + 2 * params_dict["Q_seg"]
         ]
         Ed10_1 = diagnostic_interpolated.discharge_energy[
             start_list[params_dict["cycle_comp_num"][0]]
             + params_dict["Q_seg"]
-            + 1: start_list[params_dict["cycle_comp_num"][0]]
+            + 1 : start_list[params_dict["cycle_comp_num"][0]]
             + 2 * params_dict["Q_seg"]
         ]
         EdDiff = [a_i - b_i for a_i, b_i in zip(Ed100_1, Ed10_1)]
@@ -712,13 +715,13 @@ class DiagnosticSummaryStats(BeepFeatures):
         dQdVd100_1 = diagnostic_interpolated.discharge_dQdV[
             start_list[params_dict["cycle_comp_num"][1]]
             + params_dict["Q_seg"]
-            + 1: start_list[params_dict["cycle_comp_num"][1]]
+            + 1 : start_list[params_dict["cycle_comp_num"][1]]
             + 2 * params_dict["Q_seg"]
         ]
         dQdVd10_1 = diagnostic_interpolated.discharge_dQdV[
             start_list[params_dict["cycle_comp_num"][0]]
             + params_dict["Q_seg"]
-            + 1: start_list[params_dict["cycle_comp_num"][0]]
+            + 1 : start_list[params_dict["cycle_comp_num"][0]]
             + 2 * params_dict["Q_seg"]
         ]
         dQdVdDiff = [a_i - b_i for a_i, b_i in zip(dQdVd100_1, dQdVd10_1)]
@@ -942,7 +945,7 @@ class DeltaQFastCharge(BeepFeatures):
 
         # Nominal capacity
         X[20] = np.median(
-            summary.discharge_capacity.iloc[0: params_dict["n_nominal_cycles"]]
+            summary.discharge_capacity.iloc[0 : params_dict["n_nominal_cycles"]]
         )
         labels.append("nominal_capacity_by_median")
 

@@ -193,7 +193,13 @@ def update_spec_from_peaks(
 
 
 def generate_dQdV_peak_fits(
-    processed_cycler_run, rpt_type, diag_nr, charge_y_n, plotting_y_n=0, max_nr_peaks=4, cwt_range=np.arange(10,30)
+    processed_cycler_run,
+    rpt_type,
+    diag_nr,
+    charge_y_n,
+    plotting_y_n=0,
+    max_nr_peaks=4,
+    cwt_range=np.arange(10, 30),
 ):
     """
     Generate fits characteristics from dQdV peaks
@@ -273,26 +279,39 @@ def generate_dQdV_peak_fits(
     peak_fit_dict = {}
     for i, model in enumerate(spec["model"]):
         best_values = output.best_values
-        prefix = f'm{i}_'
-        peak_fit_dict[prefix+"Amp"+"_"+rpt_type+"_"+str(charge_y_n)] = [peak_dQdVs[i]]
-        peak_fit_dict[prefix+"Mu"+"_"+rpt_type+"_"+str(charge_y_n)] = [peak_voltages[i]]
+        prefix = f"m{i}_"
+        peak_fit_dict[prefix + "Amp" + "_" + rpt_type + "_" + str(charge_y_n)] = [
+            peak_dQdVs[i]
+        ]
+        peak_fit_dict[prefix + "Mu" + "_" + rpt_type + "_" + str(charge_y_n)] = [
+            peak_voltages[i]
+        ]
 
     # Make dataframe out of dict
     peak_fit_df = pd.DataFrame(peak_fit_dict)
 
     # Incorporate troughs of dQdV curve
-    color_list = ['g', 'b', 'r', 'k', 'c']
+    color_list = ["g", "b", "r", "k", "c"]
     for peak_nr in np.arange(0, max_nr_peaks - 1):
         between_outer_peak_data = no_filter_data[
-            (no_filter_data.voltage > peak_voltages[peak_nr]) & (no_filter_data.voltage < peak_voltages[peak_nr + 1])]
+            (no_filter_data.voltage > peak_voltages[peak_nr])
+            & (no_filter_data.voltage < peak_voltages[peak_nr + 1])
+        ]
         pct = 0.05
-        lowest_dQdV_pct_between_peaks = (between_outer_peak_data.dQdV.sort_values(ascending=False)).tail(
-            round(len(between_outer_peak_data.dQdV) * pct))
+        lowest_dQdV_pct_between_peaks = (
+            between_outer_peak_data.dQdV.sort_values(ascending=False)
+        ).tail(round(len(between_outer_peak_data.dQdV) * pct))
 
         if plotting_y_n:
-            ax.axhline(y=lowest_dQdV_pct_between_peaks.mean(), color=color_list[peak_nr], linestyle='-')
+            ax.axhline(
+                y=lowest_dQdV_pct_between_peaks.mean(),
+                color=color_list[peak_nr],
+                linestyle="-",
+            )
         # Add belly feature to dataframe
-        peak_fit_df[f'trough_height_{peak_nr}_{rpt_type}_{charge_y_n}'] = lowest_dQdV_pct_between_peaks.mean()
+        peak_fit_df[
+            f"trough_height_{peak_nr}_{rpt_type}_{charge_y_n}"
+        ] = lowest_dQdV_pct_between_peaks.mean()
 
     return peak_fit_df
 
@@ -696,7 +715,7 @@ def get_diffusion_coeff(processed_cycler_run, diag_pos):
         x = np.sqrt(t + t_d) - np.sqrt(t)
         y = v - v.min()
         a = d_curve_fitting(
-            x[round(3 * len(x) / 4): len(x)], y[round(3 * len(x) / 4): len(x)]
+            x[round(3 * len(x) / 4) : len(x)], y[round(3 * len(x) / 4) : len(x)]
         )
         result["D_" + str(i)] = [a]
 

@@ -243,15 +243,9 @@ class TestFeaturizer(unittest.TestCase):
             path, local_filename = os.path.split(featurizer.name)
             folder = os.path.split(path)[-1]
             dumpfn(featurizer, featurizer.name)
-<<<<<<< HEAD
             self.assertEqual(folder, "RPTdQdVFeatures")
-            self.assertEqual(featurizer.X.shape[1], 12)
-            self.assertEqual(featurizer.metadata["parameters"], params_dict)
-=======
-            self.assertEqual(folder, 'RPTdQdVFeatures')
             self.assertEqual(featurizer.X.shape[1], 11)
-            self.assertEqual(featurizer.metadata['parameters'], params_dict)
->>>>>>> upstream/master
+            self.assertEqual(featurizer.metadata["parameters"], params_dict)
 
     def test_HPPCResistanceVoltageFeatures_class(self):
         with ScratchDir("."):

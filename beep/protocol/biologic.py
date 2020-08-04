@@ -101,7 +101,7 @@ class Settings(DashOrderedDict):
                 steps_values = []
                 for col in range(number_of_columns):
                     steps_values.append(
-                        line[col * column_width: (col + 1) * column_width].strip()
+                        line[col * column_width : (col + 1) * column_width].strip()
                     )
                 technique_steps.append(steps_values)
             step_matrix = list(zip(*technique_steps))
