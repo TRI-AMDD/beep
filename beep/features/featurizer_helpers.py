@@ -34,7 +34,8 @@ def isolate_dQdV_peaks(
         diag_nr (int): if 1 (default), takes dQdV of 1st RPT past the initial diagnostic
         charge_y_n (int): if 1 (default), takes charge dQdV, if 0, takes discharge dQdV
         rpt_type (str): string indicating which rpt to pick
-        cwt_range (list, np.ndarray): range for scaling parameter to use in Continuous Wave Transform method - used for peak finding
+        cwt_range (list, np.ndarray): range for scaling parameter to use in Continuous Wave Transform
+            method - used for peak finding
 
     Returns:
         dataframe with Voltage and dQdV columns for charge or discharge curve in the rpt_type diagnostic cycle.
@@ -715,7 +716,7 @@ def get_diffusion_coeff(processed_cycler_run, diag_pos):
         x = np.sqrt(t + t_d) - np.sqrt(t)
         y = v - v.min()
         a = d_curve_fitting(
-            x[round(3 * len(x) / 4) : len(x)], y[round(3 * len(x) / 4) : len(x)]
+            x[round(3 * len(x) / 4): len(x)], y[round(3 * len(x) / 4): len(x)]
         )
         result["D_" + str(i)] = [a]
 
