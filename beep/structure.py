@@ -955,6 +955,7 @@ class RawCyclerRun(MSONable):
             return quantity_agg
 
         lastindex = quantity_agg.size - 1
+        # TODO: what is happening here?
         for i, istep in enumerate(end_step_inds):
             if i > 0:
                 quantity_agg[istep_old + 1: istep + 1] += cycle_sum

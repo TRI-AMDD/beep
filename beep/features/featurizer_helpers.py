@@ -98,7 +98,7 @@ def isolate_dQdV_peaks(
 
     peak_voltages = []
     peak_dQdVs = []
-    filter_data = []
+    filter_data = pd.DataFrame()
     for count, i in enumerate(peak_indices):
         temp_filter_data = no_filter_data[
             ((x > x.iloc[i] - half_peak_width) & (x < x.iloc[i] + half_peak_width))
@@ -106,7 +106,7 @@ def isolate_dQdV_peaks(
         peak_voltages.append(x.iloc[i])
         peak_dQdVs.append(y.iloc[i])
 
-        filter_data.append(temp_filter_data)
+        filter_data = filter_data.append(temp_filter_data)
 
     return filter_data, no_filter_data, peak_voltages, peak_dQdVs
 
@@ -170,26 +170,27 @@ def generate_model(spec):
 
 
 def update_spec_from_peaks(
-    spec, model_indices, peak_voltages, peak_dQdVs, peak_widths=(10,), **kwargs
+    spec, model_indices, peak_voltages, peak_dQdVs, peak_widths=(10,), basis_func=None,
 ):
     x = spec["x"]
     x_range = np.max(x) - np.min(x)
 
-    for i, j, model_index in zip(peak_voltages, peak_dQdVs, model_indices):
+    for peak_voltage, peak_dQdV, model_index in zip(peak_voltages, peak_dQdVs, model_indices):
         model = spec["model"][model_index]
 
         if model["type"] in ["GaussianModel", "LorentzianModel", "VoigtModel"]:
             params = {
-                "height": peak_dQdVs[j],
+                "height": peak_dQdV,
                 "sigma": x_range / len(x) * np.min(peak_widths),
-                "center": peak_voltages[i],
+                "center": peak_voltage,
             }
             if "params" in model:
                 model.update(params)
             else:
                 model["params"] = params
         else:
-            raise NotImplementedError(f'model {basis_func["type"]} not implemented yet')
+            basis_func = basis_func or "unknown"
+            raise NotImplementedError(f'model {basis_func} not implemented yet')
     return
 
 
@@ -279,7 +280,6 @@ def generate_dQdV_peak_fits(
     # Construct dictionary of peak fits
     peak_fit_dict = {}
     for i, model in enumerate(spec["model"]):
-        best_values = output.best_values
         prefix = f"m{i}_"
         peak_fit_dict[prefix + "Amp" + "_" + rpt_type + "_" + str(charge_y_n)] = [
             peak_dQdVs[i]
