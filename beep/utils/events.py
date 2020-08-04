@@ -67,9 +67,8 @@ class KinesisEvents:
         if self.mode == "run":
             for i in range(MAX_RETRIES):
                 try:
-                    self.stream = get_secret(config[ENVIRONMENT]["kinesis"]["stream"])[
-                        "streamName"
-                    ]
+                    secret = get_secret(config[ENVIRONMENT]["kinesis"]["stream"])
+                    self.stream = secret["streamName"]
                 except NoCredentialsError:
                     print("Credential retry:" + str(i))
                     time.sleep(10)
