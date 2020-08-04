@@ -934,11 +934,12 @@ class RawCyclerRun(MSONable):
 
         Args:
             data (pd.DataFrame): maccor data.
-            quantity (str):  capacity or energy.
+            quantity (str): capacity or energy.
             state_type (str): charge or discharge.
 
         Returns:
             Series: summed quantities.
+
         """
         state_code = MACCOR_CONFIG["{}_state_code".format(state_type)]
         quantity_agg = data["_" + quantity].where(
@@ -951,23 +952,31 @@ class RawCyclerRun(MSONable):
         )
         end_step_inds = end_step.index[end_step]
 
+        # If no end steps, quantity not reset, return it without modifying
         if end_step_inds.size == 0:
             return quantity_agg
 
-        lastindex = quantity_agg.size - 1
-        # TODO: what is happening here?
-        for i, istep in enumerate(end_step_inds):
-            if i > 0:
-                quantity_agg[istep_old + 1: istep + 1] += cycle_sum
-            if istep == lastindex:
-                cycle_sum = 0.0
-            elif data.loc[istep + 1, "cycle_index"] != data.loc[istep, "cycle_index"]:
-                cycle_sum = 0.0
-            else:
-                cycle_sum = quantity_agg[istep]
-            istep_old = istep
-        if end_step_inds[-1] < lastindex:
-            quantity_agg[istep_old + 1:] += cycle_sum
+        # Initialize accumulator and beginning step slice index
+        cycle_sum = 0.
+        begin_step_ind = quantity_agg.index[0] + 1
+        for end_step_ind in end_step_inds:
+            # Detect whether cycle changed and reset accumulator if so
+            if data.loc[begin_step_ind - 1, "cycle_index"] != data.loc[begin_step_ind, "cycle_index"]:
+                cycle_sum = 0.
+
+            # Add accumulator to current reset step
+            quantity_agg[begin_step_ind: end_step_ind + 1] += cycle_sum
+
+            # Update accumulator
+            cycle_sum = quantity_agg[end_step_ind]
+
+            # Set new step slice initial index
+            begin_step_ind = end_step_ind + 1
+
+        # Update any dangling step without an end
+        last_index = quantity_agg.index[-1]
+        if end_step_inds[-1] < last_index:
+            quantity_agg[begin_step_ind:] += cycle_sum
         return quantity_agg
 
     @classmethod
