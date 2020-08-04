@@ -16,12 +16,14 @@ from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 
 
+# TODO: document these params
 def isolate_dQdV_peaks(
     processed_cycler_run,
     diag_nr,
     charge_y_n,
-    max_nr_peaks,
     rpt_type,
+    cwt_range,
+    max_nr_peaks,
     half_peak_width=0.075,
 ):
     """
@@ -29,13 +31,14 @@ def isolate_dQdV_peaks(
 
     Args:
         processed_cycler_run: processed_cycler_run (beep.structure.ProcessedCyclerRun): information about cycler run
-        rpt_type: string indicating which rpt to pick
-        charge_y_n: if 1 (default), takes charge dQdV, if 0, takes discharge dQdV
-        diag_nr: if 1 (default), takes dQdV of 1st RPT past the initial diagnostic
+        diag_nr (int): if 1 (default), takes dQdV of 1st RPT past the initial diagnostic
+        charge_y_n (int): if 1 (default), takes charge dQdV, if 0, takes discharge dQdV
+        rpt_type (str): string indicating which rpt to pick
+        cwt_range (list, np.ndarray): range for scaling parameter to use in Continuous Wave Transform method - used for peak finding
 
     Returns:
         dataframe with Voltage and dQdV columns for charge or discharge curve in the rpt_type diagnostic cycle.
-        The peaks will be isolated
+            The peaks will be isolated
     """
 
     rpt_type_data = processed_cycler_run.diagnostic_interpolated[
@@ -90,31 +93,33 @@ def isolate_dQdV_peaks(
     no_filter_data = data
 
     # Find peaks
-    peak_indices = signal.find_peaks_cwt(y, (10,))[-max_nr_peaks:]
+    peak_indices = signal.find_peaks_cwt(y, cwt_range)[-max_nr_peaks:]
 
-    peak_voltages = {}
-    peak_dQdVs = {}
-
+    peak_voltages = []
+    peak_dQdVs = []
+    filter_data = []
     for count, i in enumerate(peak_indices):
         temp_filter_data = no_filter_data[
             ((x > x.iloc[i] - half_peak_width) & (x < x.iloc[i] + half_peak_width))
         ]
-        peak_voltages[count] = x.iloc[i]
-        peak_dQdVs[count] = y.iloc[i]
+        peak_voltages.append(x.iloc[i])
+        peak_dQdVs.append(y.iloc[i])
 
-        if count == 0:
-            filter_data = temp_filter_data
-        else:
-            filter_data = filter_data.append(temp_filter_data)
+        filter_data.append(temp_filter_data)
 
     return filter_data, no_filter_data, peak_voltages, peak_dQdVs
 
 
 def generate_model(spec):
     """
-    Method that generates a model to fit the hppc data to for peak extraction, using spec dictionary
-    :param spec (dict): dictionary containing X, y model types.
-    :return: composite model objects of lmfit Model class and a parameter object as defined in lmfit.
+    Method that generates a model to fit the RPT data to for peak extraction, using spec dictionary
+
+    Args:
+        spec (dict): dictionary containing X, y model types.
+
+    Returns:
+        (lmfit.Model): composite model objects of lmfit Model class and a parameter object as defined in lmfit.
+
     """
     composite_model = None
     params = None
@@ -188,7 +193,7 @@ def update_spec_from_peaks(
 
 
 def generate_dQdV_peak_fits(
-    processed_cycler_run, rpt_type, diag_nr, charge_y_n, plotting_y_n=0, max_nr_peaks=4
+    processed_cycler_run, rpt_type, diag_nr, charge_y_n, plotting_y_n=0, max_nr_peaks=4, cwt_range=np.arange(10,30)
 ):
     """
     Generate fits characteristics from dQdV peaks
@@ -198,9 +203,9 @@ def generate_dQdV_peak_fits(
         diag_nr: if 1, takes dQdV of 1st RPT past the initial diagnostic, 0 (default) is initial dianostic
         charge_y_n: if 1 (default), takes charge dQdV, if 0, takes discharge dQdV
 
-
     Returns:
         dataframe with Amplitude, mu and sigma of fitted peaks
+
     """
     # Uses isolate_dQdV_peaks function to filter out peaks and returns x(Volt) and y(dQdV) values from peaks
 
@@ -209,6 +214,7 @@ def generate_dQdV_peak_fits(
         rpt_type=rpt_type,
         charge_y_n=charge_y_n,
         diag_nr=diag_nr,
+        cwt_range=cwt_range,
         max_nr_peaks=max_nr_peaks,
         half_peak_width=0.07,
     )
@@ -223,6 +229,7 @@ def generate_dQdV_peak_fits(
 
     # Set construct spec using number of peaks
     model_types = []
+    # TODO: i isn't being used here
     for i in np.arange(max_nr_peaks):
         model_types.append({"type": "GaussianModel", "help": {"sigma": {"max": 0.1}}})
 
@@ -231,6 +238,7 @@ def generate_dQdV_peak_fits(
     # Update spec using the found peaks
     update_spec_from_peaks(spec, np.arange(max_nr_peaks), peak_voltages, peak_dQdVs)
     if plotting_y_n:
+        # TODO: not sure this works
         fig, ax = plt.subplots()
         ax.scatter(spec["x"], spec["y"], s=4)
         for i in peak_voltages:
@@ -265,13 +273,26 @@ def generate_dQdV_peak_fits(
     peak_fit_dict = {}
     for i, model in enumerate(spec["model"]):
         best_values = output.best_values
-        prefix = f"m{i}_"
-        peak_fit_dict[prefix + "Amp"] = [peak_dQdVs[i]]
-        peak_fit_dict[prefix + "Mu"] = [best_values[prefix + "center"]]
-        peak_fit_dict[prefix + "Sig"] = [best_values[prefix + "sigma"]]
+        prefix = f'm{i}_'
+        peak_fit_dict[prefix+"Amp"+"_"+rpt_type+"_"+str(charge_y_n)] = [peak_dQdVs[i]]
+        peak_fit_dict[prefix+"Mu"+"_"+rpt_type+"_"+str(charge_y_n)] = [peak_voltages[i]]
 
     # Make dataframe out of dict
     peak_fit_df = pd.DataFrame(peak_fit_dict)
+
+    # Incorporate troughs of dQdV curve
+    color_list = ['g', 'b', 'r', 'k', 'c']
+    for peak_nr in np.arange(0, max_nr_peaks - 1):
+        between_outer_peak_data = no_filter_data[
+            (no_filter_data.voltage > peak_voltages[peak_nr]) & (no_filter_data.voltage < peak_voltages[peak_nr + 1])]
+        pct = 0.05
+        lowest_dQdV_pct_between_peaks = (between_outer_peak_data.dQdV.sort_values(ascending=False)).tail(
+            round(len(between_outer_peak_data.dQdV) * pct))
+
+        if plotting_y_n:
+            ax.axhline(y=lowest_dQdV_pct_between_peaks.mean(), color=color_list[peak_nr], linestyle='-')
+        # Add belly feature to dataframe
+        peak_fit_df[f'trough_height_{peak_nr}_{rpt_type}_{charge_y_n}'] = lowest_dQdV_pct_between_peaks.mean()
 
     return peak_fit_df
 
@@ -702,6 +723,7 @@ def get_diffusion_features(processed_cycler_run, diag_pos):
     return result
 
 
+# TODO: change decay argument to non-mutable type
 def get_relaxation_times(voltage_data, time_data, decay_percentage=[0.5, 0.8, 0.99]):
     """
     This function takes in the voltage data and time data of a voltage relaxation curve
