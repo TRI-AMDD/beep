@@ -31,7 +31,8 @@ jobs:
         flake8 --count --show-source --statistics beep
         # exit-zero treats all errors as warnings.
         flake8 --count --exit-zero --max-complexity=20 --statistics beep
-    - name: pydocstyle
-      run: |
-        pip install pydocstyle --upgrade --quiet
-        pydocstyle --count beep
+    # Note: enable this when docstrings are ready
+    # - name: pydocstyle
+    #   run: |
+    #     pip install pydocstyle --upgrade --quiet
+    #     pydocstyle --count beep
