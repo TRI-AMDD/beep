@@ -21,12 +21,7 @@ from monty.tempfile import ScratchDir
 
 
 class ProjectTransfer:
-    def __init__(self,
-                 input_project,
-                 output_project,
-                 bucket,
-                 prefix,
-                 dry_run=True):
+    def __init__(self, input_project, output_project, bucket, prefix, dry_run=True):
         """
         Args:
             input_project (str): Name corresponding to the project to get the files from.
@@ -44,8 +39,11 @@ class ProjectTransfer:
 
     def get_list_files(self, excluded_string):
         all_objects = self.get_all_objects(self.bucket, self.prefix)
-        object_names = [obj['Key'] for obj in all_objects
-                        if os.path.join(self.prefix, self.input_project) in obj['Key']]
+        object_names = [
+            obj["Key"]
+            for obj in all_objects
+            if os.path.join(self.prefix, self.input_project) in obj["Key"]
+        ]
         for string in excluded_string:
             object_names = [obj for obj in object_names if string not in obj]
         return object_names
@@ -59,13 +57,13 @@ class ProjectTransfer:
             prefix (str): prefix for which to list common prefixes.
         """
         object_names = []
-        if not prefix.endswith('/'):
+        if not prefix.endswith("/"):
             prefix += "/"
-        client = boto3.client('s3')
-        paginator = client.get_paginator('list_objects_v2')
-        result = paginator.paginate(Bucket=bucket, Delimiter='/', Prefix=prefix)
+        client = boto3.client("s3")
+        paginator = client.get_paginator("list_objects_v2")
+        result = paginator.paginate(Bucket=bucket, Delimiter="/", Prefix=prefix)
         for response in result:
-            object_names = object_names + response['Contents']
+            object_names = object_names + response["Contents"]
         return object_names
 
     def download_and_modify(self, object_names):
@@ -78,38 +76,46 @@ class ProjectTransfer:
             object_names (list): List of object names in S3 that should be transferred to the output project.
 
         """
-        with ScratchDir('.') as scratch_dir:
+        with ScratchDir(".") as scratch_dir:
             for object_name in object_names:
                 directory, name = os.path.split(object_name)
                 s3 = boto3.client("s3")
-                s3.download_file(self.bucket, object_name, os.path.join(scratch_dir, name))
+                s3.download_file(
+                    self.bucket, object_name, os.path.join(scratch_dir, name)
+                )
                 from_file = open(os.path.join(scratch_dir, name))
                 line = from_file.readline()
                 line = line.replace(self.input_project, self.output_project)
-                to_file_name = os.path.join(scratch_dir, name.replace(self.input_project, self.output_project))
+                to_file_name = os.path.join(
+                    scratch_dir, name.replace(self.input_project, self.output_project)
+                )
                 to_file = open(to_file_name, "w")
                 to_file.write(line)
                 shutil.copyfileobj(from_file, to_file)
                 if self.dry_run:
-                    output_bucket = 'beep-sync-test'
+                    output_bucket = "beep-sync-test"
                 else:
                     output_bucket = self.bucket
                 try:
-                    new_object_name = os.path.join(directory, name.replace(self.input_project, self.output_project))
-                    response = s3.upload_file(to_file_name, output_bucket, new_object_name)
+                    new_object_name = os.path.join(
+                        directory, name.replace(self.input_project, self.output_project)
+                    )
+                    s3.upload_file(to_file_name, output_bucket, new_object_name)
                 except ClientError as e:
                     print(e)
 
 
 if __name__ == "__main__":
-    transfer = ProjectTransfer("PredictionDiagnostics",
-                               "PreDiag",
-                               "beep-input-data-stage",
-                               "d3Batt/raw/maccor/STANFORD LOANER #2")
+    transfer = ProjectTransfer(
+        "PredictionDiagnostics",
+        "PreDiag",
+        "beep-input-data-stage",
+        "d3Batt/raw/maccor/STANFORD LOANER #2",
+    )
     # List of strings here can be used to filer out specific file names so that not all files are transferred over
     # '_000052' is a file generated using an even earlier version of the protocol and probably should not be transferred
     # over
-    excluded_strings = ['_000052', 'Logs']
+    excluded_strings = ["_000052", "Logs"]
     names = transfer.get_list_files(excluded_strings)
     transfer.download_and_modify(names)
     print(names)

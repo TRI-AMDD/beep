@@ -18,12 +18,13 @@ from beep.config import config
 
 
 def secret_accessible(environment):
-    event_config = config[environment]['kinesis']
-    if 'stream' in event_config:
-        secret_name = event_config['stream']
+    event_config = config[environment]["kinesis"]
+    if "stream" in event_config:
+        secret_name = event_config["stream"]
         try:
             _ = get_secret(secret_name)
         except Exception as e:
+            print(e)
             return False
         else:
             return True
@@ -42,31 +43,27 @@ def get_secret(secret_name):
         secret          dict object containing database credentials
 
     """
-    region_name = 'us-west-2'
+    region_name = "us-west-2"
 
     # Create a Secrets Manager client
     session = boto3.session.Session()
-    client = session.client(
-        service_name='secretsmanager',
-        region_name=region_name
-    )
+    client = session.client(service_name="secretsmanager", region_name=region_name)
 
     try:
-        get_secret_value_response = client.get_secret_value(
-            SecretId=secret_name
-        )
+        get_secret_value_response = client.get_secret_value(SecretId=secret_name)
     except ClientError as e:
         raise e
     else:
         # Decrypts secret using the associated KMS CMK.
         # Depending on whether the secret is a string or binary,
         # one of these fields will be populated.
-        if 'SecretString' in get_secret_value_response:
-            secret = get_secret_value_response['SecretString']
+        if "SecretString" in get_secret_value_response:
+            secret = get_secret_value_response["SecretString"]
             return json.loads(secret)
         else:
             decoded_binary_secret = base64.b64decode(
-                get_secret_value_response['SecretBinary'])
+                get_secret_value_response["SecretBinary"]
+            )
             return json.loads(decoded_binary_secret)
 
 
@@ -76,10 +73,11 @@ def event_setup():
         events_mode = "events_off"
     else:
         try:
-            kinesis = boto3.client('kinesis')
+            kinesis = boto3.client("kinesis")
             response = kinesis.list_streams()
+            assert response is not None
             events_mode = "test"
         except Exception as e:
-            warnings.warn("Cloud resources not configured")
+            warnings.warn("Cloud resources not configured, error: {}".format(e))
             events_mode = "events_off"
     return events_mode

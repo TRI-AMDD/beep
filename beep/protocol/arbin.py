@@ -25,8 +25,9 @@ class Schedule(DashOrderedDict):
     >>> "CC1"
 
     """
+
     @classmethod
-    def from_file(cls, filename, encoding='latin-1'):
+    def from_file(cls, filename, encoding="latin-1"):
         """
         Schedule file ingestion. Converts a schedule file with section headers
         to an ordered dict with section headers as nested dicts.
@@ -42,16 +43,15 @@ class Schedule(DashOrderedDict):
 
         """
         obj = cls()
-        with open(filename, 'rb') as f:
+        with open(filename, "rb") as f:
             text = f.read()
             text = text.decode(encoding)
 
-        split_text = re.split(r'\[(.+)\]', text)
+        split_text = re.split(r"\[(.+)\]", text)
         for heading, body in zip(split_text[1::2], split_text[2::2]):
-            body_lines = re.split(r'[\r\n]+', body.strip())
-            body_dict = OrderedDict([line.split('=', 1)
-                                     for line in body_lines])
-            heading = heading.replace('_', '.')
+            body_lines = re.split(r"[\r\n]+", body.strip())
+            body_dict = OrderedDict([line.split("=", 1) for line in body_lines])
+            heading = heading.replace("_", ".")
             obj.set(heading, body_dict)
 
         return obj
@@ -73,11 +73,11 @@ class Schedule(DashOrderedDict):
         """
         # Flatten dict
         data = deepcopy(self)
-        flat_keys = _get_headings(data, delimiter='.')
+        flat_keys = _get_headings(data, delimiter=".")
         flat_keys.reverse()  # Reverse ensures sub-dicts are removed first
         data_tuples = []
         for flat_key in flat_keys:
-            data_tuple = (flat_key.replace('.', '_'), data.get(flat_key))
+            data_tuple = (flat_key.replace(".", "_"), data.get(flat_key))
             data_tuples.append(data_tuple)
             data.unset(flat_key)
         data_tuples.reverse()
@@ -86,13 +86,14 @@ class Schedule(DashOrderedDict):
         blocks = []
         for section_title, body_data in data_tuples:
             section_header = "[{}]".format(section_title)
-            body = linesep.join(["=".join([key, value])
-                                 for key, value in body_data.items()])
+            body = linesep.join(
+                ["=".join([key, value]) for key, value in body_data.items()]
+            )
             blocks.append(linesep.join([section_header, body]))
         contents = linesep.join(blocks) + linesep
 
         # Write file
-        with open(filename, 'wb') as f:
+        with open(filename, "wb") as f:
             f.write(contents.encode(encoding))
 
     @classmethod
@@ -113,12 +114,18 @@ class Schedule(DashOrderedDict):
         """
         obj = cls.from_file(template_filename)
 
-        obj.set_labelled_steps('CC1', 'm_szCtrlValue',
-                               step_value='{0:.3f}'.format(CC1).rstrip('0'))
-        obj.set_labelled_limits('CC1', 'PV_CHAN_Charge_Capacity', comparator=">",
-                                value='{0:.3f}'.format(CC1_capacity).rstrip('0'))
-        obj.set_labelled_steps('CC2', 'm_szCtrlValue',
-                               step_value='{0:.3f}'.format(CC2).rstrip('0'))
+        obj.set_labelled_steps(
+            "CC1", "m_szCtrlValue", step_value="{0:.3f}".format(CC1).rstrip("0")
+        )
+        obj.set_labelled_limits(
+            "CC1",
+            "PV_CHAN_Charge_Capacity",
+            comparator=">",
+            value="{0:.3f}".format(CC1_capacity).rstrip("0"),
+        )
+        obj.set_labelled_steps(
+            "CC2", "m_szCtrlValue", step_value="{0:.3f}".format(CC2).rstrip("0")
+        )
         return obj
 
     def get_labelled_steps(self, step_label):
@@ -137,12 +144,11 @@ class Schedule(DashOrderedDict):
         # Find all step labels
         labelled_steps = filter(
             lambda x: self.get("Schedule.{}.m_szLabel".format(x)) == step_label,
-            self['Schedule'].keys()
+            self["Schedule"].keys(),
         )
         return labelled_steps
 
-    def set_labelled_steps(self, step_label, step_key, step_value,
-                           mode='first'):
+    def set_labelled_steps(self, step_label, step_key, step_value, mode="first"):
         """
         Insert values for steps in the schedule section
 
@@ -192,25 +198,30 @@ class Schedule(DashOrderedDict):
         for step in labelled_steps:
             # Get all matching limit keys
             step_data = self.get("Schedule.{}".format(step))
-            limits = [heading for heading in _get_headings(step_data)
-                      if heading.startswith('Limit')]
+            limits = [
+                heading
+                for heading in _get_headings(step_data)
+                if heading.startswith("Limit")
+            ]
             # Set limit of first limit step with matching code
             for limit in limits:
                 limit_data = step_data[limit]
-                if limit_data['m_bStepLimit'] == '1':  # Code corresponding to stop
-                    if limit_data['Equation0_szLeft'] == limit_var:
+                if limit_data["m_bStepLimit"] == "1":  # Code corresponding to stop
+                    if limit_data["Equation0_szLeft"] == limit_var:
                         limit_prefix = "Schedule.{}.{}".format(step, limit)
                         self.set(
-                            "{}.Equation0_szCompareSign".format(limit_prefix), comparator)
-                        self.set(
-                            "{}.Equation0_szRight".format(
-                                limit_prefix), value)
+                            "{}.Equation0_szCompareSign".format(limit_prefix),
+                            comparator,
+                        )
+                        self.set("{}.Equation0_szRight".format(limit_prefix), value)
                     else:
-                        warnings.warn("Additional step limit at {}.{}".format(step, limit))
+                        warnings.warn(
+                            "Additional step limit at {}.{}".format(step, limit)
+                        )
         return self
 
 
-def _get_headings(obj, delimiter='.'):
+def _get_headings(obj, delimiter="."):
     """
     Utility function for getting all nested keys
     of a dictionary whose values are themselves
@@ -228,6 +239,7 @@ def _get_headings(obj, delimiter='.'):
         if isinstance(body, dict):
             headings.append(heading)
             sub_headings = _get_headings(body, delimiter=delimiter)
-            headings.extend([delimiter.join([heading, sub_heading])
-                             for sub_heading in sub_headings])
+            headings.extend(
+                [delimiter.join([heading, sub_heading]) for sub_heading in sub_headings]
+            )
     return headings

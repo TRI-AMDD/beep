@@ -26,9 +26,11 @@ class SpliceTest(unittest.TestCase):
         meta_test, data_test = splicer.read_maccor_file(self.test)
 
         assert meta_1 == meta_test
-        assert np.allclose(data_1['Volts'].to_numpy(), data_test['Volts'].to_numpy())
-        assert np.allclose(data_1['Amps'].to_numpy(), data_test['Amps'].to_numpy())
-        assert np.allclose(data_1['Test (Sec)'].to_numpy(), data_test['Test (Sec)'].to_numpy())
+        assert np.allclose(data_1["Volts"].to_numpy(), data_test["Volts"].to_numpy())
+        assert np.allclose(data_1["Amps"].to_numpy(), data_test["Amps"].to_numpy())
+        assert np.allclose(
+            data_1["Test (Sec)"].to_numpy(), data_test["Test (Sec)"].to_numpy()
+        )
 
     def test_column_increment(self):
         splicer = MaccorSplice(self.filename_part_1, self.filename_part_2, self.output)
@@ -36,4 +38,4 @@ class SpliceTest(unittest.TestCase):
         meta_2, data_2 = splicer.read_maccor_file(self.filename_part_2)
         data_1, data_2 = splicer.column_increment(data_1, data_2)
 
-        assert data_1['Rec#'].max() < data_2['Rec#'].min()
+        assert data_1["Rec#"].max() < data_2["Rec#"].min()
