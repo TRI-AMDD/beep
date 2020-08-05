@@ -1086,27 +1086,18 @@ class RawCyclerRun(MSONable):
                     hppc_rpt = ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"]
                     hppc_rpt_len = 5
                     diagnostic_starts_at = [
-                        1,
-                        1
-                        + run_parameter["diagnostic_start_cycle"].iloc[0]
-                        + 1 * hppc_rpt_len,
+                        1, 1 + run_parameter["diagnostic_start_cycle"].iloc[0] + 1 * hppc_rpt_len,
                     ]
                     for i in range(1, 100):
                         diag_cycle_num = (
-                            i
-                            * (
-                                run_parameter["diagnostic_interval"].iloc[0]
-                                + hppc_rpt_len
-                            )
+                            i * (run_parameter["diagnostic_interval"].iloc[0] + hppc_rpt_len)
                             + 1
                             + run_parameter["diagnostic_start_cycle"].iloc[0]
                             + 1 * hppc_rpt_len
                         )
                         diagnostic_starts_at.append(diag_cycle_num)
                     diagnostic_available = {
-                        "parameter_set": run_parameter["diagnostic_parameter_set"].iloc[
-                            0
-                        ],
+                        "parameter_set": run_parameter["diagnostic_parameter_set"].iloc[0],
                         "cycle_type": hppc_rpt,
                         "length": hppc_rpt_len,
                         "diagnostic_starts_at": diagnostic_starts_at,
