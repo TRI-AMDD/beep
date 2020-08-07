@@ -271,15 +271,15 @@ class ProcedureToSchedule:
         ]:
             if step_abs["StepType"] == "AdvCycle":
                 blank_step["m_szStepCtrlType"] = "Set Variable(s)"
-                blank_step["m_szCtrlValue1"] = "15"
+                blank_step["m_szCtrlValue"] = "15"
                 blank_step["m_szExtCtrlValue1"] = "1"
-                blank_step["m_szExtCtrlValue1"] = "0"
+                blank_step["m_szExtCtrlValue2"] = "0"
             elif "Loop" in step_abs["StepType"]:
                 loop_counter = int(re.search(r"\d+", step_abs["StepType"]).group())
                 blank_step["m_szStepCtrlType"] = "Set Variable(s)"
-                blank_step["m_szCtrlValue1"] = "0"
+                blank_step["m_szCtrlValue"] = "0"
                 blank_step["m_szExtCtrlValue1"] = str(2 ** loop_counter)
-                blank_step["m_szExtCtrlValue1"] = "0"
+                blank_step["m_szExtCtrlValue2"] = "0"
                 assert isinstance(step_abs["Ends"]["EndEntry"], OrderedDict)
                 loop_addendum = OrderedDict(
                     [
@@ -297,9 +297,9 @@ class ProcedureToSchedule:
             elif "Do" in step_abs["StepType"]:
                 loop_counter = int(re.search(r"\d+", step_abs["StepType"]).group())
                 blank_step["m_szStepCtrlType"] = "Set Variable(s)"
-                blank_step["m_szCtrlValue1"] = str(2 ** (loop_counter + 15))
+                blank_step["m_szCtrlValue"] = str(2 ** (loop_counter + 15))
                 blank_step["m_szExtCtrlValue1"] = "0"
-                blank_step["m_szExtCtrlValue1"] = "0"
+                blank_step["m_szExtCtrlValue2"] = "0"
 
             else:
                 blank_step["m_szStepCtrlType"] = "Rest"
@@ -358,7 +358,7 @@ class ProcedureToSchedule:
                 )
             elif isinstance(step_abs["Ends"]["EndEntry"], list):
                 blank_step["m_uLimitNum"] = blank_step["m_uLimitNum"] + len(
-                    step_abs["Ends"]["EndEntry"]
+                    step_abs["Reports"]["ReportEntry"]
                 )
                 for report_index, report in enumerate(
                     step_abs["Reports"]["ReportEntry"]
