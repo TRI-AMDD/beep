@@ -796,15 +796,15 @@ class RawCyclerRun(MSONable):
             beep.structure.RawCyclerRun
         """
         ir_column_name = '"DCIR(O)"'
-        with open(filename, encoding='ISO-8859-1') as input:
+        with open(filename, encoding="ISO-8859-1") as input:
             with ScratchDir('.'):
                 cycle_header = input.readline().replace('\t', '')
-                cycle_file = open("cycle_file.csv", "a")
+                cycle_file = open("cycle_file.csv", "a", encoding="ISO-8859-1")
                 cycle_file.write(cycle_header)
 
                 step_header = input.readline().replace('\t', '')
                 ir_index = step_header.split(',').index(ir_column_name)
-                step_file = open("step_file.csv", "a")
+                step_file = open("step_file.csv", "a", encoding="ISO-8859-1")
                 step_file.write(step_header)
 
                 record_header = input.readline().replace('\t', '')
@@ -813,7 +813,7 @@ class RawCyclerRun(MSONable):
                 record_header[1] = step_header.split(',')[1]
                 record_header[22] = ir_column_name
                 record_header = ','.join(record_header)
-                record_file = open("record_file.csv", "a")
+                record_file = open("record_file.csv", "a", encoding="ISO-8859-1")
                 record_file.write(record_header)
 
                 # Read file line by line and write to the appropriate file
