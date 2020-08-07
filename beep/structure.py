@@ -650,28 +650,29 @@ class RawCyclerRun(MSONable):
                 cycle_file.close()
 
                 # Read in the data and convert the column values to MKS units
-                data = pd.read_csv("record_file.csv", sep=',', skiprows=0, encoding='ISO-8859-1')
+                data = pd.read_csv("record_file.csv", sep=",", skiprows=0, encoding="ISO-8859-1")
                 data = data.loc[:, ~data.columns.str.contains('Unnamed')]
-                data['Time(h:min:s.ms)'] = data['Time(h:min:s.ms)'].apply(neware_step_time)
-                data['Current(mA)'] = data['Current(mA)'] / 1000
-                data['Capacitance_Chg(mAh)'] = data['Capacitance_Chg(mAh)'] / 1000
-                data['Capacitance_DChg(mAh)'] = data['Capacitance_DChg(mAh)'] / 1000
-                data['Engy_Chg(mWh)'] = data['Engy_Chg(mWh)'] / 1000
-                data['Engy_DChg(mWh)'] = data['Engy_DChg(mWh)'] / 1000
+                data["Time(h:min:s.ms)"] = data["Time(h:min:s.ms)"].apply(neware_step_time)
+                data["Current(mA)"] = data["Current(mA)"] / 1000
+                data["Capacitance_Chg(mAh)"] = data["Capacitance_Chg(mAh)"] / 1000
+                data["Capacitance_DChg(mAh)"] = data["Capacitance_DChg(mAh)"] / 1000
+                data["Engy_Chg(mWh)"] = data["Engy_Chg(mWh)"] / 1000
+                data["Engy_DChg(mWh)"] = data["Engy_DChg(mWh)"] / 1000
 
                 # Deal with missing data in the internal resistance
-                data['DCIR(O)'] = data['DCIR(O)'].apply(lambda x: np.nan if x == '\t-' else x)
-                data['DCIR(O)'] = data['DCIR(O)'].fillna(method='ffill')
-                data['DCIR(O)'] = data['DCIR(O)'].fillna(method='bfill')
+                data["DCIR(O)"] = data["DCIR(O)"].apply(lambda x: np.nan if x == '\t-' else x)
+                data["DCIR(O)"] = data["DCIR(O)"].fillna(method="ffill")
+                data["DCIR(O)"] = data["DCIR(O)"].fillna(method="bfill")
 
+        data["test_time"] = data["Time(h:min:s.ms)"].diff().fillna(0).apply(lambda x: 0 if x < 0 else x).cumsum()
         data = data.astype(NEWARE_CONFIG['data_types'])
 
-        data.rename(NEWARE_CONFIG['data_columns'], axis='columns', inplace=True)
-        data['date_time'] = data['date_time'].apply(lambda x: x.replace('\t', ''))
-        data['date_time_iso'] = data['date_time'].apply(maccor_timestamp)
+        data.rename(NEWARE_CONFIG["data_columns"], axis="columns", inplace=True)
+        data["date_time"] = data["date_time"].apply(lambda x: x.replace('\t', ''))
+        data["date_time_iso"] = data["date_time"].apply(maccor_timestamp)
 
         metadata = dict()
-        metadata['filename'] = filename
+        metadata["filename"] = filename
         path = filename
 
         return cls(data, metadata, None, validate, filename=path)

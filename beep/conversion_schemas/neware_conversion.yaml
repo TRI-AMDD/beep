@@ -1,7 +1,7 @@
 file_pattern: ".*neware.*\\.csv"
 data_columns:
   Record ID: data_point
-#  test_time: test_time
+  test_time: test_time
   Realtime: date_time
   Time(h:min:s.ms): step_time
   Step ID: step_index
@@ -26,8 +26,7 @@ data_columns:
   Temperature(Â°C): temperature
 data_types:
   Record ID: 'int32'
-#  test_time: 'float32'
-#  Realtime: 'float32'
+  test_time: 'float32'
   Time(h:min:s.ms): 'float32'
   Step ID: 'int16'
   Cycle ID: 'int32'

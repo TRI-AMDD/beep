@@ -431,11 +431,13 @@ class RawCyclerRunTest(unittest.TestCase):
 
     def test_ingestion_neware(self):
         raw_cycler_run = RawCyclerRun.from_file(self.neware_file)
-        summary = raw_cycler_run.get_summary(nominal_capacity=4.7, full_fast_charge=0.8)
         self.assertEqual(raw_cycler_run.data.columns[22], "internal_resistance")
-        self.assertEqual()
-        print(summary.head())
-        self.assertEqual(1, 2)
+        self.assertTrue(raw_cycler_run.data["test_time"].is_monotonic_increasing)
+        summary = raw_cycler_run.get_summary(nominal_capacity=4.7, full_fast_charge=0.8)
+        self.assertEqual(summary["discharge_capacity"].head(5).round(4).tolist(),
+                         [2.4393, 2.4343, 2.4255, 2.4221, 2.4210])
+        self.assertEqual(summary[summary["cycle_index"] == 55]["discharge_capacity"].round(4).tolist(),
+                         [2.3427])
 
     def test_get_project_name(self):
         project_name_parts = get_project_sequence(os.path.join(TEST_FILE_DIR,
@@ -633,7 +635,6 @@ class ProcessedCyclerRunTest(unittest.TestCase):
         rcycler_run = RawCyclerRun.from_file(self.neware_file)
         pcycler_run = ProcessedCyclerRun.from_raw_cycler_run(rcycler_run)
         self.assertIsInstance(pcycler_run, ProcessedCyclerRun)
-        # Ensure barcode/protocol are passed
 
     def test_from_raw_cycler_run_parameters(self):
         rcycler_run = RawCyclerRun.from_file(self.maccor_file_w_parameters)
