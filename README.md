@@ -1,15 +1,12 @@
 [![Build Status](https://travis-ci.com/TRI-AMDD/beep.svg?branch=master)](https://travis-ci.com/TRI-AMDD/beep)
 [![Coverage Status](https://coveralls.io/repos/github/TRI-AMDD/beep/badge.svg?branch=master)](https://coveralls.io/github/TRI-AMDD/beep?branch=master)
 
-# Summary
+# Battery Evaluation and Early Prediction (BEEP)
 
-Beep is a software designed to support Battery Evaluation and Early Prediction
-of cycle life corresponding to the research of the
-[d3batt program](https://d3batt.mit.edu/) and the 
-[Toyota Research Institute](http://www.tri.global/accelerated-materials-design-and-discovery/).
+BEEP is a set of tools designed to support Battery Evaluation and Early Prediction of cycle life corresponding to the research of the [d3batt program](https://d3batt.mit.edu/) and the [Toyota Research Institute](http://www.tri.global/accelerated-materials-design-and-discovery/).
 
 
-Beep enables parsing and handing of electrochemical battery cycling data
+BEEP enables parsing and handing of electrochemical battery cycling data
 via data objects reflecting cycling run data, experimental protocols,
 featurization, and modeling of cycle life.  Currently beep supports 
 arbin, maccor and biologic cyclers.
@@ -20,14 +17,13 @@ Please contact any of the maintainers for more information.
 ## Installation
 Use `pip install beep` to install.
 
-If you want to develop beep, clone the repo via git and use 
+If you want to develop BEEP, clone the repo via git and use 
 pip (or `python setup.py develop`)  for an editable install:
 
 ```bash
 git clone git@github.com:ToyotaResearchInstitute/BEEP.git
 cd BEEP
-pip install -e .
-
+pip install -e .[tests]
 ```
 ## Environment
 To configure the use of AWS resources its necessary to set the environment variable `BEEP_ENV`. For most users `'dev'`
@@ -41,21 +37,17 @@ export BEEP_PROCESSING_DIR='/path/to/beep/data/'
 ```
 
 ## Testing
-You can use nose or pytests for running unittests (use `pip install nose` 
-to install nose if not installed). In order to run tests the environment variable
-needs to be set (ie. export BEEP_ENV='dev')
+You can use pytest for running unittests. In order to run tests the environment variable
+needs to be set (i.e. `export BEEP_ENV='dev'`)
 
 ```bash
-nosetests beep
+pytest beep
 ```
-
-Note that the editable install (as prescribed above), is necessary
-for nosetests.
 
 ## Using scripts
 
 The standard installation procedure above should install and link console scripts
-with currently available BEEP functionality.  Each beep script takes a JSON string
+with currently available BEEP functionality.  Each BEEP script takes a JSON string
 as input in order to provide flexibility and more facile automation.  They are documented
 below:
 
@@ -110,7 +102,7 @@ $ collate
 
 ### validate
 The validation script, `validate`, runs the validation procedure contained
-in beep.validate on renamed files according to the output of `rename` above.
+in `beep.validate` on renamed files according to the output of `rename` above.
 It also updates a general json validation record in `/data-share/validation/validation.json`.
 
 The input json must contain the following fields

@@ -53,7 +53,8 @@ from beep.protocol.maccor import Procedure
 
 
 from beep.utils import KinesisEvents
-s = {'service': 'ProtocolGenerator'}
+
+s = {"service": "ProtocolGenerator"}
 
 
 def convert_velocity_to_power_waveform(waveform_file, velocity_units):
@@ -70,14 +71,14 @@ def convert_velocity_to_power_waveform(waveform_file, velocity_units):
     returns
     pd.DataFrame with two columns: time (sec) and power (W). Negative = Discharge
     """
-    df = pd.read_csv(waveform_file, sep='\t', header=0)
-    df.columns = ['t', 'v']
+    df = pd.read_csv(waveform_file, sep="\t", header=0)
+    df.columns = ["t", "v"]
 
-    if velocity_units == 'mph':
+    if velocity_units == "mph":
         scale = 1600.0 / 3600.0
-    elif velocity_units == 'kmph':
+    elif velocity_units == "kmph":
         scale = 1000.0 / 3600.0
-    elif velocity_units == 'mps':
+    elif velocity_units == "mps":
         scale = 1.0
     else:
         raise NotImplementedError
@@ -98,13 +99,15 @@ def convert_velocity_to_power_waveform(waveform_file, velocity_units):
     # Force = Rate of change of momentum + Rolling frictional force + Aerodynamic drag force
 
     # Method treats the time-series as is and does not interpolate on a uniform grid before computing gradient.
-    power = m * np.gradient(df.v, df.t) + rolling_resistance_coef * m * g * np.cos(
-        theta * np.pi / 180) + 0.5 * rho * drag_coef * frontal_area * (df.v - v_wind) ** 2
+    power = (
+        m * np.gradient(df.v, df.t)
+        + rolling_resistance_coef * m * g * np.cos(theta * np.pi / 180)
+        + 0.5 * rho * drag_coef * frontal_area * (df.v - v_wind) ** 2
+    )
 
     power = -power * df.v  # positive power = charge
 
-    return pd.DataFrame({'time': df.t,
-                         'power': power})
+    return pd.DataFrame({"time": df.t, "power": power})
 
 
 def generate_protocol_files_from_csv(csv_filename, output_directory=None):
@@ -123,73 +126,86 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
 
     new_files = []
     names = []
-    result = ''
-    message = {'comment': '',
-               'error': ''}
+    result = ""
+    message = {"comment": "", "error": ""}
     if output_directory is None:
         output_directory = PROCEDURE_TEMPLATE_DIR
     for index, protocol_params in protocol_params_df.iterrows():
-        template = protocol_params['template']
+        template = protocol_params["template"]
 
         # Switch for template invocation
         if template == "EXP.000":
             procedure = Procedure.from_exp(
                 **protocol_params[["cutoff_voltage", "charge_rate", "discharge_rate"]]
             )
-        elif template == 'diagnosticV2.000':
-            diag_params_df = pd.read_csv(os.path.join(PROCEDURE_TEMPLATE_DIR,
-                                                      "PreDiag_parameters - DP.csv"))
-            diagnostic_params = diag_params_df[diag_params_df['diagnostic_parameter_set'] ==
-                                               protocol_params['diagnostic_parameter_set']].squeeze()
+        elif template == "diagnosticV2.000":
+            diag_params_df = pd.read_csv(
+                os.path.join(PROCEDURE_TEMPLATE_DIR, "PreDiag_parameters - DP.csv")
+            )
+            diagnostic_params = diag_params_df[
+                diag_params_df["diagnostic_parameter_set"]
+                == protocol_params["diagnostic_parameter_set"]
+            ].squeeze()
 
             # TODO: should these be separated?
-            procedure = Procedure.from_regcyclev2(
-                protocol_params
-            )
+            procedure = Procedure.from_regcyclev2(protocol_params)
             procedure.add_procedure_diagcyclev2(
                 protocol_params["capacity_nominal"], diagnostic_params
             )
 
         # TODO: how are these different?
-        elif template in ['diagnosticV3.000', 'diagnosticV4.000']:
-            diag_params_df = pd.read_csv(os.path.join(PROCEDURE_TEMPLATE_DIR,
-                                                      "PreDiag_parameters - DP.csv"))
-            diagnostic_params = diag_params_df[diag_params_df['diagnostic_parameter_set'] ==
-                                               protocol_params['diagnostic_parameter_set']].squeeze()
+        elif template in ["diagnosticV3.000", "diagnosticV4.000"]:
+            diag_params_df = pd.read_csv(
+                os.path.join(PROCEDURE_TEMPLATE_DIR, "PreDiag_parameters - DP.csv")
+            )
+            diagnostic_params = diag_params_df[
+                diag_params_df["diagnostic_parameter_set"]
+                == protocol_params["diagnostic_parameter_set"]
+            ].squeeze()
 
             procedure = Procedure.generate_procedure_regcyclev3(index, protocol_params)
             procedure.generate_procedure_diagcyclev3(
-                    protocol_params["capacity_nominal"], diagnostic_params
+                protocol_params["capacity_nominal"], diagnostic_params
             )
         else:
             warnings.warn("Unsupported file template {}, skipping.".format(template))
             result = "error"
-            message = {'comment': 'Unable to find template: ' + template,
-                       'error': 'Not Found'}
+            message = {
+                "comment": "Unable to find template: " + template,
+                "error": "Not Found",
+            }
             continue
 
-        filename_prefix = '_'.join(
-            [protocol_params["project_name"], '{:06d}'.format(protocol_params["seq_num"])])
+        filename_prefix = "_".join(
+            [
+                protocol_params["project_name"],
+                "{:06d}".format(protocol_params["seq_num"]),
+            ]
+        )
         filename = "{}.000".format(filename_prefix)
-        filename = os.path.join(output_directory, 'procedures', filename)
+        filename = os.path.join(output_directory, "procedures", filename)
         logger.info(filename, extra=s)
         if not os.path.isfile(filename):
             procedure.to_file(filename)
             new_files.append(filename)
-            names.append(filename_prefix + '_')
+            names.append(filename_prefix + "_")
 
-        elif '.sdu' in template:
-            logger.warning('Schedule file generation not yet implemented', extra=s)
+        elif ".sdu" in template:
+            logger.warning("Schedule file generation not yet implemented", extra=s)
             result = "error"
-            message = {'comment': 'Schedule file generation is not yet implemented',
-                       'error': 'Not Implemented'}
+            message = {
+                "comment": "Schedule file generation is not yet implemented",
+                "error": "Not Implemented",
+            }
 
     # This block of code produces the file containing all of the run file
     # names produced in this function call. This is to make starting tests easier
     _, namefile = os.path.split(csv_filename)
-    namefile = namefile.split('_')[0] + '_names_'
-    namefile = namefile + datetime.datetime.now().strftime("%Y%m%d_%H%M") + '.csv'
-    with open(os.path.join(output_directory, "names", namefile), 'w', newline='') as outputfile:
+    namefile = namefile.split("_")[0] + "_names_"
+    namefile = namefile + datetime.datetime.now().strftime("%Y%m%d_%H%M") + ".csv"
+    with open(
+        os.path.join(output_directory, "names", namefile), "w", newline=""
+    ) as outputfile:
         wr = csv.writer(outputfile)
         for name in names:
             wr.writerow([name])
@@ -197,15 +213,17 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
 
     if not result:
         result = "success"
-        message = {'comment': 'Generated {} protocols'.format(str(len(new_files))),
-                   'error': ''}
+        message = {
+            "comment": "Generated {} protocols".format(str(len(new_files))),
+            "error": "",
+        }
 
     return new_files, result, message
 
 
 def process_csv_file_list_from_json(
-        file_list_json,
-        processed_dir='data-share/protocols/'):
+    file_list_json, processed_dir="data-share/protocols/"
+):
     """
 
     Args:
@@ -223,21 +241,20 @@ def process_csv_file_list_from_json(
         file_list_data = json.loads(file_list_json)
 
     # Setup Events
-    events = KinesisEvents(service='ProtocolGenerator', mode=file_list_data['mode'])
+    events = KinesisEvents(service="ProtocolGenerator", mode=file_list_data["mode"])
 
-    file_list = file_list_data['file_list']
+    file_list = file_list_data["file_list"]
     all_output_files = []
-    protocol_dir = os.path.join(os.environ.get("BEEP_PROCESSING_DIR", "/"),
-                              processed_dir)
+    protocol_dir = os.path.join(
+        os.environ.get("BEEP_PROCESSING_DIR", "/"), processed_dir
+    )
     for filename in file_list:
         output_files, result, message = generate_protocol_files_from_csv(
-            filename, output_directory=protocol_dir)
+            filename, output_directory=protocol_dir
+        )
         all_output_files.extend(output_files)
 
-    output_data = {"file_list": all_output_files,
-                   "result": result,
-                   "message": message
-                   }
+    output_data = {"file_list": all_output_files, "result": result, "message": message}
 
     events.put_generate_event(output_data, "complete")
 
@@ -246,16 +263,16 @@ def process_csv_file_list_from_json(
 
 def main():
     """Main function for the script"""
-    logger.info('starting', extra=s)
-    logger.info('Running version=%s', __version__, extra=s)
+    logger.info("starting", extra=s)
+    logger.info("Running version=%s", __version__, extra=s)
     try:
         args = docopt(__doc__)
-        input_json = args['INPUT_JSON']
+        input_json = args["INPUT_JSON"]
         print(process_csv_file_list_from_json(input_json), end="")
     except Exception as e:
         logger.error(str(e), extra=s)
         raise e
-    logger.info('finish', extra=s)
+    logger.info("finish", extra=s)
     return None
 
 
