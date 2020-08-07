@@ -854,6 +854,8 @@ class RawCyclerRun(MSONable):
                 data["DCIR(O)"] = data["DCIR(O)"].fillna(method="bfill")
 
         data["test_time"] = data["Time(h:min:s.ms)"].diff().fillna(0).apply(lambda x: 0 if x < 0 else x).cumsum()
+        print(data.columns)
+        print(NEWARE_CONFIG['data_types'])
         data = data.astype(NEWARE_CONFIG['data_types'])
 
         data.rename(NEWARE_CONFIG["data_columns"], axis="columns", inplace=True)
