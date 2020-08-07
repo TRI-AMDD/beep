@@ -59,7 +59,7 @@ class ProcedureToSchedule:
         for key in keys:
             if bool(re.match('Step[0-9]+', key)):
                 del schedule['Schedule'][key]
-            if bool(re.match('UserDefineSafety[0-9]+', key)):
+            elif bool(re.match('UserDefineSafety[0-9]+', key)):
                 safety_data.append(deepcopy(schedule['Schedule'][key]))
                 safety_key.append(key)
                 del schedule['Schedule'][key]
