@@ -685,6 +685,9 @@ class ProcedureToScheduleTest(unittest.TestCase):
             self.assertEqual(schedule['Schedule']['Step15']['m_uLimitNum'], '2')
             self.assertEqual(schedule['Schedule']['Step14']['m_uLimitNum'], '6')
             self.assertEqual(schedule['Schedule']['m_uStepNum'], '96')
+            self.assertEqual(schedule['Schedule']['Step86']['m_szCtrlValue'], '15')
+            self.assertEqual(schedule['Schedule']['Step86']['m_szExtCtrlValue1'], '1')
+            self.assertEqual(schedule['Schedule']['Step86']['m_szExtCtrlValue2'], '0')
             #
             # shutil.copyfile(os.path.join(TEST_FILE_DIR, converted_sdu_name),
             #                 os.path.join(scratch_dir, converted_sdu_name))
