@@ -66,6 +66,7 @@ from beep.conversion_schemas import (
     FastCharge_CONFIG,
     xTesladiag_CONFIG,
     INDIGO_CONFIG,
+    NEWARE_CONFIG,
     BIOLOGIC_CONFIG,
     STRUCTURE_DTYPES,
 )
@@ -796,7 +797,7 @@ class RawCyclerRun(MSONable):
         """
         ir_column_name = '"DCIR(O)"'
         with open(filename, encoding='ISO-8859-1') as input:
-            with ScratchDir('.') as scratchdir:
+            with ScratchDir('.'):
                 cycle_header = input.readline().replace('\t', '')
                 cycle_file = open("cycle_file.csv", "a")
                 cycle_file.write(cycle_header)
@@ -816,6 +817,8 @@ class RawCyclerRun(MSONable):
                 record_file.write(record_header)
 
                 # Read file line by line and write to the appropriate file
+                cycle_number = 0
+                step_number = 0
                 for row, line in enumerate(input):
                     if line[:2] == r',"':
                         step_file.write(line)
