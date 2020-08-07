@@ -1,25 +1,4 @@
 file_pattern: ".*neware.*\\.csv"
-#metadata_fields:
-#  test_id: test_id
-#  device_id: device_id
-#  iv_ch_id: channel_id
-#  first_start_datetime: start_datetime
-#  schedule_file_name: protocol
-#  item_id: barcode
-#  resumed_times: _resumed_times
-#  last_end_datetime: _last_end_datetime
-#  databases: _databases
-#  grade_id: _grade_id
-#  has_aux: _has_aux
-#  has_special: _has_special
-#  schedule_version: _schedule_version
-#  log_aux_data_flag: _log_aux_data_flag
-#  log_special_data_flag: _log_special_data_flag
-#  rowstate: _rowstate
-#  canconfig_filename: _canconfig_filename
-#  m_ncanconfigmd5: _m_ncanconfigmd5
-#  value: _value
-#  value2: _value2
 data_columns:
   Record ID: data_point
 #  test_time: test_time
@@ -33,8 +12,7 @@ data_columns:
   Capacitance_DChg(mAh): discharge_capacity
   Engy_Chg(mWh): charge_energy
   Engy_DChg(mWh): discharge_energy
-#  dv/dt: _dv/dt
-#  internal_resistance: internal_resistance
+  DCIR(O): internal_resistance
   Capacity(mAh): _capacity(mAh)
   Capacity Density(mAh/g): _capacity_density(mAh/g)
   Energy(mWh): _energy(mWh)
@@ -59,6 +37,5 @@ data_types:
   Capacitance_DChg(mAh): 'float64'
   Engy_Chg(mWh): 'float64'
   Engy_DChg(mWh): 'float64'
-#  dv/dt: 'float32'
-#  internal_resistance: 'float32'
+  DCIR(O): 'float32'
   Temperature(Â°C): 'float32'

@@ -604,8 +604,11 @@ class RawCyclerRun(MSONable):
         Args:
             filename (str): file path for neware format file.
             validate (bool): whether to validate on instantiation.
-        """
 
+        Returns:
+            beep.structure.RawCyclerRun
+        """
+        ir_column_name = '"DCIR(O)"'
         with open(filename, encoding='ISO-8859-1') as input:
             with ScratchDir('.') as scratchdir:
                 cycle_header = input.readline().replace('\t', '')
@@ -613,6 +616,7 @@ class RawCyclerRun(MSONable):
                 cycle_file.write(cycle_header)
 
                 step_header = input.readline().replace('\t', '')
+                ir_index = step_header.split(',').index(ir_column_name)
                 step_file = open("step_file.csv", "a")
                 step_file.write(step_header)
 
@@ -620,17 +624,22 @@ class RawCyclerRun(MSONable):
                 record_header = record_header.split(',')
                 record_header[0] = cycle_header.split(',')[0]
                 record_header[1] = step_header.split(',')[1]
+                record_header[22] = ir_column_name
                 record_header = ','.join(record_header)
                 record_file = open("record_file.csv", "a")
                 record_file.write(record_header)
+
+                # Read file line by line and write to the appropriate file
                 for row, line in enumerate(input):
                     if line[:2] == r',"':
                         step_file.write(line)
                         step_number = line.split(',')[1]
+                        ir_value = line.split(',')[ir_index]
                     elif line[:2] == r',,':
                         line_list = line.split(',')
                         line_list[0] = cycle_number
                         line_list[1] = step_number
+                        line_list[22] = ir_value
                         line = ','.join(line_list)
                         record_file.write(line)
                     else:
@@ -639,6 +648,8 @@ class RawCyclerRun(MSONable):
                 record_file.close()
                 step_file.close()
                 cycle_file.close()
+
+                # Read in the data and convert the column values to MKS units
                 data = pd.read_csv("record_file.csv", sep=',', skiprows=0, encoding='ISO-8859-1')
                 data = data.loc[:, ~data.columns.str.contains('Unnamed')]
                 data['Time(h:min:s.ms)'] = data['Time(h:min:s.ms)'].apply(neware_step_time)
@@ -647,6 +658,11 @@ class RawCyclerRun(MSONable):
                 data['Capacitance_DChg(mAh)'] = data['Capacitance_DChg(mAh)'] / 1000
                 data['Engy_Chg(mWh)'] = data['Engy_Chg(mWh)'] / 1000
                 data['Engy_DChg(mWh)'] = data['Engy_DChg(mWh)'] / 1000
+
+                # Deal with missing data in the internal resistance
+                data['DCIR(O)'] = data['DCIR(O)'].apply(lambda x: np.nan if x == '\t-' else x)
+                data['DCIR(O)'] = data['DCIR(O)'].fillna(method='ffill')
+                data['DCIR(O)'] = data['DCIR(O)'].fillna(method='bfill')
 
         data = data.astype(NEWARE_CONFIG['data_types'])
 

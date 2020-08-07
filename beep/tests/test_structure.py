@@ -431,7 +431,10 @@ class RawCyclerRunTest(unittest.TestCase):
 
     def test_ingestion_neware(self):
         raw_cycler_run = RawCyclerRun.from_file(self.neware_file)
-        print(raw_cycler_run.data.head())
+        summary = raw_cycler_run.get_summary(nominal_capacity=4.7, full_fast_charge=0.8)
+        self.assertEqual(raw_cycler_run.data.columns[22], "internal_resistance")
+        self.assertEqual()
+        print(summary.head())
         self.assertEqual(1, 2)
 
     def test_get_project_name(self):
@@ -577,6 +580,7 @@ class ProcessedCyclerRunTest(unittest.TestCase):
         self.maccor_file_w_diagnostics = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000020_CH71.071")
         self.maccor_file_w_parameters = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010")
         self.pcycler_run_file = os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_processed.json")
+        self.neware_file = os.path.join(TEST_FILE_DIR, "raw", "neware_test.csv")
 
     def test_from_raw_cycler_run_arbin(self):
         rcycler_run = RawCyclerRun.from_file(self.arbin_file)
@@ -624,6 +628,12 @@ class ProcessedCyclerRunTest(unittest.TestCase):
             lambda x: np.allclose(x.voltage.values, min_index_df.voltage.values))
         if not np.all(matches):
             raise ValueError("cycles_interpolated are not uniform")
+
+    def test_from_raw_cycler_run_neware(self):
+        rcycler_run = RawCyclerRun.from_file(self.neware_file)
+        pcycler_run = ProcessedCyclerRun.from_raw_cycler_run(rcycler_run)
+        self.assertIsInstance(pcycler_run, ProcessedCyclerRun)
+        # Ensure barcode/protocol are passed
 
     def test_from_raw_cycler_run_parameters(self):
         rcycler_run = RawCyclerRun.from_file(self.maccor_file_w_parameters)
