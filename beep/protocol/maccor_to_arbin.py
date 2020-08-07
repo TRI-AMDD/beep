@@ -158,7 +158,7 @@ class ProcedureToSchedule:
         35	Loop 3 (Cycling 30)	    65536	   13	  0			T1	    T2		00010 00000 00000 00000	01101
         36	Loop 4 (Cycling 100)	    0	   16	  0				    T4			                    10000
         37	Loop 5 (always true)	524288	   1	  0			T4	    CI		10000 00000 00000 00000	00001
-        15  Loop                       15      1      0         PVs             00000 00000 00000 01111 00001
+        15	Loop                       15      1      0         PVs             00000 00000 00000 01111 00001
 
         Args:
             step_abs (OrderedDict): A ordered dict of the maccor step to be converted
