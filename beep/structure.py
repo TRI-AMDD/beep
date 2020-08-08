@@ -800,13 +800,15 @@ class RawCyclerRun(MSONable):
             with ScratchDir('.'):
                 cycle_header = input.readline().replace('\t', '')
                 cycle_file = open("cycle_file.csv", "a", encoding="ISO-8859-1")
-                cycle_header = bytes(cycle_header, "ISO-8859-1").decode("ISO-8859-1", "ignore")
+                encoded_string = cycle_header.encode("ascii", "ignore")
+                cycle_header = encoded_string.decode()
                 cycle_file.write(cycle_header)
 
                 step_header = input.readline().replace('\t', '')
                 ir_index = step_header.split(',').index(ir_column_name)
                 step_file = open("step_file.csv", "a", encoding="ISO-8859-1")
-                step_header = bytes(step_header, "ISO-8859-1").decode("ISO-8859-1", "ignore")
+                encoded_string = step_header.encode("ascii", "ignore")
+                step_header = encoded_string.decode()
                 step_file.write(step_header)
 
                 record_header = input.readline().replace('\t', '')
@@ -816,7 +818,8 @@ class RawCyclerRun(MSONable):
                 record_header[22] = ir_column_name
                 record_header = ','.join(record_header)
                 record_file = open("record_file.csv", "a", encoding="ISO-8859-1")
-                record_header = bytes(record_header, "ISO-8859-1").decode("ISO-8859-1", "ignore")
+                encoded_string = record_header.encode("ascii", "ignore")
+                record_header = encoded_string.decode()
                 record_file.write(record_header)
 
                 # Read file line by line and write to the appropriate file

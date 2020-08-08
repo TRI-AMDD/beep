@@ -17,13 +17,13 @@ data_columns:
   Capacity Density(mAh/g): _capacity_density(mAh/g)
   Energy(mWh): _energy(mWh)
   CmpEng(mWh/g): _cmpeng(mWh/g)
-  Min-T(°C): _min-T(°C)
-  Max-T(°C): _max-T(°C)
-  Avg-T(°C): _avg-T(°C)
+  Min-T(C): _min-T(C)
+  Max-T(C): _max-T(C)
+  Avg-T(C): _avg-T(C)
   Power(mW): _power(mW)
   dQ/dV(mAh/V): _dQ/dV(mAh/V)
   dQm/dV(mAh/V.g): _dQm/dV(mAh/V.g)
-  Temperature(°C): temperature
+  Temperature(C): temperature
 data_types:
   Record ID: 'int32'
   test_time: 'float32'
@@ -37,4 +37,4 @@ data_types:
   Engy_Chg(mWh): 'float64'
   Engy_DChg(mWh): 'float64'
   DCIR(O): 'float32'
-  Temperature(°C): 'float32'
+  Temperature(C): 'float32'
