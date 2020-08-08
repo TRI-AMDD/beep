@@ -799,12 +799,12 @@ class RawCyclerRun(MSONable):
         with open(filename, encoding="ISO-8859-1") as input:
             with ScratchDir('.'):
                 cycle_header = input.readline().replace('\t', '')
-                cycle_file = open("cycle_file.csv", "a", encoding="utf-8")
+                cycle_file = open("cycle_file.csv", "a", encoding="ISO-8859-1")
                 cycle_file.write(cycle_header)
 
                 step_header = input.readline().replace('\t', '')
                 ir_index = step_header.split(',').index(ir_column_name)
-                step_file = open("step_file.csv", "a", encoding="utf-8")
+                step_file = open("step_file.csv", "a", encoding="ISO-8859-1")
                 step_file.write(step_header)
 
                 record_header = input.readline().replace('\t', '')
@@ -813,7 +813,7 @@ class RawCyclerRun(MSONable):
                 record_header[1] = step_header.split(',')[1]
                 record_header[22] = ir_column_name
                 record_header = ','.join(record_header)
-                record_file = open("record_file.csv", "a", encoding="utf-8")
+                record_file = open("record_file.csv", "a", encoding="ISO-8859-1")
                 record_file.write(record_header)
 
                 # Read file line by line and write to the appropriate file
@@ -839,7 +839,7 @@ class RawCyclerRun(MSONable):
                 cycle_file.close()
 
                 # Read in the data and convert the column values to MKS units
-                data = pd.read_csv("record_file.csv", sep=",", skiprows=0, encoding="utf-8")
+                data = pd.read_csv("record_file.csv", sep=",", skiprows=0, encoding="ISO-8859-1")
                 data = data.loc[:, ~data.columns.str.contains('Unnamed')]
                 data["Time(h:min:s.ms)"] = data["Time(h:min:s.ms)"].apply(neware_step_time)
                 data["Current(mA)"] = data["Current(mA)"] / 1000
