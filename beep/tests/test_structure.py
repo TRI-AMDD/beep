@@ -57,6 +57,7 @@ class RawCyclerRunTest(unittest.TestCase):
             TEST_FILE_DIR, "PredictionDiagnostics_000151_paused.052"
         )
         self.indigo_file = os.path.join(TEST_FILE_DIR, "indigo_test_sample.h5")
+        self.neware_file = os.path.join(TEST_FILE_DIR, "raw", "neware_test.csv")
         self.biologic_file = os.path.join(
             TEST_FILE_DIR, "raw", "biologic_test_file_short.mpt"
         )
@@ -731,6 +732,16 @@ class RawCyclerRunTest(unittest.TestCase):
             set(raw_cycler_run.metadata.keys()),
         )
 
+    def test_ingestion_neware(self):
+        raw_cycler_run = RawCyclerRun.from_file(self.neware_file)
+        self.assertEqual(raw_cycler_run.data.columns[22], "internal_resistance")
+        self.assertTrue(raw_cycler_run.data["test_time"].is_monotonic_increasing)
+        summary = raw_cycler_run.get_summary(nominal_capacity=4.7, full_fast_charge=0.8)
+        self.assertEqual(summary["discharge_capacity"].head(5).round(4).tolist(),
+                         [2.4393, 2.4343, 2.4255, 2.4221, 2.4210])
+        self.assertEqual(summary[summary["cycle_index"] == 55]["discharge_capacity"].round(4).tolist(),
+                         [2.3427])
+
     def test_get_project_name(self):
         project_name_parts = get_project_sequence(
             os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010")
@@ -987,6 +998,8 @@ class ProcessedCyclerRunTest(unittest.TestCase):
 
         self.arbin_file = os.path.join(TEST_FILE_DIR, "FastCharge_000000_CH29.csv")
         self.maccor_file = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000019_CH70.070")
+        self.neware_file = os.path.join(TEST_FILE_DIR, "raw", "neware_test.csv")
+
         self.maccor_file_w_diagnostics = os.path.join(
             TEST_FILE_DIR, "xTESLADIAG_000020_CH71.071"
         )
@@ -1054,6 +1067,11 @@ class ProcessedCyclerRunTest(unittest.TestCase):
         )
         if not np.all(matches):
             raise ValueError("cycles_interpolated are not uniform")
+
+    def test_from_raw_cycler_run_neware(self):
+        rcycler_run = RawCyclerRun.from_file(self.neware_file)
+        pcycler_run = ProcessedCyclerRun.from_raw_cycler_run(rcycler_run)
+        self.assertIsInstance(pcycler_run, ProcessedCyclerRun)
 
     def test_from_raw_cycler_run_parameters(self):
         rcycler_run = RawCyclerRun.from_file(self.maccor_file_w_parameters)

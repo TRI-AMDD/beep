@@ -15,12 +15,14 @@ xTesladiag_CONFIG = loadfn(
     os.path.join(CONVERSION_SCHEMA_DIR, "xTESLADIAG_conversion.yaml")
 )
 INDIGO_CONFIG = loadfn(os.path.join(CONVERSION_SCHEMA_DIR, "indigo_conversion.yaml"))
+NEWARE_CONFIG = loadfn(os.path.join(CONVERSION_SCHEMA_DIR, "neware_conversion.yaml"))
 BIOLOGIC_CONFIG = loadfn(
     os.path.join(CONVERSION_SCHEMA_DIR, "biologic_conversion.yaml")
 )
 MACCOR_WAVEFORM_CONFIG = loadfn(
     os.path.join(CONVERSION_SCHEMA_DIR, "maccor_waveform_conversion.yaml")
 )
+
 STRUCTURE_DTYPES = loadfn(os.path.join(CONVERSION_SCHEMA_DIR, "structured_dtypes.yaml"))
 
 ALL_CONFIGS = [ARBIN_CONFIG, MACCOR_CONFIG]

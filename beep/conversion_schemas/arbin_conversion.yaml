@@ -1,4 +1,4 @@
-file_pattern: ".*\\.csv"
+file_pattern: ".*CH.*\\.csv"
 metadata_fields:
   test_id: test_id
   device_id: device_id
