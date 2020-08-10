@@ -51,29 +51,18 @@ def set_ver(ctx):
         f.write("\n".join(lines))
 
 
-@task
-def merge_stable(ctx):
+def tag_version():
     """
     Tag and merge into stable branch.
-
-    :param ctx:
     """
-    ctx.run("git commit -a -m \"v%s release\"" % (NEW_VER, ), warn=True)
-    ctx.run("git tag -a v%s -m \"v%s release\"" % (NEW_VER, NEW_VER))
-    ctx.run("git push --tags")
-    ctx.run("git checkout stable")
-    ctx.run("git pull")
-    ctx.run("git merge master")
-    ctx.run("git push")
-    ctx.run("git checkout master")
+    subprocess.call("git commit -a -m \"v%s release\"" % (NEW_VER, ))
+    subprocess.call("git tag -a v%s -m \"v%s release\"" % (NEW_VER, NEW_VER))
+    subprocess.call("git push --tags")
 
 
-@task
-def release_github(ctx):
+def release_github():
     """
     Release to Github using Github API.
-
-    :param ctx:
     """
     with open("CHANGES.md") as f:
         contents = f.read()
@@ -92,16 +81,13 @@ def release_github(ctx):
     response = requests.post(
         "https://api.github.com/repos/ToyotaResearchInstitute/beep/releases",
         data=json.dumps(payload),
-        headers={"Authorization": "token " + os.environ["GITHUB_RELEASES_TOKEN"]})
+        headers={"Authorization": "token " + GITHUB_RELEASES_TOKEN})
     print(response.text)
 
 
-@task
-def update_changelog(ctx):
+def update_changelog():
     """
     Create a preliminary change log using the git logs.
-
-    :param ctx:
     """
     output = subprocess.check_output(["git", "log", "--pretty=format:%s",
                                       "v%s..HEAD" % CURRENT_VER])
@@ -114,23 +100,18 @@ def update_changelog(ctx):
     toks.insert(-1, head + "\n".join(lines))
     with open("CHANGES.md", "w") as f:
         f.write(toks[0] + l + "".join(toks[1:]))
-    ctx.run("open CHANGES.md")
+    subprocess.call([EDITOR, "CHANGES.md"])
 
 
-@task
-def release(ctx, notest=False, nover=False):
+def release():
     """
     Run full sequence for releasing beep.
-
-    :param ctx:
-    :param notest: Whether to skip tests.
-    :param notest: Whether to skip autoversion (e. g. if tagging version).
     """
-    ctx.run("rm -r dist build beep.egg-info", warn=True)
-    if not nover:
-        set_ver(ctx)
-    if not notest:
-        ctx.run("pytest beep")
-    publish(ctx)
-    merge_stable(ctx)
-    release_github(ctx)
+    set_ver()
+    update_changelog()
+    # tag_version()
+    # release_github()
+
+
+if __name__ == "__main__":
+    release()
