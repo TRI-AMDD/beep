@@ -230,37 +230,60 @@ class WorkflowOutputsTest(unittest.TestCase):
         self.outputs = WorkflowOutputs()
         self.temp_dir = Path("/tmp")
 
-        self.test_file_path = Path(TEST_FILE_DIR) / "2017-12-04_4_65C-69per_6C_CH29.csv"
-        self.file_size = 37878198
-        self.run_id = 123
-        self.action = "structuring"
-        self.status = "complete"
+        self.output_data = {
+            "filename": str(Path(TEST_FILE_DIR) / "2017-12-04_4_65C-69per_6C_CH29.csv"),
+            "run_id": 123,
+            "result": "valid",
+        }
 
-        self.output_file_path = self.temp_dir / "output.json"
+        self.test_file_size = 37878198
+
+        self.output_data_list = {
+            "file_list": [
+                str(Path(TEST_FILE_DIR) / "2017-08-14_8C-5per_3_47C_CH44.csv"),
+                str(Path(TEST_FILE_DIR) / "2017-12-04_4_65C-69per_6C_CH29.csv"),
+            ],
+            "run_list": [123, 456],
+            "result_list": ["valid", "invalid"],
+        }
+
+        self.action = "structuring"
+
+        self.output_file_path = self.temp_dir / "results.json"
 
     def tearDown(self):
         if self.output_file_path.exists():
             self.output_file_path.unlink()
 
     def test_get_local_file_size(self):
-        file_size = self.outputs.get_local_file_size(self.test_file_path)
+        file_size = self.outputs.get_local_file_size(str(self.output_data["filename"]))
 
         self.assertEqual(37878198, file_size)
 
-    def test_put_workflow_output(self):
-        self.outputs.put_workflow_outputs(
-            str(self.test_file_path), self.run_id, self.action, self.status
-        )
+    def test_put_workflow_outputs(self):
+        self.outputs.put_workflow_outputs(self.output_data, self.action)
+
+        self.assertTrue(self.output_file_path.exists())
+        output_json = json.loads(self.output_file_path.read_text())
+
+        self.assertEqual(self.output_data["filename"], output_json["filename"])
+        self.assertEqual(self.test_file_size, output_json["size"])
+        self.assertEqual(self.output_data["run_id"], output_json["run_id"])
+        self.assertEqual(self.action, output_json["action"])
+        self.assertEqual(self.output_data["result"], output_json["status"])
+
+    def test_put_workflow_outputs_list(self):
+        self.outputs.put_workflow_outputs_list(self.output_data_list, self.action)
 
         self.assertTrue(self.output_file_path.exists())
         output_list = json.loads(self.output_file_path.read_text())
-        output_json = output_list[0]
+        output_json = output_list[1]
 
-        self.assertEqual(str(self.test_file_path), output_json["filename"])
-        self.assertEqual(self.file_size, output_json["size"])
-        self.assertEqual(self.run_id, output_json["run_id"])
+        self.assertEqual(self.output_data_list["file_list"][1], output_json["filename"])
+        self.assertEqual(self.test_file_size, output_json["size"])
+        self.assertEqual(self.output_data_list["run_list"][1], output_json["run_id"])
         self.assertEqual(self.action, output_json["action"])
-        self.assertEqual(self.status, output_json["status"])
+        self.assertEqual(self.output_data_list["result_list"][1], output_json["status"])
 
 
 class CloudWatchLoggingTest(unittest.TestCase):

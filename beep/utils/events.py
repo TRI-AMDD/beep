@@ -378,23 +378,17 @@ class WorkflowOutputs:
             file_size = -1
         return file_size
 
-    def put_workflow_outputs(self, filename, run_id, action, status):
+    def put_workflow_outputs(self, output_data, action):
         """
         Function to create workflow outputs json file on local file system.
 
         Args:
-            filename (str): name of the file
-            run_id (int): run_id of file
+            output_data (dict): single processing result data
             action (str): workflow action
-            status (str): workflow status
         """
-        if not Path(filename).exists():
-            raise FileNotFoundError()
-
-        size = self.get_local_file_size(filename)
 
         tmp_dir = Path("/tmp")
-        output_file_path = tmp_dir / "output.json"
+        output_file_path = tmp_dir / "results.json"
 
         # Most operating systems should have a /tmp directory
         if not tmp_dir.exists:
@@ -403,16 +397,58 @@ class WorkflowOutputs:
             except OSError:
                 print("creation of tmp directory failed")
 
-        output_data = {
-            "filename": filename,
+        size = self.get_local_file_size(output_data["filename"])
+        if size < 0:
+            raise FileNotFoundError()
+
+        result = {
+            "filename": output_data["filename"],
             "size": size,
-            "run_id": run_id,
+            "run_id": output_data["run_id"],
             "action": action,
-            "status": status,
+            "status": output_data["result"],
         }
 
-        output_list = [output_data]
-        output_file_path.write_text(json.dumps(output_list))
+        output_file_path.write_text(json.dumps(result))
+
+    def put_workflow_outputs_list(self, output_data, action):
+        """
+        Function to create workflow outputs list json file on local file system.
+
+        Args:
+            output_data (list[dict]): processing result data
+            action (str): workflow action
+        """
+
+        tmp_dir = Path("/tmp")
+        output_file_path = tmp_dir / "results.json"
+        results = []
+
+        # Most operating systems should have a /tmp directory
+        if not tmp_dir.exists:
+            try:
+                tmp_dir.mkdir()
+            except OSError:
+                print("creation of tmp directory failed")
+
+        file_list = output_data["file_list"]
+
+        for index, filename in enumerate(file_list):
+            size = self.get_local_file_size(filename)
+            if size < 0:
+                raise FileNotFoundError()
+
+            result = {
+                "filename": filename,
+                "size": size,
+                "run_id": output_data["run_list"][index],
+                "action": action,
+                "status": output_data["result_list"][index],
+            }
+
+            results.append(result)
+
+        output_file_path.write_text(json.dumps(results))
 
 
 def setup_logger(
