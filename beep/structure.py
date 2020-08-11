@@ -2174,16 +2174,18 @@ def process_file_list_from_json(file_list_json, processed_dir="data-share/struct
 
     events.put_structuring_event(output_json, "complete")
 
+    # Workflow outputs
     file_list_size = len(output_json["file_list"])
     if file_list_size > 1 or file_list_size == 0:
         logger.warning("{file_list_size} files being validated, should be 1")
 
-    outputs.put_workflow_outputs(
-        output_json["file_list"][0],
-        output_json["run_list"][0],
-        "structuring",
-        output_json["result_list"][0],
-    )
+    output_data = {
+        "filename": output_json["file_list"][0],
+        "run_id": output_json["run_list"][0],
+        "result": output_json["result_list"][0],
+    }
+
+    outputs.put_workflow_outputs(output_data, "structuring")
 
     # Return jsonable file list
     return json.dumps(output_json)
