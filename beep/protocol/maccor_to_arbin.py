@@ -4,6 +4,7 @@
 import os
 import re
 from datetime import datetime
+from copy import deepcopy
 from beep.protocol import PROTOCOL_SCHEMA_DIR
 from collections import OrderedDict
 from monty.serialization import loadfn
@@ -30,7 +31,11 @@ class ProcedureToSchedule:
     def __init__(self, procedure_dict_steps):
         self.procedure_dict_steps = procedure_dict_steps
 
-    def create_sdu(self, sdu_input_name, sdu_output_name):
+    def create_sdu(self, sdu_input_name, sdu_output_name,
+                   current_range='Range1',
+                   global_v_range=[2.5, 4.5],
+                   global_temp_range=[-100, 100],
+                   global_current_range=[-30, 30]):
         """
         Highest level function in the class. Takes a schedule file and replaces
         all of the steps with steps from the procedure file. Then writes the
@@ -40,26 +45,51 @@ class ProcedureToSchedule:
             sdu_input_name (str): the full path of the schedule file to use as a
                 shell for the steps
             sdu_output_name (str): the full path of the schedule file to output
+            global_v_range (list): Global safety range for voltage in volts [min, max]
+            global_temp_range (list): Global safety range for temperature in Celcius [min, max]
+            global_current_range (list): Global safety range for current in Amps [min, max]
 
         """
         schedule = Schedule.from_file(sdu_input_name)
         # sdu_dict = Schedule.from_file(sdu_input_name)
 
-        keys = list(schedule["Schedule"].keys())
+        keys = list(schedule['Schedule'].keys())
+        safety_data = []
+        safety_key = []
         for key in keys:
-            if "Schedule" in key:
-                del schedule["Schedule"][key]
+            if bool(re.match('Step[0-9]+', key)):
+                del schedule['Schedule'][key]
+            elif bool(re.match('UserDefineSafety[0-9]+', key)):
+                safety_data.append(deepcopy(schedule['Schedule'][key]))
+                safety_key.append(key)
+                del schedule['Schedule'][key]
 
         step_name_list, step_flow_ctrl = self.create_metadata()
+        schedule.set("Schedule.m_uStepNum", str(len(step_name_list)))
+        # Set global safety limits
+        schedule.set("Schedule.m_VoltageSafetyScope",
+                     "{:.6f}".format(global_v_range[0]) + "^" + "{:.6f}".format(global_v_range[1]))
+        schedule.set("Schedule.m_AuxTempSafetyScope",
+                     "{:.6f}".format(global_temp_range[0]) + '^' + "{:.6f}".format(global_temp_range[1]))
+        schedule.set("Schedule.m_CurrentSafetyScope",
+                     "{:.6f}".format(global_current_range[0]) + '^' + "{:.6f}".format(global_current_range[1]))
+        if global_temp_range != [-100, 100]:
+            schedule.set("Schedule.m_AuxSafetyEnabled",
+                         '0^0 ; 1^1 ; 2^0 ; 3^0 ; 4^0 ; 5^0 ; 6^0 ; 7^0 ; 8^0 ; 9^0 ; 10^0 ; 11^0')
         for step_index, step in enumerate(self.procedure_dict_steps):
+
             step_arbin = self.compile_to_arbin(
                 self.procedure_dict_steps[step_index],
                 step_index,
                 step_name_list,
                 step_flow_ctrl,
+                current_range=current_range
             )
             key = "Step{}".format(step_index)
+
             schedule.set("Schedule.{}".format(key), step_arbin)
+        for indx, safety in enumerate(safety_data):
+            schedule.set("Schedule.{}".format(safety_key[indx]), safety)
         schedule.to_file(sdu_output_name)
 
     def create_metadata(self):
@@ -128,6 +158,7 @@ class ProcedureToSchedule:
         35	Loop 3 (Cycling 30)	    65536	   13	  0			T1	    T2		00010 00000 00000 00000	01101
         36	Loop 4 (Cycling 100)	    0	   16	  0				    T4			                    10000
         37	Loop 5 (always true)	524288	   1	  0			T4	    CI		10000 00000 00000 00000	00001
+        15	Loop                       15      1      0         PVs             00000 00000 00000 01111 00001
 
         Args:
             step_abs (OrderedDict): A ordered dict of the maccor step to be converted
@@ -137,8 +168,9 @@ class ProcedureToSchedule:
             step_flow_ctrl (dict): A dictionary of the loop steps as keys and the
                 corresponding steps to go to after the
             current_range (str): The current range to use for the step, values can
-            be 'Range1', 'Range2', 'Range3', and 'Parallel-High' depending on the
-            cycler being used
+            be 'Range1', 'Range2', 'Range3', 'Range4' and 'Parallel-High' depending on the
+            cycler being used. Range1 is the largest normal current range. The values for the
+            ranges are 30A, 5A, 500mA, 20mA
 
         Returns:
             OrderedDict: The arbin step resulting from the conversion of the
@@ -239,15 +271,15 @@ class ProcedureToSchedule:
         ]:
             if step_abs["StepType"] == "AdvCycle":
                 blank_step["m_szStepCtrlType"] = "Set Variable(s)"
-                blank_step["m_szCtrlValue1"] = "0"
+                blank_step["m_szCtrlValue"] = "15"
                 blank_step["m_szExtCtrlValue1"] = "1"
-                blank_step["m_szExtCtrlValue1"] = "0"
+                blank_step["m_szExtCtrlValue2"] = "0"
             elif "Loop" in step_abs["StepType"]:
                 loop_counter = int(re.search(r"\d+", step_abs["StepType"]).group())
                 blank_step["m_szStepCtrlType"] = "Set Variable(s)"
-                blank_step["m_szCtrlValue1"] = "0"
+                blank_step["m_szCtrlValue"] = "0"
                 blank_step["m_szExtCtrlValue1"] = str(2 ** loop_counter)
-                blank_step["m_szExtCtrlValue1"] = "0"
+                blank_step["m_szExtCtrlValue2"] = "0"
                 assert isinstance(step_abs["Ends"]["EndEntry"], OrderedDict)
                 loop_addendum = OrderedDict(
                     [
@@ -265,9 +297,9 @@ class ProcedureToSchedule:
             elif "Do" in step_abs["StepType"]:
                 loop_counter = int(re.search(r"\d+", step_abs["StepType"]).group())
                 blank_step["m_szStepCtrlType"] = "Set Variable(s)"
-                blank_step["m_szCtrlValue1"] = str(2 ** (loop_counter + 15))
+                blank_step["m_szCtrlValue"] = str(2 ** (loop_counter + 15))
                 blank_step["m_szExtCtrlValue1"] = "0"
-                blank_step["m_szExtCtrlValue1"] = "0"
+                blank_step["m_szExtCtrlValue2"] = "0"
 
             else:
                 blank_step["m_szStepCtrlType"] = "Rest"
@@ -326,7 +358,7 @@ class ProcedureToSchedule:
                 )
             elif isinstance(step_abs["Ends"]["EndEntry"], list):
                 blank_step["m_uLimitNum"] = blank_step["m_uLimitNum"] + len(
-                    step_abs["Ends"]["EndEntry"]
+                    step_abs["Reports"]["ReportEntry"]
                 )
                 for report_index, report in enumerate(
                     step_abs["Reports"]["ReportEntry"]

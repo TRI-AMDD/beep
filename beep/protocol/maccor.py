@@ -873,9 +873,9 @@ class Procedure(DashOrderedDict):
         Helper function for parameterizing the hybrid pulse power cycle
 
         Args:
-            start:
-            nominal_capacity:
-            diagnostic_params:
+            start (int): index of the step to start at
+            nominal_capacity (float): nominal capacity of the cell for calculating c-rate
+            diagnostic_params (dict): dictionary containing parameters for the diagnostic cycles
 
         Returns:
             dict:
@@ -1097,6 +1097,32 @@ class Procedure(DashOrderedDict):
         steps[start + 7]["Ends"]["EndEntry"][0]["Value"] = float(
             round(diagnostic_params["diagnostic_discharge_cutoff_voltage"], 3)
         )
+
+        return self
+
+    def set_skip_to_end_diagnostic(self, max_v, min_v, step_key='070'):
+        """
+        Helper function for setting the limits that cause the protocol to
+        skip to the ending diagnostic.
+
+        Args:
+            max_v (float): Upper voltage limit to skip to ending diagnostic
+            min_v (float): Lower voltage limit to skip to ending diagnostic
+            step_key (str): Step for the ending diagnostic in order to
+                recognize which EndEntry should be altered
+
+        Returns:
+            dict
+        """
+        steps = self['MaccorTestProcedure']['ProcSteps']['TestStep']
+
+        for step in steps:
+            if step['Ends'] is not None and isinstance(step['Ends']['EndEntry'], list):
+                for end in step['Ends']['EndEntry']:
+                    if end['Step'] == step_key and end['EndType'] == 'Voltage' and end['Oper'] == '>=':
+                        end['Value'] = max_v
+                    elif end['Step'] == step_key and end['EndType'] == 'Voltage' and end['Oper'] == '<=':
+                        end['Value'] = min_v
 
         return self
 
