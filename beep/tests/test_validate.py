@@ -139,11 +139,10 @@ class ValidationArbinTest(unittest.TestCase):
         self.assertEqual(loaded["validity"][1], "valid")
 
         # Workflow output
-        output_file_path = Path("/tmp/output.json")
+        output_file_path = Path("/tmp/results.json")
         self.assertTrue(output_file_path.exists())
 
-        output_list = json.loads(output_file_path.read_text())
-        output_json = output_list[0]
+        output_json = json.loads(output_file_path.read_text())
 
         self.assertEqual(paths[0], output_json["filename"])
         self.assertEqual(54620, output_json["size"])
@@ -372,11 +371,10 @@ class SimpleValidatorTest(unittest.TestCase):
         self.assertEqual(loaded["validity"][1], "valid")
 
         # Workflow output
-        output_file_path = Path("/tmp/output.json")
+        output_file_path = Path("/tmp/results.json")
         self.assertTrue(output_file_path.exists())
 
-        output_list = json.loads(output_file_path.read_text())
-        output_json = output_list[0]
+        output_json = json.loads(output_file_path.read_text())
 
         self.assertEqual(paths[0], output_json["filename"])
         self.assertEqual(54620, output_json["size"])

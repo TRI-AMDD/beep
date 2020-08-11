@@ -622,16 +622,18 @@ def validate_file_list_from_json(
 
     events.put_validation_event(output_json, "complete")
 
+    # Workflow outputs
     file_list_size = len(output_json["file_list"])
     if file_list_size > 1 or file_list_size == 0:
         logger.warning("{file_list_size} files being validated, should be 1")
 
-    outputs.put_workflow_outputs(
-        output_json["file_list"][0],
-        output_json["run_list"][0],
-        "validating",
-        output_json["validity"][0],
-    )
+    output_data = {
+        "filename": output_json["file_list"][0],
+        "run_id": output_json["run_list"][0],
+        "result": output_json["validity"][0],
+    }
+
+    outputs.put_workflow_outputs(output_data, "validating")
 
     return json.dumps(output_json)
 
