@@ -5,6 +5,7 @@ import unittest
 import os
 import json
 import numpy as np
+from pathlib import Path
 from beep.utils.secrets_manager import event_setup
 from beep.featurize import (
     process_file_list_from_json,
@@ -199,6 +200,19 @@ class TestFeaturizer(unittest.TestCase):
                 [143, 0.9753520623934744, "rpt_0.2C", "discharge_energy"],
             )
 
+            # Workflow output
+            output_file_path = Path("/tmp/results.json")
+            self.assertTrue(output_file_path.exists())
+
+            output_data = json.loads(output_file_path.read_text())
+            output_json = output_data[0]
+
+            self.assertEqual(reloaded["file_list"][0], output_json["filename"])
+            self.assertEqual(920, output_json["size"])
+            self.assertEqual(0, output_json["run_id"])
+            self.assertEqual("featurizing", output_json["action"])
+            self.assertEqual("success", output_json["status"])
+
     def test_insufficient_data_file(self):
         processed_cycler_run_path = os.path.join(
             TEST_FILE_DIR, PROCESSED_CYCLER_FILE_INSUF
@@ -222,6 +236,19 @@ class TestFeaturizer(unittest.TestCase):
                 output_obj["message_list"][0]["comment"],
                 "Insufficient or incorrect data for featurization",
             )
+
+            # Workflow output
+            output_file_path = Path("/tmp/results.json")
+            self.assertTrue(output_file_path.exists())
+
+            output_data = json.loads(output_file_path.read_text())
+            output_json = output_data[0]
+
+            self.assertEqual(output_obj["file_list"][0], output_json["filename"])
+            self.assertEqual(811, output_json["size"])
+            self.assertEqual(1, output_json["run_id"])
+            self.assertEqual("featurizing", output_json["action"])
+            self.assertEqual("incomplete", output_json["status"])
 
     def test_RPTdQdVFeatures_class(self):
         with ScratchDir("."):
