@@ -378,6 +378,29 @@ class WorkflowOutputs:
             file_size = -1
         return file_size
 
+    def split_workflow_outputs(self, path, result):
+        """
+        Function to split workflow outputs into individual files on local file system.
+
+        Args:
+            path (str): outputs base file path
+            result (dict): single processing result data
+        """
+
+        tmp_dir = Path(path)
+
+        filename_path = tmp_dir / "filename.txt"
+        size_path = tmp_dir / "size.txt"
+        run_id_path = tmp_dir / "run_id.txt"
+        action_path = tmp_dir / "action.txt"
+        status_path = tmp_dir / "status.txt"
+
+        filename_path.write_text(result["filename"])
+        size_path.write_text(str(result["size"]))
+        run_id_path.write_text(str(result["run_id"]))
+        action_path.write_text(result["action"])
+        status_path.write_text(result["status"])
+
     def put_workflow_outputs(self, output_data, action):
         """
         Function to create workflow outputs json file on local file system.
@@ -408,6 +431,9 @@ class WorkflowOutputs:
             "action": action,
             "status": output_data["result"],
         }
+
+        # Argo limitations require outputting each value separately
+        self.split_workflow_outputs(str(tmp_dir), result)
 
         output_file_path.write_text(json.dumps(result))
 
