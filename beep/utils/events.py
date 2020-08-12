@@ -358,10 +358,7 @@ class KinesisEvents:
 
 class WorkflowOutputs:
     """
-    Attributes:
-        service (str): default: Which service is instantiating the class so that
-        we know who is sending events. Defaults to 'Testing'.
-        mode (str): Mode for events, test will only put test message. Defaults to 'run'.
+    Supports writing outputs to local file system
     """
 
     def get_local_file_size(self, filename):
