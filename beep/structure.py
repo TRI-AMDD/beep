@@ -1216,9 +1216,7 @@ class RawCyclerRun(MSONable):
                         )
                         diagnostic_starts_at.append(diag_cycle_num)
                     diagnostic_available = {
-                        "parameter_set": run_parameter["diagnostic_parameter_set"].iloc[
-                            0
-                        ],
+                        "parameter_set": run_parameter["diagnostic_parameter_set"].iloc[0],
                         "cycle_type": hppc_rpt,
                         "length": hppc_rpt_len,
                         "diagnostic_starts_at": diagnostic_starts_at,
