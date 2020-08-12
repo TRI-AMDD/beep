@@ -243,7 +243,7 @@ class WorkflowOutputsTest(unittest.TestCase):
             "result": "valid",
         }
 
-        self.test_file_size = 37878198
+        self.test_file_size = os.path.getsize(str(self.output_data["filename"]))
 
         self.output_data_list = {
             "file_list": [
@@ -280,7 +280,7 @@ class WorkflowOutputsTest(unittest.TestCase):
     def test_get_local_file_size(self):
         file_size = self.outputs.get_local_file_size(str(self.output_data["filename"]))
 
-        self.assertEqual(37878198, file_size)
+        self.assertEqual(self.test_file_size, file_size)
 
     def test_put_workflow_outputs(self):
         self.outputs.put_workflow_outputs(self.output_data, self.action)

@@ -209,7 +209,7 @@ class TestFeaturizer(unittest.TestCase):
             output_json = output_data[0]
 
             self.assertEqual(reloaded["file_list"][0], output_json["filename"])
-            self.assertEqual(920, output_json["size"])
+            self.assertEqual(os.path.getsize(output_json["filename"]), output_json["size"])
             self.assertEqual(0, output_json["run_id"])
             self.assertEqual("featurizing", output_json["action"])
             self.assertEqual("success", output_json["status"])
@@ -246,7 +246,7 @@ class TestFeaturizer(unittest.TestCase):
             output_json = output_data[0]
 
             self.assertEqual(output_obj["file_list"][0], output_json["filename"])
-            self.assertEqual(811, output_json["size"])
+            self.assertEqual(os.path.getsize(output_json["filename"]), output_json["size"])
             self.assertEqual(1, output_json["run_id"])
             self.assertEqual("featurizing", output_json["action"])
             self.assertEqual("incomplete", output_json["status"])
