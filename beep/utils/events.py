@@ -7,6 +7,7 @@ import os
 import datetime
 import json
 import base64
+import tempfile
 
 import watchtower
 import numpy as np
@@ -378,7 +379,7 @@ class WorkflowOutputs:
             file_size = -1
         return file_size
 
-    def split_workflow_outputs(self, path, result):
+    def split_workflow_outputs(self, path_str, result):
         """
         Function to split workflow outputs into individual files on local file system.
 
@@ -387,13 +388,13 @@ class WorkflowOutputs:
             result (dict): single processing result data
         """
 
-        tmp_dir = Path(path)
+        path = Path(path_str)
 
-        filename_path = tmp_dir / "filename.txt"
-        size_path = tmp_dir / "size.txt"
-        run_id_path = tmp_dir / "run_id.txt"
-        action_path = tmp_dir / "action.txt"
-        status_path = tmp_dir / "status.txt"
+        filename_path = path / "filename.txt"
+        size_path = path / "size.txt"
+        run_id_path = path / "run_id.txt"
+        action_path = path / "action.txt"
+        status_path = path / "status.txt"
 
         filename_path.write_text(result["filename"])
         size_path.write_text(str(result["size"]))
@@ -410,15 +411,15 @@ class WorkflowOutputs:
             action (str): workflow action
         """
 
-        tmp_dir = Path("/tmp")
+        tmp_dir = Path(tempfile.gettempdir())
         output_file_path = tmp_dir / "results.json"
 
-        # Most operating systems should have a /tmp directory
+        # Most operating systems should have a temp directory
         if not tmp_dir.exists:
             try:
                 tmp_dir.mkdir()
             except OSError:
-                print("creation of tmp directory failed")
+                print("creation of temp directory failed")
 
         size = self.get_local_file_size(output_data["filename"])
         if size < 0:
@@ -446,16 +447,16 @@ class WorkflowOutputs:
             action (str): workflow action
         """
 
-        tmp_dir = Path("/tmp")
+        tmp_dir = Path(tempfile.gettempdir())
         output_file_path = tmp_dir / "results.json"
         results = []
 
-        # Most operating systems should have a /tmp directory
+        # Most operating systems should have a temp directory
         if not tmp_dir.exists:
             try:
                 tmp_dir.mkdir()
             except OSError:
-                print("creation of tmp directory failed")
+                print("creation of temp directory failed")
 
         file_list = output_data["file_list"]
 

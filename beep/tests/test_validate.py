@@ -4,6 +4,7 @@
 import json
 import os
 import unittest
+import tempfile
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -139,7 +140,7 @@ class ValidationArbinTest(unittest.TestCase):
         self.assertEqual(loaded["validity"][1], "valid")
 
         # Workflow output
-        output_file_path = Path("/tmp/results.json")
+        output_file_path = Path(tempfile.gettempdir()) / "results.json"
         self.assertTrue(output_file_path.exists())
 
         output_json = json.loads(output_file_path.read_text())
@@ -371,7 +372,7 @@ class SimpleValidatorTest(unittest.TestCase):
         self.assertEqual(loaded["validity"][1], "valid")
 
         # Workflow output
-        output_file_path = Path("/tmp/results.json")
+        output_file_path = Path(tempfile.gettempdir()) / "results.json"
         self.assertTrue(output_file_path.exists())
 
         output_json = json.loads(output_file_path.read_text())

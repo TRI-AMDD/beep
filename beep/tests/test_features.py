@@ -5,6 +5,7 @@ import unittest
 import os
 import json
 import numpy as np
+import tempfile
 from pathlib import Path
 from beep.utils.secrets_manager import event_setup
 from beep.featurize import (
@@ -201,7 +202,7 @@ class TestFeaturizer(unittest.TestCase):
             )
 
             # Workflow output
-            output_file_path = Path("/tmp/results.json")
+            output_file_path = Path(tempfile.gettempdir()) / "results.json"
             self.assertTrue(output_file_path.exists())
 
             output_data = json.loads(output_file_path.read_text())
@@ -238,7 +239,7 @@ class TestFeaturizer(unittest.TestCase):
             )
 
             # Workflow output
-            output_file_path = Path("/tmp/results.json")
+            output_file_path = Path(tempfile.gettempdir()) / "results.json"
             self.assertTrue(output_file_path.exists())
 
             output_data = json.loads(output_file_path.read_text())

@@ -9,6 +9,7 @@ import json
 import pytz
 import numpy as np
 import boto3
+import tempfile
 from pathlib import Path
 from dateutil.tz import tzutc
 from beep.utils import KinesisEvents, WorkflowOutputs, Logger
@@ -228,7 +229,7 @@ class KinesisEventsTest(unittest.TestCase):
 class WorkflowOutputsTest(unittest.TestCase):
     def setUp(self) -> None:
         self.outputs = WorkflowOutputs()
-        self.tmp_dir = Path("/tmp")
+        self.tmp_dir = Path(tempfile.gettempdir())
 
         self.filename_path = self.tmp_dir / "filename.txt"
         self.size_path = self.tmp_dir / "size.txt"

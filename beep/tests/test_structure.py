@@ -4,6 +4,7 @@
 import json
 import os
 import subprocess
+import tempfile
 import unittest
 import numpy as np
 import pandas as pd
@@ -1179,7 +1180,7 @@ class ProcessedCyclerRunTest(unittest.TestCase):
             )
 
             # Workflow output
-            output_file_path = Path("/tmp/results.json")
+            output_file_path = Path(tempfile.gettempdir()) / "results.json"
             self.assertTrue(output_file_path.exists())
 
             output_json = json.loads(output_file_path.read_text())
@@ -1222,7 +1223,7 @@ class ProcessedCyclerRunTest(unittest.TestCase):
             )
 
             # Workflow output
-            output_file_path = Path("/tmp/results.json")
+            output_file_path = Path(tempfile.gettempdir()) / "results.json"
             self.assertTrue(output_file_path.exists())
 
             output_json = json.loads(output_file_path.read_text())
