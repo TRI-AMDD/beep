@@ -164,13 +164,16 @@ class Dataset(MSONable, metaclass=ABCMeta):
         return cls(df, metadata, df.file.unique(), feature_sets)
 
     @classmethod
-    def from_processed_cycler_runs(cls, project_list, feature_class_list=FEATURIZER_CLASSES,
-                                  metadata_list = None, processed_dir="data-share/structure/")
+    def from_processed_cycler_runs(cls, project_list, processed_run_list=None,
+                                   feature_class_list=FEATURIZER_CLASSES,
+                                  metadata_list=None, processed_dir="data-share/structure/")
         """
         Method to assemble a dataset from a list of ProcessedCyclerRun objects belonging to one or more projects.
         Expected folder structure:
 
         :param project_list: list of projects to featurize and combine as a training dataset
+        :param processed_run_list: list of paths to specific ProcessedCyclerRun objects to be featurized. 
+        If provided, this will over-ride project based looping.
         :param feature_class_list: list of featurizers to invoke on the structured cycler files.
         :param feature_dir: location to store serialized feature jsons
         :param dataset_dir: location to store dataset
@@ -198,22 +201,25 @@ class Dataset(MSONable, metaclass=ABCMeta):
                         set(metadata_list[idx].keys()):
                     raise ValueError('Invalid hyperparameter dictionary')
 
-        for project in project_list:
-            processed_jsons = [f for f in os.listdir(processed_dir) if
-                             (os.path.isfile(os.path.join(processed_dir, f)) and
-                              f.startswith(project))]
-            for processed_json in processed_jsons:
-                path = os.path.join(processed_dir, processed_json)
-                processed_cycler_run = loadfn(path)
-                for idx, feature_class in enumerate(feature_class_list):
-                    obj = feature_class.from_run(
-                        path, '/data-share/features/', processed_cycler_run, metadata_list[idx])
-                    df = obj.X
-                    df['file'] = obj.protocol
-                    feature_df_list[idx] = pd.concat([feature_df_list[idx], df])
+        if processed_run_list is None:
+            processed_run_list = [f
+                                  for f in os.listdir(processed_dir)
+                                  for project in project_list
+                                  if (os.path.isfile(os.path.join(processed_dir, f)) and
+                                      f.startswith(project))]
 
-        for idx, feature_class in enumerate(feature_class_list):
-            feature_sets[feature_class] = list(feature_df_list[idx].columns)
+        for processed_json in processed_run_list:
+            path = os.path.join(processed_dir, processed_json)
+            processed_cycler_run = loadfn(path)
+            for idx, feature_class in enumerate(feature_class_list):
+                obj = feature_class.from_run(
+                    path, '/data-share/features/', processed_cycler_run, metadata_list[idx])
+                df = obj.X
+                df['file'] = obj.protocol
+                feature_df_list[idx] = pd.concat([feature_df_list[idx], df])
+
+            for idx, feature_class in enumerate(feature_class_list):
+                feature_sets[feature_class] = list(feature_df_list[idx].columns)
 
         df = reduce(lambda x, y: pd.merge(x, y, on = 'file', how= 'inner'), feature_df_list)
         return cls(df, metadata_list, df.file.unique(), feature_sets)
