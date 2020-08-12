@@ -87,7 +87,7 @@ class Dataset(MSONable, metaclass=ABCMeta):
 
     """
 
-    def __init__(self, data, metadata, filenames, feature_sets):
+    def __init__(self,name, data, metadata, filenames, feature_sets):
         """
 
         :param data: a combined dataframe
@@ -96,10 +96,35 @@ class Dataset(MSONable, metaclass=ABCMeta):
         :param feature_sets: list of feature sets that were merged. This could be used
         to group sets of features for techniques like grouped/hierarchical lasso etc
         """
+        self.name = name
         self.data = data
         self.metadata = metadata
         self.filenames = filenames
         self.feature_sets = feature_sets
+
+    def as_dict(self):
+        """
+        Method for dictionary serialization
+        Returns:
+            dict: corresponding to dictionary for serialization
+        """
+        obj = {
+            "@module": self.__class__.__module__,
+            "@class": self.__class__.__name__,
+            "name": self.name,
+            "data": self.data.to_dict("list"),
+            "metadata": self.metadata,
+            "filenames": self.filenames,
+            "feature_sets": self.feature_sets
+        }
+        return obj
+
+    @classmethod
+    def from_dict(cls, d):
+        """MSONable deserialization method"""
+        d["data"] = pd.DataFrame(d["data"])
+        return cls(**d)
+
 
     @classmethod
     def from_features(cls, project_list, feature_class_list=FEATURIZER_CLASSES,
@@ -145,10 +170,10 @@ class Dataset(MSONable, metaclass=ABCMeta):
         Method to assemble a dataset from a list of ProcessedCyclerRun objects belonging to one or more projects.
         Expected folder structure:
 
-        :param project_list:
-        :param feature_class_list:
-        :param feature_dir:
-        :param dataset_dir:
+        :param project_list: list of projects to featurize and combine as a training dataset
+        :param feature_class_list: list of featurizers to invoke on the structured cycler files.
+        :param feature_dir: location to store serialized feature jsons
+        :param dataset_dir: location to store dataset
         :return:
         """
         feature_df_list = [pd.DataFrame()]*len(feature_class_list)
@@ -193,16 +218,23 @@ class Dataset(MSONable, metaclass=ABCMeta):
         df = reduce(lambda x, y: pd.merge(x, y, on = 'file', how= 'inner'), feature_df_list)
         return cls(df, metadata_list, df.file.unique(), feature_sets)
 
-    def generate_train_test_split(self, predictors, outcomes,
+    def generate_train_test_split(self, predictors=None, outcomes=None,
                                   split_by_cell=True, test_size=0.4, seed=123):
         """
 
-        :param predictors:
-        :param outcomes:
-        :param split_on:
+        :param predictors: list of columns to use as predictors
+        :param outcomes: list of columns to use as outcomes
+        :param split_by_cell:
         :param seed:
         :return: X_train, X_test, y_train, y_test
         """
+
+        if predictors is None:
+            raise ValueError('Specify one or more predictor columns')
+
+        if outcomes is None:
+            raise ValueError('Specify one or more outcomes')
+
         np.random.seed(seed)
         if split_by_cell:
             test_cells = np.random.choice(self.filenames, int(len(self.filenames)*test_size))
