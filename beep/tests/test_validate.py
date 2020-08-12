@@ -146,7 +146,7 @@ class ValidationArbinTest(unittest.TestCase):
         output_json = json.loads(output_file_path.read_text())
 
         self.assertEqual(paths[0], output_json["filename"])
-        self.assertEqual(54620, output_json["size"])
+        self.assertEqual(os.path.getsize(output_json["filename"]), output_json["size"])
         self.assertEqual(0, output_json["run_id"])
         self.assertEqual("validating", output_json["action"])
         self.assertEqual("invalid", output_json["status"])
@@ -378,7 +378,7 @@ class SimpleValidatorTest(unittest.TestCase):
         output_json = json.loads(output_file_path.read_text())
 
         self.assertEqual(paths[0], output_json["filename"])
-        self.assertEqual(54620, output_json["size"])
+        self.assertEqual(os.path.getsize(output_json["filename"]), output_json["size"])
         self.assertEqual(0, output_json["run_id"])
         self.assertEqual("validating", output_json["action"])
         self.assertEqual("invalid", output_json["status"])
