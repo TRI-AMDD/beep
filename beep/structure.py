@@ -1077,7 +1077,7 @@ class RawCyclerRun(MSONable):
                 cycle_sum = 0.0
 
             # Add accumulator to current reset step
-            quantity_agg[begin_step_ind : end_step_ind + 1] += cycle_sum
+            quantity_agg[begin_step_ind:end_step_ind + 1] += cycle_sum
 
             # Update accumulator
             cycle_sum = quantity_agg[end_step_ind]
