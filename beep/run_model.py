@@ -37,7 +37,15 @@ import datetime
 from docopt import docopt
 from monty.json import MSONable
 from monty.serialization import loadfn, dumpfn
+from functools import reduce
 from beep.collate import scrub_underscore_suffix, add_suffix_to_filename
+from beep.features import
+from beep.featurize import (
+    RPTdQdVFeatures, HPPCResistanceVoltageFeatures,
+    HPPCRelaxationFeatures, DiagnosticProperties,
+    DiagnosticSummaryStats, DeltaQFastCharge,
+    TrajectoryFastCharge
+)
 from sklearn.linear_model import (
     Lasso,
     LassoCV,
@@ -52,6 +60,10 @@ from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
 from beep.utils import KinesisEvents
 from beep import MODEL_DIR, logger, __version__
+FEATURE_HYPERPARAMS = loadfn(
+    os.path.join(MODULE_DIR, "features/feature_hyperparameters.yaml")
+)
+
 
 s = {"service": "DataAnalyzer"}
 # Projects that have cycling profiles compatible with the FastCharge model should be included in the list below
@@ -63,6 +75,148 @@ DEFAULT_MODEL_PROJECTS = [
     "2018-04-12",
 ]
 assert all("_" not in name for name in DEFAULT_MODEL_PROJECTS)
+
+FEATURIZER_CLASSES = [RPTdQdVFeatures, HPPCResistanceVoltageFeatures,
+                      HPPCRelaxationFeatures, DiagnosticSummaryStats]
+
+class Dataset(MSONable, metaclass=ABCMeta):
+    """
+    Class corresponding to a training dataset assembled from BeepFeatures objects
+
+    Attributes:
+
+    """
+
+    def __init__(self, data, metadata, filenames, feature_sets):
+        """
+
+        :param data: a combined dataframe
+        :param metadata: list of metadata dicts for the different feature objects
+        :param filenames: list of filenames that have atleast one of the feature objects
+        :param feature_sets: list of feature sets that were merged. This could be used
+        to group sets of features for techniques like grouped/hierarchical lasso etc
+        """
+        self.data = data
+        self.metadata = metadata
+        self.filenames = filenames
+        self.feature_sets = feature_sets
+
+    @classmethod
+    def from_features(cls, project_list, feature_class_list=FEATURIZER_CLASSES,
+                      feature_dir="data-share/features/")
+        """
+        Method to assemble a dataset from a list of BeepFeatures objects generated for one or more projects. 
+        Expected folder structure:
+
+        :param project_list:
+        :param feature_class_list:
+        :param feature_dir:
+        :param dataset_dir:
+        :return:
+        """
+        feature_df_list = []
+        metadata = []
+        feature_sets = {}
+        for feature_class in feature_class_list:
+            feature_df = pd.DataFrame()
+            for project in project_list:
+                feature_path = os.path.join(feature_dir, feature_class.class_feature_name)
+                feature_jsons = [f for f in os.listdir(feature_path) if
+                                 (os.path.isfile(os.path.join(feature_path, f)) and
+                                  f.startswith(project))]
+                for feature_json in feature_jsons:
+                    obj = loadfn(feature_json)
+                    df = obj.X
+                    df['file'] = obj.metadata['protocol']
+                    feature_df = pd.concat([feature_df, df]).reset_index(drop=True)
+                    ## TODO: Need some logic for ensuring that features of a given class being concatenated
+                    ## all have the same metadata dict
+
+            feature_df_list.append(feature_df)
+            feature_sets[feature_class] = list(feature_df.columns)
+
+        df = reduce(lambda x, y: pd.merge(x, y, on = 'file', how= 'inner'), feature_df_list)
+        return cls(df, metadata, df.file.unique(), feature_sets)
+
+    @classmethod
+    def from_processed_cycler_runs(cls, project_list, feature_class_list=FEATURIZER_CLASSES,
+                                  metadata_list = None, processed_dir="data-share/structure/")
+        """
+        Method to assemble a dataset from a list of ProcessedCyclerRun objects belonging to one or more projects.
+        Expected folder structure:
+
+        :param project_list:
+        :param feature_class_list:
+        :param feature_dir:
+        :param dataset_dir:
+        :return:
+        """
+        feature_df_list = [pd.DataFrame()]*len(feature_class_list)
+        feature_sets = {}
+
+        #Check if metadata is present, and if yes, check if the dictionary keys are right
+        if metadata_list is None:
+            print('No metadata specified for feature generation. Assuming defaults and proceeding.')
+            for idx, feature_class in enumerate(feature_class_list):
+                if feature_class.class_feature_name in FEATURE_HYPERPARAMS.keys():
+                    metadata_list[idx] = FEATURE_HYPERPARAMS[feature_class.class_feature_name]
+                else:
+                    metadata_list[idx] = None
+        else:
+            for idx, feature_class  in enumerate(feature_class_list):
+                if metadata_list[idx] is None:
+                    if feature_class.class_feature_name in FEATURE_HYPERPARAMS.keys():
+                        metadata_list[idx] = FEATURE_HYPERPARAMS[feature_class.class_feature_name]
+                    else:
+                        metadata_list[idx] = None
+                elif set(FEATURE_HYPERPARAMS[feature_class.class_feature_name.keys()]) != \
+                        set(metadata_list[idx].keys()):
+                    raise ValueError('Invalid hyperparameter dictionary')
+
+        for project in project_list:
+            processed_jsons = [f for f in os.listdir(processed_dir) if
+                             (os.path.isfile(os.path.join(processed_dir, f)) and
+                              f.startswith(project))]
+            for processed_json in processed_jsons:
+                path = os.path.join(processed_dir, processed_json)
+                processed_cycler_run = loadfn(path)
+                for idx, feature_class in enumerate(feature_class_list):
+                    obj = feature_class.from_run(
+                        path, '/data-share/features/', processed_cycler_run, metadata_list[idx])
+                    df = obj.X
+                    df['file'] = obj.protocol
+                    feature_df_list[idx] = pd.concat([feature_df_list[idx], df])
+
+        for idx, feature_class in enumerate(feature_class_list):
+            feature_sets[feature_class] = list(feature_df_list[idx].columns)
+
+        df = reduce(lambda x, y: pd.merge(x, y, on = 'file', how= 'inner'), feature_df_list)
+        return cls(df, metadata_list, df.file.unique(), feature_sets)
+
+    def generate_train_test_split(self, predictors, outcomes,
+                                  split_by_cell=True, test_size=0.4, seed=123):
+        """
+
+        :param predictors:
+        :param outcomes:
+        :param split_on:
+        :param seed:
+        :return: X_train, X_test, y_train, y_test
+        """
+        np.random.seed(seed)
+        if split_by_cell:
+            test_cells = np.random.choice(self.filenames, int(len(self.filenames)*test_size))
+            train_cells = [x for x in self.filenames if x not in test_cells]
+
+            X_train = self.data.loc[self.data.file.isin(train_cells), predictors]
+            X_test = self.data.loc[self.data.file.isin(test_cells), predictors]
+
+            y_train = self.data.loc[self.data.file.isin(train_cells), outcomes]
+            y_test = self.data.loc[self.data.file.isin(test_cells), outcomes]
+
+            return X_train, X_test, y_train, y_test
+        else:
+            return train_test_split(self.data[predictors], self.data[outcomes], test_size, random_state=seed)
 
 
 class DegradationModel(MSONable):
