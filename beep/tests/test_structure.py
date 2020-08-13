@@ -4,10 +4,12 @@
 import json
 import os
 import subprocess
+import tempfile
 import unittest
 import numpy as np
 import pandas as pd
 
+from pathlib import Path
 from beep import MODULE_DIR
 from beep.structure import (
     RawCyclerRun,
@@ -1177,6 +1179,18 @@ class ProcessedCyclerRunTest(unittest.TestCase):
                 "Loaded processed cycler_run is not equal to that loaded from raw file",
             )
 
+            # Workflow output
+            output_file_path = Path(tempfile.gettempdir()) / "results.json"
+            self.assertTrue(output_file_path.exists())
+
+            output_json = json.loads(output_file_path.read_text())
+
+            self.assertEqual(reloaded["file_list"][0], output_json["filename"])
+            self.assertEqual(os.path.getsize(output_json["filename"]), output_json["size"])
+            self.assertEqual(0, output_json["run_id"])
+            self.assertEqual("structuring", output_json["action"])
+            self.assertEqual("success", output_json["status"])
+
         # Test same functionality with json file
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
@@ -1207,6 +1221,18 @@ class ProcessedCyclerRunTest(unittest.TestCase):
                 np.all(loaded_processed_cycler_run.summary == loaded_from_raw.summary),
                 "Loaded processed cycler_run is not equal to that loaded from raw file",
             )
+
+            # Workflow output
+            output_file_path = Path(tempfile.gettempdir()) / "results.json"
+            self.assertTrue(output_file_path.exists())
+
+            output_json = json.loads(output_file_path.read_text())
+
+            self.assertEqual(reloaded["file_list"][0], output_json["filename"])
+            self.assertEqual(os.path.getsize(output_json["filename"]), output_json["size"])
+            self.assertEqual(0, output_json["run_id"])
+            self.assertEqual("structuring", output_json["action"])
+            self.assertEqual("success", output_json["status"])
 
     def test_auto_load(self):
         loaded = ProcessedCyclerRun.auto_load(self.arbin_file)

@@ -4,8 +4,10 @@
 import json
 import os
 import unittest
+import tempfile
 import pandas as pd
 import numpy as np
+from pathlib import Path
 from monty.tempfile import ScratchDir
 from beep.validate import ValidatorBeep, validate_file_list_from_json, SimpleValidator
 from beep import S3_CACHE, VALIDATION_SCHEMA_DIR
@@ -136,6 +138,18 @@ class ValidationArbinTest(unittest.TestCase):
             loaded = json.loads(json_output)
         self.assertEqual(loaded["validity"][0], "invalid")
         self.assertEqual(loaded["validity"][1], "valid")
+
+        # Workflow output
+        output_file_path = Path(tempfile.gettempdir()) / "results.json"
+        self.assertTrue(output_file_path.exists())
+
+        output_json = json.loads(output_file_path.read_text())
+
+        self.assertEqual(paths[0], output_json["filename"])
+        self.assertEqual(os.path.getsize(output_json["filename"]), output_json["size"])
+        self.assertEqual(0, output_json["run_id"])
+        self.assertEqual("validating", output_json["action"])
+        self.assertEqual("invalid", output_json["status"])
 
 
 class ValidationMaccorTest(unittest.TestCase):
@@ -356,6 +370,18 @@ class SimpleValidatorTest(unittest.TestCase):
             loaded = json.loads(json_output)
         self.assertEqual(loaded["validity"][0], "invalid")
         self.assertEqual(loaded["validity"][1], "valid")
+
+        # Workflow output
+        output_file_path = Path(tempfile.gettempdir()) / "results.json"
+        self.assertTrue(output_file_path.exists())
+
+        output_json = json.loads(output_file_path.read_text())
+
+        self.assertEqual(paths[0], output_json["filename"])
+        self.assertEqual(os.path.getsize(output_json["filename"]), output_json["size"])
+        self.assertEqual(0, output_json["run_id"])
+        self.assertEqual("validating", output_json["action"])
+        self.assertEqual("invalid", output_json["status"])
 
     @unittest.skipUnless(False, "toggle this test")
     def test_heavy(self):
