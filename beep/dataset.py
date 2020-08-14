@@ -72,6 +72,7 @@ class BeepDataset(MSONable, metaclass=ABCMeta):
         self.X_test = None
         self.y_train = None
         self.y_test = None
+        self.failed_featurizations=None
 
     def as_dict(self):
         """
@@ -108,7 +109,7 @@ class BeepDataset(MSONable, metaclass=ABCMeta):
         are stored in a folder <feature_dir>/<MyFeatureSet.class_feature_name>
         :param dataset_dir:
 
-        :return: beep.BeepDataset
+        :return: beep.BeepDataset object
         """
         feature_df_list = []
         metadata = []
@@ -131,13 +132,17 @@ class BeepDataset(MSONable, metaclass=ABCMeta):
             feature_df_list.append(feature_df)
             feature_sets[feature_class] = list(feature_df.columns)
 
-        df = reduce(lambda x, y: pd.merge(x, y, on='file', how='inner'), feature_df_list)
+        df = reduce(lambda x, y: pd.merge(x, y, on='file', how='outer'), feature_df_list)
+        #Outer-join used so that even partially featurized cells can be loaded into dataset
+        #NaNs imputation can be done downstream by the user
+
         return cls(name, df, metadata, df.file.unique(), feature_sets, dataset_dir)
 
     @classmethod
-    def from_processed_cycler_runs(cls, project_list, processed_run_list=None,
+    def from_processed_cycler_runs(cls, name, project_list, processed_run_list=None,
                                    feature_class_list=FEATURIZER_CLASSES,
-                                   metadata_list=None, processed_dir="data-share/structure/")
+                                   hyperparameter_dict=None, processed_dir="data-share/structure/",
+                                   dataset_dir="data-share/datasets")
         """
         Method to assemble a dataset directly from a list of ProcessedCyclerRun objects
         Expected folder structure:
@@ -146,33 +151,45 @@ class BeepDataset(MSONable, metaclass=ABCMeta):
         :param processed_run_list: list of paths to specific ProcessedCyclerRun objects to be featurized. 
         If provided, this will over-ride project based looping.
         :param feature_class_list: list of featurizers to invoke on the structured cycler files.
-        :param feature_dir: location to store serialized feature jsons
+        :param hyperparameter_dict: dictionary with keys belonging to feature_class_list, and values being
+         a list of hyperparam dictionaries for that feature_class. List allows multiple instances of the same
+          BeepFeatures class to be created and assembled into the training dataset 
         :param dataset_dir: location to store dataset
-        :return:
+        
+        :return: beep.BeepDataset object        
         """
         feature_df_list = [pd.DataFrame()] * len(feature_class_list)
         feature_sets = {}
-        failed_featurizations = pd.DataFrame(columns=['filename', ])
+        cls.failed_featurizations = pd.DataFrame(columns=['filename', 'feature_class'])
 
-        # Check if metadata is present, and if yes, check if the dictionary keys are right
-        if metadata_list is None:
-            print('No metadata specified for feature generation. Assuming defaults and proceeding.')
-            for idx, feature_class in enumerate(feature_class_list):
+        #If no metadata is provided, assume defaults
+        if hyperparameter_dict is None:
+            print('No hyperparameters specified for feature generation. Assuming defaults and proceeding.')
+            for feature_class in feature_class_list:
                 if feature_class.class_feature_name in FEATURE_HYPERPARAMS.keys():
-                    metadata_list[idx] = FEATURE_HYPERPARAMS[feature_class.class_feature_name]
+                    hyperparameter_dict[feature_class.class_feature_name] =\
+                        [FEATURE_HYPERPARAMS[feature_class.class_feature_name]]
                 else:
-                    metadata_list[idx] = None
+                    hyperparameter_dict[feature_class.class_feature_name] = None
         else:
-            for idx, feature_class in enumerate(feature_class_list):
-                if metadata_list[idx] is None:
+            for feature_class in feature_class_list:
+                #if a specific feature class has a missing hyperparameter dict, initialize with defaults
+                if hyperparameter_dict[feature_class.class_feature_name] is None:
+                    print('Assuming default hyperparameter dictionary for',
+                          feature_class.class_feature_name)
                     if feature_class.class_feature_name in FEATURE_HYPERPARAMS.keys():
-                        metadata_list[idx] = FEATURE_HYPERPARAMS[feature_class.class_feature_name]
+                        hyperparameter_dict[feature_class.class_feature_name] = \
+                        [FEATURE_HYPERPARAMS[feature_class.class_feature_name]]
                     else:
-                        metadata_list[idx] = None
+                        hyperparameter_dict[feature_class.class_feature_name] = None
+                #if the provided hyperparameter dictionary has the wrong keys, raise error
                 elif set(FEATURE_HYPERPARAMS[feature_class.class_feature_name.keys()]) != \
-                        set(metadata_list[idx].keys()):
-                    raise ValueError('Invalid hyperparameter dictionary')
+                        set(hyperparameter_dict[feature_class.class_feature_name].keys()):
+                    raise ValueError('Invalid hyperparameter dictionary for' +
+                                     feature_class.class_feature_name)
 
+        #If a list of paths to ProcessedCyclerRun objects is not provided, then use all
+        #files belonging to a project in <processed_dir>.
         if processed_run_list is None:
             processed_run_list = [f
                                   for f in os.listdir(processed_dir)
@@ -184,17 +201,22 @@ class BeepDataset(MSONable, metaclass=ABCMeta):
             path = os.path.join(processed_dir, processed_json)
             processed_cycler_run = loadfn(path)
             for idx, feature_class in enumerate(feature_class_list):
-                obj = feature_class.from_run(
-                    path, '/data-share/features/', processed_cycler_run, metadata_list[idx])
-                df = obj.X
-                df['file'] = obj.protocol
-                feature_df_list[idx] = pd.concat([feature_df_list[idx], df])
+                for d in hyperparameter_dict[feature_class.class_feature_name]:
+                    obj = feature_class.from_run(path, '/data-share/features/',
+                                             processed_cycler_run, d)
+                    if obj:
+                        df = obj.X
+                        df['file'] = obj.protocol
+                        feature_df_list[idx] = pd.concat([feature_df_list[idx], df])
+                    else:
+                        cls.failed_featurizations.loc[len(cls.failed_featurizations)] = \
+                            [processed_json, feature_class.class_feature_name]
 
-            for idx, feature_class in enumerate(feature_class_list):
-                feature_sets[feature_class] = list(feature_df_list[idx].columns)
+        for idx, feature_class in enumerate(feature_class_list):
+            feature_sets[feature_class] = list(feature_df_list[idx].columns)
 
-        df = reduce(lambda x, y: pd.merge(x, y, on='file', how='inner'), feature_df_list)
-        return cls(df, metadata_list, df.file.unique(), feature_sets)
+        df = reduce(lambda x, y: pd.merge(x, y, on='file', how='outer'), feature_df_list)
+        return cls(name, df, hyperparameter_dict, df.file.unique(), feature_sets, dataset_dir)
 
     def generate_train_test_split(self, predictors=None, outcomes=None,
                                   split_by_cell=True, test_size=0.4, seed=123,
