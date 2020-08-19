@@ -1,0 +1,85 @@
+blank_seq:
+  # sequence number
+  Ns: "0"
+  # step to apply e.g. a rest
+  type: ""
+  Apply I/C: ""
+  ctrl1_val: ""
+  ctrl1_val_unit: ""
+  ctrl1_val_vs: ""
+  ctrl2_val: ""
+  ctrl2_val_unit: ""
+  ctrl2_val_vs: ""
+  ctrl3_val: ""
+  ctrl3_val_unit: ""
+  ctrl3_val_vs: ""
+  # control triggers unsure what these do
+  # unknown
+  N: ""
+  # whether seq is charge or discharge
+  charge/discharge: ""
+  # unknown
+  ctrl_seq: "0"
+  ctrl_repeat: "0"
+  ctrl_trigger: "Falling Edge"
+  ctrl_TO_t: "0"
+  ctrl_TO_t_unit: "d"
+  ctrl_Nd: "6"
+  ctrl_Na: "1"
+  ctrl_corr: "1"
+  # Break conditions when a limit is reached perform limit action
+  # number of limits active
+  lim_nb: "0"
+  # defaults for empty limit
+  lim1_type: "Time"
+  lim1_comp: "<"
+  lim1_Q: "Q limit"
+  lim1_value: "0.000"
+  lim1_value_unit: "s"
+  # these fields determine behavior on breaking a limit threshold
+  # proper implementation requires global knowledge about the shape
+  # of the list and will be handled elsewhere
+  #
+  # confusingly biologic limits are equivalent to maccor endtypes
+  # biologic limits have to do with safety ranges on I and E.
+  lim1_action: "Next sequence"
+  lim1_seq: "0"
+  lim2_type: "Time"
+  lim2_comp: "<"
+  lim2_Q: "Q limit"
+  lim2_value: "0.000"
+  lim2_value_unit: "s"
+  lim2_action: "Next sequence"
+  lim2_seq: "0"
+  lim3_type: "Time"
+  lim3_comp: "<"
+  lim3_Q: "Q limit"
+  lim3_value: "0.000"
+  lim3_value_unit: "s"
+  lim3_action: "Next sequence"
+  lim3_seq: "0"
+  # conditions on which to record data
+  # number of record controls active
+  rec_nb: "0"
+  # default empty record control
+  rec1_type: "Time"
+  rec1_value: "10.000"
+  rec1_value_unit: "s"
+  rec2_type: "Time"
+  rec2_value: "10.000"
+  rec2_value_unit: "s"
+  rec3_type: "Time"
+  rec3_value: "10.000"
+  rec3_value_unit: "s"
+  # global settings
+  E range min (V): "0.000"
+  E range max (V): "10.000"
+  # not sure how to determine how to set this
+  I Range: "1 mA"
+  # custom step limits on I range I think
+  I Range min (V): "Unset"
+  I Range max (V): "Unset"
+  I Range init: "Unset"
+  # not sure what this is or how to think about it
+  auto rest: "1"
+  Bandwidth: "4"
