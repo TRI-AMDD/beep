@@ -85,7 +85,7 @@ class TestFeaturizer(unittest.TestCase):
             # test nominal capacity is being generated
             self.assertEqual(
                 features_reloaded.X.loc[0, "nominal_capacity_by_median"],
-                1.0628421000000001,
+                1.0628421000000001
             )
 
     def test_feature_serialization_for_training(self):
