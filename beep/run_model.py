@@ -76,6 +76,7 @@ DEFAULT_MODEL_PROJECTS = [
 ]
 assert all("_" not in name for name in DEFAULT_MODEL_PROJECTS)
 
+
 class DegradationModel(MSONable):
     """
     Object corresponding to prediction model.

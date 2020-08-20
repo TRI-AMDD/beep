@@ -1,6 +1,6 @@
 # Copyright 2019 Toyota Research Institute. All rights reserved.
 """
-Module and scripts for assembling a ML model training dataset
+Module and scripts for assembling a ML model training dataset using BeepFeatures objects
 
 Options:
     -h --help        Show this screen
@@ -128,8 +128,8 @@ class BeepDataset(MSONable):
                         df = obj.X
                         df['file'] = obj.metadata['protocol'].split('.')[0]
                         feature_df = pd.concat([feature_df, df]).reset_index(drop=True)
-                        ## TODO: Need some logic for ensuring that features of a given class being concatenated
-                        ## row-wise have the same metadata dict
+                        # TODO: Need some logic for ensuring that features of a given class being concatenated
+                        # row-wise have the same metadata dict
 
                 feature_df_list.append(feature_df)
                 feature_sets[feature_class.class_feature_name] = list(feature_df.columns)
