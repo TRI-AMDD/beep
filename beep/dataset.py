@@ -43,21 +43,41 @@ class BeepDataset(MSONable):
     Class corresponding to a training dataset assembled from BeepFeatures objects
 
     Attributes:
+            name (str): name of the dataset
+            data (pd.DataFrame): dataframe composed of different features concatenated column-wise and
+            different runs concatenated row-wise
+            metadata (list): list of metadata dicts for the different feature objects
+            filenames (list): list of filenames that have atleast one of the feature objects
+            feature_sets (dict): dictionary with feature class names as keys, and feature labels as values
+            dataset_dir (str): path to store serialized dataset
+            train_cells_parameter_dict (dict): Dictionary with keys corresponding to unique identifiers for runs that
+                are part of the training dataset, and values being a dictionary of project parameters for the run
+            test_cells_parameter_dict (dict): Dictionary with keys corresponding to unique identifiers for runs that
+                are part of the test dataset, and values being a dictionary of project parameters for the run
+            X_train (pd.DataFrame): Training dataset predictors
+            X_test (pd.DataFrame): Test dataset predictors
+            y_train (pd.DataFrame): Training dataset outcomes
+            y_test (pd.DataFrame): Test dataset outcomes
+            missing (pd.DataFrame): Feature sets that could not be found, or not be initialized because
+             the ProcessedCyclerRun object did not meet the necessary validation criteria.
 
     """
 
     def __init__(self, name, data, metadata, filenames, feature_sets, dataset_dir, missing=None):
+
         """
-        :param name (str): name of the dataset
-        :param data (pd.DataFrame): dataframe composed of different features concatenated column-wise and
-        different runs concatenated row-wise
-        :param metadata (list): list of metadata dicts for the different feature objects
-        :param filenames (list): list of filenames that have atleast one of the feature objects
-        :param feature_sets (dict): list of feature sets that were merged. This could be used
-        to group sets of features for techniques like grouped/hierarchical lasso etc
-        :param dataset_dir (str): path to store serialized dataset
-        :param missing (pd.DataFrame): Feature sets that could not be found, or not be initialized because
-         the ProcessedCyclerRun object did not meet the necessary validation criteria.
+        Invokes BeepDataset object
+
+        Args:
+            name (str): name of the dataset
+            data (pd.DataFrame): dataframe composed of different features concatenated column-wise and
+            different runs concatenated row-wise
+            metadata (list): list of metadata dicts for the different feature objects
+            filenames (list): list of filenames that have atleast one of the feature objects
+            feature_sets (dict): dictionary with feature class names as keys, and feature labels as values
+            dataset_dir (str): path to store serialized dataset
+            missing (pd.DataFrame): Feature sets that could not be found, or not be initialized because
+             the ProcessedCyclerRun object did not meet the necessary validation criteria.
         """
         self.name = name
         self.data = data
@@ -102,13 +122,14 @@ class BeepDataset(MSONable):
         """
         Method to assemble a dataset from a list of BeepFeatures objects generated for one or more projects. 
 
-        :param project_list: list of projects from which training data will be assembled
-        :param feature_class_list: list of features to be concatenated row-wise
-        :param feature_dir: Root directory for features. Assumes that all objects belonging to a feature class
-        are stored in a folder <feature_dir>/<MyFeatureSet.class_feature_name>
-        :param dataset_dir:
+        project_list (list): list of projects from which training data will be assembled
+        feature_class_list (list): list of BeepFeatures classes
+        feature_dir (str): Root directory for features. Assumes that all objects belonging to a feature class
+            are stored in a folder <feature_dir>/<MyFeatureSet.class_feature_name>
+        dataset_dir (str): path to store serialized dataset
 
-        :return: beep.BeepDataset object
+        Returns:
+            beep.BeepDataset object
         """
         feature_df_list = []
         metadata = []
@@ -152,22 +173,22 @@ class BeepDataset(MSONable):
                                    dataset_dir="data-share/datasets"):
         """
         Method to assemble a dataset directly from a list of ProcessedCyclerRun objects
-        Expected folder structure:
 
-        :param project_list: list of projects to featurize and combine as a training dataset
-        :param processed_run_list: list of paths to specific ProcessedCyclerRun objects to be featurized. 
-        If provided, this will over-ride project based looping.
-        :param feature_class_list: list of featurizers to invoke on the structured cycler files.
-        :param hyperparameter_dict: dictionary with keys belonging to feature_class_list, and values being
-         a list of hyperparam dictionaries for that feature_class. List allows multiple instances of the same
-          BeepFeatures class to be created and assembled into the training dataset
-        :param processed_dir (str): root directory storing structure jsons (ProcessedCyclerRun objects)
-        :param feature_dir (str): root directory for features (BeepFeatures objects)
-        :param dataset_dir: location to store dataset
-        
-        :return: beep.BeepDataset object        
+        Arguments:
+            project_list (list): list of projects to featurize and combine as a training dataset
+            processed_run_list: (list) list of paths to specific ProcessedCyclerRun objects to be featurized.
+                If provided, this will over-ride project based looping.
+            feature_class_list: list of BeepFeatures objects to invoke on the structured cycler files.
+            hyperparameter_dict (dict): dictionary with keys belonging to feature_class_list, and values being
+                a list of hyperparam dictionaries for that feature_class. List allows multiple instances of the
+                same BeepFeatures class to be created and assembled into the training dataset
+            processed_dir (str): root directory storing structure jsons (ProcessedCyclerRun objects)
+            feature_dir (str): root directory for features (BeepFeatures objects)
+            dataset_dir (str): location to store dataset
+
+        Returns:
+            beep.BeepDataset object
         """
-        feature_df_list = [pd.DataFrame()] * len(feature_class_list)
         feature_sets = {}
         failed_featurizations = pd.DataFrame(columns=['filename', 'feature_class'])
 
@@ -207,10 +228,14 @@ class BeepDataset(MSONable):
                                   if (os.path.isfile(os.path.join(processed_dir, f)) and
                                       f.startswith(project) and
                                       f.endswith('structure.json'))]
+        # feature_df_list is a list of dataframes. Each dataframe in it
+        feature_df_list = [pd.DataFrame()]*sum([len(x) for x in hyperparameter_dict.values()])
 
         for processed_json in processed_run_list:
             processed_cycler_run = loadfn(processed_json)
-            for idx, feature_class in enumerate(feature_class_list):
+            idx = 0
+            for feature_class in feature_class_list:
+                # For a given feature_class, loop through multiple hyperparameter combinations, if provided.
                 for d in hyperparameter_dict[feature_class.class_feature_name]:
                     obj = feature_class.from_run(processed_json, feature_dir, processed_cycler_run, d)
                     if obj:
@@ -220,6 +245,7 @@ class BeepDataset(MSONable):
                     else:
                         failed_featurizations.loc[len(failed_featurizations)] = \
                             [os.path.split(processed_json)[1], feature_class.class_feature_name]
+                    idx += 1
 
         for idx, feature_class in enumerate(feature_class_list):
             feature_sets[feature_class.class_feature_name] = list(feature_df_list[idx].columns)
@@ -231,17 +257,20 @@ class BeepDataset(MSONable):
                                   split_by_cell=True, test_size=0.4, seed=123,
                                   parameters_path="data-share/raw/parameters"):
         """
-        Method that subsets self.data into training and test datasets.
-        Requires specification of columns to use as predictors and outcomes
+        Method that subsets self.data into training and test datasets. Requires specification of columns to use as
+        predictors and outcomes.
 
-        :param predictors (list): list of columns to use as predictors
-        :param outcomes (list): list of columns to use as outcomes
-        :param split_by_cell (bool): If True, train-test split on a per-run basis (self.filenames)
-        Useful when there are multiple data-points per cell to avoid data-leaks between train and test data.
-        :param seed (int): seed to ensure reproducible 'randomization'
-        :param parameters_path (str): Root directory storing project parameter files.
-        Assumes that parameter files begin with project name
-        :return: X_train, X_test, y_train, y_test
+        Args:
+            predictors (list): list of columns to use as predictors
+            outcomes (list): list of columns to use as outcomes
+            split_by_cell (bool): If True, train-test split on a per-run basis (self.filenames). Useful when
+                there are multiple data-points per cell to avoid data-leaks between train and test data.
+            seed (int): seed to ensure reproducible 'randomization'
+            parameters_path (str): Root directory storing project parameter files. Assumes that parameter files
+                begin with project name
+
+        Returns:
+            pd.DataFrame: X_train, X_test, y_train, y_test
         """
 
         if predictors is None:
@@ -273,10 +302,12 @@ class BeepDataset(MSONable):
     def serialize(self):
         """
         Method to serialize dataset
+
         Args:
             processed_dir (dict): target directory.
 
-        Returns: Path to serialized dataset
+        Returns:
+             Path to serialized dataset
 
         """
         if not os.path.exists(self.dataset_dir):
@@ -288,10 +319,13 @@ class BeepDataset(MSONable):
 def get_parameter_dict(file_list, parameters_path):
     """
     Helper function to generate a dictionary with
-    :param file_list: List of filenames from self.filenames
-    :param parameters_path: Root directory storing project parameter files.
-    :return: Dictionary with file_list as keys, and corresponding dictionary of protocol parameters
-    as values
+
+    Args:
+        file_list (list): List of filenames from self.filenames
+        parameters_path (str): Root directory storing project parameter files.
+
+    Returns:
+        Dictionary with file_list as keys, and corresponding dictionary of protocol parameters as values
     """
     d = {}  # dict allows combining two different project parameter sets into the same structure
     for file in file_list:
