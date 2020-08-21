@@ -52,10 +52,6 @@ from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
 from beep.utils import KinesisEvents
 from beep import MODEL_DIR, logger, __version__
-FEATURE_HYPERPARAMS = loadfn(
-    os.path.join(MODULE_DIR, "features/feature_hyperparameters.yaml")
-)
-
 
 s = {"service": "DataAnalyzer"}
 # Projects that have cycling profiles compatible with the FastCharge model should be included in the list below
