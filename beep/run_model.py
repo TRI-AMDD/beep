@@ -37,15 +37,7 @@ import datetime
 from docopt import docopt
 from monty.json import MSONable
 from monty.serialization import loadfn, dumpfn
-from functools import reduce
 from beep.collate import scrub_underscore_suffix, add_suffix_to_filename
-from beep.features import
-from beep.featurize import (
-    RPTdQdVFeatures, HPPCResistanceVoltageFeatures,
-    HPPCRelaxationFeatures, DiagnosticProperties,
-    DiagnosticSummaryStats, DeltaQFastCharge,
-    TrajectoryFastCharge
-)
 from sklearn.linear_model import (
     Lasso,
     LassoCV,
