@@ -495,12 +495,12 @@ class SimpleValidator(object):
             results[name] = {}
             project_schema = loadfn(PROJECT_SCHEMA)
             if re.match(ARBIN_CONFIG["file_pattern"], path):
-                if project_schema.get(name.split("_")[0]):
+                if project_schema.get(name.split("_")[0], {}).get("arbin"):
                     schema_filename = os.path.join(
-                        VALIDATION_SCHEMA_DIR, project_schema.get(name.split("_")[0])
+                        VALIDATION_SCHEMA_DIR, project_schema.get(name.split("_")[0], {}).get("arbin")
                     )
                     self.schema = loadfn(schema_filename)
-                    method = project_schema.get(name.split("_")[0])
+                    method = project_schema.get(name.split("_")[0], {}).get("arbin")
                 else:
                     schema_filename = os.path.join(
                         VALIDATION_SCHEMA_DIR, "schema-arbin-lfp.yaml"
@@ -511,12 +511,12 @@ class SimpleValidator(object):
                 df = pd.read_csv(path, index_col=0)
                 validated, reason = self.validate(df)
             elif re.match(MACCOR_CONFIG["file_pattern"], path):
-                if project_schema.get(name.split("_")[0]):
+                if project_schema.get(name.split("_")[0], {}).get("maccor"):
                     schema_filename = os.path.join(
-                        VALIDATION_SCHEMA_DIR, project_schema.get(name.split("_")[0])
+                        VALIDATION_SCHEMA_DIR, project_schema.get(name.split("_")[0], {}).get("maccor")
                     )
                     self.schema = loadfn(schema_filename)
-                    method = project_schema.get(name.split("_")[0])
+                    method = project_schema.get(name.split("_")[0], {}).get("maccor")
                 else:
                     schema_filename = os.path.join(
                         VALIDATION_SCHEMA_DIR, "schema-maccor-2170.yaml"
