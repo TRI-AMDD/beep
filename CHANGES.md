@@ -1,5 +1,14 @@
 
 
+v2020.8.21
+----------
+* Add data set class to facilitate model training - Thanks to Chirranjeevi Gopal
+* Create CODE_OF_CONDUCT.md - Thanks to Patrick Moore
+* allow multiple hyperparam sets for a feature class
+* Add Neware parsing - Thanks to Patrick Herring
+* Add linting and testing to GH actions - Thanks to Joseph Montoya
+* Add test for procedure with waveform
+
 v2020.7.29
 ----------
 * Opening up the validation limits for the xIris project
