@@ -20,7 +20,7 @@ class ConversionTest(unittest.TestCase):
         expected.update(converter.blank_seq)
         expected.update(diff_dict)
 
-        result = converter._MaccorToBiologicMb__proc_step_to_seq(test_step, "0",)
+        result = converter._proc_step_to_seq(test_step, "0",)
         for key, value in expected.items():
             self.assertEqual(
                 value,

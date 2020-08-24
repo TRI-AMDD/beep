@@ -22,7 +22,7 @@ class MaccorToBiologicMb:
         schema = OrderedDict(BIOLOGIC_SCHEMA)
         self.blank_seq = schema["blank_seq"]
 
-    def __proc_step_to_seq(self, test_step, seq_num):
+    def _proc_step_to_seq(self, test_step, seq_num):
         """
         converts steps that are not related to control flow to sequence dicts
         (control flow steps are DO, LOOP, ADV CYCLE)
