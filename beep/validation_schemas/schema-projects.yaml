@@ -1,6 +1,15 @@
-Iris: schema-arbin-nmc-phev.yaml
-xIris: schema-arbin-nmc-phev.yaml
-PreDiag: schema-maccor-2170.yaml
-PredictionDiagnostics: schema-maccor-2170.yaml
-FastCharge: schema-arbin-lfp.yaml
-ClosedLoopOED: schema-arbin-lfp.yaml
+Iris:
+  arbin: schema-arbin-nmc-phev.yaml
+xIris:
+  arbin: schema-arbin-nmc-phev.yaml
+PreDiag:
+  maccor: schema-maccor-2170.yaml
+PredictionDiagnostics:
+  maccor: schema-maccor-2170.yaml
+FastCharge:
+  arbin: schema-arbin-lfp.yaml
+ClosedLoopOED:
+  arbin: schema-arbin-lfp.yaml
+Talos:
+  arbin: schema-arbin-18650-2170.yaml
+  maccor: schema-maccor-2170.yaml
