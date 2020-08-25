@@ -29,8 +29,8 @@ from beep.utils.secrets_manager import event_setup
 from beep.utils.s3 import download_s3_object
 import matplotlib.pyplot as plt
 
-BIG_FILE_TESTS = os.environ.get("BIG_FILE_TESTS", None) == 'True'
-SKIP_MSG = "Tests requiring large files with diagnostic cycles are disabled, set BIG_FILE_TESTS to run full tests"
+BIG_FILE_TESTS = os.environ.get("BIG_FILE_TESTS", None) == "True"
+SKIP_MSG = "Tests requiring large files with diagnostic cycles are disabled, set BIG_FILE_TESTS=True to run full tests"
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
