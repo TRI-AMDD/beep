@@ -834,7 +834,7 @@ def get_relaxation_features(processed_cycler_run, hppc_list=[0, 1], max_n_soc=10
         step_count_list = list(set(step_count_list))
         step_count_list.sort()
 
-        all_time_array = np.nan * np.ones((max_n_soc, 3))
+        all_time_array = np.nan * np.ones((max_n_soc-1, 3))
 
         # If there are more than 10 SOC windows truncate it to the last 9 elements.  Otherwise take
         # all the available ones from the second element onwards (first relaxation curve comes out
