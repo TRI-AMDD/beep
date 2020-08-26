@@ -781,7 +781,7 @@ def get_relaxation_times(voltage_data, time_data, decay_percentage=[0.5, 0.8, 0.
     return np.array(time_array)
 
 
-def get_relaxation_features(processed_cycler_run, hppc_list=[0, 1]):
+def get_relaxation_features(processed_cycler_run, hppc_list=[0, 1], max_n_soc=10):
     """
 
     This function takes in the processed structure data and retrieves the fractional change in
@@ -789,14 +789,17 @@ def get_relaxation_features(processed_cycler_run, hppc_list=[0, 1]):
     the second HPPC cycles
 
     Args:
-        @processed_cycler_run(beep.structure.ProcessedCyclerRun): ProcessedCyclerRun object for the cell
-        you want the diagnostic feature for.
+        processed_cycler_run (beep.structure.ProcessedCyclerRun): ProcessedCyclerRun object for the cell
+            you want the diagnostic feature for.
+        hppc_list (list): ordered list of length 2, specifying which two hppc cycles are used for computing
+            fractional difference in relaxation time constants
+        max_n_soc (int): max number of SOC windows expected for the hppc cycles
 
     Returns:
         @fracTimeArray(np.array): list of fractional difference in time taken to reach percentage of
-        total relaxation between the first and second diagnostic cycle. It is organized such that
-        the percentages 50%, 80%, and 99% correspond to a given column, and the rows are different
-        SOCs of the HPPC starting at 0 with the highest SOC and going downwards.
+            total relaxation between the first and second diagnostic cycle. It is organized such that
+            the percentages 50%, 80%, and 99% correspond to a given column, and the rows are different
+            SOCs of the HPPC starting at 0 with the highest SOC and going downwards.
     """
 
     total_time_array = []
@@ -830,24 +833,28 @@ def get_relaxation_features(processed_cycler_run, hppc_list=[0, 1]):
         ].step_index_counter
         step_count_list = list(set(step_count_list))
         step_count_list.sort()
-        # The first one isn't a proper relaxation curve(comes out of CV) so we ignore it
-        step_count_list = step_count_list[1:]
 
-        # 9x2 array where the rows are the different SOC starting high to low and columns are percent degrad
-        # initialized to all nans so when they can't be calculated it has a nan in its place
-        all_time_array = np.nan * np.ones((9, 3))
+        all_time_array = np.nan * np.ones((max_n_soc, 3))
+
+        # If there is an error and there are more than 10 SOC windows truncate it
+        # to the last 9 elements.  Otherwise take all the available ones from the second
+        # element onwards (first relaxation curve comes out of a CV and must be ignored)
+        if len(step_count_list) > max_n_soc:
+            step_count_list = step_count_list[-(max_n_soc - 1):]
+        else:
+            step_count_list = step_count_list[1:]
 
         # gets all the times for a single SOC per loop
-        for soc_num in range(0, len(step_count_list)):
+        for idx, step_idx_counter in enumerate(step_count_list):
             relax_curve_df = hppc_diag_cycles[
                 (hppc_diag_cycles.cycle_index == hppc_cycle_list[hppc_chosen])
-                & (hppc_diag_cycles.step_index_counter == step_count_list[soc_num])
+                & (hppc_diag_cycles.step_index_counter == step_idx_counter)
             ]
 
             time_array = get_relaxation_times(
                 np.array(relax_curve_df.voltage), np.array(relax_curve_df.test_time)
             )
-            all_time_array[soc_num][:] = time_array
+            all_time_array[idx][:] = time_array
 
         total_time_array.append(all_time_array)
 
