@@ -5,7 +5,11 @@ import unittest
 import os
 from beep.utils.s3 import download_s3_object
 
+BIG_FILE_TESTS = os.environ.get("BIG_FILE_TESTS", None) == "True"
+SKIP_MSG = "Tests requiring S3 access are disabled, set BIG_FILE_TESTS=True to run full tests"
 
+
+@unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
 class S3Test(unittest.TestCase):
 
     bucket = "beep-sync-test-stage"
