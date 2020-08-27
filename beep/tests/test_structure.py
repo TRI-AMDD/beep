@@ -26,10 +26,11 @@ from monty.serialization import loadfn, dumpfn
 from monty.tempfile import ScratchDir
 from beep.utils import os_format
 from beep.utils.secrets_manager import event_setup
+from beep.utils.s3 import download_s3_object
 import matplotlib.pyplot as plt
 
-BIG_FILE_TESTS = os.environ.get("BEEP_BIG_TESTS", False)
-SKIP_MSG = "Tests requiring large files with diagnostic cycles are disabled, set BIG_FILE_TESTS to run full tests"
+BIG_FILE_TESTS = os.environ.get("BIG_FILE_TESTS", None) == "True"
+SKIP_MSG = "Tests requiring large files with diagnostic cycles are disabled, set BIG_FILE_TESTS=True to run full tests"
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
@@ -46,6 +47,10 @@ class RawCyclerRunTest(unittest.TestCase):
         self.maccor_file_w_diagnostics = os.path.join(
             TEST_FILE_DIR, "xTESLADIAG_000020_CH71.071"
         )
+        self.maccor_file_w_parameters_s3 = {
+            "bucket": "beep-sync-test-stage",
+            "key": "big_file_tests/PreDiag_000287_000128.092"
+        }
         self.maccor_file_w_parameters = os.path.join(
             TEST_FILE_DIR, "PreDiag_000287_000128.092"
         )
@@ -389,6 +394,10 @@ class RawCyclerRunTest(unittest.TestCase):
     @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_get_diagnostic(self):
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+
+        download_s3_object(bucket=self.maccor_file_w_parameters_s3["bucket"],
+                           key=self.maccor_file_w_parameters_s3["key"],
+                           destination_path=self.maccor_file_w_parameters)
 
         cycler_run = RawCyclerRun.from_file(self.maccor_file_w_parameters)
 
