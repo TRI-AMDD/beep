@@ -692,6 +692,7 @@ class ProcedureToScheduleTest(unittest.TestCase):
             # shutil.copyfile(os.path.join(TEST_FILE_DIR, converted_sdu_name),
             #                 os.path.join(scratch_dir, converted_sdu_name))
 
+    @unittest.skip
     def test_from_csv(self):
         csv_file_list = os.path.join(TEST_FILE_DIR,
                                      "data-share",
