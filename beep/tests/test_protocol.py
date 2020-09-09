@@ -782,3 +782,50 @@ class BiologicSettingsTest(unittest.TestCase):
             for line in udiff:
                 print(line)
             self.assertTrue(udiff)
+
+    def test_parameterization(self):
+        filename = "formationV1.mps"
+        bcs = Settings.from_file(os.path.join(BIOLOGIC_TEMPLATE_DIR, filename))
+        protocol_params_df = pd.read_csv(os.path.join(TEST_FILE_DIR,
+                                                      "data-share",
+                                                      "raw",
+                                                      "parameters",
+                                                      "Form_parameters - GP.csv"))
+        for index, protocol_params in protocol_params_df.iterrows():
+            template = protocol_params["template"]
+            if template == "formationV1.mps":
+                bcs = Settings.from_file(os.path.join(BIOLOGIC_TEMPLATE_DIR, filename))
+                print(bcs.keys())
+
+                self.assertEqual(bcs.get("Metadata.Cycle Definition"), "Charge/Discharge alternance")
+                bcs = bcs.formation_protocol_bcs(protocol_params)
+                self.assertEqual(bcs.get("Technique.1.Step.2.ctrl1_val"), float(round(0.2 * 0.1, 3)))
+                self.assertEqual(bcs.get("Technique.1.Step.3.lim1_value"), float(round(60, 3)))
+                self.assertEqual(bcs.get("Technique.1.Step.4.lim1_value"), float(round(30, 3)))
+                self.assertEqual(bcs.get("Technique.1.Step.5.ctrl1_val"), float(round(0.2 * 0.2, 3)))
+                self.assertEqual(bcs.get("Technique.1.Step.6.lim1_value"), float(round(30, 3)))
+                self.assertEqual(bcs.get("Technique.1.Step.7.lim1_value"), float(round(30, 3)))
+                self.assertEqual(bcs.get("Technique.1.Step.8.ctrl1_val"), float(round(0.2 * 0.2, 3)))
+                self.assertEqual(bcs.get("Technique.1.Step.8.lim1_value"), float(round(3.0, 3)))
+                self.assertEqual(bcs.get("Technique.1.Step.9.ctrl1_val"), float(round(0.2 * 0.5, 3)))
+                self.assertEqual(bcs.get("Technique.1.Step.10.lim1_value"), float(round(3.9, 3)))
+                self.assertEqual(bcs.get("Technique.1.Step.11.ctrl_repeat"), int(1))
+                self.assertEqual(bcs.get("Technique.1.Step.12.ctrl1_val"), float(round(0.2 * 1, 3)))
+                self.assertEqual(bcs.get("Technique.1.Step.13.lim1_value"), float(round(3.5, 3)))
+                self.assertEqual(bcs.get("Technique.1.Step.14.ctrl1_val"), float(round(3.5, 3)))
+
+        #     filename = os.path.join(TEST_FILE_DIR, "settings", filename)
+        # value = "{:.3f}".format(5)
+        # bcs.set("Technique.1.Step.3.ctrl1_val", value)
+        # self.assertEqual(bcs.get("Technique.1.Step.3.ctrl1_val"), "5.000")
+        # test_name = "test.mps"
+        # with ScratchDir("."):
+        #     bcs.to_file(test_name)
+        #     original = open(
+        #         os.path.join(BIOLOGIC_TEMPLATE_DIR, filename), encoding="ISO-8859-1"
+        #     ).readlines()
+        #     parsed = open(test_name, encoding="ISO-8859-1").readlines()
+        #     udiff = list(difflib.unified_diff(original, parsed))
+        #     for line in udiff:
+        #         print(line)
+        #     self.assertTrue(udiff)
