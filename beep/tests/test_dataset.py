@@ -56,7 +56,7 @@ class TestDataset(unittest.TestCase):
 
     def test_train_test_split(self):
         dataset = BeepDataset.from_features('test_dataset', ['PreDiag'], FEATURIZER_CLASSES,
-                                            feature_dir=os.path.join(TEST_FILE_DIR, 'data-share/features'))
+                                            feature_dir=os.path.join(TEST_FILE_DIR, 'data-share','features'))
         predictors = dataset.feature_sets['RPTdQdVFeatures'][0:3] + \
                      dataset.feature_sets['DiagnosticSummaryStats'][-3:]
 
@@ -66,7 +66,7 @@ class TestDataset(unittest.TestCase):
                                                                                  -1],
                                                                              test_size=0.5, seed=123,
                                                                              parameters_path=os.path.join(TEST_FILE_DIR,
-                                                                                                          'data-share/raw/parameters'))
+                                                                                                          'data-share','raw', 'parameters'))
         self.assertEqual(dataset.data.shape, (2, 55))
         self.assertEqual(dataset.X_test.shape, (1, 6))
         self.assertEqual(dataset.X_train.shape, (1, 6))
