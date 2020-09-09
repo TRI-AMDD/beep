@@ -353,7 +353,6 @@ class WorkflowOutputsTest(unittest.TestCase):
         output_list = json.loads(self.output_file_path.read_text())
         output_json = output_list[1]
 
-
         self.assertEqual(all_output_files[1], output_json["filename"])
         self.assertEqual(parameter_file_size, output_json["size"])
         self.assertEqual(result, output_json["result"])

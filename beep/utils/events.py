@@ -418,7 +418,7 @@ class WorkflowOutputs:
                 tmp_dir.mkdir()
             except OSError:
                 print("creation of temp directory failed")
-        
+
         file_list = output_data["file_list"]
 
         for index, filename in enumerate(file_list):
