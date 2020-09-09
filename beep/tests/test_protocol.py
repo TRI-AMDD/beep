@@ -795,7 +795,6 @@ class BiologicSettingsTest(unittest.TestCase):
             template = protocol_params["template"]
             if template == "formationV1.mps":
                 bcs = Settings.from_file(os.path.join(BIOLOGIC_TEMPLATE_DIR, filename))
-                print(bcs.keys())
 
                 self.assertEqual(bcs.get("Metadata.Cycle Definition"), "Charge/Discharge alternance")
                 bcs = bcs.formation_protocol_bcs(protocol_params)
@@ -814,18 +813,14 @@ class BiologicSettingsTest(unittest.TestCase):
                 self.assertEqual(bcs.get("Technique.1.Step.13.lim1_value"), float(round(3.5, 3)))
                 self.assertEqual(bcs.get("Technique.1.Step.14.ctrl1_val"), float(round(3.5, 3)))
 
-        #     filename = os.path.join(TEST_FILE_DIR, "settings", filename)
-        # value = "{:.3f}".format(5)
-        # bcs.set("Technique.1.Step.3.ctrl1_val", value)
-        # self.assertEqual(bcs.get("Technique.1.Step.3.ctrl1_val"), "5.000")
-        # test_name = "test.mps"
-        # with ScratchDir("."):
-        #     bcs.to_file(test_name)
-        #     original = open(
-        #         os.path.join(BIOLOGIC_TEMPLATE_DIR, filename), encoding="ISO-8859-1"
-        #     ).readlines()
-        #     parsed = open(test_name, encoding="ISO-8859-1").readlines()
-        #     udiff = list(difflib.unified_diff(original, parsed))
-        #     for line in udiff:
-        #         print(line)
-        #     self.assertTrue(udiff)
+        test_name = "test.mps"
+        with ScratchDir("."):
+            bcs.to_file(test_name)
+            original = open(
+                os.path.join(BIOLOGIC_TEMPLATE_DIR, filename), encoding="ISO-8859-1"
+            ).readlines()
+            parsed = open(test_name, encoding="ISO-8859-1").readlines()
+            udiff = list(difflib.unified_diff(original, parsed))
+            for line in udiff:
+                print(line)
+            self.assertTrue(udiff)

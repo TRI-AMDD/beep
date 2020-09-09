@@ -145,10 +145,9 @@ class Settings(DashOrderedDict):
                 technique_keys = list(data["Technique"][tq_number]["Step"]["1"].keys())
                 for tq_key in technique_keys:
                     line = tq_key.ljust(column_width)
-                    for step in data["Technique"]["1"]["Step"].keys():
-                        line = line + data["Technique"]["1"]["Step"][step][
-                            tq_key
-                        ].ljust(column_width)
+                    for step in data["Technique"][tq_number]["Step"].keys():
+                        var = str(data["Technique"][tq_number]["Step"][step][tq_key])
+                        line = line + var.ljust(column_width)
                     blocks.append(line)
                 continue
             elif data["Metadata"][meta_key] is None:
@@ -167,7 +166,7 @@ class Settings(DashOrderedDict):
 
     def formation_protocol_bcs(self, params):
         """
-        Write DashOrderedDict to a settings file in the Biologic format with a *.mps extension.
+       Modify a settings file in the Biologic format with a *.mps extension.
 
         Args:
             params (pandas.DataFrame): Single row of the csv containing the parameters for the project
