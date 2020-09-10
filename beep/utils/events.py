@@ -412,13 +412,6 @@ class WorkflowOutputs:
         output_file_path = tmp_dir / "results.json"
         results = []
 
-        # Most operating systems should have a temp directory
-        if not tmp_dir.exists:
-            try:
-                tmp_dir.mkdir()
-            except OSError:
-                print("creation of temp directory failed")
-
         file_list = output_data["file_list"]
 
         for index, filename in enumerate(file_list):

@@ -359,6 +359,22 @@ class WorkflowOutputsTest(unittest.TestCase):
         self.assertEqual(result, output_json["result"])
         self.assertEqual(status, output_json["status"])
 
+    def test_put_generate_output_list_no_file(self):
+        result = "success"
+        status = "complete"
+
+        all_output_files = [
+            str(Path(TEST_FILE_DIR) / "data-share/protocols/procedures/not_a_real_file"),
+        ]
+
+        output_data = {
+            "file_list": all_output_files,
+            "result": result,
+            "message": "",
+        }
+
+        self.assertRaises(FileNotFoundError, self.outputs.put_generate_outputs_list, output_data, status)
+
     def test_put_workflow_outputs_list(self):
         self.outputs.put_workflow_outputs_list(self.output_data_list, self.action)
 
