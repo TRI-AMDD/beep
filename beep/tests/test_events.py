@@ -10,6 +10,7 @@ import pytz
 import numpy as np
 import boto3
 import tempfile
+from platform import system
 from pathlib import Path
 from dateutil.tz import tzutc
 from beep.utils import KinesisEvents, WorkflowOutputs, Logger
@@ -333,7 +334,7 @@ class WorkflowOutputsTest(unittest.TestCase):
     def test_put_generate_outputs_list(self):
         result = "success"
         status = "complete"
-        parameter_file_size = 138
+        parameter_file_size = 142 if system() == "Windows" else 138
 
         all_output_files = [
             str(Path(TEST_FILE_DIR) / "data-share/protocols/procedures/name_000000.000"),
