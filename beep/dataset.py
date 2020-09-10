@@ -144,6 +144,7 @@ class BeepDataset(MSONable):
                     feature_jsons = [os.path.join(feature_path, f) for f in os.listdir(feature_path) if
                                      (os.path.isfile(os.path.join(feature_path, f)) and
                                       f.startswith(project))]
+                    feature_jsons.sort()
                     for feature_json in feature_jsons:
                         obj = loadfn(feature_json)
                         df = obj.X
