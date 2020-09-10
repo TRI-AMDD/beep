@@ -781,7 +781,7 @@ class BiologicSettingsTest(unittest.TestCase):
             udiff = list(difflib.unified_diff(original, parsed))
             for line in udiff:
                 print(line)
-            self.assertTrue(udiff)
+            self.assertTrue(udiff)  # Assert that file is not the same as the template
 
     def test_parameterization(self):
         filename = "formationV1.mps"
@@ -825,6 +825,7 @@ class BiologicSettingsTest(unittest.TestCase):
                 test_name = "{}.mps".format(filename_prefix)
                 test_name = os.path.join(scratch_dir, "settings", test_name)
                 bcs.to_file(test_name)
+            self.assertEqual(len(os.listdir(os.path.join(scratch_dir, "settings"))), 16)
             original = open(
                 os.path.join(BIOLOGIC_TEMPLATE_DIR, filename), encoding="ISO-8859-1"
             ).readlines()
@@ -832,4 +833,4 @@ class BiologicSettingsTest(unittest.TestCase):
             udiff = list(difflib.unified_diff(original, parsed))
             for line in udiff:
                 print(line)
-            self.assertTrue(udiff)
+            self.assertTrue(udiff)  # Assert that last file is not the same as the template
