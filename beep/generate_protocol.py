@@ -48,9 +48,9 @@ from docopt import docopt
 from monty.serialization import loadfn
 
 from beep import logger, __version__
-from beep.protocol import PROCEDURE_TEMPLATE_DIR
+from beep.protocol import PROCEDURE_TEMPLATE_DIR, BIOLOGIC_TEMPLATE_DIR
 from beep.protocol.maccor import Procedure
-
+from beep.protocol.biologic import Settings
 
 from beep.utils import KinesisEvents
 
@@ -132,12 +132,21 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
         output_directory = PROCEDURE_TEMPLATE_DIR
     for index, protocol_params in protocol_params_df.iterrows():
         template = protocol_params["template"]
+        # Filename for the output
+        filename_prefix = "_".join(
+            [
+                protocol_params["project_name"],
+                "{:06d}".format(protocol_params["seq_num"]),
+            ]
+        )
 
         # Switch for template invocation
         if template == "EXP.000":
-            procedure = Procedure.from_exp(
+            protocol = Procedure.from_exp(
                 **protocol_params[["cutoff_voltage", "charge_rate", "discharge_rate"]]
             )
+            filename = "{}.000".format(filename_prefix)
+            filename = os.path.join(output_directory, "procedures", filename)
         elif template == "diagnosticV2.000":
             diag_params_df = pd.read_csv(
                 os.path.join(PROCEDURE_TEMPLATE_DIR, "PreDiag_parameters - DP.csv")
@@ -148,11 +157,12 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
             ].squeeze()
 
             # TODO: should these be separated?
-            procedure = Procedure.from_regcyclev2(protocol_params)
-            procedure.add_procedure_diagcyclev2(
+            protocol = Procedure.from_regcyclev2(protocol_params)
+            protocol.add_procedure_diagcyclev2(
                 protocol_params["capacity_nominal"], diagnostic_params
             )
-
+            filename = "{}.000".format(filename_prefix)
+            filename = os.path.join(output_directory, "procedures", filename)
         # TODO: how are these different?
         elif template in ["diagnosticV3.000", "diagnosticV4.000"]:
             diag_params_df = pd.read_csv(
@@ -163,10 +173,17 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
                 == protocol_params["diagnostic_parameter_set"]
             ].squeeze()
 
-            procedure = Procedure.generate_procedure_regcyclev3(index, protocol_params)
-            procedure.generate_procedure_diagcyclev3(
+            protocol = Procedure.generate_procedure_regcyclev3(index, protocol_params)
+            protocol.generate_procedure_diagcyclev3(
                 protocol_params["capacity_nominal"], diagnostic_params
             )
+            filename = "{}.000".format(filename_prefix)
+            filename = os.path.join(output_directory, "procedures", filename)
+        elif template == "formationV1.mps":
+            protocol = Settings.from_file(os.path.join(BIOLOGIC_TEMPLATE_DIR, template))
+            protocol = protocol.formation_protocol_bcs(protocol, protocol_params)
+            filename = "{}.mps".format(filename_prefix)
+            filename = os.path.join(output_directory, "settings", filename)
         else:
             warnings.warn("Unsupported file template {}, skipping.".format(template))
             result = "error"
@@ -176,17 +193,9 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
             }
             continue
 
-        filename_prefix = "_".join(
-            [
-                protocol_params["project_name"],
-                "{:06d}".format(protocol_params["seq_num"]),
-            ]
-        )
-        filename = "{}.000".format(filename_prefix)
-        filename = os.path.join(output_directory, "procedures", filename)
         logger.info(filename, extra=s)
         if not os.path.isfile(filename):
-            procedure.to_file(filename)
+            protocol.to_file(filename)
             new_files.append(filename)
             names.append(filename_prefix + "_")
 

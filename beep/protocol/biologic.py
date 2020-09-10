@@ -145,10 +145,9 @@ class Settings(DashOrderedDict):
                 technique_keys = list(data["Technique"][tq_number]["Step"]["1"].keys())
                 for tq_key in technique_keys:
                     line = tq_key.ljust(column_width)
-                    for step in data["Technique"]["1"]["Step"].keys():
-                        line = line + data["Technique"]["1"]["Step"][step][
-                            tq_key
-                        ].ljust(column_width)
+                    for step in data["Technique"][tq_number]["Step"].keys():
+                        var = str(data["Technique"][tq_number]["Step"][step][tq_key])
+                        line = line + var.ljust(column_width)
                     blocks.append(line)
                 continue
             elif data["Metadata"][meta_key] is None:
@@ -164,3 +163,129 @@ class Settings(DashOrderedDict):
 
         with open(filename, "wb") as f:
             f.write(contents.encode(encoding))
+
+    def formation_protocol_bcs(self, params):
+        """
+       Modify a settings file in the Biologic format with a *.mps extension.
+
+        Args:
+            params (pandas.DataFrame): Single row of the csv containing the parameters for the project
+
+        Returns:
+            (self): returns the parameterized protocol
+        """
+        assert self.get("Metadata.Cycle Definition") == "Charge/Discharge alternance"
+
+        # Initial charge
+        assert self.get("Technique.1.Step.2.ctrl_type") == "CC"
+        assert self.get("Technique.1.Step.2.ctrl1_val_unit") == "A"
+        value = float(round(params["initial_charge_current_1"] * params['capacity_nominal'], 3))
+        self.set("Technique.1.Step.2.ctrl1_val", value)
+
+        assert self.get("Technique.1.Step.2.lim1_type") == "Ecell"
+        assert self.get("Technique.1.Step.2.lim1_value_unit") == "V"
+        value = float(round(params["initial_charge_voltage_1"], 3))
+        self.set("Technique.1.Step.2.lim1_value", value)
+        assert self.get("Technique.1.Step.3.ctrl_type") == "CV"
+        assert self.get("Technique.1.Step.3.ctrl1_val_unit") == "V"
+        self.set("Technique.1.Step.3.ctrl1_val", value)
+
+        assert self.get("Technique.1.Step.3.lim1_type") == "Time"
+        assert self.get("Technique.1.Step.3.lim1_value_unit") == "mn"
+        value = float(round(params["initial_charge_cvhold_1"], 3))
+        self.set("Technique.1.Step.3.lim1_value", value)
+
+        assert self.get("Technique.1.Step.4.lim1_type") == "Time"
+        assert self.get("Technique.1.Step.4.lim1_value_unit") == "mn"
+        value = float(round(params["initial_charge_rest_1"], 3))
+        self.set("Technique.1.Step.4.lim1_value", value)
+
+        assert self.get("Technique.1.Step.5.ctrl_type") == "CC"
+        assert self.get("Technique.1.Step.5.ctrl1_val_unit") == "A"
+        value = float(round(params["initial_charge_current_2"] * params['capacity_nominal'], 3))
+        self.set("Technique.1.Step.5.ctrl1_val", value)
+
+        assert self.get("Technique.1.Step.5.lim1_type") == "Ecell"
+        assert self.get("Technique.1.Step.5.lim1_value_unit") == "V"
+        value = float(round(params["initial_charge_voltage_2"], 3))
+        self.set("Technique.1.Step.5.lim1_value", value)
+        assert self.get("Technique.1.Step.6.ctrl_type") == "CV"
+        assert self.get("Technique.1.Step.6.ctrl1_val_unit") == "V"
+        self.set("Technique.1.Step.6.ctrl1_val", value)
+
+        assert self.get("Technique.1.Step.6.lim1_type") == "Time"
+        assert self.get("Technique.1.Step.6.lim1_value_unit") == "mn"
+        value = float(round(params["initial_charge_cvhold_2"], 3))
+        self.set("Technique.1.Step.6.lim1_value", value)
+
+        assert self.get("Technique.1.Step.7.lim1_type") == "Time"
+        assert self.get("Technique.1.Step.7.lim1_value_unit") == "mn"
+        value = float(round(params["initial_charge_rest_2"], 3))
+        self.set("Technique.1.Step.7.lim1_value", value)
+
+        # Initial discharge
+        assert self.get("Technique.1.Step.8.ctrl_type") == "CC"
+        assert self.get("Technique.1.Step.8.ctrl1_val_unit") == "A"
+        value = float(round(params["initial_discharge_current_1"] * params['capacity_nominal'], 3))
+        self.set("Technique.1.Step.8.ctrl1_val", value)
+
+        assert self.get("Technique.1.Step.8.lim1_type") == "Ecell"
+        assert self.get("Technique.1.Step.8.lim1_value_unit") == "V"
+        value = float(round(params["initial_discharge_voltage_1"], 3))
+        self.set("Technique.1.Step.8.lim1_value", value)
+
+        # Mid cycle
+        assert self.get("Technique.1.Step.9.ctrl_type") == "CC"
+        assert self.get("Technique.1.Step.9.ctrl1_val_unit") == "A"
+        value = float(round(params["mid_charge_current_1"] * params['capacity_nominal'], 3))
+        self.set("Technique.1.Step.9.ctrl1_val", value)
+
+        assert self.get("Technique.1.Step.9.lim1_type") == "Ecell"
+        assert self.get("Technique.1.Step.9.lim1_value_unit") == "V"
+        value = float(round(params["mid_charge_voltage_1"], 3))
+        self.set("Technique.1.Step.9.lim1_value", value)
+
+        assert self.get("Technique.1.Step.10.ctrl_type") == "CC"
+        assert self.get("Technique.1.Step.10.ctrl1_val_unit") == "A"
+        value = float(round(params["mid_discharge_current_1"] * params['capacity_nominal'], 3))
+        self.set("Technique.1.Step.10.ctrl1_val", value)
+
+        assert self.get("Technique.1.Step.10.lim1_type") == "Ecell"
+        assert self.get("Technique.1.Step.10.lim1_value_unit") == "V"
+        value = float(round(params["mid_discharge_voltage_1"], 3))
+        self.set("Technique.1.Step.10.lim1_value", value)
+
+        assert self.get("Technique.1.Step.11.ctrl_type") == "Loop"
+        assert self.get("Technique.1.Step.11.ctrl_seq") == "8"
+        value = int(params["mid_cycle_reps"] - 1)
+        self.set("Technique.1.Step.11.ctrl_repeat", value)
+
+        # Final cycle
+        assert self.get("Technique.1.Step.12.ctrl_type") == "CC"
+        assert self.get("Technique.1.Step.12.ctrl1_val_unit") == "A"
+        value = float(round(params["final_charge_current_1"] * params['capacity_nominal'], 3))
+        self.set("Technique.1.Step.12.ctrl1_val", value)
+
+        assert self.get("Technique.1.Step.12.lim1_type") == "Ecell"
+        assert self.get("Technique.1.Step.12.lim1_value_unit") == "V"
+        value = float(round(params["final_charge_voltage_1"], 3))
+        self.set("Technique.1.Step.12.lim1_value", value)
+
+        assert self.get("Technique.1.Step.13.ctrl_type") == "CC"
+        assert self.get("Technique.1.Step.13.ctrl1_val_unit") == "A"
+        value = float(round(params["final_discharge_current_1"] * params['capacity_nominal'], 3))
+        self.set("Technique.1.Step.13.ctrl1_val", value)
+
+        assert self.get("Technique.1.Step.13.lim1_type") == "Ecell"
+        assert self.get("Technique.1.Step.13.lim1_value_unit") == "V"
+        value = float(round(params["final_discharge_voltage_1"], 3))
+        self.set("Technique.1.Step.13.lim1_value", value)
+        assert self.get("Technique.1.Step.14.ctrl_type") == "CV"
+        assert self.get("Technique.1.Step.14.ctrl1_val_unit") == "V"
+        self.set("Technique.1.Step.14.ctrl1_val", value)
+        assert self.get("Technique.1.Step.14.lim1_type") == "Time"
+        assert self.get("Technique.1.Step.14.lim1_value_unit") == "mn"
+        value = float(round(params["final_discharge_cvhold_1"], 3))
+        self.set("Technique.1.Step.14.lim1_value", value)
+
+        return self
