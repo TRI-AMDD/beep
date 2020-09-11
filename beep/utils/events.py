@@ -399,6 +399,37 @@ class WorkflowOutputs:
         action_path.write_text(result["action"])
         status_path.write_text(result["status"])
 
+    def put_generate_outputs_list(self, output_data, generate_status):
+        """
+        Function create generate outputs list json file on local file system.
+
+        Args:
+            output_data (dict): data payload for output.
+            generate_status (str): starting|complete|error.
+        """
+
+        tmp_dir = Path(tempfile.gettempdir())
+        output_file_path = tmp_dir / "results.json"
+        results = []
+
+        file_list = output_data["file_list"]
+
+        for index, filename in enumerate(file_list):
+            size = self.get_local_file_size(filename)
+            if size < 0:
+                raise FileNotFoundError()
+
+            result = {
+                "filename": filename,
+                "size": size,
+                "result": output_data["result"],
+                "status": generate_status,
+            }
+
+            results.append(result)
+
+        output_file_path.write_text(json.dumps(results))
+
     def put_workflow_outputs(self, output_data, action):
         """
         Function to create workflow outputs json file on local file system.

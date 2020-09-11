@@ -10,6 +10,7 @@ import pytz
 import numpy as np
 import boto3
 import tempfile
+from platform import system
 from pathlib import Path
 from dateutil.tz import tzutc
 from beep.utils import KinesisEvents, WorkflowOutputs, Logger
@@ -329,6 +330,50 @@ class WorkflowOutputsTest(unittest.TestCase):
         self.assertEqual(self.output_data["run_id"], int(self.run_id_path.read_text()))
         self.assertEqual(self.action, self.action_path.read_text())
         self.assertEqual(self.output_data["result"], self.status_path.read_text())
+
+    def test_put_generate_outputs_list(self):
+        result = "success"
+        status = "complete"
+        parameter_file_size = 142 if system() == "Windows" else 138
+
+        all_output_files = [
+            str(Path(TEST_FILE_DIR) / "data-share/protocols/procedures/name_000000.000"),
+            str(Path(TEST_FILE_DIR) / "data-share/protocols/procedures/name_000007.000"),
+            str(Path(TEST_FILE_DIR) / "data-share/protocols/procedures/name_000014.000"),
+        ]
+
+        output_data = {
+            "file_list": all_output_files,
+            "result": result,
+            "message": "",
+        }
+
+        self.outputs.put_generate_outputs_list(output_data, status)
+
+        self.assertTrue(self.output_file_path.exists())
+        output_list = json.loads(self.output_file_path.read_text())
+        output_json = output_list[1]
+
+        self.assertEqual(all_output_files[1], output_json["filename"])
+        self.assertEqual(parameter_file_size, output_json["size"])
+        self.assertEqual(result, output_json["result"])
+        self.assertEqual(status, output_json["status"])
+
+    def test_put_generate_output_list_no_file(self):
+        result = "success"
+        status = "complete"
+
+        all_output_files = [
+            str(Path(TEST_FILE_DIR) / "data-share/protocols/procedures/not_a_real_file"),
+        ]
+
+        output_data = {
+            "file_list": all_output_files,
+            "result": result,
+            "message": "",
+        }
+
+        self.assertRaises(FileNotFoundError, self.outputs.put_generate_outputs_list, output_data, status)
 
     def test_put_workflow_outputs_list(self):
         self.outputs.put_workflow_outputs_list(self.output_data_list, self.action)
