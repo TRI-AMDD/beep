@@ -1,5 +1,14 @@
 
 
+v2020.9.15
+----------
+* Improve workflow event coverage - Patrick Moore
+* Output results files from generate_protocol
+* Adding file write out to the test
+* Bug fixes for featurizations - Chirranjeevi Gopal
+* Download big files for testing. - Daniel Schweigert
+* Biologic conversion methods - Will Powelson
+
 v2020.8.21
 ----------
 * Add data set class to facilitate model training - Thanks to Chirranjeevi Gopal
