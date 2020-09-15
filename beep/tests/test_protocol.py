@@ -698,6 +698,7 @@ class ProcedureToScheduleTest(unittest.TestCase):
                                      "raw",
                                      "parameters",
                                      "Talos_parameters - GP.csv")
+
         with ScratchDir('.') as scratch_dir:
             makedirs_p(os.path.join(scratch_dir, "procedures"))
             makedirs_p(os.path.join(scratch_dir, "schedules"))
@@ -722,6 +723,8 @@ class ProcedureToScheduleTest(unittest.TestCase):
                 converter.create_sdu(sdu_test_input, sdu_test_output, current_range="Range1",
                                      global_v_range=[2.0, 4.5], global_temp_range=[0, 60],
                                      global_current_range=[global_min_cur, global_max_cur])
+            self.assertEqual(len(os.listdir(os.path.join(scratch_dir, "procedures"))), 35)
+            self.assertEqual(len(os.listdir(os.path.join(scratch_dir, "schedules"))), 35)
 
 
 class ArbinScheduleTest(unittest.TestCase):
