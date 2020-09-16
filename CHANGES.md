@@ -1,5 +1,9 @@
 
 
+v2020.9.16
+----------
+* Revert unintentional change during release
+
 v2020.9.15
 ----------
 * Improve workflow event coverage - Patrick Moore
