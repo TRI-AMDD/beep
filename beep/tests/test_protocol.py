@@ -16,11 +16,10 @@ from beep.protocol import (
     SCHEDULE_TEMPLATE_DIR,
     BIOLOGIC_TEMPLATE_DIR,
 )
-from beep.generate_protocol import (
-    generate_protocol_files_from_csv,
-    convert_velocity_to_power_waveform,
-)
-from beep.protocol.maccor import Procedure, generate_maccor_waveform_file
+from beep.generate_protocol import generate_protocol_files_from_csv
+from beep.utils.waveform import convert_velocity_to_power_waveform
+from beep.protocol.maccor import Procedure, \
+    generate_maccor_waveform_file, insert_driving_parametersv1
 from beep.protocol.arbin import Schedule
 from beep.protocol.biologic import Settings
 from beep.protocol.maccor_to_arbin import ProcedureToSchedule
@@ -75,7 +74,7 @@ class ProcedureTest(unittest.TestCase):
             self.assertEqual(df_MWF.shape, df_MWF_ref.shape)
 
             # Check that the fourth column for charge/discharge limit is empty (default setting)
-            self.assertTrue(df_MWF.iloc[:, 3].isnull().all())
+            self.assertTrue(df_MWF.iloc[:, 3].notnull().all())
 
             # Check that sum of durations equals length of the power timeseries
             self.assertEqual(df_MWF.iloc[:, 5].sum(), len(df_power))
@@ -394,7 +393,7 @@ class GenerateProcedureTest(unittest.TestCase):
             "Loop 2",
         ]
         reg_steps_len = len(reg_cycle_steps)
-        self.assertEqual(steps[start : start + reg_steps_len], reg_cycle_steps)
+        self.assertEqual(steps[start: start + reg_steps_len], reg_cycle_steps)
         print(procedure["MaccorTestProcedure"]["ProcSteps"]["TestStep"][32])
         print(procedure["MaccorTestProcedure"]["ProcSteps"]["TestStep"][64])
 
@@ -414,6 +413,35 @@ class GenerateProcedureTest(unittest.TestCase):
             # Uncomment line below to keep the output in the test file directory
             # shutil.copyfile(os.path.join(scratch_dir, driving_test_name),
             #                 os.path.join(TEST_FILE_DIR, driving_test_name))
+
+    def test_waveform_from_csv(self):
+        csv_file = os.path.join(TEST_FILE_DIR,
+                                "data-share",
+                                "raw",
+                                "parameters",
+                                "Drive_parameters - GP.csv")
+        protocol_params_df = pd.read_csv(csv_file)
+
+        new_files = []
+        names = []
+        result = ""
+        message = {"comment": "", "error": ""}
+        with ScratchDir(".") as scratch_dir:
+            output_directory = scratch_dir
+            for index, protocol_params in protocol_params_df.iterrows():
+                template = protocol_params["template"]
+                if template == "drivingV1.000":
+                    diag_params_df = pd.read_csv(
+                        os.path.join(PROCEDURE_TEMPLATE_DIR, "PreDiag_parameters - DP.csv")
+                    )
+                    diagnostic_params = diag_params_df[
+                        diag_params_df["diagnostic_parameter_set"]
+                        == protocol_params["diagnostic_parameter_set"]
+                        ].squeeze()
+                    mwf_dir = os.path.join(scratch_dir, "mwf_files")
+                    insert_driving_parametersv1(protocol_params, waveform_directory=mwf_dir)
+
+
 
     def test_from_csv(self):
         csv_file = os.path.join(TEST_FILE_DIR, "parameter_test.csv")

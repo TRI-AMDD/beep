@@ -9,10 +9,12 @@ import time
 from copy import deepcopy
 
 import numpy as np
+import pandas as pd
 import xmltodict
-from beep.protocol import PROCEDURE_TEMPLATE_DIR
+from beep.protocol import PROCEDURE_TEMPLATE_DIR, PROTOCOL_SCHEMA_DIR
 from beep.conversion_schemas import MACCOR_WAVEFORM_CONFIG
 from beep.utils import DashOrderedDict
+from beep.utils.waveform import convert_velocity_to_power_waveform
 
 s = {"service": "ProtocolGenerator"}
 
@@ -598,6 +600,94 @@ class Procedure(DashOrderedDict):
 
         return obj
 
+    @classmethod
+    def generate_procedure_drivingv1(cls, protocol_index, reg_param, template=None):
+        """
+        Generates a procedure according to the diagnosticV3 template.
+
+        Args:
+            protocol_index (int): number of the protocol file being
+                generated from this file.
+            reg_param (pandas.DataFrame): containing the following quantities
+                charge_constant_current_1 (float): C
+                charge_percent_limit_1 (float): % of nominal capacity
+                charge_constant_current_2 (float): C
+                charge_cutoff_voltage (float): V
+                charge_constant_voltage_time (integer): mins
+                charge_rest_time (integer): mins
+                discharge_profile (str): {'US06', 'LA4', '9Lap'}
+                profile_charge_limit (float): upper limit voltage for the profile
+                max_profile_power (float): maximum power setpoint during the profile
+                n_repeats (int): number of repetitions for the profile
+                discharge_cutoff_voltage (float): V
+                power_scaling (float): Power relative to the other profiles
+                discharge_rest_time (integer): mins
+                cell_temperature_nominal (float): ˚C
+                capacity_nominal (float): Ah
+                diagnostic_start_cycle (integer): cycles
+                diagnostic_interval (integer): cycles
+            template (str): template for invocation, defaults to
+                the diagnosticV3.000 template
+
+        Returns:
+            (Procedure): dictionary invoked using template/parameters
+        """
+        assert (
+                reg_param["charge_cutoff_voltage"] > reg_param["discharge_cutoff_voltage"]
+        )
+        assert (
+                reg_param["charge_constant_current_1"]
+                <= reg_param["charge_constant_current_2"]
+        )
+
+        rest_idx = 0
+
+        template = template or os.path.join(PROCEDURE_TEMPLATE_DIR, "diagnosticV3.000")
+        obj = cls.from_file(template)
+        obj.insert_initialrest_regcyclev3(rest_idx, protocol_index)
+
+        dc_idx = 1
+        obj.insert_resistance_regcyclev2(dc_idx, reg_param)
+
+        # Start of initial set of regular cycles
+        reg_charge_idx = 27 + 1
+        obj.insert_charge_regcyclev3(reg_charge_idx, reg_param)
+        reg_discharge_idx = 27 + 5
+        obj.insert_maccor_waveform_discharge(reg_discharge_idx, waveform_name)
+
+        # Start of main loop of regular cycles
+        reg_charge_idx = 59 + 1
+        obj.insert_charge_regcyclev3(reg_charge_idx, reg_param)
+        reg_discharge_idx = 59 + 5
+        obj.insert_maccor_waveform_discharge(reg_discharge_idx, waveform_name)
+
+        # Storage cycle
+        reg_storage_idx = 93
+        obj.insert_storage_regcyclev3(reg_storage_idx, reg_param)
+
+        # Check that the upper charge voltage is set the same for both charge current steps
+        reg_charge_idx = 27 + 1
+        assert (
+                obj["MaccorTestProcedure"]["ProcSteps"]["TestStep"][reg_charge_idx]["Ends"][
+                    "EndEntry"
+                ][1]["Value"]
+                == obj["MaccorTestProcedure"]["ProcSteps"]["TestStep"][reg_charge_idx + 1][
+                    "Ends"
+                ]["EndEntry"][0]["Value"]
+        )
+
+        reg_charge_idx = 59 + 1
+        assert (
+                obj["MaccorTestProcedure"]["ProcSteps"]["TestStep"][reg_charge_idx]["Ends"][
+                    "EndEntry"
+                ][1]["Value"]
+                == obj["MaccorTestProcedure"]["ProcSteps"]["TestStep"][reg_charge_idx + 1][
+                    "Ends"
+                ]["EndEntry"][0]["Value"]
+        )
+
+        return obj
+
     def insert_initialrest_regcyclev3(self, rest_idx, index):
         """
         Inserts initial rest into procedure dictionary at given id.
@@ -1125,6 +1215,44 @@ class Procedure(DashOrderedDict):
                         end['Value'] = min_v
 
         return self
+
+
+def insert_driving_parametersv1(reg_params, waveform_directory=None):
+    """
+    Args:
+        reg_param (pandas.DataFrame): containing the following quantities
+                discharge_profile (str): {'US06', 'LA4', '9Lap'}
+                profile_charge_limit (float): upper limit voltage for the profile
+                max_profile_power (float): maximum power setpoint during the profile
+                n_repeats (int): number of repetitions for the profile
+                discharge_cutoff_voltage (float): V
+                power_scaling (float): Power relative to the other profiles
+    """
+    mwf_config = MACCOR_WAVEFORM_CONFIG
+    velocity_name = reg_params["discharge_profile"] + "_velocity_waveform.txt"
+    velocity_file = os.path.join(PROTOCOL_SCHEMA_DIR, velocity_name)
+    df = convert_velocity_to_power_waveform(velocity_file, velocity_units="mph")
+
+    if not os.path.exists(waveform_directory):
+        os.makedirs(waveform_directory)
+
+    mwf_config["value_scale"] = reg_params["max_profile_power"] * reg_params["power_scaling"]
+    mwf_config["charge_limit_value"] = reg_params["profile_charge_limit"]
+    mwf_config["charge_end_mode_value"] = reg_params["profile_charge_limit"] + 0.05
+    mwf_config["discharge_end_mode_value"] = reg_params["discharge_cutoff_voltage"] - 0.1
+
+    df = df[["time", "power"]]
+    time_axis = list(df["time"]).copy()
+    for i in range(reg_params['n_repeats'] - 1):
+        time_axis = time_axis + [time_axis[-1] + el for el in df['time']]
+
+    df = pd.DataFrame({'time': time_axis,
+                       'power': list(df['power']) * reg_params['n_repeats']})
+    filename = '{}_x{}_{}W'.format(reg_params['discharge_profile'], reg_params['n_repeats'],
+                                   np.round(reg_params["max_profile_power"] * reg_params['power_scaling'], 2))
+    file_path = generate_maccor_waveform_file(df, filename, waveform_directory, mwf_config=mwf_config)
+
+    return file_path
 
 
 def generate_maccor_waveform_file(df, file_prefix, file_directory, mwf_config=None):
