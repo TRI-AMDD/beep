@@ -439,7 +439,39 @@ class GenerateProcedureTest(unittest.TestCase):
                         == protocol_params["diagnostic_parameter_set"]
                         ].squeeze()
                     mwf_dir = os.path.join(scratch_dir, "mwf_files")
-                    insert_driving_parametersv1(protocol_params, waveform_directory=mwf_dir)
+                    waveform_name = insert_driving_parametersv1(protocol_params,
+                                                                waveform_directory=mwf_dir)
+                    template_fullpath = os.path.join(PROCEDURE_TEMPLATE_DIR, template)
+                    protocol = Procedure.generate_procedure_drivingv1(index,
+                                                                      protocol_params,
+                                                                      waveform_name,
+                                                                      template=template_fullpath)
+                    protocol.generate_procedure_diagcyclev3(
+                        protocol_params["capacity_nominal"], diagnostic_params
+                    )
+                    self.assertEqual(protocol.get("MaccorTestProcedure.ProcSteps.TestStep.32.StepType"), 'FastWave')
+                    self.assertEqual(protocol.get("MaccorTestProcedure.ProcSteps.TestStep.64.StepType"), 'FastWave')
+                    names.append(os.path.split(waveform_name)[-1])
+        test_names = ['US06_x4_24W.MWF', 'LA4_x4_10W.MWF',
+                      'US06_x4_32W.MWF', 'LA4_x4_14W.MWF',
+                      'US06_x4_40W.MWF', 'LA4_x4_18W.MWF',
+                      'US06_x8_24W.MWF', 'LA4_x8_10W.MWF',
+                      'US06_x8_32W.MWF', 'LA4_x8_14W.MWF',
+                      'US06_x8_40W.MWF', 'LA4_x8_18W.MWF',
+                      'US06_x12_24W.MWF', 'LA4_x12_10W.MWF',
+                      'US06_x12_32W.MWF', 'LA4_x12_14W.MWF',
+                      'US06_x12_40W.MWF', 'LA4_x12_18W.MWF',
+                      'US06_x4_24W.MWF', 'LA4_x4_10W.MWF',
+                      'US06_x4_32W.MWF', 'LA4_x4_14W.MWF',
+                      'US06_x4_40W.MWF', 'LA4_x4_18W.MWF',
+                      'US06_x8_24W.MWF', 'LA4_x8_10W.MWF',
+                      'US06_x8_32W.MWF', 'LA4_x8_14W.MWF',
+                      'US06_x8_40W.MWF', 'LA4_x8_18W.MWF',
+                      'US06_x12_24W.MWF', 'LA4_x12_10W.MWF',
+                      'US06_x12_32W.MWF', 'LA4_x12_14W.MWF',
+                      'US06_x12_40W.MWF', 'LA4_x12_18W.MWF']
+        print(names)
+        self.assertEqual(test_names, names)
 
 
 

@@ -601,7 +601,7 @@ class Procedure(DashOrderedDict):
         return obj
 
     @classmethod
-    def generate_procedure_drivingv1(cls, protocol_index, reg_param, template=None):
+    def generate_procedure_drivingv1(cls, protocol_index, reg_param, waveform_name, template=None):
         """
         Generates a procedure according to the diagnosticV3 template.
 
@@ -626,6 +626,7 @@ class Procedure(DashOrderedDict):
                 capacity_nominal (float): Ah
                 diagnostic_start_cycle (integer): cycles
                 diagnostic_interval (integer): cycles
+            waveform_name (str): Name of the waveform file (not path) without extension
             template (str): template for invocation, defaults to
                 the diagnosticV3.000 template
 
@@ -642,7 +643,7 @@ class Procedure(DashOrderedDict):
 
         rest_idx = 0
 
-        template = template or os.path.join(PROCEDURE_TEMPLATE_DIR, "diagnosticV3.000")
+        template = template or os.path.join(PROCEDURE_TEMPLATE_DIR, "drivingV1.000")
         obj = cls.from_file(template)
         obj.insert_initialrest_regcyclev3(rest_idx, protocol_index)
 
@@ -1249,7 +1250,7 @@ def insert_driving_parametersv1(reg_params, waveform_directory=None):
     df = pd.DataFrame({'time': time_axis,
                        'power': list(df['power']) * reg_params['n_repeats']})
     filename = '{}_x{}_{}W'.format(reg_params['discharge_profile'], reg_params['n_repeats'],
-                                   np.round(reg_params["max_profile_power"] * reg_params['power_scaling'], 2))
+                                   int(reg_params["max_profile_power"] * reg_params['power_scaling']))
     file_path = generate_maccor_waveform_file(df, filename, waveform_directory, mwf_config=mwf_config)
 
     return file_path
