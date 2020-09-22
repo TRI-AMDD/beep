@@ -1221,13 +1221,14 @@ class Procedure(DashOrderedDict):
 def insert_driving_parametersv1(reg_params, waveform_directory=None):
     """
     Args:
-        reg_param (pandas.DataFrame): containing the following quantities
-                discharge_profile (str): {'US06', 'LA4', '9Lap'}
-                profile_charge_limit (float): upper limit voltage for the profile
-                max_profile_power (float): maximum power setpoint during the profile
-                n_repeats (int): number of repetitions for the profile
-                discharge_cutoff_voltage (float): V
-                power_scaling (float): Power relative to the other profiles
+        reg_params (pandas.DataFrame): containing the following quantities
+            discharge_profile (str): {'US06', 'LA4', '9Lap'}
+            profile_charge_limit (float): upper limit voltage for the profile
+            max_profile_power (float): maximum power setpoint during the profile
+            n_repeats (int): number of repetitions for the profile
+            discharge_cutoff_voltage (float): V
+            power_scaling (float): Power relative to the other profiles
+        waveform_directory (str): path to save waveform files
     """
     mwf_config = MACCOR_WAVEFORM_CONFIG
     velocity_name = reg_params["discharge_profile"] + "_velocity_waveform.txt"

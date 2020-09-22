@@ -48,7 +48,7 @@ from monty.serialization import loadfn
 
 from beep import logger, __version__
 from beep.protocol import PROCEDURE_TEMPLATE_DIR, BIOLOGIC_TEMPLATE_DIR
-from beep.protocol.maccor import Procedure
+from beep.protocol.maccor import Procedure, insert_driving_parametersv1
 from beep.protocol.biologic import Settings
 
 from beep.utils import KinesisEvents, WorkflowOutputs
@@ -133,8 +133,14 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
                 diag_params_df["diagnostic_parameter_set"]
                 == protocol_params["diagnostic_parameter_set"]
                 ].squeeze()
-
-            protocol = Procedure.generate_procedure_drivingv1(index, protocol_params)
+            mwf_dir = os.path.join(output_directory, "mwf_files")
+            waveform_name = insert_driving_parametersv1(protocol_params,
+                                                        waveform_directory=mwf_dir)
+            template_fullpath = os.path.join(PROCEDURE_TEMPLATE_DIR, template)
+            protocol = Procedure.generate_procedure_drivingv1(index,
+                                                              protocol_params,
+                                                              waveform_name,
+                                                              template=template_fullpath)
             protocol.generate_procedure_diagcyclev3(
                 protocol_params["capacity_nominal"], diagnostic_params
             )

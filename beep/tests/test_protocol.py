@@ -424,12 +424,20 @@ class GenerateProcedureTest(unittest.TestCase):
 
         new_files = []
         names = []
+        waveform_names = []
         result = ""
         message = {"comment": "", "error": ""}
         with ScratchDir(".") as scratch_dir:
             output_directory = scratch_dir
+            os.makedirs(os.path.join(output_directory, "procedures"))
             for index, protocol_params in protocol_params_df.iterrows():
                 template = protocol_params["template"]
+                filename_prefix = "_".join(
+                    [
+                        protocol_params["project_name"],
+                        "{:06d}".format(protocol_params["seq_num"]),
+                    ]
+                )
                 if template == "drivingV1.000":
                     diag_params_df = pd.read_csv(
                         os.path.join(PROCEDURE_TEMPLATE_DIR, "PreDiag_parameters - DP.csv")
@@ -449,9 +457,26 @@ class GenerateProcedureTest(unittest.TestCase):
                     protocol.generate_procedure_diagcyclev3(
                         protocol_params["capacity_nominal"], diagnostic_params
                     )
-                    self.assertEqual(protocol.get("MaccorTestProcedure.ProcSteps.TestStep.32.StepType"), 'FastWave')
-                    self.assertEqual(protocol.get("MaccorTestProcedure.ProcSteps.TestStep.64.StepType"), 'FastWave')
-                    names.append(os.path.split(waveform_name)[-1])
+                    filename = "{}.000".format(filename_prefix)
+                    filename = os.path.join(output_directory, "procedures", filename)
+                    waveform_names.append(os.path.split(waveform_name)[-1])
+
+                if not os.path.isfile(filename):
+                    protocol.to_file(filename)
+                    new_files.append(filename)
+                    names.append(filename_prefix + "_")
+
+                self.assertEqual(protocol.get("MaccorTestProcedure.ProcSteps.TestStep.32.StepType"), 'FastWave')
+                self.assertEqual(protocol.get("MaccorTestProcedure.ProcSteps.TestStep.64.StepType"), 'FastWave')
+                wave_value = os.path.split(waveform_name)[-1].split(".")[0]
+                self.assertEqual(protocol.get("MaccorTestProcedure.ProcSteps.TestStep.32.StepValue"),
+                                 wave_value)
+                self.assertEqual(protocol.get("MaccorTestProcedure.ProcSteps.TestStep.64.StepValue"),
+                                 wave_value)
+
+            self.assertEqual(len(os.listdir(os.path.join(output_directory, "procedures"))), 36)
+            self.assertEqual(len(os.listdir(os.path.join(output_directory, "mwf_files"))), 18)
+
         test_names = ['US06_x4_24W.MWF', 'LA4_x4_10W.MWF',
                       'US06_x4_32W.MWF', 'LA4_x4_14W.MWF',
                       'US06_x4_40W.MWF', 'LA4_x4_18W.MWF',
@@ -470,10 +495,7 @@ class GenerateProcedureTest(unittest.TestCase):
                       'US06_x12_24W.MWF', 'LA4_x12_10W.MWF',
                       'US06_x12_32W.MWF', 'LA4_x12_14W.MWF',
                       'US06_x12_40W.MWF', 'LA4_x12_18W.MWF']
-        print(names)
-        self.assertEqual(test_names, names)
-
-
+        self.assertEqual(test_names, waveform_names)
 
     def test_from_csv(self):
         csv_file = os.path.join(TEST_FILE_DIR, "parameter_test.csv")
