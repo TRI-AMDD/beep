@@ -1113,9 +1113,10 @@ class DiagnosticProperties(BeepFeatures):
         X = pd.DataFrame()
         for quantity in params_dict["quantities"]:
             for cycle_type in cycle_types:
-                summary_diag_cycle_type = featurizer_helpers.get_fractional_quantity_remaining(
+                summary_diag_cycle_type = featurizer_helpers.get_fractional_quantity_remaining_nx(
                     processed_cycler_run, quantity, cycle_type
                 )
+
                 summary_diag_cycle_type["cycle_type"] = cycle_type
                 summary_diag_cycle_type["metric"] = quantity
                 X = X.append(summary_diag_cycle_type)
