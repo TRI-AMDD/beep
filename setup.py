@@ -68,7 +68,7 @@ setup(name="beep",
       package_data={
           "beep.conversion_schemas": ["*.yaml", "*.md"],
           "beep.protocol.biologic_templates": ["*.mps", "*.csv", "*.json"],
-          "beep.protocol.procedure_templates": ["*.000", "*.csv", "*.json"],
+          "beep.protocol.procedure_templates": ["*.000", "*.csv", "*.json", "*.yaml"],
           "beep.protocol.protocol_schemas": ["*.yaml"],
           "beep.protocol.schedule_templates": ["*.sdu", "*.csv", "*.json"],
           "beep.validation_schemas": ["*.yaml"],

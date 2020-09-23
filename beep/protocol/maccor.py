@@ -125,13 +125,13 @@ class Procedure(DashOrderedDict):
         line0, remainder = contents.split("\n", 1)
         line1 = '<?maccor-application progid="Maccor Procedure File"?>'
         contents = "\n".join([line0, line1, remainder])
-        contents = self._fixup_empty_elements(contents)
+        contents = self.fixup_empty_elements(contents)
         contents += "\n"
         with open(filename, "w") as f:
             f.write(contents)
 
     @staticmethod
-    def _fixup_empty_elements(text):
+    def fixup_empty_elements(text):
         """
         xml reformatting to match the empty elements that are used
         in the maccor procedure format. Writes directly back to the file

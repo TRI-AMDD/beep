@@ -42,11 +42,16 @@ class Settings(DashOrderedDict):
                 control variables. Section headers are nested dicts or lists
                 within the dict.
         """
-        obj = cls()
         with open(filename, "rb") as f:
             text = f.read()
             text = text.decode(encoding)
-        split_text = re.split(r"\r\n", text)
+
+        return cls.mps_text_to_schedule_dict(text, column_width, step_entry_length)
+
+    @classmethod
+    def mps_text_to_schedule_dict(cls, text, column_width=20, step_entry_length=63):
+        obj = cls()
+        split_text = re.split(r"\r?\n|\r\n?", text)
 
         extra_lines = list(range(len(split_text)))
         technique_lines = [
