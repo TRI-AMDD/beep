@@ -421,6 +421,10 @@ class GenerateProcedureTest(unittest.TestCase):
                                 "parameters",
                                 "Drive_parameters - GP.csv")
         protocol_params_df = pd.read_csv(csv_file)
+        # Max power in watts in the profiles (should be less than max power limit on cyclers)
+        MAX_PROFILE_CURRENT = 15
+        MIN_PROFILE_VOLTAGE = 2.7
+        MAX_PROFILE_POWER = MAX_PROFILE_CURRENT * MIN_PROFILE_VOLTAGE
 
         new_files = []
         names = []
@@ -466,6 +470,18 @@ class GenerateProcedureTest(unittest.TestCase):
                     new_files.append(filename)
                     names.append(filename_prefix + "_")
 
+                waveform_df = pd.read_csv(waveform_name, sep="\t", header=None)
+                power_df = waveform_df[waveform_df[1] == "P"]
+                self.assertLessEqual(power_df[2].abs().max(), MAX_PROFILE_POWER)
+                self.assertGreaterEqual(power_df[2].abs().max(), 0)
+
+                current_df = waveform_df[waveform_df[1] == "I"]
+                self.assertLessEqual(current_df[2].abs().max(), MAX_PROFILE_CURRENT)
+                self.assertGreaterEqual(current_df[2].abs().max(), 0)
+
+                discharge_df = waveform_df[waveform_df[0] == "D"]
+                self.assertGreaterEqual(discharge_df[4].abs().max(), MIN_PROFILE_VOLTAGE)
+
                 self.assertEqual(protocol.get("MaccorTestProcedure.ProcSteps.TestStep.32.StepType"), 'FastWave')
                 self.assertEqual(protocol.get("MaccorTestProcedure.ProcSteps.TestStep.64.StepType"), 'FastWave')
                 wave_value = os.path.split(waveform_name)[-1].split(".")[0]
@@ -495,7 +511,7 @@ class GenerateProcedureTest(unittest.TestCase):
                       'US06_x12_24W.MWF', 'LA4_x12_10W.MWF',
                       'US06_x12_32W.MWF', 'LA4_x12_14W.MWF',
                       'US06_x12_40W.MWF', 'LA4_x12_18W.MWF']
-        self.assertEqual(test_names, waveform_names)
+        self.assertListEqual(test_names, waveform_names)
 
     def test_from_csv(self):
         csv_file = os.path.join(TEST_FILE_DIR, "parameter_test.csv")
