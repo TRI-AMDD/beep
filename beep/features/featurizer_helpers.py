@@ -888,13 +888,15 @@ def get_fractional_quantity_remaining(
     summary_diag_cycle_type.columns = ["cycle_index", "fractional_metric"]
     return summary_diag_cycle_type
 
+
 def get_fractional_quantity_remaining_nx(
     processed_cycler_run, metric="discharge_energy", diagnostic_cycle_type="rpt_0.2C"
 ):
     """
     Similar to get_fractional_quantity_remaining()
     Determine relative loss of <metric> in diagnostic_cycles of type <diagnostic_cycle_type> after 100 regular cycles
-    Also returns value of 'x', the discharge throughput passed by the first diagnostic and the value 'n' at each diagnostic
+    Also returns value of 'x', the discharge throughput passed by the first diagnostic
+    and the value 'n' at each diagnostic
 
     Args:
         processed_cycler_run (beep.structure.ProcessedCyclerRun): information about cycler run
@@ -919,12 +921,17 @@ def get_fractional_quantity_remaining_nx(
     regular_summary = processed_cycler_run.summary.copy()
     regular_summary[normalize_qty_throughput] = regular_summary[normalize_qty].cumsum()
     indices = summary_diag_cycle_type.cycle_index
-    initial_throughput = regular_summary.loc[regular_summary.cycle_index == indices.iloc[0]][normalize_qty_throughput].iloc[0]
-    x = regular_summary.loc[regular_summary.cycle_index == indices.iloc[1]]\
-            [normalize_qty_throughput].iloc[0] - initial_throughput
+    initial_throughput = regular_summary.loc[
+        regular_summary.cycle_index == indices.iloc[0]
+    ][normalize_qty_throughput].iloc[0]
+    x = regular_summary.loc[
+            regular_summary.cycle_index == indices.iloc[1]
+        ][normalize_qty_throughput].iloc[0] - initial_throughput
 
     summary_diag_cycle_type['x'] = x
-    summary_diag_cycle_type['n'] = ((1/x) * regular_summary[regular_summary.cycle_index.isin(indices)][normalize_qty_throughput]).values
+    summary_diag_cycle_type['n'] = (
+            (1/x) * regular_summary[regular_summary.cycle_index.isin(indices)][normalize_qty_throughput]
+    ).values
 
     ##
     summary_diag_cycle_type[metric] = (
