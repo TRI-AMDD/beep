@@ -247,7 +247,7 @@ class BiologicMbToMaccorTest(unittest.TestCase):
                     }
                 ],
             },
-            "Reports": {"ReportEntry": [{"ReportType": "Current ", "Value": "2.2",}],},
+            "Reports": {"ReportEntry": [{"ReportType": "Current ", "Value": "2.2"}]5},
             "Range": "4",
             "Option1": "N",
             "Option2": "N",
@@ -301,7 +301,7 @@ class BiologicMbToMaccorTest(unittest.TestCase):
                     }
                 ],
             },
-            "Reports": {"ReportEntry": [{"ReportType": "Current ", "Value": "2.2",}],},
+            "Reports": {"ReportEntry": [{"ReportType": "Current ", "Value": "2.2"}]},
             "Range": "4",
             "Option1": "N",
             "Option2": "N",

@@ -1,13 +1,9 @@
 # Copyright 2020 Toyota Research Institute. All rights reserved.
 """ Parsing and conversion of biologic Modulo Bat files to Maccor Procedure Files"""
 import os
-import re
 from copy import deepcopy
 from collections import OrderedDict
-import xmltodict
 from monty.serialization import loadfn
-from beep.protocol.biologic import Settings
-from beep.protocol.maccor import Procedure
 from beep.protocol import PROCEDURE_TEMPLATE_DIR
 
 
@@ -148,7 +144,7 @@ class BiologicMbToMaccorProcedure:
         loop_end_entry["Step"] = cls._stringify_step_num(loop_to_step)
         assert len(loop_end_entry["Step"]) == 3
 
-        step["Ends"] = OrderedDict({"EndEntry": loop_end_entry,})
+        step["Ends"] = OrderedDict({"EndEntry": loop_end_entry})
 
         return step
 
