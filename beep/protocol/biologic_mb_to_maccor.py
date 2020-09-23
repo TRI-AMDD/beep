@@ -39,7 +39,7 @@ class BiologicMbToMaccorProcedure:
             (optional) mps_file_encoding(str): text encoding of *.mps
             (optional) maccor_header(OrderedDict): This defines the shape of the <header> in
                 the output file
-            
+
         Returns: None on success, otherwise throws an error
         """
         if not os.path.isfile(mps_filepath):
@@ -55,9 +55,8 @@ class BiologicMbToMaccorProcedure:
 
         with open(out_filepath, "w+") as out_file:
             out_file.write(protocol_xml)
-        
-        return None
 
+        return None
 
     """
     Biologic Modulo Bat text ingestion from
@@ -65,10 +64,11 @@ class BiologicMbToMaccorProcedure:
 
     Args:
         text (str): the text from a *.mps file
-        
+
     Returns:
         (xml): string containing the XML for a Maccor Procedure
     """
+
     @classmethod
     def biologic_mb_text_to_maccor_xml(
         cls, mps_text, maccor_header=_default_maccor_header
@@ -98,7 +98,6 @@ class BiologicMbToMaccorProcedure:
         # newline at EOF
         return xml_with_maccor_processing_instruction + newLine
 
-
     @classmethod
     def _get_seqs(cls, shcedule_dict):
         techniques = shcedule_dict["Technique"]
@@ -109,7 +108,7 @@ class BiologicMbToMaccorProcedure:
 
         # Steps are equivelant to seqs
         numbered_seqs = list(modulo_bat["Step"].items())
-   
+
         # biologic parser may create empty seq(s) at the end
         # we intentionally _don't_ filter because if there is
         # a blank seq at in the middle
