@@ -1099,12 +1099,14 @@ class DiagnosticProperties(BeepFeatures):
     @classmethod
     def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None):
         """
+        Generates diagnostic-property features from processed cycler run, including values for n*x method
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
             gets featurized. These could be filters for column or row operations
         Returns:
-            pd.DataFrame: cycles at which capacity/energy degradation exceeds thresholds
+            pd.DataFrame: with "cycle_index", "fractional_metric", "x", "n", "cycle_type" and "metric" columns, rows
+            for each diagnostic cycle of the cell
         """
         if params_dict is None:
             params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]

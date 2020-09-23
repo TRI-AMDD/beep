@@ -198,7 +198,7 @@ class TestFeaturizer(unittest.TestCase):
             self.assertIsInstance(features_reloaded, DiagnosticProperties)
             self.assertListEqual(
                 list(features_reloaded.X.iloc[2, :]),
-                [143, 0.9753520623934744, "rpt_0.2C", "discharge_energy"],
+                [141,0.9859837086597274,91.17758004259996,2.578137278917377,'reset','discharge_energy'],
             )
 
             # Workflow output
