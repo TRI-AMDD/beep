@@ -867,6 +867,7 @@ def get_fractional_quantity_remaining(
     """
     Determine relative loss of <metric> in diagnostic_cycles of type <diagnostic_cycle_type> after 100 regular cycles
 
+
     Args:
         processed_cycler_run (beep.structure.ProcessedCyclerRun): information about cycler run
         metric (str): column name to use for measuring degradation
@@ -885,4 +886,60 @@ def get_fractional_quantity_remaining(
         / processed_cycler_run.diagnostic_summary[metric].iloc[0]
     )
     summary_diag_cycle_type.columns = ["cycle_index", "fractional_metric"]
+    return summary_diag_cycle_type
+
+
+def get_fractional_quantity_remaining_nx(
+    processed_cycler_run, metric="discharge_energy", diagnostic_cycle_type="rpt_0.2C"
+):
+    """
+    Similar to get_fractional_quantity_remaining()
+    Determine relative loss of <metric> in diagnostic_cycles of type <diagnostic_cycle_type>
+    Also returns value of 'x', the discharge throughput passed by the first diagnostic
+    and the value 'n' at each diagnostic
+
+    Args:
+        processed_cycler_run (beep.structure.ProcessedCyclerRun): information about cycler run
+        metric (str): column name to use for measuring degradation
+        diagnostic_cycle_type (str): the diagnostic cycle to use for computing the amount of degradation
+
+    Returns:
+        a dataframe with cycle_index, corresponding degradation relative to the first measured value, 'x',
+        i.e. the discharge throughput passed by the first diagnostic
+        and the value 'n' at each diagnostic, i.e. the equivalent scaling factor for lifetime using n*x
+    """
+    summary_diag_cycle_type = processed_cycler_run.diagnostic_summary[
+        (processed_cycler_run.diagnostic_summary.cycle_type == diagnostic_cycle_type)
+    ].reset_index()
+    summary_diag_cycle_type = summary_diag_cycle_type[["cycle_index", metric]]
+
+    # For the nx addition
+    if 'energy' in metric:
+        normalize_qty = 'discharge' + '_energy'
+    else:
+        normalize_qty = 'discharge' + '_capacity'
+
+    normalize_qty_throughput = normalize_qty + '_throughput'
+    regular_summary = processed_cycler_run.summary.copy()
+    regular_summary[normalize_qty_throughput] = regular_summary[normalize_qty].cumsum()
+    indices = summary_diag_cycle_type.cycle_index
+    initial_throughput = regular_summary.loc[
+        regular_summary.cycle_index == indices.iloc[0]
+    ][normalize_qty_throughput].iloc[0]
+    x = regular_summary.loc[
+            regular_summary.cycle_index == indices.iloc[1]
+        ][normalize_qty_throughput].iloc[0] - initial_throughput
+
+    summary_diag_cycle_type['x'] = x
+    summary_diag_cycle_type['n'] = (
+            (1/x) * regular_summary[regular_summary.cycle_index.isin(indices)][normalize_qty_throughput]
+    ).values
+
+    # end of nx addition
+    summary_diag_cycle_type[metric] = (
+        summary_diag_cycle_type[metric]
+        / processed_cycler_run.diagnostic_summary[metric].iloc[0]
+    )
+
+    summary_diag_cycle_type.columns = ["cycle_index", "fractional_metric", "x", "n"]
     return summary_diag_cycle_type

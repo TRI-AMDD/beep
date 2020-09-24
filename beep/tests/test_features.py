@@ -198,7 +198,7 @@ class TestFeaturizer(unittest.TestCase):
             self.assertIsInstance(features_reloaded, DiagnosticProperties)
             self.assertListEqual(
                 list(features_reloaded.X.iloc[2, :]),
-                [143, 0.9753520623934744, "rpt_0.2C", "discharge_energy"],
+                [141,0.9859837086597274,91.17758004259996,2.578137278917377,'reset','discharge_energy'],
             )
 
             # Workflow output
@@ -357,8 +357,8 @@ class TestFeaturizer(unittest.TestCase):
             folder = os.path.split(path)[-1]
             dumpfn(featurizer, featurizer.name)
             self.assertEqual(folder, "DiagnosticProperties")
-            self.assertEqual(featurizer.X.shape, (10, 4))
+            self.assertEqual(featurizer.X.shape, (30, 6))
             self.assertListEqual(
                 list(featurizer.X.iloc[2, :]),
-                [143, 0.9753520623934744, "rpt_0.2C", "discharge_energy"],
+                [141,0.9859837086597274,91.17758004259996,2.578137278917377,'reset','discharge_energy']
             )
