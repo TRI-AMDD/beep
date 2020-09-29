@@ -1,5 +1,12 @@
 
 
+v2020.9.29
+----------
+
+* Changed test assertions, function description - Thanks Bruis van Vlijmen!
+* Biologic to Maccor converter - Thanks Will Powelson!
+* Waveforms in production protocols.
+
 v2020.9.16
 ----------
 * Revert unintentional change during release
