@@ -271,7 +271,7 @@ class BiologicMbToMaccorProcedure:
 
     @classmethod
     def _create_step(
-        cls, seq, step_num_by_seq_num, seq_num_is_non_empty_loop_start, end_step_num
+        cls, seq, step_num_by_seq_num, seq_num_is_active_loop_start, end_step_num
     ):
         step = deepcopy(_blank_step)
 
@@ -421,7 +421,7 @@ class BiologicMbToMaccorProcedure:
             elif (
                 lim_action == "Goto sequence"
                 and goto_seq > seq_num
-                and goto_seq in seq_num_is_non_empty_loop_start
+                and goto_seq in seq_num_is_active_loop_start
             ):
                 # to go straight to a loop, must go to
                 goto_step = step_num_by_seq_num[goto_seq] - 1
@@ -517,7 +517,7 @@ class BiologicMbToMaccorProcedure:
         # during this process we want to assert loop overlap invariants
 
         containing_loop_range_by_seq_num = {}
-        seq_num_is_non_empty_loop_start = set()
+        seq_num_is_active_loop_start = set()
         curr_loop_start = float("inf")
         curr_loop_end = float("inf")
 
@@ -527,10 +527,12 @@ class BiologicMbToMaccorProcedure:
             is_loop_seq = seq["ctrl_type"] == "Loop"
             seq_num = int(seq["Ns"])
             loop_to = int(seq["ctrl_seq"])
-            loop_is_empty = seq["ctrl_repeat"] == "0"
+            # Biologic will pass over this seq without looping
+            # If cycle advancement is set to Loop, this seq will not cause the cycle number to advance
+            loop_is_inactive = seq["ctrl_repeat"] == "0"
 
             # handle loops
-            if is_loop_seq and not loop_is_empty and loop_to >= curr_loop_start:
+            if is_loop_seq and not loop_is_inactive and loop_to >= curr_loop_start:
                 # Biologic does not have nested loops, maccor does not allow
                 # you to loop back into already completed loops
                 # to handle this we're disallowing any overlapping loops
@@ -540,17 +542,17 @@ class BiologicMbToMaccorProcedure:
                     + "overlap and Seq {} overlaps with the loop from".format(seq_num)
                     + " seqs {}-{}".format(curr_loop_start, curr_loop_end)
                 )
-            elif is_loop_seq and not loop_is_empty:
+            elif is_loop_seq and not loop_is_inactive:
                 curr_loop_end = seq_num
                 curr_loop_start = loop_to
-                seq_num_is_non_empty_loop_start.update([loop_to])
+                seq_num_is_active_loop_start.update([loop_to])
 
             if seq_num >= curr_loop_start:
                 containing_loop_range_by_seq_num.update(
                     {seq_num: (curr_loop_start, curr_loop_end)}
                 )
 
-        for loop_start in seq_num_is_non_empty_loop_start:
+        for loop_start in seq_num_is_active_loop_start:
             assert loop_start in containing_loop_range_by_seq_num
             assert loop_start == containing_loop_range_by_seq_num[loop_start][0]
 
@@ -561,11 +563,10 @@ class BiologicMbToMaccorProcedure:
         #
         # now we'll build up a mapping of seq numbers to step numbers to build out our
         # steps later
-        loop_active = False
         curr_step = 1
         curr_loop_start = -1
         curr_loop_end = -1
-        step_num_is_non_empty_loop_start = set()
+        step_num_is_active_loop_start = set()
         seq_num_is_adv_cycle_step = set()
         seq_num_is_blank_loop = set()
         step_num_by_seq_num = {}
@@ -589,17 +590,14 @@ class BiologicMbToMaccorProcedure:
                 curr_step += 1
                 continue
 
-            if seq_num in seq_num_is_non_empty_loop_start:
-                loop_active = True
+            if seq_num in seq_num_is_active_loop_start:
                 curr_loop_start, curr_loop_end = containing_loop_range_by_seq_num[
                     seq_num
                 ]
                 # add do step
                 curr_step += 1
-                step_num_is_non_empty_loop_start.update([curr_step])
-                seq_num_is_non_empty_loop_start.update([seq_num])
-            if loop_active is True:
-                step_num_is_non_empty_loop_start.update({seq_num: curr_loop_start})
+                step_num_is_active_loop_start.update([curr_step])
+                seq_num_is_active_loop_start.update([seq_num])
 
             step_num_by_seq_num[seq_num] = curr_step
             if is_loop and loop_to == i - 1 and (i - 1) in seq_num_is_blank_loop:
@@ -614,7 +612,6 @@ class BiologicMbToMaccorProcedure:
                     + "\nto it (used to force a cycle advance)"
                 )
             elif is_loop:
-                loop_active = False
                 # will adv cycle and loop
                 curr_step += 2
             else:
@@ -712,7 +709,7 @@ class BiologicMbToMaccorProcedure:
             if seq_num in seq_num_is_blank_loop:
                 continue
 
-            if seq_num in seq_num_is_non_empty_loop_start:
+            if seq_num in seq_num_is_active_loop_start:
                 do_step = cls._create_do_step()
                 steps.append(do_step)
 
@@ -733,7 +730,7 @@ class BiologicMbToMaccorProcedure:
                 step = cls._create_step(
                     seq,
                     step_num_by_seq_num,
-                    step_num_is_non_empty_loop_start,
+                    step_num_is_active_loop_start,
                     end_step_num,
                 )
                 steps.append(step)
