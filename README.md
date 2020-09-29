@@ -298,6 +298,7 @@ cycler.
 ##### Cycler Data
 
 | Column name | Required |   Explanation  | Unit |  Data Type |
+|-------------|----------|-------------|------|------------|
 | `rec#` |   |   |   |   `int32` |
 | `cyc#` |   |   |   |   `int32` |
 | `step` |   |   |   |   `int16` |
