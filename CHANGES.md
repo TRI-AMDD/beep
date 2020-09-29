@@ -1,5 +1,10 @@
 
 
+v2020.9.29.19
+-------------
+* Update version number to include hour so that packages can be released more than once a day
+* Add missing waveform files
+
 v2020.9.29
 ----------
 
