@@ -227,7 +227,7 @@ class BiologicMbToMaccorProcedure:
             )
 
     @classmethod
-    def _create_loop_step(cls, seq, seq_num_by_step_num):
+    def _create_loop_step(cls, seq, step_num_by_seq_num):
         step = deepcopy(_blank_step)
         # spacing may be important
         step["StepType"] = " Loop 1 "
@@ -238,7 +238,9 @@ class BiologicMbToMaccorProcedure:
 
         loop_count = int(seq["ctrl_repeat"])
         loop_to_seq = int(seq["ctrl_seq"])
-        loop_to_step = seq_num_by_step_num[loop_to_seq]
+        # Maccor requires us to loop to the DO step
+        # not the actual procedural step like in Biologic seqs
+        loop_to_step = step_num_by_seq_num[loop_to_seq] - 1
 
         loop_end_entry["EndType"] = "Loop Cnt"
         loop_end_entry["Oper"] = " = "

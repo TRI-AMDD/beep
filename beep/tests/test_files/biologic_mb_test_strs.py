@@ -36,7 +36,7 @@ ctrl2_val_unit
 ctrl2_val_vs                                                                                        
 ctrl3_val           1.700               1.700               1.700               1.700               
 ctrl3_val_unit      1.700               1.700               1.700               1.700               
-ctrl3_val_vs        1.700               1.700               1.700               1.700               
+ctrl3_val_vs        1.700               1.700               1t.700               1.700               
 N                   0.00                0.01                0.01                0.01                
 charge/discharge    Charge              Charge              Charge              Charge              
 ctrl_seq            0                   0                   0                   0                   
@@ -209,7 +209,7 @@ EXPECTED_XML = """<?xml version="1.0" encoding="UTF-8"?>
           <EndType>Loop Cnt</EndType>
           <SpecialType> </SpecialType>
           <Oper> = </Oper>
-          <Step>002</Step>
+          <Step>001</Step>
           <Value></Value>
           <StepValue>5</StepValue>
         </EndEntry>
