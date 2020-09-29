@@ -14,6 +14,14 @@ arbin, maccor and biologic cyclers.
 We are currently looking for experienced python developers to help us improve this package and implement new features.
 Please contact any of the maintainers for more information.
 
+# Table of Contents
+1. [Installation](#installation)
+2. [Environment](#environment)
+3. [Testing](#testing)
+4. [Using scripts](#using-scripts)
+5. [Data requirements](#data-requirements)
+6. [How to cite](#how-to-cite)
+
 ## Installation
 Use `pip install beep` to install.
 
@@ -241,8 +249,94 @@ $ run_model '{
   "file_list": ["/data-share/predictions/FastCharge_2_CH29_full_model_predictions.json"],
 }
 ```
+
+## Data requirements
+
+BEEP automatically parses and structures data based on specific outputs from various 
+battery cyclers. The following column headers are required for downstream processing of each 
+cycler.
+
+### Arbin
+
+##### Metadata
+
+| Field name | Explanation | Data Types |
+|------------|-------------|------------|
+
+
+
+##### Cycler Data
+
+| Column name | Required |   Explanation  | Unit |  Data Type |
+|-------------|----------|-------------|------|------------|
+| `data_point` |   |   |   |   `int32` |
+| `test_time` |   |   |   |   `float32` |
+| `datetime` |   |   |   |   `float32` |
+| `step_time` |   |   |   |   `float32` |
+| `step_index` |   |   |   |   `int16` |
+| `cycle_index` |   |   |   |   `int32` |
+| `current` |   |   |   |   `float32` |
+| `voltage` |   |   |   |   `float32` |
+| `charge_capacity` |   |   |   |   `float64` |
+| `discharge_capacity` |   |   |   |   `float64` |
+| `charge_energy` |   |   |   |   `float64` |
+| `discharge_energy` |   |   |   |   `float64` |
+| `dv/dt` |   |   |   |   `float32` |
+| `internal_resistance` |   |   |   |   `float32` |
+| `temperature` |   |   |   |   `float32` |
+
+
+### Maccor
+
+##### Metadata
+
+| Field name | Explanation | Data Types |
+|------------|-------------|------------|
+
+
+
+##### Cycler Data
+
+| Column name | Required |   Explanation  | Unit |  Data Type |
+| `rec#` |   |   |   |   `int32` |
+| `cyc#` |   |   |   |   `int32` |
+| `step` |   |   |   |   `int16` |
+| `test (sec)` |   |   |   |   `float32` |
+| `step (sec)` |   |   |   |   `float32` |
+| `amp-hr` |   |   |   |   `float64` |
+| `watt-hr` |   |   |   |   `float64` |
+| `amps` |   |   |   |   `float32` |
+| `volts` |   |   |   |   `float32` |
+| `state` |   |   |   |   `category` |
+| `es` |   |   |   |   `category` |
+| `dpt time` |   |   |   |   `str` |
+| `acimp/ohms` |   |   |   |   `float32` |
+| `dcir/ohms` |   |   |   |   `float32` |
+| `wf chg cap` |   |   |   |   `float32` |
+| `wf dis cap` |   |   |   |   `float32` |
+| `wf chg e` |   |   |   |   `float32` |
+| `wf dis e` |   |   |   |   `float32` |
+| `range` |   |   |   |   `uint8` |
+| `var1` |   |   |   |   `float16` |
+| `var2` |   |   |   |   `float16` |
+| `var3` |   |   |   |   `float16` |
+| `var4` |   |   |   |   `float16` |
+| `var5` |   |   |   |   `float16` |
+| `var6` |   |   |   |   `float16` |
+| `var7` |   |   |   |   `float16` |
+| `var8` |   |   |   |   `float16` |
+| `var9` |   |   |   |   `float16` |
+| `var10` |   |   |   |   `float16` |
+| `var11` |   |   |   |   `float16` |
+| `var12` |   |   |   |   `float16` |
+| `var13` |   |   |   |   `float16` |
+| `var14` |   |   |   |   `float16` |
+| `var15` |   |   |   |   `float16` |
+
+
 ## How to cite
 If you use BEEP, please cite this article:
 
 > P. Herring, C. Balaji Gopal, M. Aykol, J.H. Montoya, A. Anapolsky, P.M. Attia, W. Gent, J.S. Hummelshøj, L. Hung, H.-K. Kwon, P. Moore, D. Schweigert, K.A. Severson, S. Suram, Z. Yang, R.D. Braatz, B.D. Storey, SoftwareX 11 (2020) 100506.
 [https://doi.org/10.1016/j.softx.2020.100506](https://doi.org/10.1016/j.softx.2020.100506)
+
