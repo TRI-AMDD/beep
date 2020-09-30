@@ -1,5 +1,12 @@
 import unittest
+import os
 from beep.protocol.biologic_mb_to_maccor import BiologicMbToMaccorProcedure
+from beep.tests.test_files.biologic_mb_test_strs import SAMPLE_MB_TEXT, EXPECTED_XML
+
+TEST_DIR = os.path.dirname(__file__)
+TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
+SAMPLE_MB_FILE_NAME = "BCS - 171.64.160.115_Ta19_ourprotocol_gdocSEP2019_CC7.mps"
+CONVERTED_OUTPUT_FILE_NAME = "test_biologic_mb_to_maccor_output_diagnostic"
 
 
 class BiologicMbToMaccorTest(unittest.TestCase):
@@ -310,3 +317,20 @@ class BiologicMbToMaccorTest(unittest.TestCase):
         }
 
         self._test_step_helper(expected_constant_current_step, constant_current_step)
+
+    def test_biologic_mb_text_to_maccor_xml(self):
+        xml = BiologicMbToMaccorProcedure.biologic_mb_text_to_maccor_xml(SAMPLE_MB_TEXT)
+        xml_lines = xml.splitlines()
+        expected_xml_lines = EXPECTED_XML.splitlines()
+        for line_num in range(len(expected_xml_lines)):
+            assert line_num < len(xml_lines)
+            self.assertEqual(expected_xml_lines[line_num], xml_lines[line_num])
+
+    def test_convert(self):
+        # TODO
+        #
+        # Assert equivalence to a verified file
+        source = os.path.join(TEST_FILE_DIR, SAMPLE_MB_FILE_NAME)
+        target = os.path.join(TEST_FILE_DIR, CONVERTED_OUTPUT_FILE_NAME)
+        BiologicMbToMaccorProcedure.convert(source, target)
+        os.remove(target)
