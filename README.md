@@ -253,7 +253,7 @@ $ run_model '{
 ## Data requirements
 
 BEEP automatically parses and structures data based on specific outputs from various 
-battery cyclers. The following column headers are required for downstream processing of each 
+battery cyclers. The following column headers marked "required" are required for downstream processing of each 
 cycler.
 
 ### Arbin
