@@ -263,7 +263,7 @@ Arbin data files are of the form `name_of_file_CHXX.csv` with an associated meta
 
 ##### Cycler Data
 
-| Column name | Required |   Explanation  | Unit |  Data Type |
+| Column name (case insensitive) | Required |   Explanation  | Unit |  Data Type |
 |-------------|----------|-------------|------|------------|
 | `data_point` |   | index of this data point  |  |   `int32` |
 | `test_time` |   |  time of data point relative to start | seconds  |   `float32` |
