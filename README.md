@@ -258,81 +258,55 @@ cycler.
 
 ### Arbin
 
-##### Metadata
-
-| Field name | Explanation | Data Types |
-|------------|-------------|------------|
-
+Arbin data files are of the form `name_of_file_CHXX.csv` with an associated metadata file `name_of_file_CHXX_Metadata.csv`
 
 
 ##### Cycler Data
 
 | Column name | Required |   Explanation  | Unit |  Data Type |
 |-------------|----------|-------------|------|------------|
-| `data_point` |   |   |   |   `int32` |
-| `test_time` |   |   |   |   `float32` |
-| `datetime` |   |   |   |   `float32` |
-| `step_time` |   |   |   |   `float32` |
-| `step_index` |   |   |   |   `int16` |
-| `cycle_index` |   |   |   |   `int32` |
-| `current` |   |   |   |   `float32` |
-| `voltage` |   |   |   |   `float32` |
-| `charge_capacity` |   |   |   |   `float64` |
-| `discharge_capacity` |   |   |   |   `float64` |
-| `charge_energy` |   |   |   |   `float64` |
-| `discharge_energy` |   |   |   |   `float64` |
-| `dv/dt` |   |   |   |   `float32` |
-| `internal_resistance` |   |   |   |   `float32` |
-| `temperature` |   |   |   |   `float32` |
+| `data_point` |   | index of this data point  |  |   `int32` |
+| `test_time` |   |  time of data point relative to start | seconds  |   `float32` |
+| `datetime` | ✓  |  time of data point relative to epoch time | seconds  |   `float32` |
+| `step_time` |   |  elapsed time counted from the starting point of present active step |  seconds |   `float32` |
+| `step_index` | ✓  | currently running step number in the active schedule  |   |   `int16` |
+| `cycle_index` | ✓  | currently active test cycle number  |   |   `int32` |
+| `current` | ✓  | measured value of present channel current  |  A |   `float32` |
+| `voltage` | ✓  | measured value of present channel voltage  |  V |   `float32` |
+| `charge_capacity` | ✓  | cumulative value of present channel charge capacity  | Ah  |   `float64` |
+| `discharge_capacity` | ✓  | cumulative value of present channel discharge capacity  | Ah  |   `float64` |
+| `charge_energy` | ✓  | cumulative value of present channel charge energy  |  Wh  |   `float64` |
+| `discharge_energy` | ✓  | cumulative value of present channel discharge energy   | Wh  |   `float64` |
+| `dv/dt` |   | the first-order change rate of voltage  |  V/s |   `float32` |
+| `internal_resistance` | ✓  | calculated internal resistance  |  Ohm |   `float32` |
+| `temperature` | ✓  | cell temperature | °C |   `float32` |
 
-
-### Maccor
 
 ##### Metadata
 
-| Field name | Explanation | Data Types |
-|------------|-------------|------------|
+| Field name | Required |
+|------------|-------------|
+| `test_id`  |  |
+| `device_id`  |  |
+| `iv_ch_id`  |  |
+| `first_start_datetime`  |  |
+| `schedule_file_name`  |  |
+| `item_id`  |  |
+| `resumed_times`  |  |
+| `last_end_datetime`  |  |
+| `databases`  |  |
+| `grade_id`  |  |
+| `has_aux`  |  |
+| `has_special`  |  |
+| `schedule_version`  |  |
+| `log_aux_data_flag`  |  |
+| `log_special_data_flag`  |  |
+| `rowstate`  |  |
+| `canconfig_filename`  |  |
+| `m_ncanconfigmd5`  |  |
+| `value`  |  |
+| `value2`  |  |
 
-
-
-##### Cycler Data
-
-| Column name | Required |   Explanation  | Unit |  Data Type |
-|-------------|----------|-------------|------|------------|
-| `rec#` |   |   |   |   `int32` |
-| `cyc#` |   |   |   |   `int32` |
-| `step` |   |   |   |   `int16` |
-| `test (sec)` |   |   |   |   `float32` |
-| `step (sec)` |   |   |   |   `float32` |
-| `amp-hr` |   |   |   |   `float64` |
-| `watt-hr` |   |   |   |   `float64` |
-| `amps` |   |   |   |   `float32` |
-| `volts` |   |   |   |   `float32` |
-| `state` |   |   |   |   `category` |
-| `es` |   |   |   |   `category` |
-| `dpt time` |   |   |   |   `str` |
-| `acimp/ohms` |   |   |   |   `float32` |
-| `dcir/ohms` |   |   |   |   `float32` |
-| `wf chg cap` |   |   |   |   `float32` |
-| `wf dis cap` |   |   |   |   `float32` |
-| `wf chg e` |   |   |   |   `float32` |
-| `wf dis e` |   |   |   |   `float32` |
-| `range` |   |   |   |   `uint8` |
-| `var1` |   |   |   |   `float16` |
-| `var2` |   |   |   |   `float16` |
-| `var3` |   |   |   |   `float16` |
-| `var4` |   |   |   |   `float16` |
-| `var5` |   |   |   |   `float16` |
-| `var6` |   |   |   |   `float16` |
-| `var7` |   |   |   |   `float16` |
-| `var8` |   |   |   |   `float16` |
-| `var9` |   |   |   |   `float16` |
-| `var10` |   |   |   |   `float16` |
-| `var11` |   |   |   |   `float16` |
-| `var12` |   |   |   |   `float16` |
-| `var13` |   |   |   |   `float16` |
-| `var14` |   |   |   |   `float16` |
-| `var15` |   |   |   |   `float16` |
 
 
 ## How to cite
