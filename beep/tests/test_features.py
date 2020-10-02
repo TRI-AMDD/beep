@@ -374,30 +374,17 @@ class TestFeaturizer(unittest.TestCase):
                                                                            diagnostic_cycle_type="hppc")
         self.assertEqual(len(sum_diag.index), 16)
         self.assertEqual(sum_diag.cycle_index.max(), 1507)
-        # self.assertEqual(sum_diag.discharge_energy.iloc[0], 17.490821)
         self.assertEqual(np.around(sum_diag.x.iloc[0], 3), np.around(320.629961, 3))
         self.assertEqual(np.around(sum_diag.n.iloc[15], 3), np.around(37.241178, 3))
 
-    def test_feature_generation_errors(self):
-        processed_cycler_run_path_1 = os.path.join(
-            TEST_FILE_DIR, "PreDiag_000304_000153_structure.json"
+    def test_generate_dQdV_peak_fits(self):
+        processed_cycler_run_path = os.path.join(
+            TEST_FILE_DIR, "PreDiag_000304_000153_truncated_structure.json"
         )
-        with ScratchDir("."):
-            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-            # os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
-
-            # Create dummy json obj
-            json_obj = {
-                "mode": self.events_mode,
-                "file_list": [processed_cycler_run_path_1],
-                "run_list": [0],
-            }
-            json_string = json.dumps(json_obj)
-
-            newjsonpaths = process_file_list_from_json(
-                json_string, processed_dir=os.getcwd()
-            )
-            reloaded = json.loads(newjsonpaths)
-
-            # Check that at least strings are output
-            self.assertIsInstance(reloaded["file_list"][-1], str)
+        pcycler_run = loadfn(processed_cycler_run_path)
+        peaks_df = featurizer_helpers.generate_dQdV_peak_fits(pcycler_run, 'rpt_0.2C', 0, 1)
+        print(len(peaks_df.columns))
+        self.assertEqual(peaks_df.columns.tolist(),
+                         ['m0_Amp_rpt_0.2C_1', 'm0_Mu_rpt_0.2C_1', 'm1_Amp_rpt_0.2C_1',
+                          'm1_Mu_rpt_0.2C_1', 'm2_Amp_rpt_0.2C_1', 'm2_Mu_rpt_0.2C_1',
+                          'trough_height_0_rpt_0.2C_1', 'trough_height_1_rpt_0.2C_1'])

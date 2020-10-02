@@ -922,8 +922,8 @@ def get_fractional_quantity_remaining_nx(
     regular_summary = processed_cycler_run.summary.copy()
     regular_summary[normalize_qty_throughput] = regular_summary[normalize_qty].cumsum()
 
-    # Trim the summary_diag_cycle_type to the max cycle in the regular cycles
-    # (no partial cycles in the regular cycle summary)
+    # Trim the cycle index in summary_diag_cycle_type to the max cycle in the regular cycles
+    # (no partial cycles in the regular cycle summary) so that only full cycles are used for n
     summary_diag_cycle_type = summary_diag_cycle_type[summary_diag_cycle_type.cycle_index <=
                                                       regular_summary.cycle_index.max()]
     indices = summary_diag_cycle_type.cycle_index
