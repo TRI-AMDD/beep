@@ -238,7 +238,7 @@ def generate_dQdV_peak_fits(
     # Set construct spec using number of peaks
     model_types = []
     # TODO: i isn't being used here
-    for i in np.arange(max_nr_peaks):
+    for i in np.arange(len(peak_dQdVs)):
         model_types.append({"type": "GaussianModel", "help": {"sigma": {"max": 0.1}}})
 
     spec = {"x": x, "y": y, "model": model_types}
@@ -262,7 +262,6 @@ def generate_dQdV_peak_fits(
         # fig, gridspec = output.plot(data_kws={'markersize': 1})
 
         # Plot components
-
         ax.scatter(no_filter_x, no_filter_y, s=4)
         ax.set_xlabel("Voltage")
 
@@ -293,7 +292,7 @@ def generate_dQdV_peak_fits(
 
     # Incorporate troughs of dQdV curve
     color_list = ["g", "b", "r", "k", "c"]
-    for peak_nr in np.arange(0, max_nr_peaks - 1):
+    for peak_nr in np.arange(0, len(peak_dQdVs) - 1):
         between_outer_peak_data = no_filter_data[
             (no_filter_data.voltage > peak_voltages[peak_nr])
             & (no_filter_data.voltage < peak_voltages[peak_nr + 1])
@@ -929,7 +928,8 @@ def get_fractional_quantity_remaining_nx(
     x = regular_summary.loc[
             regular_summary.cycle_index == indices.iloc[1]
         ][normalize_qty_throughput].iloc[0] - initial_throughput
-
+    print(indices)
+    print(regular_summary.cycle_index.isin(indices))
     summary_diag_cycle_type['x'] = x
     summary_diag_cycle_type['n'] = (
             (1/x) * regular_summary[regular_summary.cycle_index.isin(indices)][normalize_qty_throughput]

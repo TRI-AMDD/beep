@@ -362,3 +362,45 @@ class TestFeaturizer(unittest.TestCase):
                 list(featurizer.X.iloc[2, :]),
                 [141,0.9859837086597274,91.17758004259996,2.578137278917377,'reset','discharge_energy']
             )
+
+    def test_feature_generation_errors(self):
+        processed_cycler_run_path_1 = os.path.join(
+            TEST_FILE_DIR, "PreDiag_000304_000153_structure.json"
+        )
+        processed_cycler_run_path_2 = os.path.join(
+            TEST_FILE_DIR, "PreDiag_000233_00021F_structure.json"
+        )
+        with ScratchDir("."):
+            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+            # os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
+
+            # Create dummy json obj
+            json_obj = {
+                "mode": self.events_mode,
+                "file_list": [processed_cycler_run_path_1],
+                "run_list": [0],
+            }
+            json_string = json.dumps(json_obj)
+
+            newjsonpaths = process_file_list_from_json(
+                json_string, processed_dir=os.getcwd()
+            )
+            reloaded = json.loads(newjsonpaths)
+
+            # Check that at least strings are output
+            self.assertIsInstance(reloaded["file_list"][-1], str)
+
+            json_obj = {
+                "mode": self.events_mode,
+                "file_list": [processed_cycler_run_path_2],
+                "run_list": [1],
+            }
+            json_string = json.dumps(json_obj)
+
+            newjsonpaths = process_file_list_from_json(
+                json_string, processed_dir=os.getcwd()
+            )
+            reloaded = json.loads(newjsonpaths)
+
+            # Check that at least strings are output
+            self.assertIsInstance(reloaded["file_list"][-1], str)
