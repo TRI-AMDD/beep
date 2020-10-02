@@ -921,6 +921,11 @@ def get_fractional_quantity_remaining_nx(
     normalize_qty_throughput = normalize_qty + '_throughput'
     regular_summary = processed_cycler_run.summary.copy()
     regular_summary[normalize_qty_throughput] = regular_summary[normalize_qty].cumsum()
+
+    # Trim the summary_diag_cycle_type to the max cycle in the regular cycles
+    # (no partial cycles in the regular cycle summary)
+    summary_diag_cycle_type = summary_diag_cycle_type[summary_diag_cycle_type.cycle_index <=
+                                                      regular_summary.cycle_index.max()]
     indices = summary_diag_cycle_type.cycle_index
     initial_throughput = regular_summary.loc[
         regular_summary.cycle_index == indices.iloc[0]
@@ -928,8 +933,7 @@ def get_fractional_quantity_remaining_nx(
     x = regular_summary.loc[
             regular_summary.cycle_index == indices.iloc[1]
         ][normalize_qty_throughput].iloc[0] - initial_throughput
-    print(indices)
-    print(regular_summary.cycle_index.isin(indices))
+
     summary_diag_cycle_type['x'] = x
     summary_diag_cycle_type['n'] = (
             (1/x) * regular_summary[regular_summary.cycle_index.isin(indices)][normalize_qty_throughput]

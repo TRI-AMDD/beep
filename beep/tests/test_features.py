@@ -19,6 +19,7 @@ from beep.featurize import (
     DiagnosticProperties,
     DiagnosticSummaryStats,
 )
+from beep.features import featurizer_helpers
 from monty.serialization import dumpfn, loadfn
 from monty.tempfile import ScratchDir
 
@@ -360,15 +361,26 @@ class TestFeaturizer(unittest.TestCase):
             self.assertEqual(featurizer.X.shape, (30, 6))
             self.assertListEqual(
                 list(featurizer.X.iloc[2, :]),
-                [141,0.9859837086597274,91.17758004259996,2.578137278917377,'reset','discharge_energy']
+                [141, 0.9859837086597274, 91.17758004259996, 2.578137278917377, 'reset', 'discharge_energy']
             )
+
+    def test_get_fractional_quantity_remaining_nx(self):
+        processed_cycler_run_path = os.path.join(
+            TEST_FILE_DIR, "PreDiag_000233_00021F_truncated_structure.json"
+        )
+        pcycler_run = loadfn(processed_cycler_run_path)
+        sum_diag = featurizer_helpers.get_fractional_quantity_remaining_nx(pcycler_run,
+                                                                           metric="discharge_energy",
+                                                                           diagnostic_cycle_type="hppc")
+        self.assertEqual(len(sum_diag.index), 16)
+        self.assertEqual(sum_diag.cycle_index.max(), 1507)
+        # self.assertEqual(sum_diag.discharge_energy.iloc[0], 17.490821)
+        self.assertEqual(np.around(sum_diag.x.iloc[0], 3), np.around(320.629961, 3))
+        self.assertEqual(np.around(sum_diag.n.iloc[15], 3), np.around(37.241178, 3))
 
     def test_feature_generation_errors(self):
         processed_cycler_run_path_1 = os.path.join(
             TEST_FILE_DIR, "PreDiag_000304_000153_structure.json"
-        )
-        processed_cycler_run_path_2 = os.path.join(
-            TEST_FILE_DIR, "PreDiag_000233_00021F_structure.json"
         )
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
@@ -379,21 +391,6 @@ class TestFeaturizer(unittest.TestCase):
                 "mode": self.events_mode,
                 "file_list": [processed_cycler_run_path_1],
                 "run_list": [0],
-            }
-            json_string = json.dumps(json_obj)
-
-            newjsonpaths = process_file_list_from_json(
-                json_string, processed_dir=os.getcwd()
-            )
-            reloaded = json.loads(newjsonpaths)
-
-            # Check that at least strings are output
-            self.assertIsInstance(reloaded["file_list"][-1], str)
-
-            json_obj = {
-                "mode": self.events_mode,
-                "file_list": [processed_cycler_run_path_2],
-                "run_list": [1],
             }
             json_string = json.dumps(json_obj)
 
