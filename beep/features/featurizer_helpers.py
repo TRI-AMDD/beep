@@ -9,7 +9,7 @@ All methods are currently lumped into this script.
 
 import pandas as pd
 import numpy as np
-import matplotlib as plt
+import matplotlib.pyplot as plt
 from scipy import signal
 from lmfit import models
 from scipy.interpolate import interp1d
@@ -249,9 +249,9 @@ def generate_dQdV_peak_fits(
         # TODO: not sure this works
         fig, ax = plt.subplots()
         ax.scatter(spec["x"], spec["y"], s=4)
-        for i in peak_voltages:
-            ax.axvline(x=peak_voltages[i], c="black", linestyle="dotted")
-            ax.scatter(peak_voltages[i], peak_dQdVs[i], s=30, c="red")
+        for i, peak_voltage in enumerate(peak_voltages):
+            ax.axvline(x=peak_voltage, c="black", linestyle="dotted")
+            ax.scatter(peak_voltage, peak_dQdVs[i], s=30, c="red")
 
     # Generate fitting model
 

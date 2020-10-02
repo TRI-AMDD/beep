@@ -381,10 +381,12 @@ class TestFeaturizer(unittest.TestCase):
         processed_cycler_run_path = os.path.join(
             TEST_FILE_DIR, "PreDiag_000304_000153_truncated_structure.json"
         )
-        pcycler_run = loadfn(processed_cycler_run_path)
-        peaks_df = featurizer_helpers.generate_dQdV_peak_fits(pcycler_run, 'rpt_0.2C', 0, 1)
-        print(len(peaks_df.columns))
-        self.assertEqual(peaks_df.columns.tolist(),
-                         ['m0_Amp_rpt_0.2C_1', 'm0_Mu_rpt_0.2C_1', 'm1_Amp_rpt_0.2C_1',
-                          'm1_Mu_rpt_0.2C_1', 'm2_Amp_rpt_0.2C_1', 'm2_Mu_rpt_0.2C_1',
-                          'trough_height_0_rpt_0.2C_1', 'trough_height_1_rpt_0.2C_1'])
+        with ScratchDir("."):
+            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+            pcycler_run = loadfn(processed_cycler_run_path)
+            peaks_df = featurizer_helpers.generate_dQdV_peak_fits(pcycler_run, 'rpt_0.2C', 0, 1, plotting_y_n=1)
+            print(len(peaks_df.columns))
+            self.assertEqual(peaks_df.columns.tolist(),
+                             ['m0_Amp_rpt_0.2C_1', 'm0_Mu_rpt_0.2C_1', 'm1_Amp_rpt_0.2C_1',
+                              'm1_Mu_rpt_0.2C_1', 'm2_Amp_rpt_0.2C_1', 'm2_Mu_rpt_0.2C_1',
+                              'trough_height_0_rpt_0.2C_1', 'trough_height_1_rpt_0.2C_1'])
