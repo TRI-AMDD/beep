@@ -105,7 +105,10 @@ class RawCyclerRun(MSONable):
     ]
     INT_COLUMNS = ["step_index", "cycle_index"]
 
-    def __init__(self, data, metadata, eis=None, validate=False, filename=None):
+    IMPUTABLE_COLUMNS = ["temperature", "internal_resistance"]
+
+    def __init__(self, data, metadata, eis=None, validate=False, filename=None,
+                 impute_missing=False):
         """
         Args:
             data (pandas.DataFrame): DataFrame corresponding to cycler run data
@@ -114,12 +117,20 @@ class RawCyclerRun(MSONable):
                 spectrum object. Defaults to None
             validate (bool): whether or not to validate DataFrame upon
                 instantiation. Defaults to None.
+            impute_missing (bool): Impute missing columns required for
+                downstream processing (e.g., temperature).
+
         """
         if validate:
             validator = ValidatorBeep()
             is_valid = validator.validate_arbin_dataframe(data)
             if not is_valid:
                 raise BeepValidationError("Beep validation failed")
+
+        if impute_missing:
+            for col in self.IMPUTABLE_COLUMNS:
+                if col not in data:
+                    data[col] = np.NaN
 
         self.data = data
         self.metadata = metadata
@@ -1120,9 +1131,6 @@ class RawCyclerRun(MSONable):
         data["discharge_energy"] = cls.get_maccor_quantity_sum(
             data, "energy", "discharge"
         )
-
-        if "temperature" not in data.columns:
-            data["temperature"] = np.NaN
 
         # Parse metadata - kinda hackish way to do it, but it works
         metadata = parse_maccor_metadata(metadata_line)
