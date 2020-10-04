@@ -108,7 +108,7 @@ class RawCyclerRun(MSONable):
     IMPUTABLE_COLUMNS = ["temperature", "internal_resistance"]
 
     def __init__(self, data, metadata, eis=None, validate=False, filename=None,
-                 impute_missing=False):
+                 impute_missing=True):
         """
         Args:
             data (pandas.DataFrame): DataFrame corresponding to cycler run data
@@ -309,9 +309,12 @@ class RawCyclerRun(MSONable):
         result = pd.concat(
             [interpolated_discharge, interpolated_charge], ignore_index=True
         )
-        result = result.astype(STRUCTURE_DTYPES["cycles_interpolated"])
 
-        return result
+        relevant_dtypes = {
+            k: v for k, v in STRUCTURE_DTYPES["cycles_interpolated"].items()
+            if k in result.columns
+        }
+        return result.astype(relevant_dtypes)
 
     def as_dict(self):
         """
@@ -1814,7 +1817,7 @@ def get_interpolated_data(
     columns = columns or dataframe.columns
     columns = list(set(columns) | {field_name})
 
-    df = dataframe.loc[:, columns]
+    df = dataframe.loc[dataframe.index.intersection(columns)]
     field_range = field_range or [df[field_name].iloc[0], df[field_name].iloc[-1]]
     # If interpolating on datetime, change column to datetime series and
     # use date_range to create interpolating vector
