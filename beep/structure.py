@@ -310,11 +310,7 @@ class RawCyclerRun(MSONable):
             [interpolated_discharge, interpolated_charge], ignore_index=True
         )
 
-        relevant_dtypes = {
-            k: v for k, v in STRUCTURE_DTYPES["cycles_interpolated"].items()
-            if k in result.columns
-        }
-        return result.astype(relevant_dtypes)
+        return result.astype(STRUCTURE_DTYPES["cycles_interpolated"])
 
     def as_dict(self):
         """
@@ -1817,7 +1813,7 @@ def get_interpolated_data(
     columns = columns or dataframe.columns
     columns = list(set(columns) | {field_name})
 
-    df = dataframe.loc[dataframe.index.intersection(columns)]
+    df = dataframe.loc[:, columns]
     field_range = field_range or [df[field_name].iloc[0], df[field_name].iloc[-1]]
     # If interpolating on datetime, change column to datetime series and
     # use date_range to create interpolating vector
