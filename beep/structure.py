@@ -967,7 +967,7 @@ class RawCyclerRun(MSONable):
         metadata["filename"] = path
         metadata["_today_datetime"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        return cls(data, metadata, None, validate, filename=path)
+        return cls(data, metadata, None, validate, filename=path, impute_missing=False)
 
     @staticmethod
     def extract_biologic_metadata(metadata_path):
