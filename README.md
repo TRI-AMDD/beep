@@ -278,8 +278,8 @@ Arbin data files are of the form `name_of_file_CHXX.csv` with an associated meta
 | `charge_energy` | ✓  | cumulative value of present channel charge energy  |  Wh  |   `float64` |
 | `discharge_energy` | ✓  | cumulative value of present channel discharge energy   | Wh  |   `float64` |
 | `dv/dt` |   | the first-order change rate of voltage  |  V/s |   `float32` |
-| `internal_resistance` | ✓  | calculated internal resistance  |  Ohm |   `float32` |
-| `temperature` | ✓  | cell temperature | °C |   `float32` |
+| `internal_resistance` |   | calculated internal resistance  |  Ohm |   `float32` |
+| `temperature` |   | cell temperature | °C |   `float32` |
 
 
 ##### Metadata
