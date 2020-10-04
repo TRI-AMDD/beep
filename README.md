@@ -308,6 +308,55 @@ Arbin data files are of the form `name_of_file_CHXX.csv` with an associated meta
 | `value2`  |  |
 
 
+### Maccor
+
+Maccor files are single tabular text files matching the regex pattern `".*\\d{5,6}.*\\d{3}"`.
+
+| Column name (case insensitive) | Required |   Explanation  | Unit |  Data Type |
+|-------------|----------|-------------|------|------------|
+| `rec#` | ✓  |   |   |   `int32` |
+| `cyc#` | ✓  |   |   |   `int32` |
+| `step` | ✓  |   |   |   `int16` |
+| `test (sec)` | ✓  |   |   |   `float32` |
+| `step (sec)` | ✓  |   |   |   `float32` |
+| `amp-hr` | ✓  |   |   |   `float64` |
+| `watt-hr` | ✓  |   |   |   `float64` |
+| `amps` | ✓  |   |   |   `float32` |
+| `volts` | ✓  |   |   |   `float32` |
+| `state` | ✓  |   |   |   `category` |
+| `es` | ✓  |   |   |   `category` |
+| `dpt time` | ✓  |   |   |   `str` |
+| `acimp/ohms` | ✓  |   |   |   `float32` |
+| `dcir/ohms` | ✓  |   |   |   `float32` |
+| `wf chg cap` | ✓  |   |   |   `float32` |
+| `wf dis cap` | ✓  |   |   |   `float32` |
+| `wf chg e` | ✓  |   |   |   `float32` |
+| `wf dis e` | ✓  |   |   |   `float32` |
+| `range` | ✓  |   |   |   `uint8` |
+| `var1` | ✓  |   |   |   `float16` |
+| `var2` | ✓  |   |   |   `float16` |
+| `var3` | ✓  |   |   |   `float16` |
+| `var4` | ✓  |   |   |   `float16` |
+| `var5` | ✓  |   |   |   `float16` |
+| `var6` | ✓  |   |   |   `float16` |
+| `var7` | ✓  |   |   |   `float16` |
+| `var8` | ✓  |   |   |   `float16` |
+| `var9` | ✓  |   |   |   `float16` |
+| `var10` | ✓  |   |   |   `float16` |
+| `var11` | ✓  |   |   |   `float16` |
+| `var12` | ✓  |   |   |   `float16` |
+| `var13` | ✓  |   |   |   `float16` |
+| `var14` | ✓  |   |   |   `float16` |
+| `var15` | ✓  |   |   |   `float16` |
+
+
+### Indigo
+
+### Biologic
+
+
+### Neware
+
 
 ## How to cite
 If you use BEEP, please cite this article:
