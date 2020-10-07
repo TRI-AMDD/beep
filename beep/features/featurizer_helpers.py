@@ -9,7 +9,7 @@ All methods are currently lumped into this script.
 
 import pandas as pd
 import numpy as np
-import matplotlib as plt
+import matplotlib.pyplot as plt
 from scipy import signal
 from lmfit import models
 from scipy.interpolate import interp1d
@@ -238,7 +238,7 @@ def generate_dQdV_peak_fits(
     # Set construct spec using number of peaks
     model_types = []
     # TODO: i isn't being used here
-    for i in np.arange(max_nr_peaks):
+    for i in np.arange(len(peak_dQdVs)):
         model_types.append({"type": "GaussianModel", "help": {"sigma": {"max": 0.1}}})
 
     spec = {"x": x, "y": y, "model": model_types}
@@ -249,9 +249,9 @@ def generate_dQdV_peak_fits(
         # TODO: not sure this works
         fig, ax = plt.subplots()
         ax.scatter(spec["x"], spec["y"], s=4)
-        for i in peak_voltages:
-            ax.axvline(x=peak_voltages[i], c="black", linestyle="dotted")
-            ax.scatter(peak_voltages[i], peak_dQdVs[i], s=30, c="red")
+        for i, peak_voltage in enumerate(peak_voltages):
+            ax.axvline(x=peak_voltage, c="black", linestyle="dotted")
+            ax.scatter(peak_voltage, peak_dQdVs[i], s=30, c="red")
 
     # Generate fitting model
 
@@ -262,7 +262,6 @@ def generate_dQdV_peak_fits(
         # fig, gridspec = output.plot(data_kws={'markersize': 1})
 
         # Plot components
-
         ax.scatter(no_filter_x, no_filter_y, s=4)
         ax.set_xlabel("Voltage")
 
@@ -293,7 +292,7 @@ def generate_dQdV_peak_fits(
 
     # Incorporate troughs of dQdV curve
     color_list = ["g", "b", "r", "k", "c"]
-    for peak_nr in np.arange(0, max_nr_peaks - 1):
+    for peak_nr in np.arange(0, len(peak_dQdVs) - 1):
         between_outer_peak_data = no_filter_data[
             (no_filter_data.voltage > peak_voltages[peak_nr])
             & (no_filter_data.voltage < peak_voltages[peak_nr + 1])
@@ -922,6 +921,11 @@ def get_fractional_quantity_remaining_nx(
     normalize_qty_throughput = normalize_qty + '_throughput'
     regular_summary = processed_cycler_run.summary.copy()
     regular_summary[normalize_qty_throughput] = regular_summary[normalize_qty].cumsum()
+
+    # Trim the cycle index in summary_diag_cycle_type to the max cycle in the regular cycles
+    # (no partial cycles in the regular cycle summary) so that only full cycles are used for n
+    summary_diag_cycle_type = summary_diag_cycle_type[summary_diag_cycle_type.cycle_index <=
+                                                      regular_summary.cycle_index.max()]
     indices = summary_diag_cycle_type.cycle_index
     initial_throughput = regular_summary.loc[
         regular_summary.cycle_index == indices.iloc[0]
