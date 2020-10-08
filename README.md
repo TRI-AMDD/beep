@@ -314,24 +314,24 @@ Maccor files are single tabular text files matching the regex pattern `".*\\d{5,
 
 | Column name (case insensitive) | Required |   Explanation  | Unit |  Data Type |
 |-------------|----------|-------------|------|------------|
-| `rec#` | ✓  |   |   |   `int32` |
-| `cyc#` | ✓  |   |   |   `int32` |
-| `step` | ✓  |   |   |   `int16` |
-| `test (sec)` | ✓  |   |   |   `float32` |
-| `step (sec)` | ✓  |   |   |   `float32` |
-| `amp-hr` | ✓  |   |   |   `float64` |
-| `watt-hr` | ✓  |   |   |   `float64` |
-| `amps` | ✓  |   |   |   `float32` |
-| `volts` | ✓  |   |   |   `float32` |
-| `state` | ✓  |   |   |   `category` |
+| `rec#` | ✓  | Data point number (index)  |   |   `int32` |
+| `cyc#` | ✓  | Cycle number  |   |   `int32` |
+| `step` | ✓  | Step number  |   |   `int16` |
+| `test (sec)` | ✓  | Total time elapsed  |  seconds |   `float32` |
+| `step (sec)` | ✓  | Time within this step   | seconds  |   `float32` |
+| `amp-hr` | ✓  | Charge capacity   | Ah  |   `float64` |
+| `watt-hr` | ✓  | Charge energy  | Wh  |   `float64` |
+| `amps` | ✓  | Channel current  |  A |   `float32` |
+| `volts` | ✓  | Channel voltage  | V  |   `float32` |
+| `state` | ✓  | Charging/discharging/etc. state of the battery  |   |   `category` |
 | `es` | ✓  |   |   |   `category` |
-| `dpt time` | ✓  |   |   |   `str` |
-| `acimp/ohms` | ✓  |   |   |   `float32` |
-| `dcir/ohms` | ✓  |   |   |   `float32` |
-| `wf chg cap` | ✓  |   |   |   `float32` |
-| `wf dis cap` | ✓  |   |   |   `float32` |
-| `wf chg e` | ✓  |   |   |   `float32` |
-| `wf dis e` | ✓  |   |   |   `float32` |
+| `dpt time` | ✓  | Date and time of data point  | Date-Time  |   `str` |
+| `acimp/ohms` | ✓  | AC impedance of circuit  |  Ohm |   `float32` |
+| `dcir/ohms` | ✓  | DC internal resistance  |  Ohm |   `float32` |
+| `wf chg cap` | ✓  |  Charge capacity (based on waveform, if available)  | Ah   |   `float32` |
+| `wf dis cap` | ✓  |  Discharge capacity (based on waveform, if available) | Ah  |   `float32` |
+| `wf chg e` | ✓  | Charge energy (based on waveform, if available)  | Wh  |   `float32` |
+| `wf dis e` | ✓  | Discharge energy (based on waveform, if available) | Wh  |   `float32` |
 | `range` | ✓  |   |   |   `uint8` |
 | `var1` | ✓  |   |   |   `float16` |
 | `var2` | ✓  |   |   |   `float16` |
@@ -351,6 +351,8 @@ Maccor files are single tabular text files matching the regex pattern `".*\\d{5,
 
 
 ### Indigo
+
+
 
 ### Biologic
 
