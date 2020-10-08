@@ -2028,7 +2028,7 @@ def determine_paused(group, paused_threshold=3600):
         paused_threshold (int): gap in seconds to classify as a pause in cycling
 
     Returns:
-        bool: is there a pause in this cycle?
+        float: number of seconds that test was paused
 
     """
     date_time_obj = pd.to_datetime(group["date_time_iso"])
@@ -2037,7 +2037,12 @@ def determine_paused(group, paused_threshold=3600):
         for t in date_time_obj
     ]
     date_time_float = pd.Series(date_time_float)
-    return int(date_time_float.diff().max() > paused_threshold)
+    if date_time_float.diff().max() > paused_threshold:
+        paused_secs = date_time_float.diff().max()
+    else:
+        paused_secs = 0
+
+    return paused_secs
 
 
 def maccor_timestamp(x):

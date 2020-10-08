@@ -962,7 +962,7 @@ class RawCyclerRunTest(unittest.TestCase):
     def test_determine_paused(self):
         cycler_run = RawCyclerRun.from_file(self.maccor_file_paused)
         paused = cycler_run.data.groupby("cycle_index").apply(determine_paused)
-        self.assertEqual(paused.max(), 1)
+        self.assertEqual(paused.max(), 7201.0)
 
 
 class CliTest(unittest.TestCase):
