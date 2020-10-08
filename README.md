@@ -271,15 +271,15 @@ Arbin data files are of the form `name_of_file_CHXX.csv` with an associated meta
 | `step_time` |   |  elapsed time counted from the starting point of present active step |  seconds |   `float32` |
 | `step_index` | ✓  | currently running step number in the active schedule  |   |   `int16` |
 | `cycle_index` | ✓  | currently active test cycle number  |   |   `int32` |
-| `current` | ✓  | measured value of present channel current  |  A |   `float32` |
-| `voltage` | ✓  | measured value of present channel voltage  |  V |   `float32` |
-| `charge_capacity` | ✓  | cumulative value of present channel charge capacity  | Ah  |   `float64` |
-| `discharge_capacity` | ✓  | cumulative value of present channel discharge capacity  | Ah  |   `float64` |
-| `charge_energy` | ✓  | cumulative value of present channel charge energy  |  Wh  |   `float64` |
-| `discharge_energy` | ✓  | cumulative value of present channel discharge energy   | Wh  |   `float64` |
-| `dv/dt` |   | the first-order change rate of voltage  |  V/s |   `float32` |
-| `internal_resistance` |   | calculated internal resistance  |  Ohm |   `float32` |
-| `temperature` |   | cell temperature | °C |   `float32` |
+| `current` | ✓  | measured value of present channel current  |  Amps |   `float32` |
+| `voltage` | ✓  | measured value of present channel voltage  |  Volts |   `float32` |
+| `charge_capacity` | ✓  | cumulative value of present channel charge capacity  | Amp-hr  |   `float64` |
+| `discharge_capacity` | ✓  | cumulative value of present channel discharge capacity  | Amp-hr  |   `float64` |
+| `charge_energy` | ✓  | cumulative value of present channel charge energy  |  Watt-hr  |   `float64` |
+| `discharge_energy` | ✓  | cumulative value of present channel discharge energy   | Watt-hr  |   `float64` |
+| `dv/dt` |   | the first-order change rate of voltage  |  Volts/seconds |   `float32` |
+| `internal_resistance` |   | calculated internal resistance |  Ohms |   `float32` |
+| `temperature` |   | cell temperature | °Celsius |   `float32` |
 
 
 ##### Metadata
@@ -314,24 +314,24 @@ Maccor files are single tabular text files matching the regex pattern `".*\\d{5,
 
 | Column name (case insensitive) | Required |   Explanation  | Unit |  Data Type |
 |-------------|----------|-------------|------|------------|
-| `rec#` | ✓  | Data point number (index)  |   |   `int32` |
-| `cyc#` | ✓  | Cycle number  |   |   `int32` |
-| `step` | ✓  | Step number  |   |   `int16` |
-| `test (sec)` | ✓  | Total time elapsed  |  seconds |   `float32` |
-| `step (sec)` | ✓  | Time within this step   | seconds  |   `float32` |
-| `amp-hr` | ✓  | Charge capacity   | Ah  |   `float64` |
-| `watt-hr` | ✓  | Charge energy  | Wh  |   `float64` |
-| `amps` | ✓  | Channel current  |  A |   `float32` |
-| `volts` | ✓  | Channel voltage  | V  |   `float32` |
-| `state` | ✓  | Charging/discharging/etc. state of the battery  |   |   `category` |
+| `rec#` | ✓  | data point number (index)  |   |   `int32` |
+| `cyc#` | ✓  | cycle number  |   |   `int32` |
+| `step` | ✓  | step number  |   |   `int16` |
+| `test (sec)` | ✓  | total time elapsed  |  seconds |   `float32` |
+| `step (sec)` | ✓  | time within this step   | seconds  |   `float32` |
+| `amp-hr` | ✓  | charge capacity   | Amp-hr  |   `float64` |
+| `watt-hr` | ✓  | charge energy  | Watt-hr  |   `float64` |
+| `amps` | ✓  | channel current  |  Amps |   `float32` |
+| `volts` | ✓  | channel voltage  | Volts  |   `float32` |
+| `state` | ✓  | charging/discharging/etc. state of the battery  |   |   `category` |
 | `es` | ✓  |   |   |   `category` |
-| `dpt time` | ✓  | Date and time of data point  | Date-Time  |   `str` |
+| `dpt time` | ✓  | date and time of data point  | Date-Time  |   `str` |
 | `acimp/ohms` | ✓  | AC impedance of circuit  |  Ohm |   `float32` |
 | `dcir/ohms` | ✓  | DC internal resistance  |  Ohm |   `float32` |
-| `wf chg cap` | ✓  |  Charge capacity (based on waveform, if available)  | Ah   |   `float32` |
-| `wf dis cap` | ✓  |  Discharge capacity (based on waveform, if available) | Ah  |   `float32` |
-| `wf chg e` | ✓  | Charge energy (based on waveform, if available)  | Wh  |   `float32` |
-| `wf dis e` | ✓  | Discharge energy (based on waveform, if available) | Wh  |   `float32` |
+| `wf chg cap` | ✓  |  charge capacity (based on waveform, if available)  | Amp-hh   |   `float32` |
+| `wf dis cap` | ✓  |  discharge capacity (based on waveform, if available) | Amp-hr  |   `float32` |
+| `wf chg e` | ✓  | charge energy (based on waveform, if available)  | Watt-hr  |   `float32` |
+| `wf dis e` | ✓  | discharge energy (based on waveform, if available) | Watt-hr  |   `float32` |
 | `range` | ✓  |   |   |   `uint8` |
 | `var1` | ✓  |   |   |   `float16` |
 | `var2` | ✓  |   |   |   `float16` |
@@ -352,6 +352,23 @@ Maccor files are single tabular text files matching the regex pattern `".*\\d{5,
 
 ### Indigo
 
+Indigo files are single hierarchical data files (`*.h5`) with the mandatory group store field `"time_series_data"`.
+
+| Column name (case insensitive)| Required |   Explanation  | Unit |  Data Type |
+|-------------|----------|-------------|------|------------|
+| `cell_coulomb_count_c` | ✓  |  instantaneous cell charge | Coulombs  |  |
+| `cell_current_a` | ✓  |   | A  |  |
+| `cell_energy_j` | ✓  |  cell energy  | Joules  |  |
+| `cell_id` | ✓  | identifier of the cell  |   |  |
+| `cell_power_w` |   |  instantaneous cell power  |  Watts |   |
+| `cell_temperature_c` |    |   temperature of the cell |   °Celsius  |  |
+| `cell_voltage_v` | ✓  | voltage of the cell  | Volts  |  |
+| `cycle_count` | ✓  |  index of the cycle |   |  |
+| `experiment_count` |   |  index of the experiment |   |  |
+| `experiment_type` |   |   |   |  |
+| `half_cycle_count` | ✓  |   |   |  |
+| `system_time_us` | ✓  | test time of data point relative to epoch   |  microseconds |  |
+| `time_s` |   | time elapsed since test beginning | seconds  |  |
 
 
 ### Biologic
