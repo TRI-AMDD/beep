@@ -402,34 +402,34 @@ Various other fields in BioLogic data or metadata files are not required.
 
 Neware files are singular `*.csv` files.
 
-*Note: Neware files use non-standard csv formatting; some fields may require further processing or structureing before input to `beep`.*
+*Note: Neware files use non-standard csv formatting; some fields may require further processing or structuring before input to `beep`.*
 
 
 | Column name | Required |   Explanation  | Unit |  Data Type |
 |-------------|----------|-------------|------|------------|
 | `Record ID` | ✓  |  index of this data point |   | `int32` |
-| `Realtime` | ✓  |   |   |  |
-| `Time(h:min:s.ms)` | ✓  |   |   | `float32` |
-| `Step ID` | ✓  |   |   | `int16` |
-| `Cycle ID` | ✓  |   |   | `int32` |
-| `Current(mA)` | ✓  |   |   | `float32` |
-| `Voltage(V)` | ✓  |   |   | `float32` |
-| `Capacitance_Chg(mAh)` | ✓  |   |   | `float64` |
-| `Capacitance_DChg(mAh)` | ✓  |   |   | `float64` |
-| `Engy_Chg(mWh)` | ✓  |   |   | `float64` |
-| `Engy_DChg(mWh)` | ✓  |   |   | `float64` |
-| `DCIR(O)` | ✓  |   |   | `float32` |
-| `Capacity(mAh)` | ✓  |   |   |  |
-| `Capacity Density(mAh/g)` | ✓  |   |   |  |
-| `Energy(mWh)` | ✓  |   |   |  |
-| `CmpEng(mWh/g)` | ✓  |   |   |  |
-| `Min-T(C)` | ✓  |   |   |  |
-| `Max-T(C)` | ✓  |   |   |  |
-| `Avg-T(C)` | ✓  |   |   |  |
-| `Power(mW)` | ✓  |   |   |  |
-| `dQ/dV(mAh/V)` | ✓  |   |   |  |
-| `dQm/dV(mAh/V.g)` | ✓  |   |   |  |
-| `Temperature(C)` | ✓  |   |   | `float32` |
+| `Realtime` | ✓  |  date-time format for this point  |   |  |
+| `Time(h:min:s.ms)` | ✓  | recorded time for this point  | seconds  | `float32` |
+| `Step ID` | ✓  | index of this step  |   | `int16` |
+| `Cycle ID` | ✓  | index of this cycle  |   | `int32` |
+| `Current(mA)` | ✓  | cell current  |  mAmps | `float32` |
+| `Voltage(V)` | ✓  | cell voltage  |  Volts | `float32` |
+| `Capacitance_Chg(mAh)` | ✓  |  charge capacity | mAmp-hr  | `float64` |
+| `Capacitance_DChg(mAh)` | ✓  | discharge capacity  | mAmp-hr  | `float64` |
+| `Engy_Chg(mWh)` | ✓  | charge energy  | mWatt-hr  | `float64` |
+| `Engy_DChg(mWh)` | ✓  | discharge energy | mWatt-hr  | `float64` |
+| `DCIR(O)` | ✓  |  DC internal resistance |   | `float32` |
+| `Capacity(mAh)` | ✓  |   | mAmp-hr  |  |
+| `Capacity Density(mAh/g)` | ✓  |   |  mAmp-hr/gram |  |
+| `Energy(mWh)` | ✓  |   | mWatt-hr  |  |
+| `CmpEng(mWh/g)` | ✓  |   | mWatt-hr/gram  |  |
+| `Min-T(C)` | ✓  | mimumum cell temperature  | °Celsius  |  |
+| `Max-T(C)` | ✓  | max cell temperature  | °Celsius  |  |
+| `Avg-T(C)` | ✓  | average cell temperature  |  °Celsius |  |
+| `Power(mW)` | ✓  | instantaneous power  |  mWatt |  |
+| `dQ/dV(mAh/V)` | ✓  | differential capacity  | mAmp-hr/Volt  |  |
+| `dQm/dV(mAh/V.g)` | ✓  | differential capacity density  | mAmp-hr/Volt-gram  |  |
+| `Temperature(C)` | ✓  |  temperature (alternate sensor) |  °Celsius  | `float32` |
 
 
 
