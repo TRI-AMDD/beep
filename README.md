@@ -254,7 +254,14 @@ $ run_model '{
 
 BEEP automatically parses and structures data based on specific outputs from various 
 battery cyclers. The following column headers marked "required" are required for downstream processing of each 
-cycler.
+cycler. BEEP currently supports five brands of battery cyclers:
+
+- [Arbin](#arbin)
+- [Maccor](#maccor)
+- [Indigo](#indigo)
+- [BioLogic](#biologic)
+- [Neware](#neware)
+
 
 ### Arbin
 
@@ -371,8 +378,24 @@ Indigo files are single hierarchical data files (`*.h5`) with the mandatory grou
 | `time_s` |   | time elapsed since test beginning | seconds  |  |
 
 
-### Biologic
+### BioLogic
 
+BioLogic files are ASCII text files of the form `*.mpt` with matching `*.mpl` log files.
+
+*BioLogic cycler data is currently only supported for raw operations (e.g., ingestion via `RawCyclerRun` analysis) and is not supported for downstream processing.*
+
+| Column name | Required |   Explanation  | Unit |  Data Type |
+|-------------|----------|-------------|------|------------|
+| `cycle number` | ✓  |   |   | `int` |
+| `half cycle` | ✓  |   |   | `int` |
+| `Ecell/V` | ✓  |   |   | `float` |
+| `I/mA` | ✓  |   |   | `float` |
+| `Q discharge/mA.h` | ✓  |   |   | `float` |
+| `Q charge/mA.h` | ✓  |   |   | `float` |
+| `Energy charge/W.h` | ✓  |   |   | `float` |
+| `Energy discharge/W.h` | ✓  |   |   | `float` |
+
+Various other fields in BioLogic data or metadata files are not required.
 
 ### Neware
 
