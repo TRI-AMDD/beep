@@ -380,24 +380,57 @@ Indigo files are single hierarchical data files (`*.h5`) with the mandatory grou
 
 ### BioLogic
 
-BioLogic files are ASCII text files of the form `*.mpt` with matching `*.mpl` log files.
+BioLogic files are ASCII text files of the form `*.mpt` with matching `*.mpl` log/metadata files.
 
 *BioLogic cycler data is currently only supported for raw operations (e.g., ingestion via `RawCyclerRun` analysis) and is not supported for downstream processing.*
 
 | Column name | Required |   Explanation  | Unit |  Data Type |
 |-------------|----------|-------------|------|------------|
-| `cycle number` | ✓  |   |   | `int` |
+| `cycle number` | ✓  |  index of this cycle |   | `int` |
 | `half cycle` | ✓  |   |   | `int` |
-| `Ecell/V` | ✓  |   |   | `float` |
-| `I/mA` | ✓  |   |   | `float` |
-| `Q discharge/mA.h` | ✓  |   |   | `float` |
-| `Q charge/mA.h` | ✓  |   |   | `float` |
-| `Energy charge/W.h` | ✓  |   |   | `float` |
-| `Energy discharge/W.h` | ✓  |   |   | `float` |
+| `Ecell/V` | ✓  | cell potential  |  Volts | `float` |
+| `I/mA` | ✓  | cell current  |  mAmps | `float` |
+| `Q discharge/mA.h` | ✓  |  discharge capacity | mAmp-hr  | `float` |
+| `Q charge/mA.h` | ✓  |  charge capacty | mAmp-hr  | `float` |
+| `Energy charge/W.h` | ✓  | charge energy  | Watt-hr  | `float` |
+| `Energy discharge/W.h` | ✓  | discharge energy  |  Watt-hr | `float` |
 
 Various other fields in BioLogic data or metadata files are not required.
 
+
 ### Neware
+
+Neware files are singular `*.csv` files.
+
+*Note: Neware files use non-standard csv formatting; some fields may require further processing or structureing before input to `beep`.*
+
+
+| Column name | Required |   Explanation  | Unit |  Data Type |
+|-------------|----------|-------------|------|------------|
+| `Record ID` | ✓  |  index of this data point |   | `int32` |
+| `Realtime` | ✓  |   |   |  |
+| `Time(h:min:s.ms)` | ✓  |   |   | `float32` |
+| `Step ID` | ✓  |   |   | `int16` |
+| `Cycle ID` | ✓  |   |   | `int32` |
+| `Current(mA)` | ✓  |   |   | `float32` |
+| `Voltage(V)` | ✓  |   |   | `float32` |
+| `Capacitance_Chg(mAh)` | ✓  |   |   | `float64` |
+| `Capacitance_DChg(mAh)` | ✓  |   |   | `float64` |
+| `Engy_Chg(mWh)` | ✓  |   |   | `float64` |
+| `Engy_DChg(mWh)` | ✓  |   |   | `float64` |
+| `DCIR(O)` | ✓  |   |   | `float32` |
+| `Capacity(mAh)` | ✓  |   |   |  |
+| `Capacity Density(mAh/g)` | ✓  |   |   |  |
+| `Energy(mWh)` | ✓  |   |   |  |
+| `CmpEng(mWh/g)` | ✓  |   |   |  |
+| `Min-T(C)` | ✓  |   |   |  |
+| `Max-T(C)` | ✓  |   |   |  |
+| `Avg-T(C)` | ✓  |   |   |  |
+| `Power(mW)` | ✓  |   |   |  |
+| `dQ/dV(mAh/V)` | ✓  |   |   |  |
+| `dQm/dV(mAh/V.g)` | ✓  |   |   |  |
+| `Temperature(C)` | ✓  |   |   | `float32` |
+
 
 
 ## How to cite
