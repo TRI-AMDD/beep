@@ -882,8 +882,8 @@ class RawCyclerRun(MSONable):
             .apply(lambda x: 0 if x < 0 else x)
             .cumsum()
         )
-        print(data.columns)
-        print(NEWARE_CONFIG["data_types"])
+        # print(data.columns)
+        # print(NEWARE_CONFIG["data_types"])
         data = data.astype(NEWARE_CONFIG["data_types"])
 
         data.rename(NEWARE_CONFIG["data_columns"], axis="columns", inplace=True)
