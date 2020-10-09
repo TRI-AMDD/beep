@@ -81,3 +81,4 @@ data_types:
   var13: 'float16'
   var14: 'float16'
   var15: 'float16'
+  dpt time: "str"

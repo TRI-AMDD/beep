@@ -105,7 +105,10 @@ class RawCyclerRun(MSONable):
     ]
     INT_COLUMNS = ["step_index", "cycle_index"]
 
-    def __init__(self, data, metadata, eis=None, validate=False, filename=None):
+    IMPUTABLE_COLUMNS = ["temperature", "internal_resistance"]
+
+    def __init__(self, data, metadata, eis=None, validate=False, filename=None,
+                 impute_missing=True):
         """
         Args:
             data (pandas.DataFrame): DataFrame corresponding to cycler run data
@@ -114,12 +117,20 @@ class RawCyclerRun(MSONable):
                 spectrum object. Defaults to None
             validate (bool): whether or not to validate DataFrame upon
                 instantiation. Defaults to None.
+            impute_missing (bool): Impute missing columns required for
+                downstream processing (e.g., temperature).
+
         """
         if validate:
             validator = ValidatorBeep()
             is_valid = validator.validate_arbin_dataframe(data)
             if not is_valid:
                 raise BeepValidationError("Beep validation failed")
+
+        if impute_missing:
+            for col in self.IMPUTABLE_COLUMNS:
+                if col not in data:
+                    data[col] = np.NaN
 
         self.data = data
         self.metadata = metadata
@@ -298,9 +309,8 @@ class RawCyclerRun(MSONable):
         result = pd.concat(
             [interpolated_discharge, interpolated_charge], ignore_index=True
         )
-        result = result.astype(STRUCTURE_DTYPES["cycles_interpolated"])
 
-        return result
+        return result.astype(STRUCTURE_DTYPES["cycles_interpolated"])
 
     def as_dict(self):
         """
@@ -872,8 +882,8 @@ class RawCyclerRun(MSONable):
             .apply(lambda x: 0 if x < 0 else x)
             .cumsum()
         )
-        print(data.columns)
-        print(NEWARE_CONFIG["data_types"])
+        # print(data.columns)
+        # print(NEWARE_CONFIG["data_types"])
         data = data.astype(NEWARE_CONFIG["data_types"])
 
         data.rename(NEWARE_CONFIG["data_columns"], axis="columns", inplace=True)
@@ -957,7 +967,7 @@ class RawCyclerRun(MSONable):
         metadata["filename"] = path
         metadata["_today_datetime"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        return cls(data, metadata, None, validate, filename=path)
+        return cls(data, metadata, None, validate, filename=path, impute_missing=False)
 
     @staticmethod
     def extract_biologic_metadata(metadata_path):
@@ -1120,9 +1130,6 @@ class RawCyclerRun(MSONable):
         data["discharge_energy"] = cls.get_maccor_quantity_sum(
             data, "energy", "discharge"
         )
-
-        if "temperature" not in data.columns:
-            data["temperature"] = np.NaN
 
         # Parse metadata - kinda hackish way to do it, but it works
         metadata = parse_maccor_metadata(metadata_line)
