@@ -1,5 +1,17 @@
 
 
+v2020.9.29.19
+-------------
+* Update version number to include hour so that packages can be released more than once a day
+* Add missing waveform files
+
+v2020.9.29
+----------
+
+* Changed test assertions, function description - Thanks Bruis van Vlijmen!
+* Biologic to Maccor converter - Thanks Will Powelson!
+* Waveforms in production protocols.
+
 v2020.9.16
 ----------
 * Revert unintentional change during release

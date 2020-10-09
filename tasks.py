@@ -15,7 +15,7 @@ import datetime
 
 from beep import __version__ as CURRENT_VER
 
-NEW_VER = datetime.datetime.today().strftime("%Y.%-m.%-d")
+NEW_VER = datetime.datetime.today().strftime("%Y.%-m.%-d.%-H")
 
 
 @task
