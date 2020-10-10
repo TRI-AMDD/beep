@@ -2041,11 +2041,10 @@ def get_max_paused_over_threshold(group, paused_threshold=3600):
     ]
     date_time_float = pd.Series(date_time_float)
     if date_time_float.diff().max() > paused_threshold:
-        max_paused_overthreshold = date_time_float.diff().max()
+        max_paused_duration = date_time_float.diff().max()
     else:
-        max_paused_overthreshold = 0
-
-    return max_paused_overthreshold
+        max_paused_duration = 0
+    return max_paused_duration
 
 
 def maccor_timestamp(x):
