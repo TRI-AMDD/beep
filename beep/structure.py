@@ -467,7 +467,7 @@ class RawCyclerRun(MSONable):
         self.data.drop(columns=["time_since_cycle_start"])
 
         # Determine if any of the cycles has been paused
-        summary["paused"] = self.data.groupby("cycle_index").apply(determine_paused)
+        summary["paused"] = self.data.groupby("cycle_index").apply(get_max_paused_over_threshold)
 
         summary = summary.astype(STRUCTURE_DTYPES["summary"])
 
@@ -540,7 +540,7 @@ class RawCyclerRun(MSONable):
             diag_summary["discharge_capacity"] / diag_summary["charge_capacity"]
         )
         diag_summary["paused"] = self.data.groupby("cycle_index").apply(
-            determine_paused
+            get_max_paused_over_threshold
         )
 
         diag_summary.reset_index(drop=True, inplace=True)
@@ -2026,16 +2026,19 @@ def add_file_prefix_to_path(path, prefix):
     return os.path.join(*split_path)
 
 
-def determine_paused(group, paused_threshold=3600):
+def get_max_paused_over_threshold(group, paused_threshold=3600):
     """
-    Evaluate a raw cycling dataframe to determine if there is a pause in cycling
+    Evaluate a raw cycling dataframe to determine if there is a pause in cycling.
+    The method looks at the time difference between each row and if this value
+    exceeds a threshold, it returns that length of time in seconds. Otherwise it
+    returns 0
 
     Args:
         group (pd.DataFrame): cycling dataframe with date_time_iso column
         paused_threshold (int): gap in seconds to classify as a pause in cycling
 
     Returns:
-        bool: is there a pause in this cycle?
+        float: number of seconds that test was paused
 
     """
     date_time_obj = pd.to_datetime(group["date_time_iso"])
@@ -2044,7 +2047,11 @@ def determine_paused(group, paused_threshold=3600):
         for t in date_time_obj
     ]
     date_time_float = pd.Series(date_time_float)
-    return int(date_time_float.diff().max() > paused_threshold)
+    if date_time_float.diff().max() > paused_threshold:
+        max_paused_duration = date_time_float.diff().max()
+    else:
+        max_paused_duration = 0
+    return max_paused_duration
 
 
 def maccor_timestamp(x):

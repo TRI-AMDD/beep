@@ -19,7 +19,7 @@ from beep.structure import (
     get_project_sequence,
     get_protocol_parameters,
     get_diagnostic_parameters,
-    determine_paused,
+    get_max_paused_over_threshold,
 )
 from beep.conversion_schemas import STRUCTURE_DTYPES
 from monty.serialization import loadfn, dumpfn
@@ -961,8 +961,8 @@ class RawCyclerRunTest(unittest.TestCase):
 
     def test_determine_paused(self):
         cycler_run = RawCyclerRun.from_file(self.maccor_file_paused)
-        paused = cycler_run.data.groupby("cycle_index").apply(determine_paused)
-        self.assertEqual(paused.max(), 1)
+        paused = cycler_run.data.groupby("cycle_index").apply(get_max_paused_over_threshold)
+        self.assertEqual(paused.max(), 7201.0)
 
 
 class CliTest(unittest.TestCase):
