@@ -600,7 +600,8 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window, baseline_step_index=1
         diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
         if rpt_0.2C, occurs at cycle_index = [2, 37, 142, 244 ...], <diag_pos>=0 would correspond to cycle_index 2
         soc_window (int): step index counter corresponding to the soc window of interest.
-        baseline_step_index (int): step index of the initial hppc cycle (discharge
+        baseline_step_index (int): step index of the initial hppc cycle (TODO automatically get value in the method)
+        measured_step_index (int): step index of the comparison hppc cycle (TODO automatically get value in the method)
 
     Returns:
         a dataframe that contains the variance of the voltage differences
@@ -634,17 +635,14 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window, baseline_step_index=1
 
     V = chosen_1.voltage.values
     Q = chosen_1.discharge_capacity.values
+
+    #  Round values so that non-strictly monotonic values are removed
     np.around(Q, decimals=6, out=Q)
     np.around(V, decimals=6, out=V)
     if not np.all(np.diff(Q) > 0):
-        print("not monotonic")
-        print(np.shape(Q), np.shape(V))
-        index_of_repeated = np.where(abs(np.diff(Q)) == 0)[0]
-        print(index_of_repeated)
+        index_of_repeated = np.where(np.abs(np.diff(Q)) == 0)[0]
         Q = np.delete(Q, index_of_repeated, axis=0)
         V = np.delete(V, index_of_repeated, axis=0)
-        print(np.shape(Q), np.shape(V))
-        print(Q, V)
     f = interp1d(Q, V, kind="cubic", fill_value="extrapolate", assume_sorted=False)
 
     v_2 = chosen_2.voltage.tolist()
