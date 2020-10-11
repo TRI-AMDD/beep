@@ -590,7 +590,7 @@ def get_V_I(df):
     return result
 
 
-def get_v_diff(processed_cycler_run, diag_pos, soc_window):
+def get_v_diff(processed_cycler_run, diag_pos, soc_window, baseline_step_index=15, measured_step_index=47):
     """
     This method calculates the variance of voltage difference between a specified hppc cycle and the first
     one during a specified state of charge window.
@@ -600,6 +600,7 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window):
         diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
         if rpt_0.2C, occurs at cycle_index = [2, 37, 142, 244 ...], <diag_pos>=0 would correspond to cycle_index 2
         soc_window (int): step index counter corresponding to the soc window of interest.
+        baseline_step_index (int): step index of the initial hppc cycle (discharge
 
     Returns:
         a dataframe that contains the variance of the voltage differences
@@ -618,8 +619,8 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window):
 
     #         the discharge steps in later hppc cycles has a step number of 47
     #         but that in the initial hppc cycle has a step number of 15
-    hppc_data_2_d = hppc_data_2.loc[hppc_data_2.step_index == 47]
-    hppc_data_1_d = hppc_data_1.loc[hppc_data_1.step_index == 15]
+    hppc_data_2_d = hppc_data_2.loc[hppc_data_2.step_index == measured_step_index]
+    hppc_data_1_d = hppc_data_1.loc[hppc_data_1.step_index == baseline_step_index]
     step_counters_1 = hppc_data_1_d.step_index_counter.unique()
     step_counters_2 = hppc_data_2_d.step_index_counter.unique()
     chosen_1 = hppc_data_1_d.loc[
@@ -633,7 +634,18 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window):
 
     V = chosen_1.voltage.values
     Q = chosen_1.discharge_capacity.values
-    f = interp1d(Q, V, kind="cubic", fill_value="extrapolate")
+    np.around(Q, decimals=6, out=Q)
+    np.around(V, decimals=6, out=V)
+    if not np.all(np.diff(Q) > 0):
+        print("not monotonic")
+        print(np.shape(Q), np.shape(V))
+        index_of_repeated = np.where(abs(np.diff(Q)) == 0)[0]
+        print(index_of_repeated)
+        Q = np.delete(Q, index_of_repeated, axis=0)
+        V = np.delete(V, index_of_repeated, axis=0)
+        print(np.shape(Q), np.shape(V))
+        print(Q, V)
+    f = interp1d(Q, V, kind="cubic", fill_value="extrapolate", assume_sorted=False)
 
     v_2 = chosen_2.voltage.tolist()
     v_1 = f(chosen_2.discharge_capacity).tolist()
