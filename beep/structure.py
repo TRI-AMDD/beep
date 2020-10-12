@@ -1065,10 +1065,10 @@ class RawCyclerRun(MSONable):
         state_code = MACCOR_CONFIG["{}_state_code".format(state_type)]
 
         def forward_roll_quantity(df, quantity):
-        """
-        Helper function that replaces uses waveform capacity/energy values
-        if step is waveform, else uses the normal '_quantity' values
-        """
+            """
+            Helper function that replaces uses waveform capacity/energy values
+            if step is waveform, else uses the normal '_quantity' values
+            """
             if determine_whether_step_is_waveform(df):
                 if (state_type, quantity) == ('discharge', 'capacity'):
                     quantity_agg = df['_wf_dis_cap']
