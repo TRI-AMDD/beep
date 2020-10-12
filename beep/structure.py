@@ -1081,10 +1081,12 @@ class RawCyclerRun(MSONable):
                 else:
                     pass
             else:
-                temp_var = df['_' + quantity].iloc[0]
-                quantity_agg = df['_' + quantity].where(df["_state"] == state_code, other=np.nan, axis=0)
-                quantity_agg.iloc[0] = temp_var
-                quantity_agg.fillna(method='ffill', inplace=True)
+                #temp_var = df['_' + quantity].iloc[0]
+                #quantity_agg = df['_' + quantity].where(df["_state"] == state_code, other=np.nan, axis=0)
+                #quantity_agg.iloc[0] = temp_var
+                #quantity_agg.fillna(method='ffill', inplace=True)
+
+                quantity_agg = df['_' + quantity].where(df["_state"] == state_code, other=0, axis=0)
             return quantity_agg
 
         quantity_agg = data.groupby(['cycle_index', 'step_index']).apply(forward_roll_quantity,
