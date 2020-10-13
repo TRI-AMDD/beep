@@ -198,14 +198,13 @@ class RawCyclerRun(MSONable):
         all_dfs = []
         if reg_cycles is None:
             reg_cycles = self.data.cycle_index.unique()
-            #cycle_indices = [c for c in cycle_indices if c in reg_cycles]
-        reg_cycles.sort()
+            cycle_indices = [c for c in cycle_indices if c in reg_cycles]
 
         # If a step in any of the regular cycles has both charging and discharging current, use test_time to interpolate
-        if self.data.groupby(['cycle_index', 'step_index']).apply(determine_whether_step_is_waveform).any():
-            axis = 'test_time'
-            sampling_rate = 1 #second
-
+        #if self.data.groupby(['cycle_index', 'step_index']).apply(determine_whether_step_is_waveform).any():
+        #    pass
+        #    axis = 'test_time'
+        #    sampling_rate = 1 # seconds
         for cycle_index in tqdm(reg_cycles):
             # Use a cycle_index mask instead of a global groupby to save memoryÍ
             new_df = (
@@ -227,7 +226,7 @@ class RawCyclerRun(MSONable):
             elif axis == "test_time":
                 axis_range = [new_df[axis].min(), new_df[axis].max()]
                 if ~np.isnan(sampling_rate):
-                    resolution = np.around((axis_range[1] - axis_range[0])/sampling_rate) + 1
+                    resolution = int((axis_range[1] - axis_range[0])/sampling_rate) + 1
                 new_df = get_interpolated_data(
                     new_df,
                     axis,
