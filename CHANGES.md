@@ -1,5 +1,12 @@
 
 
+v2020.10.13.11
+--------------
+* Fixes for featurization bugs - Patrick Herring
+* Documentation and clean up for `from_file` methods in structuring - Thanks Alex Dunn!
+* Biologic to maccor converter draft - Thanks Will Powelson!
+
+
 v2020.9.29.19
 -------------
 * Update version number to include hour so that packages can be released more than once a day
