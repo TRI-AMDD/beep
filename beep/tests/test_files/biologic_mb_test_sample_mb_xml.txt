@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?maccor-application progid="Maccor Procedure File"?>
+<MaccorTestProcedure>
+  <header>
+    <BuildTestVersion>
+      <major>1</major>
+      <minor>5</minor>
+      <release>7006</release>
+      <build>32043</build>
+    </BuildTestVersion>
+    <FileFormatVersion>
+      <BTVersion>11</BTVersion>
+    </FileFormatVersion>
+    <ProcDesc>
+      <desc></desc>
+    </ProcDesc>
+  </header>
+  <ProcSteps>
+    <TestStep>
+      <StepType>  Do 1  </StepType>
+      <StepMode>        </StepMode>
+      <StepValue></StepValue>
+      <Limits/>
+      <Ends/>
+      <Reports/>
+      <Range></Range>
+      <Option1></Option1>
+      <Option2></Option2>
+      <Option3></Option3>
+      <StepNote></StepNote>
+    </TestStep>
+    <TestStep>
+      <StepType>Dischrge </StepType>
+      <StepMode>Voltage </StepMode>
+      <StepValue>1.500</StepValue>
+      <Limits/>
+      <Ends>
+        <EndEntry>
+          <EndType>StepTime</EndType>
+          <SpecialType> </SpecialType>
+          <Oper> = </Oper>
+          <Step>003</Step>
+          <Value>00:00:10.0</Value>
+        </EndEntry>
+        <EndEntry>
+          <EndType>Current </EndType>
+          <SpecialType> </SpecialType>
+          <Oper>&lt;= </Oper>
+          <Step>006</Step>
+          <Value>4.0E-3</Value>
+        </EndEntry>
+      </Ends>
+      <Reports>
+        <ReportEntry>
+          <ReportType>Current </ReportType>
+          <Value>5.0E-6</Value>
+        </ReportEntry>
+      </Reports>
+      <Range>4</Range>
+      <Option1>N</Option1>
+      <Option2>N</Option2>
+      <Option3>N</Option3>
+      <StepNote></StepNote>
+    </TestStep>
+    <TestStep>
+      <StepType>  Rest  </StepType>
+      <StepMode>        </StepMode>
+      <StepValue></StepValue>
+      <Limits/>
+      <Ends>
+        <EndEntry>
+          <EndType>StepTime</EndType>
+          <SpecialType> </SpecialType>
+          <Oper> = </Oper>
+          <Step>004</Step>
+          <Value>1.0:00:00</Value>
+        </EndEntry>
+        <EndEntry>
+          <EndType>Current </EndType>
+          <SpecialType> </SpecialType>
+          <Oper>&lt;= </Oper>
+          <Step>003</Step>
+          <Value>4.0E-3</Value>
+        </EndEntry>
+      </Ends>
+      <Reports>
+        <ReportEntry>
+          <ReportType>Power </ReportType>
+          <Value>5.0</Value>
+        </ReportEntry>
+      </Reports>
+      <Range>4</Range>
+      <Option1>N</Option1>
+      <Option2>N</Option2>
+      <Option3>N</Option3>
+      <StepNote></StepNote>
+    </TestStep>
+    <TestStep>
+      <StepType>AdvCycle</StepType>
+      <StepMode>        </StepMode>
+      <StepValue></StepValue>
+      <Limits/>
+      <Ends/>
+      <Reports/>
+      <Range></Range>
+      <Option1></Option1>
+      <Option2></Option2>
+      <Option3></Option3>
+      <StepNote></StepNote>
+    </TestStep>
+    <TestStep>
+      <StepType> Loop 1 </StepType>
+      <StepMode>        </StepMode>
+      <StepValue></StepValue>
+      <Limits/>
+      <Ends>
+        <EndEntry>
+          <EndType>Loop Cnt</EndType>
+          <SpecialType> </SpecialType>
+          <Oper> = </Oper>
+          <Step>001</Step>
+          <Value></Value>
+          <StepValue>5</StepValue>
+        </EndEntry>
+      </Ends>
+      <Reports/>
+      <Range></Range>
+      <Option1></Option1>
+      <Option2></Option2>
+      <Option3></Option3>
+      <StepNote></StepNote>
+    </TestStep>
+    <TestStep>
+      <StepType>Dischrge </StepType>
+      <StepMode>Resistance </StepMode>
+      <StepValue>1.500</StepValue>
+      <Limits/>
+      <Ends>
+        <EndEntry>
+          <EndType>Voltage </EndType>
+          <SpecialType> </SpecialType>
+          <Oper>&gt;= </Oper>
+          <Step>007</Step>
+          <Value>1.0</Value>
+        </EndEntry>
+      </Ends>
+      <Reports>
+        <ReportEntry>
+          <ReportType>Power </ReportType>
+          <Value>5.0</Value>
+        </ReportEntry>
+      </Reports>
+      <Range>4</Range>
+      <Option1>N</Option1>
+      <Option2>N</Option2>
+      <Option3>N</Option3>
+      <StepNote></StepNote>
+    </TestStep>
+    <TestStep>
+      <StepType>  End   </StepType>
+      <StepMode>        </StepMode>
+      <StepValue></StepValue>
+      <Limits/>
+      <Ends/>
+      <Reports/>
+      <Range></Range>
+      <Option1></Option1>
+      <Option2></Option2>
+      <Option3></Option3>
+      <StepNote></StepNote>
+    </TestStep>
+  </ProcSteps>
