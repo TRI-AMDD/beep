@@ -1,8 +1,6 @@
 import unittest
 import os
 from beep.protocol.biologic_mb_to_maccor import BiologicMbToMaccorProcedure
-# from beep.tests.test_files.biologic_mb_test_strs import SAMPLE_MB_TEXT, EXPECTED_XML
-# import difflib
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
