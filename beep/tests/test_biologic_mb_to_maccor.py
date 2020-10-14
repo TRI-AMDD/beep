@@ -1,5 +1,6 @@
 import unittest
 import os
+import json
 from beep.protocol.biologic_mb_to_maccor import BiologicMbToMaccorProcedure
 
 TEST_DIR = os.path.dirname(__file__)
@@ -11,11 +12,10 @@ CONVERTED_OUTPUT_FILE_NAME = "test_biologic_mb_to_maccor_output_diagnostic"
 class BiologicMbToMaccorTest(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
-        with open(os.path.join(TEST_FILE_DIR, 'biologic_mb_test_sample_mb_text.mps'), 'rb') as file:
-            raw_text = file.read()
-            self.sample_mb_text = raw_text.decode("ISO-8859-1")
-        with open(os.path.join(TEST_FILE_DIR, 'biologic_mb_test_sample_mb_xml.txt'), 'r+') as file:
-            self.expected_xml = file.read()
+        with open(os.path.join(TEST_FILE_DIR, 'biologic_mb_test_sample_mb_text.json'), 'r') as jfile:
+            temp_json = json.load(jfile)
+        self.sample_mb_text = temp_json["sample_mb_text"]
+        self.expected_xml = temp_json["expected_xml"]
 
     def test_convert_resistance(self):
         self.assertEqual(
