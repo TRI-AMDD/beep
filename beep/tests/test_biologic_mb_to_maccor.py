@@ -1,7 +1,7 @@
 import unittest
 import os
+import json
 from beep.protocol.biologic_mb_to_maccor import BiologicMbToMaccorProcedure
-from beep.tests.test_files.biologic_mb_test_strs import SAMPLE_MB_TEXT, EXPECTED_XML
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
@@ -12,6 +12,10 @@ CONVERTED_OUTPUT_FILE_NAME = "test_biologic_mb_to_maccor_output_diagnostic"
 class BiologicMbToMaccorTest(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
+        with open(os.path.join(TEST_FILE_DIR, 'biologic_mb_test_sample_mb_text.json'), 'r') as jfile:
+            temp_json = json.load(jfile)
+        self.sample_mb_text = temp_json["sample_mb_text"]
+        self.expected_xml = temp_json["expected_xml"]
 
     def test_convert_resistance(self):
         self.assertEqual(
@@ -319,9 +323,9 @@ class BiologicMbToMaccorTest(unittest.TestCase):
         self._test_step_helper(expected_constant_current_step, constant_current_step)
 
     def test_biologic_mb_text_to_maccor_xml(self):
-        xml = BiologicMbToMaccorProcedure.biologic_mb_text_to_maccor_xml(SAMPLE_MB_TEXT)
+        xml = BiologicMbToMaccorProcedure.biologic_mb_text_to_maccor_xml(self.sample_mb_text)
         xml_lines = xml.splitlines()
-        expected_xml_lines = EXPECTED_XML.splitlines()
+        expected_xml_lines = self.expected_xml.splitlines()
         for line_num in range(len(expected_xml_lines)):
             assert line_num < len(xml_lines)
             self.assertEqual(expected_xml_lines[line_num], xml_lines[line_num])
