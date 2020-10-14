@@ -15,10 +15,8 @@ import boto3
 import pytz
 import time
 from pathlib import Path
-from botocore.exceptions import NoCredentialsError
 from beep import LOG_DIR, ENVIRONMENT, MAX_RETRIES
 from beep.config import config
-from beep.utils.secrets_manager import get_secret
 
 
 class Logger:

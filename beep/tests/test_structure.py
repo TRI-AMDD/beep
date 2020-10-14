@@ -25,7 +25,6 @@ from beep.conversion_schemas import STRUCTURE_DTYPES
 from monty.serialization import loadfn, dumpfn
 from monty.tempfile import ScratchDir
 from beep.utils import os_format
-from beep.utils.secrets_manager import event_setup
 from beep.utils.s3 import download_s3_object
 import matplotlib.pyplot as plt
 
@@ -967,7 +966,6 @@ class RawCyclerRunTest(unittest.TestCase):
 
 class CliTest(unittest.TestCase):
     def setUp(self):
-        self.events_mode = event_setup()
         self.arbin_file = os.path.join(
             TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29.csv"
         )
@@ -981,7 +979,6 @@ class CliTest(unittest.TestCase):
             os.mkdir(os.path.join("data-share", "structure"))
             # Create dummy json obj
             json_obj = {
-                "mode": self.events_mode,
                 "file_list": [self.arbin_file],
                 "run_list": [0],
                 "validity": ["valid"],
@@ -1005,8 +1002,6 @@ class CliTest(unittest.TestCase):
 
 class ProcessedCyclerRunTest(unittest.TestCase):
     def setUp(self):
-        self.events_mode = event_setup()
-
         self.arbin_file = os.path.join(TEST_FILE_DIR, "FastCharge_000000_CH29.csv")
         self.maccor_file = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000019_CH70.070")
         self.neware_file = os.path.join(TEST_FILE_DIR, "raw", "neware_test.csv")
@@ -1164,7 +1159,6 @@ class ProcessedCyclerRunTest(unittest.TestCase):
 
             # Create dummy json obj
             json_obj = {
-                "mode": self.events_mode,
                 "file_list": [self.arbin_file, "garbage_file"],
                 "run_list": [0, 1],
                 "validity": ["valid", "invalid"],
@@ -1207,7 +1201,6 @@ class ProcessedCyclerRunTest(unittest.TestCase):
             os.mkdir(os.path.join("data-share", "structure"))
 
             json_obj = {
-                "mode": self.events_mode,
                 "file_list": [self.arbin_file, "garbage_file"],
                 "run_list": [0, 1],
                 "validity": ["valid", "invalid"],

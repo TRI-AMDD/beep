@@ -7,7 +7,6 @@ import json
 import numpy as np
 import tempfile
 from pathlib import Path
-from beep.utils.secrets_manager import event_setup
 from beep.featurize import (
     process_file_list_from_json,
     DeltaQFastCharge,
@@ -38,7 +37,7 @@ SKIP_MSG = "Tests requiring large files with diagnostic cycles are disabled, set
 
 class TestFeaturizer(unittest.TestCase):
     def setUp(self):
-        self.events_mode = event_setup()
+        pass
 
     def test_feature_generation_full_model(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
@@ -174,7 +173,6 @@ class TestFeaturizer(unittest.TestCase):
 
             # Create dummy json obj
             json_obj = {
-                "mode": self.events_mode,
                 "file_list": [processed_cycler_run_path, processed_cycler_run_path],
                 "run_list": [0, 1],
             }
@@ -199,7 +197,7 @@ class TestFeaturizer(unittest.TestCase):
             self.assertIsInstance(features_reloaded, DiagnosticProperties)
             self.assertListEqual(
                 list(features_reloaded.X.iloc[2, :]),
-                [141,0.9859837086597274,91.17758004259996,2.578137278917377,'reset','discharge_energy'],
+                [141, 0.9859837086597274, 91.17758004259996, 2.578137278917377, 'reset', 'discharge_energy'],
             )
 
             # Workflow output
@@ -223,7 +221,6 @@ class TestFeaturizer(unittest.TestCase):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
 
             json_obj = {
-                "mode": self.events_mode,
                 "file_list": [processed_cycler_run_path],
                 "run_list": [1],
             }
