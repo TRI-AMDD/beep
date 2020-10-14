@@ -4,19 +4,11 @@
 import logging
 import sys
 import os
-import datetime
 import json
-import base64
 import tempfile
-
 import watchtower
 import numpy as np
-import boto3
-import pytz
-import time
 from pathlib import Path
-from beep import LOG_DIR, ENVIRONMENT, MAX_RETRIES
-from beep.config import config
 
 
 class Logger:
