@@ -53,7 +53,7 @@ from monty.serialization import loadfn, dumpfn
 
 from beep import VALIDATION_SCHEMA_DIR
 from beep.conversion_schemas import ARBIN_CONFIG, MACCOR_CONFIG
-from beep.utils import KinesisEvents, WorkflowOutputs
+from beep.utils import WorkflowOutputs
 from beep import logger, __version__
 
 DEFAULT_ARBIN_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-arbin-lfp.yaml")
@@ -594,8 +594,7 @@ def validate_file_list_from_json(
     else:
         file_list_data = json.loads(file_list_json)
 
-    # Setup Events
-    events = KinesisEvents(service="DataValidator", mode=file_list_data["mode"])
+    # Setup workflow
     outputs = WorkflowOutputs()
 
     file_list = file_list_data["file_list"]
@@ -619,8 +618,6 @@ def validate_file_list_from_json(
         "validity": validity,
         "message_list": messages,
     }
-
-    events.put_validation_event(output_json, "complete")
 
     # Workflow outputs
     file_list_size = len(output_json["file_list"])

@@ -43,7 +43,7 @@ from monty.json import MSONable
 from monty.serialization import loadfn, dumpfn
 from scipy.stats import skew, kurtosis
 from beep.collate import scrub_underscore_suffix, add_suffix_to_filename
-from beep.utils import KinesisEvents, WorkflowOutputs
+from beep.utils import WorkflowOutputs
 from beep.features import featurizer_helpers
 from beep import logger, __version__
 
@@ -1462,8 +1462,7 @@ def process_file_list_from_json(file_list_json, processed_dir="data-share/featur
     else:
         file_list_data = json.loads(file_list_json)
 
-    # Setup Events
-    events = KinesisEvents(service="DataAnalyzer", mode=file_list_data["mode"])
+    # Setup workflow
     outputs = WorkflowOutputs()
 
     # Add root path to processed_dir
@@ -1527,8 +1526,6 @@ def process_file_list_from_json(file_list_json, processed_dir="data-share/featur
         "result_list": processed_result_list,
         "message_list": processed_message_list,
     }
-
-    events.put_analyzing_event(output_data, "featurizing", "complete")
 
     # Workflow outputs
     outputs.put_workflow_outputs_list(output_data, "featurizing")

@@ -50,7 +50,6 @@ from sklearn.linear_model import (
 )
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
-from beep.utils import KinesisEvents
 from beep import MODEL_DIR, logger, __version__
 
 s = {"service": "DataAnalyzer"}
@@ -644,8 +643,7 @@ def process_file_list_from_json(
     else:
         file_list_data = json.loads(file_list_json)
 
-    # Setup Events
-    events = KinesisEvents(service="DataAnalyzer", mode=file_list_data["mode"])
+    # Setup workflow TODO
 
     # Add BEEP_PROCESSING_DIR to processed_dir
     processed_dir = os.path.join(
@@ -681,8 +679,6 @@ def process_file_list_from_json(
                 "result_list": [],
                 "message_list": [],
             }
-
-            events.put_analyzing_event(output_data, "predicting", "error")
 
             # Return jsonable file list
             return json.dumps(output_data)
@@ -741,8 +737,6 @@ def process_file_list_from_json(
         "result_list": processed_result_list,
         "message_list": processed_message_list,
     }
-
-    events.put_analyzing_event(output_data, "predicting", "complete")
 
     # Return jsonable file list
     return json.dumps(output_data)

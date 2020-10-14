@@ -51,7 +51,7 @@ from beep.protocol import PROCEDURE_TEMPLATE_DIR, BIOLOGIC_TEMPLATE_DIR
 from beep.protocol.maccor import Procedure, insert_driving_parametersv1
 from beep.protocol.biologic import Settings
 
-from beep.utils import KinesisEvents, WorkflowOutputs
+from beep.utils import WorkflowOutputs
 
 s = {"service": "ProtocolGenerator"}
 
@@ -219,8 +219,7 @@ def process_csv_file_list_from_json(
     else:
         file_list_data = json.loads(file_list_json)
 
-    # Setup Events
-    events = KinesisEvents(service="ProtocolGenerator", mode=file_list_data["mode"])
+    # Setup workflow
     outputs = WorkflowOutputs()
 
     file_list = file_list_data["file_list"]
@@ -235,8 +234,6 @@ def process_csv_file_list_from_json(
         all_output_files.extend(output_files)
 
     output_data = {"file_list": all_output_files, "result": result, "message": message}
-
-    events.put_generate_event(output_data, "complete")
 
     # Workflow outputs
     outputs.put_generate_outputs_list(output_data, "complete")

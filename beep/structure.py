@@ -71,7 +71,7 @@ from beep.conversion_schemas import (
     STRUCTURE_DTYPES,
 )
 
-from beep.utils import KinesisEvents, WorkflowOutputs
+from beep.utils import WorkflowOutputs
 from beep import logger, __version__
 
 s = {"service": "DataStructurer"}
@@ -2134,8 +2134,7 @@ def process_file_list_from_json(file_list_json, processed_dir="data-share/struct
     else:
         file_list_data = json.loads(file_list_json)
 
-    # Setup Events
-    events = KinesisEvents(service="DataStructurer", mode=file_list_data["mode"])
+    # Setup workflow
     outputs = WorkflowOutputs()
 
     # Prepend optional root to output directory
@@ -2183,8 +2182,6 @@ def process_file_list_from_json(file_list_json, processed_dir="data-share/struct
         "message_list": processed_message_list,
         "invalid_file_list": invalid_file_list,
     }
-
-    events.put_structuring_event(output_json, "complete")
 
     # Workflow outputs
     file_list_size = len(output_json["file_list"])

@@ -39,11 +39,11 @@ jobs:
         env:
           MPLBACKEND: "Agg"
           BEEP_ENV: "dev"
+          BEEP_BIG_TESTS: "True"
         run: |
           pytest beep --color=yes --cov=beep --cov-config=.coveragerc --cov-report html:coverage_reports
       - name: Coveralls
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BEEP_BIG_TESTS: "True"
         run: |
           coveralls
