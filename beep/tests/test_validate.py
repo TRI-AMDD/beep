@@ -55,6 +55,16 @@ class ValidationArbinTest(unittest.TestCase):
         self.assertFalse(v.validate_arbin_dataframe(df))
         self.assertEqual(v.errors["cycle_index"][0][0][0], "must be of number type")
 
+    def test_validation_maccor_cerberus(self):
+        path = "xTESLADIAG_000019_CH70.070"
+        path = os.path.join(TEST_FILE_DIR, path)
+
+        v = ValidatorBeep()
+        v.allow_unknown = True
+
+        df = pd.read_csv(path, index_col=0, header=1, skiprows=0, sep="\t")
+        self.assertTrue(v.validate_maccor_dataframe(df))
+
     def test_validation_arbin_bad_data(self):
         path = "2017-12-04_4_65C-69per_6C_CH29.csv"
         path = os.path.join(TEST_FILE_DIR, path)
