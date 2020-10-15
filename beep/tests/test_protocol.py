@@ -657,6 +657,27 @@ class GenerateProcedureTest(unittest.TestCase):
             os.system("generate_protocol {}".format(os_format(json_input)))
             self.assertEqual(len(os.listdir(procedures_path)), 3)
 
+    def test_console_script_2(self):
+        csv_file = os.path.join(TEST_FILE_DIR,
+                                "data-share",
+                                "raw",
+                                "parameters",
+                                "Drive_parameters - GP.csv")
+
+        # Test script functionality
+        with ScratchDir(".") as scratch_dir:
+            # Set BEEP_PROCESSING_DIR directory to scratch_dir
+            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
+            procedures_path = os.path.join("data-share", "protocols", "procedures")
+            names_path = os.path.join("data-share", "protocols", "names")
+            makedirs_p(procedures_path)
+            makedirs_p(names_path)
+
+            # Test the script
+            json_input = json.dumps({"file_list": [csv_file]})
+            os.system("generate_protocol {}".format(os_format(json_input)))
+            self.assertEqual(len(os.listdir(procedures_path)), 36)
+
 
 class ProcedureToScheduleTest(unittest.TestCase):
     def setUp(self):
