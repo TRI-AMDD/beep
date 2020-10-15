@@ -69,6 +69,7 @@ from beep.utils import WorkflowOutputs
 from beep import logger, __version__
 
 DEFAULT_ARBIN_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-arbin-lfp.yaml")
+CERBERUS_ARBIN_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-arbin-cerberus.yaml")
 DEFAULT_MACCOR_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-maccor-lfp.yaml")
 DEFAULT_EIS_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-maccor-eis.yaml")
 PROJECT_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-projects.yaml")
@@ -85,7 +86,7 @@ class ValidatorBeep(Validator):
 
     """
 
-    def validate_arbin_dataframe(self, df, schema=DEFAULT_ARBIN_SCHEMA):
+    def validate_arbin_dataframe(self, df, schema=CERBERUS_ARBIN_SCHEMA):
         """
         Validator for large, cyclic dataframes coming from Arbin.
         Requires a valid Cycle_Index column of type int.

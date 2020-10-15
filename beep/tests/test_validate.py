@@ -28,7 +28,6 @@ TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 
-@unittest.skip
 class ValidationArbinTest(unittest.TestCase):
     def setUp(self):
         pass
