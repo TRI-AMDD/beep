@@ -93,31 +93,31 @@ class ValidationArbinTest(unittest.TestCase):
         ]
         paths = [os.path.join(TEST_FILE_DIR, path) for path in paths]
         v = ValidatorBeep()
+        with ScratchDir(".") as scratch_dir:
+            temp_records = os.path.join(scratch_dir, "temp_records.json")
+            with open(temp_records, "w") as f:
+                f.write("{}")
 
-        temp_records = os.path.join(TEST_FILE_DIR, "temp_records.json")
-        with open(temp_records, "w") as f:
-            f.write("{}")
+            results = v.validate_from_paths(paths, record_results=False)
+            self.assertFalse(results["2017-05-09_test-TC-contact_CH33.csv"]["validated"])
+            errmsg = results["2017-05-09_test-TC-contact_CH33.csv"]["errors"][
+                "cycle_index"
+            ][0][0][0]
+            self.assertEqual(errmsg, "must be of number type")
+            self.assertTrue(results["2017-12-04_4_65C-69per_6C_CH29.csv"]["validated"])
 
-        results = v.validate_from_paths(paths, record_results=False)
-        self.assertFalse(results["2017-05-09_test-TC-contact_CH33.csv"]["validated"])
-        errmsg = results["2017-05-09_test-TC-contact_CH33.csv"]["errors"][
-            "cycle_index"
-        ][0][0][0]
-        self.assertEqual(errmsg, "must be of number type")
-        self.assertTrue(results["2017-12-04_4_65C-69per_6C_CH29.csv"]["validated"])
+            v.validate_from_paths(paths, record_results=True, record_path=temp_records)
+            with open(temp_records, "r") as f:
+                results_form_rec = json.load(f)
 
-        v.validate_from_paths(paths, record_results=True, record_path=temp_records)
-        with open(temp_records, "r") as f:
-            results_form_rec = json.load(f)
+            self.assertFalse(
+                results_form_rec["2017-05-09_test-TC-contact_CH33.csv"]["validated"]
+            )
 
-        self.assertFalse(
-            results_form_rec["2017-05-09_test-TC-contact_CH33.csv"]["validated"]
-        )
-
-        results = v.validate_from_paths(
-            paths, record_results=True, skip_existing=True, record_path=temp_records
-        )
-        self.assertEqual(results, {})
+            results = v.validate_from_paths(
+                paths, record_results=True, skip_existing=True, record_path=temp_records
+            )
+            self.assertEqual(results, {})
 
     @unittest.skip
     def test_bad_file(self):
