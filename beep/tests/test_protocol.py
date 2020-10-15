@@ -1,4 +1,16 @@
-# Copyright 2019 Toyota Research Institute. All rights reserved.
+# Copyright [2020] [Toyota Research Institute]
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Unit tests related to Generating protocol files"""
 
 import os
@@ -10,7 +22,6 @@ import shutil
 from copy import deepcopy
 
 import pandas as pd
-from beep.utils.secrets_manager import event_setup
 from beep.protocol import (
     PROCEDURE_TEMPLATE_DIR,
     SCHEDULE_TEMPLATE_DIR,
@@ -36,8 +47,7 @@ TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 class ProcedureTest(unittest.TestCase):
     def setUp(self):
-        # Determine events mode for testing
-        self.events_mode = event_setup()
+        pass
 
     def test_convert_velocity_to_power_waveform(self):
         velocity_waveform_file = os.path.join(
@@ -276,7 +286,7 @@ class ProcedureTest(unittest.TestCase):
 
 class GenerateProcedureTest(unittest.TestCase):
     def setUp(self):
-        self.events_mode = event_setup()
+        pass
 
     def test_io(self):
         test_file = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000003_CH68.000")
@@ -643,14 +653,14 @@ class GenerateProcedureTest(unittest.TestCase):
             makedirs_p(names_path)
 
             # Test the script
-            json_input = json.dumps({"file_list": [csv_file], "mode": self.events_mode})
+            json_input = json.dumps({"file_list": [csv_file]})
             os.system("generate_protocol {}".format(os_format(json_input)))
             self.assertEqual(len(os.listdir(procedures_path)), 3)
 
 
 class ProcedureToScheduleTest(unittest.TestCase):
     def setUp(self):
-        self.events_mode = event_setup()
+        pass
 
     def test_single_step_conversion(self):
         procedure = Procedure()
@@ -793,7 +803,7 @@ class ProcedureToScheduleTest(unittest.TestCase):
 
 class ArbinScheduleTest(unittest.TestCase):
     def setUp(self):
-        self.events_mode = event_setup()
+        pass
 
     def test_dict_to_file(self):
         filename = "20170630-3_6C_9per_5C.sdu"
@@ -836,7 +846,7 @@ class ArbinScheduleTest(unittest.TestCase):
 
 class BiologicSettingsTest(unittest.TestCase):
     def setUp(self):
-        self.events_mode = event_setup()
+        pass
 
     def test_from_file(self):
         filename = "BCS - 171.64.160.115_Ta19_ourprotocol_gdocSEP2019_CC7.mps"

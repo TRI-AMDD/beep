@@ -2,7 +2,7 @@ import os
 import hashlib
 import json
 from collections import OrderedDict
-from .events import Logger, KinesisEvents, WorkflowOutputs
+from .workflow import Logger, WorkflowOutputs
 from .splice import MaccorSplice
 from pydash import get, set_with, unset, merge
 

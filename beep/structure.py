@@ -1,4 +1,16 @@
-# Copyright 2019 Toyota Research Institute. All rights reserved.
+# Copyright [2020] [Toyota Research Institute]
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 Module and script for processing cycler run CSVs into structured data
 for featurization and analysis.  Contains RawCyclerRun and ProcessedCyclerRun
@@ -71,7 +83,7 @@ from beep.conversion_schemas import (
     STRUCTURE_DTYPES,
 )
 
-from beep.utils import KinesisEvents, WorkflowOutputs
+from beep.utils import WorkflowOutputs
 from beep import logger, __version__
 
 s = {"service": "DataStructurer"}
@@ -2134,8 +2146,7 @@ def process_file_list_from_json(file_list_json, processed_dir="data-share/struct
     else:
         file_list_data = json.loads(file_list_json)
 
-    # Setup Events
-    events = KinesisEvents(service="DataStructurer", mode=file_list_data["mode"])
+    # Setup workflow
     outputs = WorkflowOutputs()
 
     # Prepend optional root to output directory
@@ -2183,8 +2194,6 @@ def process_file_list_from_json(file_list_json, processed_dir="data-share/struct
         "message_list": processed_message_list,
         "invalid_file_list": invalid_file_list,
     }
-
-    events.put_structuring_event(output_json, "complete")
 
     # Workflow outputs
     file_list_size = len(output_json["file_list"])

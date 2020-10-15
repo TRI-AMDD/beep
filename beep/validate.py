@@ -1,4 +1,16 @@
-# Copyright 2019 Toyota Research Institute. All rights reserved.
+# Copyright [2020] [Toyota Research Institute]
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 Module and script for validating battery cycler flat files using dictionary
 key or DataFrame based validation of typing, min/max, and non-allowed values
@@ -53,7 +65,7 @@ from monty.serialization import loadfn, dumpfn
 
 from beep import VALIDATION_SCHEMA_DIR
 from beep.conversion_schemas import ARBIN_CONFIG, MACCOR_CONFIG
-from beep.utils import KinesisEvents, WorkflowOutputs
+from beep.utils import WorkflowOutputs
 from beep import logger, __version__
 
 DEFAULT_ARBIN_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-arbin-lfp.yaml")
@@ -594,8 +606,7 @@ def validate_file_list_from_json(
     else:
         file_list_data = json.loads(file_list_json)
 
-    # Setup Events
-    events = KinesisEvents(service="DataValidator", mode=file_list_data["mode"])
+    # Setup workflow
     outputs = WorkflowOutputs()
 
     file_list = file_list_data["file_list"]
@@ -619,8 +630,6 @@ def validate_file_list_from_json(
         "validity": validity,
         "message_list": messages,
     }
-
-    events.put_validation_event(output_json, "complete")
 
     # Workflow outputs
     file_list_size = len(output_json["file_list"])

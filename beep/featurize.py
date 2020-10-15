@@ -1,4 +1,16 @@
-# Copyright 2019 Toyota Research Institute. All rights reserved.
+# Copyright [2020] [Toyota Research Institute]
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 Module and scripts for generating descriptors (quantities listed
 in cell_analysis.m) from cycle-level summary statistics.
@@ -43,7 +55,7 @@ from monty.json import MSONable
 from monty.serialization import loadfn, dumpfn
 from scipy.stats import skew, kurtosis
 from beep.collate import scrub_underscore_suffix, add_suffix_to_filename
-from beep.utils import KinesisEvents, WorkflowOutputs
+from beep.utils import WorkflowOutputs
 from beep.features import featurizer_helpers
 from beep import logger, __version__
 
@@ -1462,8 +1474,7 @@ def process_file_list_from_json(file_list_json, processed_dir="data-share/featur
     else:
         file_list_data = json.loads(file_list_json)
 
-    # Setup Events
-    events = KinesisEvents(service="DataAnalyzer", mode=file_list_data["mode"])
+    # Setup workflow
     outputs = WorkflowOutputs()
 
     # Add root path to processed_dir
@@ -1527,8 +1538,6 @@ def process_file_list_from_json(file_list_json, processed_dir="data-share/featur
         "result_list": processed_result_list,
         "message_list": processed_message_list,
     }
-
-    events.put_analyzing_event(output_data, "featurizing", "complete")
 
     # Workflow outputs
     outputs.put_workflow_outputs_list(output_data, "featurizing")

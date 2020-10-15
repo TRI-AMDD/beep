@@ -1,4 +1,16 @@
-# Copyright 2019 Toyota Research Institute. All rights reserved.
+# Copyright [2020] [Toyota Research Institute]
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Unit tests related to feature generation"""
 
 import unittest
@@ -7,7 +19,6 @@ import json
 import numpy as np
 from glob import glob
 from beep import MODEL_DIR, ENVIRONMENT
-from beep.utils.secrets_manager import event_setup
 from beep.run_model import (
     DegradationModel,
     process_file_list_from_json,
@@ -16,7 +27,6 @@ from beep.run_model import (
 from monty.serialization import loadfn
 from monty.tempfile import ScratchDir
 
-import boto3
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
@@ -30,7 +40,7 @@ MULTI_TASK_FEATURES_PATH = os.path.join(
 
 class TestRunModel(unittest.TestCase):
     def setUp(self):
-        self.events_mode = event_setup()
+        pass
 
     def test_model_training_and_serialization(self):
         # tests for model training and serialization
@@ -39,7 +49,6 @@ class TestRunModel(unittest.TestCase):
         )
         with ScratchDir(".") as scratch_dir:
             json_obj = {
-                "mode": self.events_mode,
                 "file_list": featurized_jsons,
                 "run_list": list(range(len(featurized_jsons))),
             }
@@ -64,7 +73,6 @@ class TestRunModel(unittest.TestCase):
         )
         with ScratchDir(".") as scratch_dir:
             json_obj = {
-                "mode": self.events_mode,
                 "file_list": featurized_jsons,
                 "run_list": list(range(len(featurized_jsons))),
             }
@@ -92,7 +100,6 @@ class TestRunModel(unittest.TestCase):
             os.path.join(MULTI_TASK_FEATURES_PATH, "*features.json")
         )
         json_obj = {
-            "mode": self.events_mode,
             "file_list": featurized_jsons,
             "run_list": list(range(len(featurized_jsons))),
         }
@@ -124,7 +131,6 @@ class TestRunModel(unittest.TestCase):
             TEST_FILE_DIR, "2017-06-30_2C-10per_6C_CH10_full_model_multi_features.json"
         )
         json_obj = {
-            "mode": self.events_mode,
             "file_list": [feature_json_path, feature_json_path],
             "run_list": [0, 1],
         }
@@ -155,7 +161,6 @@ class TestRunModel(unittest.TestCase):
             os.path.join(SINGLE_TASK_FEATURES_PATH, "*features.json")
         )
         json_obj = {
-            "mode": self.events_mode,
             "file_list": featurized_jsons,
             "run_list": list(range(len(featurized_jsons))),
         }
