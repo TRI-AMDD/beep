@@ -276,7 +276,6 @@ class RawCyclerRunTest(unittest.TestCase):
             )
         )
 
-    from pdb import set_trace
 
     def test_get_interpolated_discharge_cycles(self):
         cycler_run = RawCyclerRun.from_file(self.arbin_file)

@@ -199,6 +199,7 @@ class RawCyclerRun(MSONable):
         if reg_cycles is None:
             reg_cycles = self.data.cycle_index.unique()
             cycle_indices = [c for c in cycle_indices if c in reg_cycles]
+            cycle_indices.sort()
 
         # If a step in any of the regular cycles has both charging and discharging current, use test_time to interpolate
         #if self.data.groupby(['cycle_index', 'step_index']).apply(determine_whether_step_is_waveform).any():
@@ -1062,34 +1063,19 @@ class RawCyclerRun(MSONable):
 
         """
         state_code = MACCOR_CONFIG["{}_state_code".format(state_type)]
+        quantity_agg = data['_' + quantity].where(data["_state"] == state_code, other=0, axis=0)
 
-        def forward_roll_quantity(df, quantity):
-            """
-            Helper function that replaces uses waveform capacity/energy values
-            if step is waveform, else uses the normal '_quantity' values
-            """
-            if determine_whether_step_is_waveform(df):
-                if (state_type, quantity) == ('discharge', 'capacity'):
-                    quantity_agg = df['_wf_dis_cap']
-                elif (state_type, quantity) == ('charge', 'capacity'):
-                    quantity_agg = df['_wf_chg_cap']
-                elif (state_type, quantity) == ('discharge', 'energy'):
-                    quantity_agg = df['_wf_dis_e']
-                elif (state_type, quantity) == ('charge', 'energy'):
-                    quantity_agg = df['_wf_chg_e']
-                else:
-                    pass
+        if data['_wf_chg_cap'].notna().sum():
+            if (state_type, quantity) == ('discharge', 'capacity'):
+                quantity_agg = data['_wf_dis_cap'].where(data['_wf_dis_cap'].notna(), other=quantity_agg, axis=0)
+            elif (state_type, quantity) == ('charge', 'capacity'):
+                quantity_agg = data['_wf_chg_cap'].where(data['_wf_chg_cap'].notna(), other=quantity_agg, axis=0)
+            elif (state_type, quantity) == ('discharge', 'energy'):
+                quantity_agg = data['_wf_dis_e'].where(data['wf_dis_e'].notna(), other=quantity_agg, axis=0)
+            elif (state_type, quantity) == ('charge', 'energy'):
+                quantity_agg = data['_wf_chg_e'].where(data['wf_chg_e'].notna(), other=quantity_agg, axis=0)
             else:
-                #temp_var = df['_' + quantity].iloc[0]
-                #quantity_agg = df['_' + quantity].where(df["_state"] == state_code, other=np.nan, axis=0)
-                #quantity_agg.iloc[0] = temp_var
-                #quantity_agg.fillna(method='ffill', inplace=True)
-
-                quantity_agg = df['_' + quantity].where(df["_state"] == state_code, other=0, axis=0)
-            return quantity_agg
-
-        quantity_agg = data.groupby(['cycle_index', 'step_index']).apply(forward_roll_quantity,
-                                                                         quantity=quantity).reset_index(drop=True)
+                pass
 
         end_step = data["_ending_status"].apply(
             lambda x: MACCOR_CONFIG["end_step_code_min"]
@@ -1100,10 +1086,7 @@ class RawCyclerRun(MSONable):
         # As a fix, compute the actual step change using diff() on step_index and set end_step to be
         # a logical AND(step_change, end_step)
         is_step_change = data['step_index'].diff(periods=-1).fillna(value=0) != 0
-        end_step = np.logical_and(end_step, is_step_change)
-
-        end_step_inds = end_step.index[end_step]
-
+        end_step_inds = end_step.index[np.logical_and(list(end_step), list(is_step_change))]
         # If no end steps, quantity not reset, return it without modifying
         if end_step_inds.size == 0:
             return quantity_agg
@@ -1796,7 +1779,7 @@ class EISpectrum(MSONable):
         metadata = pd.DataFrame(d["metadata"])
         return cls(data, metadata)
 
-def determine_whether_step_is_waveform(step_dataframe):
+def determine_whether_maccor_step_is_waveform(step_dataframe):
     """
     Helper function for driving profiles to determine whether a given dataframe corresponding
     to a single cycle_index/step has both charging and discharging portions, only intended
@@ -1806,8 +1789,7 @@ def determine_whether_step_is_waveform(step_dataframe):
          step_dataframe (pandas.DataFrame): dataframe to determine whether
          charging or discharging
     """
-    return ((len(step_dataframe[step_dataframe.current > 0])) > 0) &\
-           (len(step_dataframe[step_dataframe.current < 0]) > 0)
+    return step_dataframe['_wf_chg_cap'].notna().sum() > 0
 
 def determine_whether_step_is_discharging(step_dataframe):
     """
