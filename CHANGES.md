@@ -1,5 +1,11 @@
 
 
+v2020.10.14.21
+--------------
+* update copyright notices
+* Fix test file for biologic to maccor
+* Use .coveragerc - Thanks Patrick Moore
+
 v2020.10.13.11
 --------------
 * Fixes for featurization bugs - Patrick Herring
