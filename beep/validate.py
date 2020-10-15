@@ -228,17 +228,8 @@ class ValidatorBeep(Validator):
             results[name] = {}
             if re.match(ARBIN_CONFIG["file_pattern"], path):
                 df = pd.read_csv(path, index_col=0)
-                if "Iris" in name:
-                    iris_schema = os.path.join(
-                        VALIDATION_SCHEMA_DIR, "schema-arbin-nmc-phev.yaml"
-                    )
-                    results[name]["validated"] = self.validate_arbin_dataframe(
-                        df, schema=iris_schema
-                    )
-                    results[name]["method"] = self.validate_arbin_dataframe.__name__
-                else:
-                    results[name]["validated"] = self.validate_arbin_dataframe(df)
-                    results[name]["method"] = self.validate_arbin_dataframe.__name__
+                results[name]["validated"] = self.validate_arbin_dataframe(df)
+                results[name]["method"] = self.validate_arbin_dataframe.__name__
             elif re.match(MACCOR_CONFIG["file_pattern"], path):
                 df = pd.read_csv(path, delimiter="\t", skiprows=1)
                 results[name]["validated"] = self.validate_maccor_dataframe(df)

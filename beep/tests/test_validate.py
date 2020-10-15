@@ -62,7 +62,7 @@ class CerberusValidationTest(unittest.TestCase):
         v = ValidatorBeep()
         v.allow_unknown = True
 
-        df = pd.read_csv(path, index_col=0, header=1, skiprows=0, sep="\t")
+        df = pd.read_csv(path, delimiter="\t", skiprows=1)
         self.assertTrue(v.validate_maccor_dataframe(df))
 
     def test_validation_arbin_bad_data(self):
