@@ -638,14 +638,13 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window, baseline_step_index=1
     chosen_2 = chosen_2[(chosen_1.discharge_capacity.min() < chosen_2.discharge_capacity) &
                         (chosen_1.discharge_capacity.max() > chosen_2.discharge_capacity)]
 
-
     V = chosen_1.voltage.values
     Q = chosen_1.discharge_capacity.values
 
     #  Threshold between values so that non-strictly monotonic values are removed
     d_capacity_min = (np.max(Q) - np.min(Q)) / 1e6
-    if not np.all(np.diff(Q) > 0):
-        # Assuming that Q needs to be strictly increasing
+    if not np.all(np.diff(Q) > -d_capacity_min):
+        # Assuming that Q needs to be strictly increasing with threshold
         index_of_repeated = np.where(np.diff(Q) >= -d_capacity_min)[0]
         Q = np.delete(Q, index_of_repeated, axis=0)
         V = np.delete(V, index_of_repeated, axis=0)
