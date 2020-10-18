@@ -648,9 +648,7 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window, baseline_step_index=1
         index_of_repeated = np.where(np.diff(Q) >= -d_capacity_min)[0]
         Q = np.delete(Q, index_of_repeated, axis=0)
         V = np.delete(V, index_of_repeated, axis=0)
-    plt.figure()
-    plt.plot(Q, V)
-    plt.savefig(os.path.join("/Users/patrickherring/Code/beep/beep/tests/test_files/v_diff.png"))
+
     f = interp1d(Q, V, kind="cubic", fill_value="extrapolate", assume_sorted=False)
 
     v_2 = chosen_2.voltage.tolist()
