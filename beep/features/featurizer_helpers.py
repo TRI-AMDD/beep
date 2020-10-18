@@ -10,7 +10,6 @@ All methods are currently lumped into this script.
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import os
 from scipy import signal
 from lmfit import models
 from scipy.interpolate import interp1d
