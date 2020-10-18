@@ -858,7 +858,7 @@ class DeltaQFastCharge(BeepFeatures):
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
-            gets featurized. These could be filters for column or row operations
+                gets featurized. These could be filters for column or row operations
         Returns:
             pd.DataFrame: features indicative of degradation, derived from the input data
         """

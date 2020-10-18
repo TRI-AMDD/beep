@@ -10,6 +10,7 @@ All methods are currently lumped into this script.
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 from scipy import signal
 from lmfit import models
 from scipy.interpolate import interp1d
@@ -633,21 +634,30 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window, baseline_step_index=1
     chosen_1 = chosen_1.loc[chosen_1.discharge_capacity.notna()]
     chosen_2 = chosen_2.loc[chosen_2.discharge_capacity.notna()]
 
+    # Filter so that only comparing on the same interpolation
+    chosen_2 = chosen_2[(chosen_1.discharge_capacity.min() < chosen_2.discharge_capacity) &
+                        (chosen_1.discharge_capacity.max() > chosen_2.discharge_capacity)]
+
+
     V = chosen_1.voltage.values
     Q = chosen_1.discharge_capacity.values
 
-    #  Round values so that non-strictly monotonic values are removed
-    np.around(Q, decimals=6, out=Q)
-    np.around(V, decimals=6, out=V)
+    #  Threshold between values so that non-strictly monotonic values are removed
+    d_capacity_min = (np.max(Q) - np.min(Q)) / 1e6
     if not np.all(np.diff(Q) > 0):
-        index_of_repeated = np.where(np.abs(np.diff(Q)) == 0)[0]
+        # Assuming that Q needs to be strictly increasing
+        index_of_repeated = np.where(np.diff(Q) >= -d_capacity_min)[0]
         Q = np.delete(Q, index_of_repeated, axis=0)
         V = np.delete(V, index_of_repeated, axis=0)
+    plt.figure()
+    plt.plot(Q, V)
+    plt.savefig(os.path.join("/Users/patrickherring/Code/beep/beep/tests/test_files/v_diff.png"))
     f = interp1d(Q, V, kind="cubic", fill_value="extrapolate", assume_sorted=False)
 
     v_2 = chosen_2.voltage.tolist()
     v_1 = f(chosen_2.discharge_capacity).tolist()
     v_diff = list_minus(v_1, v_2)
+
     if abs(np.var(v_diff)) > 1:
         print("weird voltage")
         return None
