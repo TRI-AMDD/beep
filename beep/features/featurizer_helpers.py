@@ -640,8 +640,10 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window, baseline_step_index=1
     V = chosen_1.voltage.values
     Q = chosen_1.discharge_capacity.values
 
-    #  Threshold between values so that non-strictly monotonic values are removed
-    d_capacity_min = (np.max(Q) - np.min(Q)) / 1e6
+    # Threshold between values so that non-strictly monotonic values are removed
+    # 1e7 roughly corresponds to the resolution of a 24 bit ADC, higher precision
+    # would be unphysical
+    d_capacity_min = (np.max(Q) - np.min(Q)) / 1e7
     if not np.all(np.diff(Q) >= -d_capacity_min):
         # Assuming that Q needs to be strictly increasing with threshold
         index_of_repeated = np.where(np.diff(Q) >= -d_capacity_min)[0]
