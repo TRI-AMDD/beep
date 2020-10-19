@@ -407,16 +407,34 @@ class TestFeaturizer(unittest.TestCase):
         processed_cycler_run_path_2 = os.path.join(
             TEST_FILE_DIR, "PreDiag_000304_000153_truncated_structure.json"
         )
+        processed_cycler_run_path_3 = os.path.join(
+            TEST_FILE_DIR, "Talos_001380_ICR1865026JM001_CH28_truncated_structure.json"
+        )
+        processed_cycler_run_path_4 = os.path.join(
+            TEST_FILE_DIR, "Talos_001375_NCR18650319002_CH15_truncated_structure.json"
+        )
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
             pcycler_run = loadfn(processed_cycler_run_path_1)
             v_vars_df = featurizer_helpers.get_v_diff(pcycler_run, 1, 8)
             print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var(v_diff)'], decimals=8),
-                             np.round(0.00850563, decimals=8))
+                             np.round(0.00472705, decimals=8))
 
             pcycler_run = loadfn(processed_cycler_run_path_2)
             v_vars_df = featurizer_helpers.get_v_diff(pcycler_run, 1, 8)
             print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var(v_diff)'], decimals=8),
-                             np.round(2.664685514952474e-05, decimals=8))
+                             np.round(2.664e-05, decimals=8))
+
+            pcycler_run = loadfn(processed_cycler_run_path_3)
+            v_vars_df = featurizer_helpers.get_v_diff(pcycler_run, 1, 8)
+            print(v_vars_df)
+            self.assertEqual(np.round(v_vars_df.iloc[0]['var(v_diff)'], decimals=8),
+                             np.round(4.82e-06, decimals=8))
+
+            pcycler_run = loadfn(processed_cycler_run_path_4)
+            v_vars_df = featurizer_helpers.get_v_diff(pcycler_run, 1, 8)
+            print(v_vars_df)
+            self.assertEqual(np.round(v_vars_df.iloc[0]['var(v_diff)'], decimals=8),
+                             np.round(9.71e-06, decimals=8))
