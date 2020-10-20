@@ -209,7 +209,7 @@ class RawCyclerRun(MSONable):
             if new_df.size == 0:
                 continue
 
-            #If cycle contains a waveform step, interpolate on test_time.
+            # If cycle contains a waveform step, interpolate on test_time.
             if self.data.loc[self.data["cycle_index"] == cycle_index].\
                     groupby("step_index").apply(determine_whether_step_is_waveform).any():
                 axis = 'test_time'
@@ -257,7 +257,7 @@ class RawCyclerRun(MSONable):
 
     def get_interpolated_cycles(
         self, v_range=None, resolution=1000, diagnostic_available=None,
-            charge_axis = 'charge_capacity', discharge_axis='voltage'):
+            charge_axis='charge_capacity', discharge_axis='voltage'):
         """
         Gets interpolated cycles for both charge and discharge steps.
 
@@ -286,7 +286,6 @@ class RawCyclerRun(MSONable):
             ]
         else:
             reg_cycles = [i for i in self.data.cycle_index.unique()]
-
 
         v_range = v_range or [2.8, 3.5]
 
@@ -1078,9 +1077,7 @@ class RawCyclerRun(MSONable):
                 pass
 
         end_step = data["_ending_status"].apply(
-            lambda x: MACCOR_CONFIG["end_step_code_min"]
-                      <= x
-                      <= MACCOR_CONFIG["end_step_code_max"]
+            lambda x: MACCOR_CONFIG["end_step_code_min"] <= x <= MACCOR_CONFIG["end_step_code_max"]
         )
         # For waveform discharges, maccor seems to trigger ending_status within a step multiple times
         # As a fix, compute the actual step change using diff() on step_index and set end_step to be
@@ -1783,6 +1780,7 @@ class EISpectrum(MSONable):
         metadata = pd.DataFrame(d["metadata"])
         return cls(data, metadata)
 
+
 def determine_whether_step_is_waveform(step_dataframe):
     """
     Helper function for driving profiles to determine whether a given dataframe corresponding
@@ -1793,11 +1791,12 @@ def determine_whether_step_is_waveform(step_dataframe):
          step_dataframe (pandas.DataFrame): dataframe to determine whether waveform step is present
     """
 
-    #check for waveform in maccor
+    # Check for waveform in maccor
     if len([col for col in step_dataframe.columns if '_wf_' in col]):
         return (step_dataframe['_wf_chg_cap'].notna().any()) | (step_dataframe['_wf_dis_cap'].notna().any())
     else:
         return False
+
 
 def determine_whether_step_is_discharging(step_dataframe):
     """
