@@ -222,7 +222,7 @@ class RawCyclerRun(MSONable):
         cycle_indices = [c for c in cycle_indices if c in reg_cycles]
         cycle_indices.sort()
 
-        for cycle_index in tqdm(reg_cycles):
+        for cycle_index in tqdm(cycle_indices):
             # Use a cycle_index mask instead of a global groupby to save memoryÍ
             new_df = (
                 self.data.loc[self.data["cycle_index"] == cycle_index]
@@ -231,11 +231,6 @@ class RawCyclerRun(MSONable):
             )
             if new_df.size == 0:
                 continue
-
-            # If cycle contains a waveform step, interpolate on test_time.
-            if self.data.loc[self.data["cycle_index"] == cycle_index].\
-                    groupby("step_index").apply(determine_whether_step_is_waveform).any():
-                axis = 'test_time'
 
             if axis in ["charge_capacity", "discharge_capacity"]:
                 axis_range = [self.data[axis].min(), self.data[axis].max()]
@@ -311,6 +306,12 @@ class RawCyclerRun(MSONable):
             reg_cycles = [i for i in self.data.cycle_index.unique()]
 
         v_range = v_range or [2.8, 3.5]
+
+        # If any regular cycle contains a waveform step, interpolate on test_time.
+        if self.data[self.data.cycle_index.isin(reg_cycles)].\
+                groupby(["cycle_index", "step_index"]).\
+                apply(determine_whether_step_is_waveform).any():
+            discharge_axis = 'test_time'
 
         interpolated_discharge = self.get_interpolated_steps(
             v_range,
