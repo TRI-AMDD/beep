@@ -31,8 +31,8 @@ from beep.structure import (
     get_project_sequence,
     get_protocol_parameters,
     get_diagnostic_parameters,
-    determine_whether_step_is_waveform
-    get_max_paused_over_threshold,
+    determine_whether_step_is_waveform,
+    get_max_paused_over_threshold
 )
 from beep.conversion_schemas import STRUCTURE_DTYPES
 from monty.serialization import loadfn, dumpfn
