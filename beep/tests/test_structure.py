@@ -20,6 +20,7 @@ from beep.structure import (
     get_protocol_parameters,
     get_diagnostic_parameters,
     determine_paused,
+    determine_whether_step_is_waveform
 )
 from beep.conversion_schemas import STRUCTURE_DTYPES
 from monty.serialization import loadfn, dumpfn
@@ -47,6 +48,8 @@ class RawCyclerRunTest(unittest.TestCase):
         self.maccor_file_w_diagnostics = os.path.join(
             TEST_FILE_DIR, "xTESLADIAG_000020_CH71.071"
         )
+        self.maccor_file_w_waveform = os.path.join(TEST_FILE_DIR, "test_drive_071620.095")
+
         self.maccor_file_w_parameters_s3 = {
             "bucket": "beep-sync-test-stage",
             "key": "big_file_tests/PreDiag_000287_000128.092"
@@ -240,6 +243,20 @@ class RawCyclerRunTest(unittest.TestCase):
             np.all(capacity_sign >= -cycle_sign)
         )  # Capacity increases throughout cycle
 
+    def test_waveform_charge_discharge_capacity(self):
+        raw_cycler_run = RawCyclerRun.from_maccor_file(
+            self.maccor_file_w_waveform, include_eis=False
+        )
+        cycle_sign = np.sign(np.diff(raw_cycler_run.data["cycle_index"]))
+        capacity_sign = np.sign(np.diff(raw_cycler_run.data["charge_capacity"]))
+        self.assertTrue(
+            np.all(capacity_sign >= -cycle_sign)
+        )  # Capacity increases throughout cycle
+        capacity_sign = np.sign(np.diff(raw_cycler_run.data["discharge_capacity"]))
+        self.assertTrue(
+            np.all(capacity_sign >= -cycle_sign)
+        )
+
     # Note that the compression is from 45 M / 6 M as of 02/25/2019
     def test_binary_save(self):
         cycler_run = RawCyclerRun.from_file(self.arbin_file)
@@ -332,6 +349,29 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertGreater(max(axis_1), max(axis_2))
         self.assertTrue(np.all(np.array(lengths) == 1000))
         self.assertTrue(interpolated_charge["current"].mean() > 0)
+
+    def test_whether_maccor_step_is_waveform(self):
+        cycler_run = RawCyclerRun.from_file(self.maccor_file_w_waveform)
+        self.assertTrue(cycler_run.data.loc[cycler_run.data.cycle_index == 6].
+                        groupby("step_index").apply(determine_whether_step_is_waveform).any())
+        self.assertFalse(cycler_run.data.loc[cycler_run.data.cycle_index == 3].
+                        groupby("step_index").apply(determine_whether_step_is_waveform).any())
+
+    def test_get_interpolated_waveform_discharge_step(self):
+        cycler_run = RawCyclerRun.from_file(self.maccor_file_w_waveform)
+        reg_cycles = [i for i in cycler_run.data.cycle_index.unique() if i > 5]
+        interpolated_discharge = cycler_run.get_interpolated_steps(
+            v_range=[2.8, 4.2],
+            resolution=1000,
+            step_type="discharge",
+            reg_cycles=reg_cycles,
+        )
+        self.assertTrue(interpolated_discharge.columns[0] == 'test_time')
+        subset_interpolated = interpolated_discharge[interpolated_discharge.cycle_index==6]
+        self.assertEqual(subset_interpolated.test_time.min(),
+                         cycler_run.data.loc[(cycler_run.data.cycle_index == 6) &
+                                             (cycler_run.data.step_index == 33)].test_time.min())
+        self.assertEqual(subset_interpolated[subset_interpolated.cycle_index == 6].shape[0], 1000)
 
     def test_get_interpolated_charge_cycles(self):
         cycler_run = RawCyclerRun.from_file(self.arbin_file)

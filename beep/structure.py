@@ -180,7 +180,6 @@ class RawCyclerRun(MSONable):
         Returns:
             pandas.DataFrame: DataFrame corresponding to interpolated values.
         """
-        sampling_rate = np.nan
         if step_type == "discharge":
             step_filter = determine_whether_step_is_discharging
         elif step_type == "charge":
@@ -196,16 +195,10 @@ class RawCyclerRun(MSONable):
             "temperature",
         ]
         all_dfs = []
-        if reg_cycles is None:
-            reg_cycles = self.data.cycle_index.unique()
-            cycle_indices = [c for c in cycle_indices if c in reg_cycles]
-            cycle_indices.sort()
+        cycle_indices = self.data.cycle_index.unique()
+        cycle_indices = [c for c in cycle_indices if c in reg_cycles]
+        cycle_indices.sort()
 
-        # If a step in any of the regular cycles has both charging and discharging current, use test_time to interpolate
-        #if self.data.groupby(['cycle_index', 'step_index']).apply(determine_whether_step_is_waveform).any():
-        #    pass
-        #    axis = 'test_time'
-        #    sampling_rate = 1 # seconds
         for cycle_index in tqdm(reg_cycles):
             # Use a cycle_index mask instead of a global groupby to save memoryÍ
             new_df = (
@@ -215,6 +208,12 @@ class RawCyclerRun(MSONable):
             )
             if new_df.size == 0:
                 continue
+
+            #if cycle contains a waveform step, interpolate on test_time.
+            if self.data.loc[self.data["cycle_index"] == cycle_index].\
+                    groupby("step_index").apply(determine_whether_step_is_waveform).any():
+                axis = 'test_time'
+
             if axis in ["charge_capacity", "discharge_capacity"]:
                 axis_range = [self.data[axis].min(), self.data[axis].max()]
                 new_df = get_interpolated_data(
@@ -226,8 +225,6 @@ class RawCyclerRun(MSONable):
                 )
             elif axis == "test_time":
                 axis_range = [new_df[axis].min(), new_df[axis].max()]
-                if ~np.isnan(sampling_rate):
-                    resolution = int((axis_range[1] - axis_range[0])/sampling_rate) + 1
                 new_df = get_interpolated_data(
                     new_df,
                     axis,
@@ -1071,9 +1068,9 @@ class RawCyclerRun(MSONable):
             elif (state_type, quantity) == ('charge', 'capacity'):
                 quantity_agg = data['_wf_chg_cap'].where(data['_wf_chg_cap'].notna(), other=quantity_agg, axis=0)
             elif (state_type, quantity) == ('discharge', 'energy'):
-                quantity_agg = data['_wf_dis_e'].where(data['wf_dis_e'].notna(), other=quantity_agg, axis=0)
+                quantity_agg = data['_wf_dis_e'].where(data['_wf_dis_e'].notna(), other=quantity_agg, axis=0)
             elif (state_type, quantity) == ('charge', 'energy'):
-                quantity_agg = data['_wf_chg_e'].where(data['wf_chg_e'].notna(), other=quantity_agg, axis=0)
+                quantity_agg = data['_wf_chg_e'].where(data['_wf_chg_e'].notna(), other=quantity_agg, axis=0)
             else:
                 pass
 
@@ -1385,6 +1382,8 @@ class ProcessedCyclerRun(MSONable):
         nominal_capacity=1.1,
         full_fast_charge=0.8,
         diagnostic_available=False,
+        charge_axis='charge_capacity',
+        discharge_axis='voltage'
     ):
         """
         Method to invoke ProcessedCyclerRun from RawCyclerRun object
@@ -1416,6 +1415,8 @@ class ProcessedCyclerRun(MSONable):
             v_range=v_range,
             resolution=resolution,
             diagnostic_available=diagnostic_available,
+            charge_axis=charge_axis,
+            discharge_axis=discharge_axis
         )
         return cls(
             raw_cycler_run.metadata.get("barcode"),
@@ -1779,17 +1780,21 @@ class EISpectrum(MSONable):
         metadata = pd.DataFrame(d["metadata"])
         return cls(data, metadata)
 
-def determine_whether_maccor_step_is_waveform(step_dataframe):
+def determine_whether_step_is_waveform(step_dataframe):
     """
     Helper function for driving profiles to determine whether a given dataframe corresponding
     to a single cycle_index/step has both charging and discharging portions, only intended
-    to be used with a dataframe for single step/cycle.
+    to be used with a dataframe for single maccor step/cycle.
 
     Args:
-         step_dataframe (pandas.DataFrame): dataframe to determine whether
-         charging or discharging
+         step_dataframe (pandas.DataFrame): dataframe to determine whether waveform step is present
     """
-    return step_dataframe['_wf_chg_cap'].notna().sum() > 0
+
+    #check for waveform in maccor
+    if len([col for col in step_dataframe.columns if '_wf_' in col]):
+        return (step_dataframe['_wf_chg_cap'].notna().any()) | (step_dataframe['_wf_dis_cap'].notna().any())
+    else:
+        return False
 
 def determine_whether_step_is_discharging(step_dataframe):
     """
