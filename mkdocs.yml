@@ -2,13 +2,16 @@ site_name: BEEP - Battery Evaluation and Early Prediction
 site_description: Documentation for TRI-AMDD BEEP, for handling battery cycling data and predicting battery lifetines
 copyright: Toyota Research Institute
 
+docs_dir: docs/src
+site_dir: docs/html
+
 
 theme:
   name: material
   palette:
     scheme: slate
     primary: red
-    accent: black
+    accent: orange
   logo: static/tri_cropped.png
   favicon: static/tri_cropped_favicon.png
 
