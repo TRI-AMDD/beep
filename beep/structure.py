@@ -211,6 +211,7 @@ class RawCyclerRun(MSONable):
         else:
             raise ValueError("{} is not a recognized step type")
         incl_columns = [
+            "test_time",
             "voltage",
             "current",
             "charge_capacity",
@@ -1816,11 +1817,14 @@ def determine_whether_step_is_waveform(step_dataframe):
     if len([col for col in step_dataframe.columns if '_wf_' in col]):
         return (step_dataframe['_wf_chg_cap'].notna().any()) | (step_dataframe['_wf_dis_cap'].notna().any())
     elif not np.round(step_dataframe.voltage, VOLTAGE_RESOLUTION).is_monotonic:
+        # This is a placeholder logic for arbin waveform detection
         # This fails for some arbin files that nominally have a CC-CV step.
         # e.g. 2017-12-04_4_65C-69per_6C_CH29.csv
         # TODO: survey more files and include additional heuristics/logic based on the size of
         # and frequency of non-monotonicities to determine whether step is actually a waveform.
-        return True
+
+        # All non-maccor files will evaluate to False by default for now
+        return False
     else:
         return False
 

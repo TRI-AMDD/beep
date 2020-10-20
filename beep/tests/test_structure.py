@@ -400,12 +400,12 @@ class RawCyclerRunTest(unittest.TestCase):
     def test_interpolated_cycles_dtypes(self):
         cycler_run = RawCyclerRun.from_file(self.arbin_file)
         all_interpolated = cycler_run.get_interpolated_cycles()
-        cycles_interpolated_dyptes = all_interpolated.dtypes.tolist()
+        cycles_interpolated_dtypes = all_interpolated.dtypes.tolist()
         cycles_interpolated_columns = all_interpolated.columns.tolist()
-        cycles_interpolated_dyptes = [str(dtyp) for dtyp in cycles_interpolated_dyptes]
+        cycles_interpolated_dtypes = [str(dtyp) for dtyp in cycles_interpolated_dtypes]
         for indx, col in enumerate(cycles_interpolated_columns):
             self.assertEqual(
-                cycles_interpolated_dyptes[indx],
+                cycles_interpolated_dtypes[indx],
                 STRUCTURE_DTYPES["cycles_interpolated"][col],
             )
 
