@@ -1,5 +1,9 @@
 
 
+v2020.10.19.20
+--------------
+* Change the method for ensuring monotonicity and add testing 
+
 v2020.10.14.21
 --------------
 * update copyright notices
