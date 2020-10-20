@@ -361,12 +361,14 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertTrue(np.all(np.array(lengths) == 1000))
         self.assertTrue(interpolated_charge["current"].mean() > 0)
 
-    def test_whether_maccor_step_is_waveform(self):
+
+    def test_whether_step_is_waveform(self):
         cycler_run = RawCyclerRun.from_file(self.maccor_file_w_waveform)
         self.assertTrue(cycler_run.data.loc[cycler_run.data.cycle_index == 6].
                         groupby("step_index").apply(determine_whether_step_is_waveform).any())
         self.assertFalse(cycler_run.data.loc[cycler_run.data.cycle_index == 3].
                         groupby("step_index").apply(determine_whether_step_is_waveform).any())
+
 
     def test_get_interpolated_waveform_discharge_cycles(self):
         cycler_run = RawCyclerRun.from_file(self.maccor_file_w_waveform)

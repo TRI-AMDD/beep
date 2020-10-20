@@ -88,6 +88,7 @@ from beep import logger, __version__
 
 s = {"service": "DataStructurer"}
 
+VOLTAGE_RESOLUTION = 3
 
 class RawCyclerRun(MSONable):
     """
@@ -1814,6 +1815,12 @@ def determine_whether_step_is_waveform(step_dataframe):
     # Check for waveform in maccor
     if len([col for col in step_dataframe.columns if '_wf_' in col]):
         return (step_dataframe['_wf_chg_cap'].notna().any()) | (step_dataframe['_wf_dis_cap'].notna().any())
+    elif not np.round(step_dataframe.voltage, VOLTAGE_RESOLUTION).is_monotonic:
+        # This fails for some arbin files that nominally have a CC-CV step.
+        # e.g. 2017-12-04_4_65C-69per_6C_CH29.csv
+        # TODO: survey more files and include additional heuristics/logic based on the size of
+        # and frequency of non-monotonicities to determine whether step is actually a waveform.
+        return True
     else:
         return False
 
