@@ -1,4 +1,16 @@
-# Copyright 2019 Toyota Research Institute. All rights reserved.
+# Copyright [2020] [Toyota Research Institute]
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Unit tests related to batch validation"""
 
 import json
@@ -11,7 +23,6 @@ from pathlib import Path
 from monty.tempfile import ScratchDir
 from beep.validate import ValidatorBeep, validate_file_list_from_json, SimpleValidator
 from beep import S3_CACHE, VALIDATION_SCHEMA_DIR
-from beep.utils.secrets_manager import event_setup
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
@@ -20,8 +31,7 @@ TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 @unittest.skip
 class ValidationArbinTest(unittest.TestCase):
     def setUp(self):
-        # Setup events for testing
-        self.events_mode = event_setup()
+        pass
 
     def test_validation_arbin_bad_index(self):
         path = "2017-05-09_test-TC-contact_CH33.csv"
@@ -129,7 +139,6 @@ class ValidationArbinTest(unittest.TestCase):
             paths = [os.path.join(TEST_FILE_DIR, path) for path in paths]
             # Create dummy json obj
             json_obj = {
-                "mode": self.events_mode,
                 "file_list": paths,
                 "run_list": list(range(len(paths))),
             }
@@ -155,8 +164,7 @@ class ValidationArbinTest(unittest.TestCase):
 class ValidationMaccorTest(unittest.TestCase):
     # To further develop as Maccor data / schema becomes available
     def setUp(self):
-        # Setup events for testing
-        self.events_mode = event_setup()
+        pass
 
     def test_validation_maccor(self):
         path = "xTESLADIAG_000019_CH70.070"
@@ -233,8 +241,7 @@ class ValidationEisTest(unittest.TestCase):
 
 class SimpleValidatorTest(unittest.TestCase):
     def setUp(self):
-        # Setup events for testing
-        self.events_mode = event_setup()
+        pass
 
     def test_file_incomplete(self):
         path = "FastCharge_000025_CH8.csv"
@@ -361,7 +368,6 @@ class SimpleValidatorTest(unittest.TestCase):
             paths = [os.path.join(TEST_FILE_DIR, path) for path in paths]
             # Create dummy json obj
             json_obj = {
-                "mode": self.events_mode,
                 "file_list": paths,
                 "run_list": list(range(len(paths))),
             }

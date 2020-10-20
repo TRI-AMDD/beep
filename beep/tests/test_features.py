@@ -1,4 +1,16 @@
-# Copyright 2019 Toyota Research Institute. All rights reserved.
+# Copyright [2020] [Toyota Research Institute]
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Unit tests related to feature generation"""
 
 import unittest
@@ -7,7 +19,6 @@ import json
 import numpy as np
 import tempfile
 from pathlib import Path
-from beep.utils.secrets_manager import event_setup
 from beep.featurize import (
     process_file_list_from_json,
     DeltaQFastCharge,
@@ -19,6 +30,7 @@ from beep.featurize import (
     DiagnosticProperties,
     DiagnosticSummaryStats,
 )
+from beep.features import featurizer_helpers
 from monty.serialization import dumpfn, loadfn
 from monty.tempfile import ScratchDir
 
@@ -37,7 +49,7 @@ SKIP_MSG = "Tests requiring large files with diagnostic cycles are disabled, set
 
 class TestFeaturizer(unittest.TestCase):
     def setUp(self):
-        self.events_mode = event_setup()
+        pass
 
     def test_feature_generation_full_model(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
@@ -173,7 +185,6 @@ class TestFeaturizer(unittest.TestCase):
 
             # Create dummy json obj
             json_obj = {
-                "mode": self.events_mode,
                 "file_list": [processed_cycler_run_path, processed_cycler_run_path],
                 "run_list": [0, 1],
             }
@@ -198,7 +209,7 @@ class TestFeaturizer(unittest.TestCase):
             self.assertIsInstance(features_reloaded, DiagnosticProperties)
             self.assertListEqual(
                 list(features_reloaded.X.iloc[2, :]),
-                [143, 0.9753520623934744, "rpt_0.2C", "discharge_energy"],
+                [141, 0.9859837086597274, 91.17758004259996, 2.578137278917377, 'reset', 'discharge_energy'],
             )
 
             # Workflow output
@@ -222,7 +233,6 @@ class TestFeaturizer(unittest.TestCase):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
 
             json_obj = {
-                "mode": self.events_mode,
                 "file_list": [processed_cycler_run_path],
                 "run_list": [1],
             }
@@ -357,8 +367,74 @@ class TestFeaturizer(unittest.TestCase):
             folder = os.path.split(path)[-1]
             dumpfn(featurizer, featurizer.name)
             self.assertEqual(folder, "DiagnosticProperties")
-            self.assertEqual(featurizer.X.shape, (10, 4))
+            self.assertEqual(featurizer.X.shape, (30, 6))
             self.assertListEqual(
                 list(featurizer.X.iloc[2, :]),
-                [143, 0.9753520623934744, "rpt_0.2C", "discharge_energy"],
+                [141, 0.9859837086597274, 91.17758004259996, 2.578137278917377, 'reset', 'discharge_energy']
             )
+
+    def test_get_fractional_quantity_remaining_nx(self):
+        processed_cycler_run_path = os.path.join(
+            TEST_FILE_DIR, "PreDiag_000233_00021F_truncated_structure.json"
+        )
+        pcycler_run = loadfn(processed_cycler_run_path)
+        sum_diag = featurizer_helpers.get_fractional_quantity_remaining_nx(pcycler_run,
+                                                                           metric="discharge_energy",
+                                                                           diagnostic_cycle_type="hppc")
+        self.assertEqual(len(sum_diag.index), 16)
+        self.assertEqual(sum_diag.cycle_index.max(), 1507)
+        self.assertEqual(np.around(sum_diag.x.iloc[0], 3), np.around(320.629961, 3))
+        self.assertEqual(np.around(sum_diag.n.iloc[15], 3), np.around(37.241178, 3))
+
+    def test_generate_dQdV_peak_fits(self):
+        processed_cycler_run_path = os.path.join(
+            TEST_FILE_DIR, "PreDiag_000304_000153_truncated_structure.json"
+        )
+        with ScratchDir("."):
+            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+            pcycler_run = loadfn(processed_cycler_run_path)
+            peaks_df = featurizer_helpers.generate_dQdV_peak_fits(pcycler_run, 'rpt_0.2C', 0, 1, plotting_y_n=1)
+            print(len(peaks_df.columns))
+            self.assertEqual(peaks_df.columns.tolist(),
+                             ['m0_Amp_rpt_0.2C_1', 'm0_Mu_rpt_0.2C_1', 'm1_Amp_rpt_0.2C_1',
+                              'm1_Mu_rpt_0.2C_1', 'm2_Amp_rpt_0.2C_1', 'm2_Mu_rpt_0.2C_1',
+                              'trough_height_0_rpt_0.2C_1', 'trough_height_1_rpt_0.2C_1'])
+
+    def test_get_v_diff(self):
+        processed_cycler_run_path_1 = os.path.join(
+            TEST_FILE_DIR, "Talos_001383_NCR18650618001_CH31_truncated_structure.json"
+        )
+        processed_cycler_run_path_2 = os.path.join(
+            TEST_FILE_DIR, "PreDiag_000304_000153_truncated_structure.json"
+        )
+        processed_cycler_run_path_3 = os.path.join(
+            TEST_FILE_DIR, "Talos_001380_ICR1865026JM001_CH28_truncated_structure.json"
+        )
+        processed_cycler_run_path_4 = os.path.join(
+            TEST_FILE_DIR, "Talos_001375_NCR18650319002_CH15_truncated_structure.json"
+        )
+        with ScratchDir("."):
+            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+            pcycler_run = loadfn(processed_cycler_run_path_1)
+            v_vars_df = featurizer_helpers.get_v_diff(pcycler_run, 1, 8)
+            print(v_vars_df)
+            self.assertEqual(np.round(v_vars_df.iloc[0]['var(v_diff)'], decimals=8),
+                             np.round(0.00472705, decimals=8))
+
+            pcycler_run = loadfn(processed_cycler_run_path_2)
+            v_vars_df = featurizer_helpers.get_v_diff(pcycler_run, 1, 8)
+            print(v_vars_df)
+            self.assertEqual(np.round(v_vars_df.iloc[0]['var(v_diff)'], decimals=8),
+                             np.round(2.664e-05, decimals=8))
+
+            pcycler_run = loadfn(processed_cycler_run_path_3)
+            v_vars_df = featurizer_helpers.get_v_diff(pcycler_run, 1, 8)
+            print(v_vars_df)
+            self.assertEqual(np.round(v_vars_df.iloc[0]['var(v_diff)'], decimals=8),
+                             np.round(4.82e-06, decimals=8))
+
+            pcycler_run = loadfn(processed_cycler_run_path_4)
+            v_vars_df = featurizer_helpers.get_v_diff(pcycler_run, 1, 8)
+            print(v_vars_df)
+            self.assertEqual(np.round(v_vars_df.iloc[0]['var(v_diff)'], decimals=8),
+                             np.round(9.71e-06, decimals=8))

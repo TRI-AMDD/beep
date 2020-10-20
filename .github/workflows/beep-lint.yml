@@ -11,26 +11,26 @@ jobs:
         python-version: [3.7]
 
     steps:
-    - uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-    - name: pycodestyle
-      run: |
-        pip install pycodestyle --upgrade --quiet
-        pycodestyle beep
-    - name: flake8
-      run: |
-        pip install flake8 --upgrade --quiet
-        flake8 --count --show-source --statistics beep
-        # exit-zero treats all errors as warnings.
-        flake8 --count --exit-zero --max-complexity=20 --statistics beep
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+      - name: pycodestyle
+        run: |
+          pip install pycodestyle --upgrade --quiet
+          pycodestyle beep
+      - name: flake8
+        run: |
+          pip install flake8 --upgrade --quiet
+          flake8 --count --show-source --statistics beep
+          # exit-zero treats all errors as warnings.
+          flake8 --count --exit-zero --max-complexity=20 --statistics beep
     # Note: enable this when docstrings are ready
     # - name: pydocstyle
     #   run: |
