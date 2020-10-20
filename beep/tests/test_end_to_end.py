@@ -1,4 +1,16 @@
-#  Copyright (c) 2019 Toyota Research Institute
+# Copyright [2020] [Toyota Research Institute]
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 import unittest
 import os
@@ -13,7 +25,6 @@ from monty.serialization import loadfn
 
 from beep import collate, validate, structure, featurize, run_model
 from beep.utils import os_format
-from beep.utils.secrets_manager import event_setup
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
@@ -21,9 +32,6 @@ TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 class EndToEndTest(unittest.TestCase):
     def setUp(self):
-        # Setup events for testing
-        self.events_mode = event_setup()
-
         # Get cwd, create and enter scratch dir
         self.cwd = os.getcwd()
         scratch_dir = mkdtemp()
@@ -64,28 +72,27 @@ class EndToEndTest(unittest.TestCase):
         # Copy
         mapped = collate.process_files_json()
         rename_output = json.loads(mapped)
-        rename_output["mode"] = self.events_mode  # mode run|test|events_off
         rename_output["run_list"] = list(range(len(rename_output["file_list"])))
         mapped = json.dumps(rename_output)
 
         # Validation
         validated = validate.validate_file_list_from_json(mapped)
         validated_output = json.loads(validated)
-        validated_output["mode"] = self.events_mode  # mode run|test|events_off
+
         validated_output["run_list"] = list(range(len(validated_output["file_list"])))
         validated = json.dumps(validated_output)
 
         # Data structuring
         structured = structure.process_file_list_from_json(validated)
         structured_output = json.loads(structured)
-        structured_output["mode"] = self.events_mode  # mode run|test|events_off
+
         structured_output["run_list"] = list(range(len(structured_output["file_list"])))
         structured = json.dumps(structured_output)
 
         # Featurization
         featurized = featurize.process_file_list_from_json(structured)
         featurized_output = json.loads(featurized)
-        featurized_output["mode"] = self.events_mode  # mode run|test|events_off
+
         featurized_output["run_list"] = list(range(len(featurized_output["file_list"])))
         featurized = json.dumps(featurized_output)
 
@@ -108,7 +115,6 @@ class EndToEndTest(unittest.TestCase):
         # Validation console test
         rename_output = json.loads(rename_output)
         validation_input = {
-            "mode": self.events_mode,  # mode run|test|events_off
             "file_list": rename_output[
                 "file_list"
             ],  # list of file paths ['path/test1.csv', 'path/test2.csv']
@@ -124,7 +130,6 @@ class EndToEndTest(unittest.TestCase):
         # Structure console test
         validation_output = json.loads(validation_output)
         structure_input = {
-            "mode": self.events_mode,  # mode run|test|events_off
             "file_list": validation_output[
                 "file_list"
             ],  # list of file paths ['path/test1.json', 'path/test2.json']
@@ -143,7 +148,6 @@ class EndToEndTest(unittest.TestCase):
         # Featurizing console test
         structure_output = json.loads(structure_output)
         feature_input = {
-            "mode": self.events_mode,  # mode run|test|events_off
             "file_list": structure_output[
                 "file_list"
             ],  # list of file paths ['path/test1.json', 'path/test2.json']

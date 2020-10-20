@@ -1,0 +1,49 @@
+default_maccor_header: {
+  BuildTestVersion: {
+    major: "1",
+    minor: "5",
+    release: "7006",
+    build: "32043",
+  },
+  FileFormatVersion: {
+    BTVersion: "11",
+  },
+  ProcDesc: {
+    desc: ""
+  },
+}
+
+blank_step: {
+  StepType: "",
+  StepMode: "",
+  StepValue: "",
+  Limits: "",
+  Ends: "",
+  Reports: "",
+  Range: "",
+  Option1: "",
+  Option2: "",
+  Option3: "",
+  StepNote: "",
+}
+
+blank_end_entry: {
+  EndType: "",
+  # space intentional
+  SpecialType: " ",
+  Oper: "",
+  Step: "",
+  Value: "",
+}
+
+blank_report_entry: {
+  ReportType: "",
+  Value: "",
+}
+
+blank_maccor_body: {
+  MaccorTestProcedure: {
+    header: "",
+    ProcSteps: [],
+  },
+}

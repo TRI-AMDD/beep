@@ -9,7 +9,7 @@ All methods are currently lumped into this script.
 
 import pandas as pd
 import numpy as np
-import matplotlib as plt
+import matplotlib.pyplot as plt
 from scipy import signal
 from lmfit import models
 from scipy.interpolate import interp1d
@@ -238,7 +238,7 @@ def generate_dQdV_peak_fits(
     # Set construct spec using number of peaks
     model_types = []
     # TODO: i isn't being used here
-    for i in np.arange(max_nr_peaks):
+    for i in np.arange(len(peak_dQdVs)):
         model_types.append({"type": "GaussianModel", "help": {"sigma": {"max": 0.1}}})
 
     spec = {"x": x, "y": y, "model": model_types}
@@ -249,9 +249,9 @@ def generate_dQdV_peak_fits(
         # TODO: not sure this works
         fig, ax = plt.subplots()
         ax.scatter(spec["x"], spec["y"], s=4)
-        for i in peak_voltages:
-            ax.axvline(x=peak_voltages[i], c="black", linestyle="dotted")
-            ax.scatter(peak_voltages[i], peak_dQdVs[i], s=30, c="red")
+        for i, peak_voltage in enumerate(peak_voltages):
+            ax.axvline(x=peak_voltage, c="black", linestyle="dotted")
+            ax.scatter(peak_voltage, peak_dQdVs[i], s=30, c="red")
 
     # Generate fitting model
 
@@ -262,7 +262,6 @@ def generate_dQdV_peak_fits(
         # fig, gridspec = output.plot(data_kws={'markersize': 1})
 
         # Plot components
-
         ax.scatter(no_filter_x, no_filter_y, s=4)
         ax.set_xlabel("Voltage")
 
@@ -293,7 +292,7 @@ def generate_dQdV_peak_fits(
 
     # Incorporate troughs of dQdV curve
     color_list = ["g", "b", "r", "k", "c"]
-    for peak_nr in np.arange(0, max_nr_peaks - 1):
+    for peak_nr in np.arange(0, len(peak_dQdVs) - 1):
         between_outer_peak_data = no_filter_data[
             (no_filter_data.voltage > peak_voltages[peak_nr])
             & (no_filter_data.voltage < peak_voltages[peak_nr + 1])
@@ -591,7 +590,7 @@ def get_V_I(df):
     return result
 
 
-def get_v_diff(processed_cycler_run, diag_pos, soc_window):
+def get_v_diff(processed_cycler_run, diag_pos, soc_window, baseline_step_index=15, measured_step_index=47):
     """
     This method calculates the variance of voltage difference between a specified hppc cycle and the first
     one during a specified state of charge window.
@@ -601,6 +600,8 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window):
         diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
         if rpt_0.2C, occurs at cycle_index = [2, 37, 142, 244 ...], <diag_pos>=0 would correspond to cycle_index 2
         soc_window (int): step index counter corresponding to the soc window of interest.
+        baseline_step_index (int): step index of the initial hppc cycle (TODO automatically get value in the method)
+        measured_step_index (int): step index of the comparison hppc cycle (TODO automatically get value in the method)
 
     Returns:
         a dataframe that contains the variance of the voltage differences
@@ -619,8 +620,8 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window):
 
     #         the discharge steps in later hppc cycles has a step number of 47
     #         but that in the initial hppc cycle has a step number of 15
-    hppc_data_2_d = hppc_data_2.loc[hppc_data_2.step_index == 47]
-    hppc_data_1_d = hppc_data_1.loc[hppc_data_1.step_index == 15]
+    hppc_data_2_d = hppc_data_2.loc[hppc_data_2.step_index == measured_step_index]
+    hppc_data_1_d = hppc_data_1.loc[hppc_data_1.step_index == baseline_step_index]
     step_counters_1 = hppc_data_1_d.step_index_counter.unique()
     step_counters_2 = hppc_data_2_d.step_index_counter.unique()
     chosen_1 = hppc_data_1_d.loc[
@@ -632,13 +633,29 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window):
     chosen_1 = chosen_1.loc[chosen_1.discharge_capacity.notna()]
     chosen_2 = chosen_2.loc[chosen_2.discharge_capacity.notna()]
 
+    # Filter so that only comparing on the same interpolation
+    chosen_2 = chosen_2[(chosen_1.discharge_capacity.min() < chosen_2.discharge_capacity) &
+                        (chosen_1.discharge_capacity.max() > chosen_2.discharge_capacity)]
+
     V = chosen_1.voltage.values
     Q = chosen_1.discharge_capacity.values
-    f = interp1d(Q, V, kind="cubic", fill_value="extrapolate")
+
+    # Threshold between values so that non-strictly monotonic values are removed
+    # 1e7 roughly corresponds to the resolution of a 24 bit ADC, higher precision
+    # would be unphysical
+    d_capacity_min = (np.max(Q) - np.min(Q)) / 1e7
+    if not np.all(np.diff(Q) >= -d_capacity_min):
+        # Assuming that Q needs to be strictly increasing with threshold
+        index_of_repeated = np.where(np.diff(Q) >= -d_capacity_min)[0]
+        Q = np.delete(Q, index_of_repeated, axis=0)
+        V = np.delete(V, index_of_repeated, axis=0)
+
+    f = interp1d(Q, V, kind="cubic", fill_value="extrapolate", assume_sorted=False)
 
     v_2 = chosen_2.voltage.tolist()
     v_1 = f(chosen_2.discharge_capacity).tolist()
     v_diff = list_minus(v_1, v_2)
+
     if abs(np.var(v_diff)) > 1:
         print("weird voltage")
         return None
@@ -867,6 +884,7 @@ def get_fractional_quantity_remaining(
     """
     Determine relative loss of <metric> in diagnostic_cycles of type <diagnostic_cycle_type> after 100 regular cycles
 
+
     Args:
         processed_cycler_run (beep.structure.ProcessedCyclerRun): information about cycler run
         metric (str): column name to use for measuring degradation
@@ -885,4 +903,65 @@ def get_fractional_quantity_remaining(
         / processed_cycler_run.diagnostic_summary[metric].iloc[0]
     )
     summary_diag_cycle_type.columns = ["cycle_index", "fractional_metric"]
+    return summary_diag_cycle_type
+
+
+def get_fractional_quantity_remaining_nx(
+    processed_cycler_run, metric="discharge_energy", diagnostic_cycle_type="rpt_0.2C"
+):
+    """
+    Similar to get_fractional_quantity_remaining()
+    Determine relative loss of <metric> in diagnostic_cycles of type <diagnostic_cycle_type>
+    Also returns value of 'x', the discharge throughput passed by the first diagnostic
+    and the value 'n' at each diagnostic
+
+    Args:
+        processed_cycler_run (beep.structure.ProcessedCyclerRun): information about cycler run
+        metric (str): column name to use for measuring degradation
+        diagnostic_cycle_type (str): the diagnostic cycle to use for computing the amount of degradation
+
+    Returns:
+        a dataframe with cycle_index, corresponding degradation relative to the first measured value, 'x',
+        i.e. the discharge throughput passed by the first diagnostic
+        and the value 'n' at each diagnostic, i.e. the equivalent scaling factor for lifetime using n*x
+    """
+    summary_diag_cycle_type = processed_cycler_run.diagnostic_summary[
+        (processed_cycler_run.diagnostic_summary.cycle_type == diagnostic_cycle_type)
+    ].reset_index()
+    summary_diag_cycle_type = summary_diag_cycle_type[["cycle_index", metric]]
+
+    # For the nx addition
+    if 'energy' in metric:
+        normalize_qty = 'discharge' + '_energy'
+    else:
+        normalize_qty = 'discharge' + '_capacity'
+
+    normalize_qty_throughput = normalize_qty + '_throughput'
+    regular_summary = processed_cycler_run.summary.copy()
+    regular_summary[normalize_qty_throughput] = regular_summary[normalize_qty].cumsum()
+
+    # Trim the cycle index in summary_diag_cycle_type to the max cycle in the regular cycles
+    # (no partial cycles in the regular cycle summary) so that only full cycles are used for n
+    summary_diag_cycle_type = summary_diag_cycle_type[summary_diag_cycle_type.cycle_index <=
+                                                      regular_summary.cycle_index.max()]
+    indices = summary_diag_cycle_type.cycle_index
+    initial_throughput = regular_summary.loc[
+        regular_summary.cycle_index == indices.iloc[0]
+    ][normalize_qty_throughput].iloc[0]
+    x = regular_summary.loc[
+            regular_summary.cycle_index == indices.iloc[1]
+        ][normalize_qty_throughput].iloc[0] - initial_throughput
+
+    summary_diag_cycle_type['x'] = x
+    summary_diag_cycle_type['n'] = (
+            (1/x) * regular_summary[regular_summary.cycle_index.isin(indices)][normalize_qty_throughput]
+    ).values
+
+    # end of nx addition
+    summary_diag_cycle_type[metric] = (
+        summary_diag_cycle_type[metric]
+        / processed_cycler_run.diagnostic_summary[metric].iloc[0]
+    )
+
+    summary_diag_cycle_type.columns = ["cycle_index", "fractional_metric", "x", "n"]
     return summary_diag_cycle_type

@@ -1,5 +1,30 @@
 
 
+v2020.10.14.21
+--------------
+* update copyright notices
+* Fix test file for biologic to maccor
+* Use .coveragerc - Thanks Patrick Moore
+
+v2020.10.13.11
+--------------
+* Fixes for featurization bugs - Patrick Herring
+* Documentation and clean up for `from_file` methods in structuring - Thanks Alex Dunn!
+* Biologic to maccor converter draft - Thanks Will Powelson!
+
+
+v2020.9.29.19
+-------------
+* Update version number to include hour so that packages can be released more than once a day
+* Add missing waveform files
+
+v2020.9.29
+----------
+
+* Changed test assertions, function description - Thanks Bruis van Vlijmen!
+* Biologic to Maccor converter - Thanks Will Powelson!
+* Waveforms in production protocols.
+
 v2020.9.16
 ----------
 * Revert unintentional change during release

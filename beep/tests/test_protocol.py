@@ -1,4 +1,16 @@
-# Copyright 2019 Toyota Research Institute. All rights reserved.
+# Copyright [2020] [Toyota Research Institute]
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Unit tests related to Generating protocol files"""
 
 import os
@@ -10,17 +22,15 @@ import shutil
 from copy import deepcopy
 
 import pandas as pd
-from beep.utils.secrets_manager import event_setup
 from beep.protocol import (
     PROCEDURE_TEMPLATE_DIR,
     SCHEDULE_TEMPLATE_DIR,
     BIOLOGIC_TEMPLATE_DIR,
 )
-from beep.generate_protocol import (
-    generate_protocol_files_from_csv,
-    convert_velocity_to_power_waveform,
-)
-from beep.protocol.maccor import Procedure, generate_maccor_waveform_file
+from beep.generate_protocol import generate_protocol_files_from_csv
+from beep.utils.waveform import convert_velocity_to_power_waveform
+from beep.protocol.maccor import Procedure, \
+    generate_maccor_waveform_file, insert_driving_parametersv1
 from beep.protocol.arbin import Schedule
 from beep.protocol.biologic import Settings
 from beep.protocol.maccor_to_arbin import ProcedureToSchedule
@@ -37,8 +47,7 @@ TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 class ProcedureTest(unittest.TestCase):
     def setUp(self):
-        # Determine events mode for testing
-        self.events_mode = event_setup()
+        pass
 
     def test_convert_velocity_to_power_waveform(self):
         velocity_waveform_file = os.path.join(
@@ -75,7 +84,7 @@ class ProcedureTest(unittest.TestCase):
             self.assertEqual(df_MWF.shape, df_MWF_ref.shape)
 
             # Check that the fourth column for charge/discharge limit is empty (default setting)
-            self.assertTrue(df_MWF.iloc[:, 3].isnull().all())
+            self.assertTrue(df_MWF.iloc[:, 3].notnull().all())
 
             # Check that sum of durations equals length of the power timeseries
             self.assertEqual(df_MWF.iloc[:, 5].sum(), len(df_power))
@@ -277,7 +286,7 @@ class ProcedureTest(unittest.TestCase):
 
 class GenerateProcedureTest(unittest.TestCase):
     def setUp(self):
-        self.events_mode = event_setup()
+        pass
 
     def test_io(self):
         test_file = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000003_CH68.000")
@@ -394,7 +403,7 @@ class GenerateProcedureTest(unittest.TestCase):
             "Loop 2",
         ]
         reg_steps_len = len(reg_cycle_steps)
-        self.assertEqual(steps[start : start + reg_steps_len], reg_cycle_steps)
+        self.assertEqual(steps[start: start + reg_steps_len], reg_cycle_steps)
         print(procedure["MaccorTestProcedure"]["ProcSteps"]["TestStep"][32])
         print(procedure["MaccorTestProcedure"]["ProcSteps"]["TestStep"][64])
 
@@ -414,6 +423,105 @@ class GenerateProcedureTest(unittest.TestCase):
             # Uncomment line below to keep the output in the test file directory
             # shutil.copyfile(os.path.join(scratch_dir, driving_test_name),
             #                 os.path.join(TEST_FILE_DIR, driving_test_name))
+
+    def test_waveform_from_csv(self):
+        csv_file = os.path.join(TEST_FILE_DIR,
+                                "data-share",
+                                "raw",
+                                "parameters",
+                                "Drive_parameters - GP.csv")
+        protocol_params_df = pd.read_csv(csv_file)
+        # Max power in watts in the profiles (should be less than max power limit on cyclers)
+        MAX_PROFILE_CURRENT = 15
+        MIN_PROFILE_VOLTAGE = 2.7
+        MAX_PROFILE_POWER = MAX_PROFILE_CURRENT * MIN_PROFILE_VOLTAGE
+
+        new_files = []
+        names = []
+        waveform_names = []
+        result = ""
+        message = {"comment": "", "error": ""}
+        with ScratchDir(".") as scratch_dir:
+            output_directory = scratch_dir
+            os.makedirs(os.path.join(output_directory, "procedures"))
+            for index, protocol_params in protocol_params_df.iterrows():
+                template = protocol_params["template"]
+                filename_prefix = "_".join(
+                    [
+                        protocol_params["project_name"],
+                        "{:06d}".format(protocol_params["seq_num"]),
+                    ]
+                )
+                if template == "drivingV1.000":
+                    diag_params_df = pd.read_csv(
+                        os.path.join(PROCEDURE_TEMPLATE_DIR, "PreDiag_parameters - DP.csv")
+                    )
+                    diagnostic_params = diag_params_df[
+                        diag_params_df["diagnostic_parameter_set"]
+                        == protocol_params["diagnostic_parameter_set"]
+                        ].squeeze()
+                    mwf_dir = os.path.join(scratch_dir, "mwf_files")
+                    waveform_name = insert_driving_parametersv1(protocol_params,
+                                                                waveform_directory=mwf_dir)
+                    template_fullpath = os.path.join(PROCEDURE_TEMPLATE_DIR, template)
+                    protocol = Procedure.generate_procedure_drivingv1(index,
+                                                                      protocol_params,
+                                                                      waveform_name,
+                                                                      template=template_fullpath)
+                    protocol.generate_procedure_diagcyclev3(
+                        protocol_params["capacity_nominal"], diagnostic_params
+                    )
+                    filename = "{}.000".format(filename_prefix)
+                    filename = os.path.join(output_directory, "procedures", filename)
+                    waveform_names.append(os.path.split(waveform_name)[-1])
+
+                if not os.path.isfile(filename):
+                    protocol.to_file(filename)
+                    new_files.append(filename)
+                    names.append(filename_prefix + "_")
+
+                waveform_df = pd.read_csv(waveform_name, sep="\t", header=None)
+                power_df = waveform_df[waveform_df[1] == "P"]
+                self.assertLessEqual(power_df[2].abs().max(), MAX_PROFILE_POWER)
+                self.assertGreaterEqual(power_df[2].abs().max(), 0)
+
+                current_df = waveform_df[waveform_df[1] == "I"]
+                self.assertLessEqual(current_df[2].abs().max(), MAX_PROFILE_CURRENT)
+                self.assertGreaterEqual(current_df[2].abs().max(), 0)
+
+                discharge_df = waveform_df[waveform_df[0] == "D"]
+                self.assertGreaterEqual(discharge_df[4].abs().max(), MIN_PROFILE_VOLTAGE)
+
+                self.assertEqual(protocol.get("MaccorTestProcedure.ProcSteps.TestStep.32.StepType"), 'FastWave')
+                self.assertEqual(protocol.get("MaccorTestProcedure.ProcSteps.TestStep.64.StepType"), 'FastWave')
+                wave_value = os.path.split(waveform_name)[-1].split(".")[0]
+                self.assertEqual(protocol.get("MaccorTestProcedure.ProcSteps.TestStep.32.StepValue"),
+                                 wave_value)
+                self.assertEqual(protocol.get("MaccorTestProcedure.ProcSteps.TestStep.64.StepValue"),
+                                 wave_value)
+
+            self.assertEqual(len(os.listdir(os.path.join(output_directory, "procedures"))), 36)
+            self.assertEqual(len(os.listdir(os.path.join(output_directory, "mwf_files"))), 18)
+
+        test_names = ['US06_x4_24W.MWF', 'LA4_x4_10W.MWF',
+                      'US06_x4_32W.MWF', 'LA4_x4_14W.MWF',
+                      'US06_x4_40W.MWF', 'LA4_x4_18W.MWF',
+                      'US06_x8_24W.MWF', 'LA4_x8_10W.MWF',
+                      'US06_x8_32W.MWF', 'LA4_x8_14W.MWF',
+                      'US06_x8_40W.MWF', 'LA4_x8_18W.MWF',
+                      'US06_x12_24W.MWF', 'LA4_x12_10W.MWF',
+                      'US06_x12_32W.MWF', 'LA4_x12_14W.MWF',
+                      'US06_x12_40W.MWF', 'LA4_x12_18W.MWF',
+                      'US06_x4_24W.MWF', 'LA4_x4_10W.MWF',
+                      'US06_x4_32W.MWF', 'LA4_x4_14W.MWF',
+                      'US06_x4_40W.MWF', 'LA4_x4_18W.MWF',
+                      'US06_x8_24W.MWF', 'LA4_x8_10W.MWF',
+                      'US06_x8_32W.MWF', 'LA4_x8_14W.MWF',
+                      'US06_x8_40W.MWF', 'LA4_x8_18W.MWF',
+                      'US06_x12_24W.MWF', 'LA4_x12_10W.MWF',
+                      'US06_x12_32W.MWF', 'LA4_x12_14W.MWF',
+                      'US06_x12_40W.MWF', 'LA4_x12_18W.MWF']
+        self.assertListEqual(test_names, waveform_names)
 
     def test_from_csv(self):
         csv_file = os.path.join(TEST_FILE_DIR, "parameter_test.csv")
@@ -545,14 +653,14 @@ class GenerateProcedureTest(unittest.TestCase):
             makedirs_p(names_path)
 
             # Test the script
-            json_input = json.dumps({"file_list": [csv_file], "mode": self.events_mode})
+            json_input = json.dumps({"file_list": [csv_file]})
             os.system("generate_protocol {}".format(os_format(json_input)))
             self.assertEqual(len(os.listdir(procedures_path)), 3)
 
 
 class ProcedureToScheduleTest(unittest.TestCase):
     def setUp(self):
-        self.events_mode = event_setup()
+        pass
 
     def test_single_step_conversion(self):
         procedure = Procedure()
@@ -695,7 +803,7 @@ class ProcedureToScheduleTest(unittest.TestCase):
 
 class ArbinScheduleTest(unittest.TestCase):
     def setUp(self):
-        self.events_mode = event_setup()
+        pass
 
     def test_dict_to_file(self):
         filename = "20170630-3_6C_9per_5C.sdu"
@@ -738,7 +846,7 @@ class ArbinScheduleTest(unittest.TestCase):
 
 class BiologicSettingsTest(unittest.TestCase):
     def setUp(self):
-        self.events_mode = event_setup()
+        pass
 
     def test_from_file(self):
         filename = "BCS - 171.64.160.115_Ta19_ourprotocol_gdocSEP2019_CC7.mps"

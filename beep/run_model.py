@@ -1,4 +1,16 @@
-# Copyright 2019 Toyota Research Institute. All rights reserved.
+# Copyright [2020] [Toyota Research Institute]
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 Module and scripts for training and predicting with models,
 given a matching descriptor set.
@@ -50,7 +62,6 @@ from sklearn.linear_model import (
 )
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
-from beep.utils import KinesisEvents
 from beep import MODEL_DIR, logger, __version__
 
 s = {"service": "DataAnalyzer"}
@@ -644,8 +655,7 @@ def process_file_list_from_json(
     else:
         file_list_data = json.loads(file_list_json)
 
-    # Setup Events
-    events = KinesisEvents(service="DataAnalyzer", mode=file_list_data["mode"])
+    # Setup workflow TODO
 
     # Add BEEP_PROCESSING_DIR to processed_dir
     processed_dir = os.path.join(
@@ -681,8 +691,6 @@ def process_file_list_from_json(
                 "result_list": [],
                 "message_list": [],
             }
-
-            events.put_analyzing_event(output_data, "predicting", "error")
 
             # Return jsonable file list
             return json.dumps(output_data)
@@ -741,8 +749,6 @@ def process_file_list_from_json(
         "result_list": processed_result_list,
         "message_list": processed_message_list,
     }
-
-    events.put_analyzing_event(output_data, "predicting", "complete")
 
     # Return jsonable file list
     return json.dumps(output_data)

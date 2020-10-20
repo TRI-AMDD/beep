@@ -15,7 +15,7 @@ import datetime
 
 from beep import __version__ as CURRENT_VER
 
-NEW_VER = datetime.datetime.today().strftime("%Y.%-m.%-d")
+NEW_VER = datetime.datetime.today().strftime("%Y.%-m.%-d.%-H")
 
 
 @task
@@ -41,6 +41,7 @@ def set_ver(ctx):
                 lines.append(l.rstrip())
     with open("beep/__init__.py", "wt") as f:
         f.write("\n".join(lines))
+        f.write("\n")
 
     lines = []
     with open("setup.py", "rt") as f:
@@ -49,6 +50,7 @@ def set_ver(ctx):
                                 l.rstrip()))
     with open("setup.py", "wt") as f:
         f.write("\n".join(lines))
+        f.write("\n")
 
 
 @task

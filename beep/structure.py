@@ -1,4 +1,16 @@
-# Copyright 2019 Toyota Research Institute. All rights reserved.
+# Copyright [2020] [Toyota Research Institute]
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 Module and script for processing cycler run CSVs into structured data
 for featurization and analysis.  Contains RawCyclerRun and ProcessedCyclerRun
@@ -71,7 +83,7 @@ from beep.conversion_schemas import (
     STRUCTURE_DTYPES,
 )
 
-from beep.utils import KinesisEvents, WorkflowOutputs
+from beep.utils import WorkflowOutputs
 from beep import logger, __version__
 
 s = {"service": "DataStructurer"}
@@ -105,7 +117,10 @@ class RawCyclerRun(MSONable):
     ]
     INT_COLUMNS = ["step_index", "cycle_index"]
 
-    def __init__(self, data, metadata, eis=None, validate=False, filename=None):
+    IMPUTABLE_COLUMNS = ["temperature", "internal_resistance"]
+
+    def __init__(self, data, metadata, eis=None, validate=False, filename=None,
+                 impute_missing=True):
         """
         Args:
             data (pandas.DataFrame): DataFrame corresponding to cycler run data
@@ -114,12 +129,20 @@ class RawCyclerRun(MSONable):
                 spectrum object. Defaults to None
             validate (bool): whether or not to validate DataFrame upon
                 instantiation. Defaults to None.
+            impute_missing (bool): Impute missing columns required for
+                downstream processing (e.g., temperature).
+
         """
         if validate:
             validator = ValidatorBeep()
             is_valid = validator.validate_arbin_dataframe(data)
             if not is_valid:
                 raise BeepValidationError("Beep validation failed")
+
+        if impute_missing:
+            for col in self.IMPUTABLE_COLUMNS:
+                if col not in data:
+                    data[col] = np.NaN
 
         self.data = data
         self.metadata = metadata
@@ -307,9 +330,8 @@ class RawCyclerRun(MSONable):
         result = pd.concat(
             [interpolated_discharge, interpolated_charge], ignore_index=True
         )
-        result = result.astype(STRUCTURE_DTYPES["cycles_interpolated"])
 
-        return result
+        return result.astype(STRUCTURE_DTYPES["cycles_interpolated"])
 
     def as_dict(self):
         """
@@ -466,7 +488,7 @@ class RawCyclerRun(MSONable):
         self.data.drop(columns=["time_since_cycle_start"])
 
         # Determine if any of the cycles has been paused
-        summary["paused"] = self.data.groupby("cycle_index").apply(determine_paused)
+        summary["paused"] = self.data.groupby("cycle_index").apply(get_max_paused_over_threshold)
 
         summary = summary.astype(STRUCTURE_DTYPES["summary"])
 
@@ -539,7 +561,7 @@ class RawCyclerRun(MSONable):
             diag_summary["discharge_capacity"] / diag_summary["charge_capacity"]
         )
         diag_summary["paused"] = self.data.groupby("cycle_index").apply(
-            determine_paused
+            get_max_paused_over_threshold
         )
 
         diag_summary.reset_index(drop=True, inplace=True)
@@ -881,8 +903,8 @@ class RawCyclerRun(MSONable):
             .apply(lambda x: 0 if x < 0 else x)
             .cumsum()
         )
-        print(data.columns)
-        print(NEWARE_CONFIG["data_types"])
+        # print(data.columns)
+        # print(NEWARE_CONFIG["data_types"])
         data = data.astype(NEWARE_CONFIG["data_types"])
 
         data.rename(NEWARE_CONFIG["data_columns"], axis="columns", inplace=True)
@@ -966,7 +988,7 @@ class RawCyclerRun(MSONable):
         metadata["filename"] = path
         metadata["_today_datetime"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        return cls(data, metadata, None, validate, filename=path)
+        return cls(data, metadata, None, validate, filename=path, impute_missing=False)
 
     @staticmethod
     def extract_biologic_metadata(metadata_path):
@@ -1146,9 +1168,6 @@ class RawCyclerRun(MSONable):
         data["discharge_energy"] = cls.get_maccor_quantity_sum(
             data, "energy", "discharge"
         )
-
-        if "temperature" not in data.columns:
-            data["temperature"] = np.NaN
 
         # Parse metadata - kinda hackish way to do it, but it works
         metadata = parse_maccor_metadata(metadata_line)
@@ -2064,16 +2083,19 @@ def add_file_prefix_to_path(path, prefix):
     return os.path.join(*split_path)
 
 
-def determine_paused(group, paused_threshold=3600):
+def get_max_paused_over_threshold(group, paused_threshold=3600):
     """
-    Evaluate a raw cycling dataframe to determine if there is a pause in cycling
+    Evaluate a raw cycling dataframe to determine if there is a pause in cycling.
+    The method looks at the time difference between each row and if this value
+    exceeds a threshold, it returns that length of time in seconds. Otherwise it
+    returns 0
 
     Args:
         group (pd.DataFrame): cycling dataframe with date_time_iso column
         paused_threshold (int): gap in seconds to classify as a pause in cycling
 
     Returns:
-        bool: is there a pause in this cycle?
+        float: number of seconds that test was paused
 
     """
     date_time_obj = pd.to_datetime(group["date_time_iso"])
@@ -2082,7 +2104,11 @@ def determine_paused(group, paused_threshold=3600):
         for t in date_time_obj
     ]
     date_time_float = pd.Series(date_time_float)
-    return int(date_time_float.diff().max() > paused_threshold)
+    if date_time_float.diff().max() > paused_threshold:
+        max_paused_duration = date_time_float.diff().max()
+    else:
+        max_paused_duration = 0
+    return max_paused_duration
 
 
 def maccor_timestamp(x):
@@ -2165,8 +2191,7 @@ def process_file_list_from_json(file_list_json, processed_dir="data-share/struct
     else:
         file_list_data = json.loads(file_list_json)
 
-    # Setup Events
-    events = KinesisEvents(service="DataStructurer", mode=file_list_data["mode"])
+    # Setup workflow
     outputs = WorkflowOutputs()
 
     # Prepend optional root to output directory
@@ -2214,8 +2239,6 @@ def process_file_list_from_json(file_list_json, processed_dir="data-share/struct
         "message_list": processed_message_list,
         "invalid_file_list": invalid_file_list,
     }
-
-    events.put_structuring_event(output_json, "complete")
 
     # Workflow outputs
     file_list_size = len(output_json["file_list"])
