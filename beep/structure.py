@@ -209,7 +209,7 @@ class RawCyclerRun(MSONable):
             if new_df.size == 0:
                 continue
 
-            #if cycle contains a waveform step, interpolate on test_time.
+            #If cycle contains a waveform step, interpolate on test_time.
             if self.data.loc[self.data["cycle_index"] == cycle_index].\
                     groupby("step_index").apply(determine_whether_step_is_waveform).any():
                 axis = 'test_time'
@@ -1061,6 +1061,9 @@ class RawCyclerRun(MSONable):
         """
         state_code = MACCOR_CONFIG["{}_state_code".format(state_type)]
         quantity_agg = data['_' + quantity].where(data["_state"] == state_code, other=0, axis=0)
+
+        # If a waveform step is present, maccor initializes waveform-specific quantities
+        # that are to be used in place of '_capacity' and '_energy'
 
         if data['_wf_chg_cap'].notna().sum():
             if (state_type, quantity) == ('discharge', 'capacity'):
