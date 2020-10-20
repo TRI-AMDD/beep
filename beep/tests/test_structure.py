@@ -368,21 +368,17 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertFalse(cycler_run.data.loc[cycler_run.data.cycle_index == 3].
                         groupby("step_index").apply(determine_whether_step_is_waveform).any())
 
-    def test_get_interpolated_waveform_discharge_step(self):
+    def test_get_interpolated_waveform_discharge_cycles(self):
         cycler_run = RawCyclerRun.from_file(self.maccor_file_w_waveform)
-        reg_cycles = [i for i in cycler_run.data.cycle_index.unique() if i > 5]
-        interpolated_discharge = cycler_run.get_interpolated_steps(
-            v_range=[2.8, 4.2],
-            resolution=1000,
-            step_type="discharge",
-            reg_cycles=reg_cycles,
-        )
-        self.assertTrue(interpolated_discharge.columns[0] == 'test_time')
-        subset_interpolated = interpolated_discharge[interpolated_discharge.cycle_index==6]
+        all_interpolated = cycler_run.get_interpolated_cycles()
+        all_interpolated = all_interpolated[(all_interpolated.step_type == "discharge")]
+        self.assertTrue(all_interpolated.columns[0] == 'test_time')
+        subset_interpolated = all_interpolated[all_interpolated.cycle_index==6]
         self.assertEqual(subset_interpolated.test_time.min(),
                          cycler_run.data.loc[(cycler_run.data.cycle_index == 6) &
                                              (cycler_run.data.step_index == 33)].test_time.min())
         self.assertEqual(subset_interpolated[subset_interpolated.cycle_index == 6].shape[0], 1000)
+
 
     def test_get_interpolated_charge_cycles(self):
         cycler_run = RawCyclerRun.from_file(self.arbin_file)
