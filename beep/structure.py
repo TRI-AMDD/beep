@@ -88,6 +88,8 @@ from beep import logger, __version__
 
 s = {"service": "DataStructurer"}
 
+VOLTAGE_RESOLUTION = 3
+
 
 class RawCyclerRun(MSONable):
     """
@@ -210,6 +212,7 @@ class RawCyclerRun(MSONable):
         else:
             raise ValueError("{} is not a recognized step type")
         incl_columns = [
+            "test_time",
             "voltage",
             "current",
             "charge_capacity",
@@ -221,6 +224,7 @@ class RawCyclerRun(MSONable):
         cycle_indices = self.data.cycle_index.unique()
         cycle_indices = [c for c in cycle_indices if c in reg_cycles]
         cycle_indices.sort()
+
         for cycle_index in tqdm(cycle_indices):
             # Use a cycle_index mask instead of a global groupby to save memoryÍ
             new_df = (
@@ -230,6 +234,7 @@ class RawCyclerRun(MSONable):
             )
             if new_df.size == 0:
                 continue
+
             if axis in ["charge_capacity", "discharge_capacity"]:
                 axis_range = [self.data[axis].min(), self.data[axis].max()]
                 new_df = get_interpolated_data(
@@ -272,8 +277,8 @@ class RawCyclerRun(MSONable):
         return result
 
     def get_interpolated_cycles(
-        self, v_range=None, resolution=1000, diagnostic_available=None
-    ):
+        self, v_range=None, resolution=1000, diagnostic_available=None,
+            charge_axis='charge_capacity', discharge_axis='voltage'):
         """
         Gets interpolated cycles for both charge and discharge steps.
 
@@ -304,19 +309,26 @@ class RawCyclerRun(MSONable):
             reg_cycles = [i for i in self.data.cycle_index.unique()]
 
         v_range = v_range or [2.8, 3.5]
+
+        # If any regular cycle contains a waveform step, interpolate on test_time.
+        if self.data[self.data.cycle_index.isin(reg_cycles)].\
+                groupby(["cycle_index", "step_index"]).\
+                apply(determine_whether_step_is_waveform).any():
+            discharge_axis = 'test_time'
+
         interpolated_discharge = self.get_interpolated_steps(
             v_range,
             resolution,
             step_type="discharge",
             reg_cycles=reg_cycles,
-            axis="voltage",
+            axis=discharge_axis,
         )
         interpolated_charge = self.get_interpolated_steps(
             v_range,
             resolution,
             step_type="charge",
             reg_cycles=reg_cycles,
-            axis="charge_capacity",
+            axis=charge_axis,
         )
         result = pd.concat(
             [interpolated_discharge, interpolated_charge], ignore_index=True
@@ -1073,16 +1085,31 @@ class RawCyclerRun(MSONable):
 
         """
         state_code = MACCOR_CONFIG["{}_state_code".format(state_type)]
-        quantity_agg = data["_" + quantity].where(
-            data["_state"] == state_code, other=0.0, axis=0
-        )
-        end_step = data["_ending_status"].apply(
-            lambda x: MACCOR_CONFIG["end_step_code_min"]
-            <= x
-            <= MACCOR_CONFIG["end_step_code_max"]
-        )
-        end_step_inds = end_step.index[end_step]
+        quantity_agg = data['_' + quantity].where(data["_state"] == state_code, other=0, axis=0)
 
+        # If a waveform step is present, maccor initializes waveform-specific quantities
+        # that are to be used in place of '_capacity' and '_energy'
+
+        if data['_wf_chg_cap'].notna().sum():
+            if (state_type, quantity) == ('discharge', 'capacity'):
+                quantity_agg = data['_wf_dis_cap'].where(data['_wf_dis_cap'].notna(), other=quantity_agg, axis=0)
+            elif (state_type, quantity) == ('charge', 'capacity'):
+                quantity_agg = data['_wf_chg_cap'].where(data['_wf_chg_cap'].notna(), other=quantity_agg, axis=0)
+            elif (state_type, quantity) == ('discharge', 'energy'):
+                quantity_agg = data['_wf_dis_e'].where(data['_wf_dis_e'].notna(), other=quantity_agg, axis=0)
+            elif (state_type, quantity) == ('charge', 'energy'):
+                quantity_agg = data['_wf_chg_e'].where(data['_wf_chg_e'].notna(), other=quantity_agg, axis=0)
+            else:
+                pass
+
+        end_step = data["_ending_status"].apply(
+            lambda x: MACCOR_CONFIG["end_step_code_min"] <= x <= MACCOR_CONFIG["end_step_code_max"]
+        )
+        # For waveform discharges, maccor seems to trigger ending_status within a step multiple times
+        # As a fix, compute the actual step change using diff() on step_index and set end_step to be
+        # a logical AND(step_change, end_step)
+        is_step_change = data['step_index'].diff(periods=-1).fillna(value=0) != 0
+        end_step_inds = end_step.index[np.logical_and(list(end_step), list(is_step_change))]
         # If no end steps, quantity not reset, return it without modifying
         if end_step_inds.size == 0:
             return quantity_agg
@@ -1378,6 +1405,8 @@ class ProcessedCyclerRun(MSONable):
         nominal_capacity=1.1,
         full_fast_charge=0.8,
         diagnostic_available=False,
+        charge_axis='charge_capacity',
+        discharge_axis='voltage'
     ):
         """
         Method to invoke ProcessedCyclerRun from RawCyclerRun object
@@ -1409,6 +1438,8 @@ class ProcessedCyclerRun(MSONable):
             v_range=v_range,
             resolution=resolution,
             diagnostic_available=diagnostic_available,
+            charge_axis=charge_axis,
+            discharge_axis=discharge_axis
         )
         return cls(
             raw_cycler_run.metadata.get("barcode"),
@@ -1771,6 +1802,32 @@ class EISpectrum(MSONable):
         data = data.sort_index()
         metadata = pd.DataFrame(d["metadata"])
         return cls(data, metadata)
+
+
+def determine_whether_step_is_waveform(step_dataframe):
+    """
+    Helper function for driving profiles to determine whether a given dataframe corresponding
+    to a single cycle_index/step has both charging and discharging portions, only intended
+    to be used with a dataframe for single maccor step/cycle.
+
+    Args:
+         step_dataframe (pandas.DataFrame): dataframe to determine whether waveform step is present
+    """
+
+    # Check for waveform in maccor
+    if len([col for col in step_dataframe.columns if '_wf_' in col]):
+        return (step_dataframe['_wf_chg_cap'].notna().any()) | (step_dataframe['_wf_dis_cap'].notna().any())
+    elif not np.round(step_dataframe.voltage, VOLTAGE_RESOLUTION).is_monotonic:
+        # This is a placeholder logic for arbin waveform detection
+        # This fails for some arbin files that nominally have a CC-CV step.
+        # e.g. 2017-12-04_4_65C-69per_6C_CH29.csv
+        # TODO: survey more files and include additional heuristics/logic based on the size of
+        # and frequency of non-monotonicities to determine whether step is actually a waveform.
+
+        # All non-maccor files will evaluate to False by default for now
+        return False
+    else:
+        return False
 
 
 def determine_whether_step_is_discharging(step_dataframe):

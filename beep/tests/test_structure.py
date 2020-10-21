@@ -31,7 +31,8 @@ from beep.structure import (
     get_project_sequence,
     get_protocol_parameters,
     get_diagnostic_parameters,
-    get_max_paused_over_threshold,
+    determine_whether_step_is_waveform,
+    get_max_paused_over_threshold
 )
 from beep.conversion_schemas import STRUCTURE_DTYPES
 from monty.serialization import loadfn, dumpfn
@@ -58,6 +59,8 @@ class RawCyclerRunTest(unittest.TestCase):
         self.maccor_file_w_diagnostics = os.path.join(
             TEST_FILE_DIR, "xTESLADIAG_000020_CH71.071"
         )
+        self.maccor_file_w_waveform = os.path.join(TEST_FILE_DIR, "test_drive_071620.095")
+
         self.maccor_file_w_parameters_s3 = {
             "bucket": "beep-sync-test-stage",
             "key": "big_file_tests/PreDiag_000287_000128.092"
@@ -251,6 +254,20 @@ class RawCyclerRunTest(unittest.TestCase):
             np.all(capacity_sign >= -cycle_sign)
         )  # Capacity increases throughout cycle
 
+    def test_waveform_charge_discharge_capacity(self):
+        raw_cycler_run = RawCyclerRun.from_maccor_file(
+            self.maccor_file_w_waveform, include_eis=False
+        )
+        cycle_sign = np.sign(np.diff(raw_cycler_run.data["cycle_index"]))
+        capacity_sign = np.sign(np.diff(raw_cycler_run.data["charge_capacity"]))
+        self.assertTrue(
+            np.all(capacity_sign >= -cycle_sign)
+        )  # Capacity increases throughout cycle
+        capacity_sign = np.sign(np.diff(raw_cycler_run.data["discharge_capacity"]))
+        self.assertTrue(
+            np.all(capacity_sign >= -cycle_sign)
+        )
+
     # Note that the compression is from 45 M / 6 M as of 02/25/2019
     def test_binary_save(self):
         cycler_run = RawCyclerRun.from_file(self.arbin_file)
@@ -287,6 +304,7 @@ class RawCyclerRunTest(unittest.TestCase):
             )
         )
 
+
     def test_get_interpolated_discharge_cycles(self):
         cycler_run = RawCyclerRun.from_file(self.arbin_file)
         all_interpolated = cycler_run.get_interpolated_cycles()
@@ -317,7 +335,7 @@ class RawCyclerRunTest(unittest.TestCase):
         pred = pred.reset_index()
         for col_name in y_at_point.columns:
             self.assertAlmostEqual(
-                pred[col_name].iloc[0], y_at_point[col_name].iloc[0], places=5
+                pred[col_name].iloc[0], y_at_point[col_name].iloc[0], places=2
             )
 
     def test_get_interpolated_charge_step(self):
@@ -343,6 +361,27 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertTrue(np.all(np.array(lengths) == 1000))
         self.assertTrue(interpolated_charge["current"].mean() > 0)
 
+
+    def test_whether_step_is_waveform(self):
+        cycler_run = RawCyclerRun.from_file(self.maccor_file_w_waveform)
+        self.assertTrue(cycler_run.data.loc[cycler_run.data.cycle_index == 6].
+                        groupby("step_index").apply(determine_whether_step_is_waveform).any())
+        self.assertFalse(cycler_run.data.loc[cycler_run.data.cycle_index == 3].
+                        groupby("step_index").apply(determine_whether_step_is_waveform).any())
+
+
+    def test_get_interpolated_waveform_discharge_cycles(self):
+        cycler_run = RawCyclerRun.from_file(self.maccor_file_w_waveform)
+        all_interpolated = cycler_run.get_interpolated_cycles()
+        all_interpolated = all_interpolated[(all_interpolated.step_type == "discharge")]
+        self.assertTrue(all_interpolated.columns[0] == 'test_time')
+        subset_interpolated = all_interpolated[all_interpolated.cycle_index==6]
+        self.assertEqual(subset_interpolated.test_time.min(),
+                         cycler_run.data.loc[(cycler_run.data.cycle_index == 6) &
+                                             (cycler_run.data.step_index == 33)].test_time.min())
+        self.assertEqual(subset_interpolated[subset_interpolated.cycle_index == 6].shape[0], 1000)
+
+
     def test_get_interpolated_charge_cycles(self):
         cycler_run = RawCyclerRun.from_file(self.arbin_file)
         all_interpolated = cycler_run.get_interpolated_cycles()
@@ -361,12 +400,12 @@ class RawCyclerRunTest(unittest.TestCase):
     def test_interpolated_cycles_dtypes(self):
         cycler_run = RawCyclerRun.from_file(self.arbin_file)
         all_interpolated = cycler_run.get_interpolated_cycles()
-        cycles_interpolated_dyptes = all_interpolated.dtypes.tolist()
+        cycles_interpolated_dtypes = all_interpolated.dtypes.tolist()
         cycles_interpolated_columns = all_interpolated.columns.tolist()
-        cycles_interpolated_dyptes = [str(dtyp) for dtyp in cycles_interpolated_dyptes]
+        cycles_interpolated_dtypes = [str(dtyp) for dtyp in cycles_interpolated_dtypes]
         for indx, col in enumerate(cycles_interpolated_columns):
             self.assertEqual(
-                cycles_interpolated_dyptes[indx],
+                cycles_interpolated_dtypes[indx],
                 STRUCTURE_DTYPES["cycles_interpolated"][col],
             )
 
