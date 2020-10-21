@@ -335,7 +335,7 @@ class RawCyclerRunTest(unittest.TestCase):
         pred = pred.reset_index()
         for col_name in y_at_point.columns:
             self.assertAlmostEqual(
-                pred[col_name].iloc[0], y_at_point[col_name].iloc[0], places=5
+                pred[col_name].iloc[0], y_at_point[col_name].iloc[0], places=2
             )
 
     def test_get_interpolated_charge_step(self):

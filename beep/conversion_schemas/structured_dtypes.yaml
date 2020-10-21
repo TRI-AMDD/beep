@@ -1,5 +1,5 @@
 cycles_interpolated:
-  test_time: 'float32'
+  test_time: 'float64'
   cycle_index: 'int32'
   current: 'float32'
   voltage: 'float32'
