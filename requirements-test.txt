@@ -1,0 +1,4 @@
+pytest-cov
+coveralls
+memory_profiler
+matplotlib
