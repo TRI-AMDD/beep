@@ -9,7 +9,7 @@ state:
   type: list
 volts:
   schema:
-    max: 1.8
+    max: 4.4
     min: 0.0
     type: float
   type: list

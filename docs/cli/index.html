@@ -1,0 +1,650 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for TRI-AMDD BEEP, for handling battery cycling data and predicting battery lifetines">
+      
+      
+      
+      <link rel="shortcut icon" href="../static/tri_cropped_favicon.png">
+      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-6.1.0">
+    
+    
+      
+        <title>Commands - BEEP - Battery Evaluation and Early Prediction</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.bc7e593a.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab28b872.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#ef5552">
+        
+      
+    
+    
+    
+      
+        
+        <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>body,input{font-family:"Roboto",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"Roboto Mono",SFMono-Regular,Consolas,Menlo,monospace}</style>
+      
+    
+    
+    
+    
+      
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="red" data-md-color-accent="orange">
+      
+  
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#commands" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header-nav md-grid" aria-label="Header">
+    <a href=".." title="BEEP - Battery Evaluation and Early Prediction" class="md-header-nav__button md-logo" aria-label="BEEP - Battery Evaluation and Early Prediction">
+      
+  <img src="../static/tri_cropped.png" alt="logo">
+
+    </a>
+    <label class="md-header-nav__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header-nav__title" data-md-component="header-title">
+      
+        <div class="md-header-nav__ellipsis">
+          <span class="md-header-nav__topic md-ellipsis">
+            BEEP - Battery Evaluation and Early Prediction
+          </span>
+          <span class="md-header-nav__topic md-ellipsis">
+            
+              Commands
+            
+          </span>
+        </div>
+      
+    </div>
+    
+      <label class="md-header-nav__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" data-md-state="active">
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <button type="reset" class="md-search__icon md-icon" aria-label="Clear" data-md-component="search-reset" tabindex="-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header-nav__source">
+        
+<a href="https://github.com/tri-amdd/beep/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="BEEP - Battery Evaluation and Early Prediction" class="md-nav__button md-logo" aria-label="BEEP - Battery Evaluation and Early Prediction">
+      
+  <img src="../static/tri_cropped.png" alt="logo">
+
+    </a>
+    BEEP - Battery Evaluation and Early Prediction
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/tri-amdd/beep/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href=".." class="md-nav__link">
+      Introduction
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Commands
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+    
+    <a href="./" class="md-nav__link md-nav__link--active">
+      Commands
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    Introduction
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#collate-standardize-filenames-among-many-cyclersruns" class="md-nav__link">
+    collate: standardize filenames among many cyclers/runs
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#validate-ensure-your-data-is-valid" class="md-nav__link">
+    validate: ensure your data is valid
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#structure-convert-cycler-data-to-universal-formats" class="md-nav__link">
+    structure: convert cycler data to universal formats
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#featurize-add-features-for-machine-learning" class="md-nav__link">
+    featurize: add features for machine learning
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run_model-run-a-machine-learning-model" class="md-nav__link">
+    run_model: run a machine learning model
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../data/" class="md-nav__link">
+      Data requirements
+    </a>
+  </li>
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    Introduction
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#collate-standardize-filenames-among-many-cyclersruns" class="md-nav__link">
+    collate: standardize filenames among many cyclers/runs
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#validate-ensure-your-data-is-valid" class="md-nav__link">
+    validate: ensure your data is valid
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#structure-convert-cycler-data-to-universal-formats" class="md-nav__link">
+    structure: convert cycler data to universal formats
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#featurize-add-features-for-machine-learning" class="md-nav__link">
+    featurize: add features for machine learning
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run_model-run-a-machine-learning-model" class="md-nav__link">
+    run_model: run a machine learning model
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/tri-amdd/beep/edit/master/docs/cli.md" title="Edit this page" class="md-content__button md-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+                  </a>
+                
+                
+                <h1 id="commands">Commands<a class="headerlink" href="#commands" title="Permanent link">&para;</a></h1>
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h2>
+<p>BEEP provides a command line interface for easier usage of the BEEP pipeline.</p>
+<p><strong>There are five main steps to the BEEP pipeline:</strong></p>
+<ol>
+<li><strong>Collation:</strong> logically organize your data from various battery cycler machines and experiments</li>
+<li><strong>Validation:</strong> check that BEEP will be able to run on your data</li>
+<li><strong>Structuring:</strong> convert cycler outputs into a minimal, universal format</li>
+<li><strong>Featurization:</strong> adding features for machine learning</li>
+<li><strong>Run model:</strong> run a machine learning model to predict battery lifetimes.</li>
+</ol>
+<p>Each command accepts a JSON string as input in order to provide flexibility and better automation. </p>
+<h2 id="collate-standardize-filenames-among-many-cyclersruns"><code>collate</code>: standardize filenames among many cyclers/runs<a class="headerlink" href="#collate-standardize-filenames-among-many-cyclersruns" title="Permanent link">&para;</a></h2>
+<p>The <code>collate</code> script takes no input, and operates by assuming the BEEP_PROCESSING_DIR (default <code>/</code>)
+has subdirectories <code>/data-share/raw_cycler_files</code> and <code>data-share/renamed_cycler_files/FastCharge</code>.</p>
+<p>The script moves files from the <code>/data-share/raw_cycler_files</code> directory, parses the metadata,
+and renames them according to a combination of protocol, channel number, and date, placing them in
+<code>/data-share/renamed_cycler_files</code>.</p>
+<p>The script output is a json string that contains the following fields:</p>
+<ul>
+<li><code>fid</code> - The file id used internally for renaming</li>
+<li><code>filename</code> - full paths for raw cycler filenames</li>
+<li><code>strname</code> - the string name associated with the file (i. e. scrubbed of <code>csv</code>)</li>
+<li><code>file_list</code> - full paths for the new, renamed, cycler files</li>
+<li><code>protocol</code> - the cycling protocol corresponding to each file</li>
+<li><code>channel_no</code> - the channel number corresponding to each file</li>
+<li><code>date</code> - the date corresponding to each file</li>
+</ul>
+<p><strong>Example:</strong></p>
+<div class="codehilite"><pre><span></span><code>$ collate
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+    <span class="nt">&quot;mode&quot;</span><span class="p">:</span> <span class="s2">&quot;events_off&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;fid&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> 
+            <span class="mi">1</span><span class="p">,</span> 
+            <span class="mi">2</span><span class="p">],</span>
+    <span class="nt">&quot;strname&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;2017-05-09_test-TC-contact&quot;</span><span class="p">,</span> 
+                <span class="s2">&quot;2017-08-14_8C-5per_3_47C&quot;</span><span class="p">,</span> 
+                <span class="s2">&quot;2017-12-04_4_65C-69per_6C&quot;</span><span class="p">],</span>
+    <span class="nt">&quot;file_list&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;/data-share/renamed_cycler_files/FastCharge/FastCharge_0_CH33.csv&quot;</span><span class="p">,</span> 
+                  <span class="s2">&quot;/data-share/renamed_cycler_files/FastCharge/FastCharge_1_CH44.csv&quot;</span><span class="p">,</span> 
+                  <span class="s2">&quot;/data-share/renamed_cycler_files/FastCharge/FastCharge_2_CH29.csv&quot;</span><span class="p">],</span>
+    <span class="nt">&quot;protocol&quot;</span><span class="p">:</span> <span class="p">[</span><span class="kc">null</span><span class="p">,</span> 
+               <span class="s2">&quot;8C(5%)-3.47C&quot;</span><span class="p">,</span> 
+               <span class="s2">&quot;4.65C(69%)-6C&quot;</span><span class="p">],</span>
+    <span class="nt">&quot;date&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;2017-05-09&quot;</span><span class="p">,</span> 
+             <span class="s2">&quot;2017-08-14&quot;</span><span class="p">,</span> 
+             <span class="s2">&quot;2017-12-04&quot;</span><span class="p">],</span>
+    <span class="nt">&quot;channel_no&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;CH33&quot;</span><span class="p">,</span> 
+                   <span class="s2">&quot;CH44&quot;</span><span class="p">,</span> 
+                   <span class="s2">&quot;CH29&quot;</span><span class="p">],</span>
+    <span class="nt">&quot;filename&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;/data-share/raw_cycler_files/2017-05-09_test-TC-contact_CH33.csv&quot;</span><span class="p">,</span> 
+                 <span class="s2">&quot;/data-share/raw_cycler_files/2017-08-14_8C-5per_3_47C_CH44.csv&quot;</span><span class="p">,</span> 
+                 <span class="s2">&quot;/data-share/raw_cycler_files/2017-12-04_4_65C-69per_6C_CH29.csv&quot;</span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h2 id="validate-ensure-your-data-is-valid"><code>validate</code>: ensure your data is valid<a class="headerlink" href="#validate-ensure-your-data-is-valid" title="Permanent link">&para;</a></h2>
+<p>The validation script, <code>validate</code>, runs the validation procedure contained
+in <code>beep.validate</code> on renamed files according to the output of <code>rename</code> above.
+It also updates a general json validation record in <code>/data-share/validation/validation.json</code>.</p>
+<p>The input json must contain the following fields</p>
+<ul>
+<li><code>file_list</code> - the list of filenames to be validated</li>
+<li><code>mode</code> - mode for events i.e. 'test' or 'run'</li>
+<li><code>run_list</code> - list of run_ids for each of the files, used by the database for linking data</li>
+</ul>
+<p>The output json will have the following fields:</p>
+<ul>
+<li><code>validity</code> - a list of validation results, e. g. <code>["valid", "valid", "invalid"]</code></li>
+<li><code>file_list</code> - a list of full path filenames which have been processed</li>
+</ul>
+<p><strong>Example:</strong></p>
+<div class="codehilite"><pre><span></span><code>$ validate <span class="s1">&#39;{</span>
+<span class="s1">    &quot;mode&quot;: &quot;events_off&quot;,</span>
+<span class="s1">    &quot;run_list&quot;: [1, 20, 34],</span>
+<span class="s1">    &quot;strname&quot;: [&quot;2017-05-09_test-TC-contact&quot;, </span>
+<span class="s1">                &quot;2017-08-14_8C-5per_3_47C&quot;, </span>
+<span class="s1">                &quot;2017-12-04_4_65C-69per_6C&quot;],</span>
+<span class="s1">    &quot;file_list&quot;: [&quot;/data-share/renamed_cycler_files/FastCharge/FastCharge_0_CH33.csv&quot;, </span>
+<span class="s1">                  &quot;/data-share/renamed_cycler_files/FastCharge/FastCharge_1_CH44.csv&quot;, </span>
+<span class="s1">                  &quot;/data-share/renamed_cycler_files/FastCharge/FastCharge_2_CH29.csv&quot;],</span>
+<span class="s1">    &quot;protocol&quot;: [null, </span>
+<span class="s1">               &quot;8C(5%)-3.47C&quot;, </span>
+<span class="s1">               &quot;4.65C(69%)-6C&quot;],</span>
+<span class="s1">    &quot;date&quot;: [&quot;2017-05-09&quot;, </span>
+<span class="s1">             &quot;2017-08-14&quot;, </span>
+<span class="s1">             &quot;2017-12-04&quot;],</span>
+<span class="s1">    &quot;channel_no&quot;: [&quot;CH33&quot;, </span>
+<span class="s1">                   &quot;CH44&quot;, </span>
+<span class="s1">                   &quot;CH29&quot;],</span>
+<span class="s1">    &quot;filename&quot;: [&quot;/data-share/raw_cycler_files/2017-05-09_test-TC-contact_CH33.csv&quot;, </span>
+<span class="s1">                 &quot;/data-share/raw_cycler_files/2017-08-14_8C-5per_3_47C_CH44.csv&quot;, </span>
+<span class="s1">                 &quot;/data-share/raw_cycler_files/2017-12-04_4_65C-69per_6C_CH29.csv&quot;]</span>
+<span class="s1">}&#39;</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;validity&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;invalid&quot;</span><span class="p">,</span>
+              <span class="s2">&quot;invalid&quot;</span><span class="p">,</span>
+              <span class="s2">&quot;valid&quot;</span><span class="p">],</span>
+ <span class="nt">&quot;file_list&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;/data-share/renamed_cycler_files/FastCharge/FastCharge_0_CH33.csv&quot;</span><span class="p">,</span> 
+               <span class="s2">&quot;/data-share/renamed_cycler_files/FastCharge/FastCharge_1_CH44.csv&quot;</span><span class="p">,</span> 
+               <span class="s2">&quot;/data-share/renamed_cycler_files/FastCharge/FastCharge_2_CH29.csv&quot;</span><span class="p">],</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h2 id="structure-convert-cycler-data-to-universal-formats"><code>structure</code>: convert cycler data to universal formats<a class="headerlink" href="#structure-convert-cycler-data-to-universal-formats" title="Permanent link">&para;</a></h2>
+<p>The <code>structure</code> script will run the data structuring on specified filenames corresponding
+to validated raw cycler files.  It places the structured datafiles in <code>/data-share/structure</code>.</p>
+<p>The input json must contain the following fields:
+* <code>file_list</code> - a list of full path filenames which have been processed
+* <code>validity</code> - a list of boolean validation results, e. g. <code>[True, True, False]</code>
+* <code>mode</code> - mode for events i.e. 'test' or 'run'
+* <code>run_list</code> - list of run_ids for each of the files, used by the database for linking data</p>
+<p>The output json contains the following fields:</p>
+<ul>
+<li><code>invalid_file_list</code> - a list of invalid files according to the validity</li>
+<li><code>file_list</code> - a list of files which have been structured into processed_cycler_runs</li>
+</ul>
+<p><strong>Example:</strong></p>
+<div class="codehilite"><pre><span></span><code>$ structure <span class="s1">&#39;{</span>
+<span class="s1">    &quot;mode&quot;: &quot;events_off&quot;,</span>
+<span class="s1">    &quot;run_list&quot;: [1, 20, 34],</span>
+<span class="s1">    &quot;validity&quot;: [&quot;invalid&quot;, &quot;invalid&quot;, &quot;valid&quot;], </span>
+<span class="s1">    &quot;file_list&quot;: [&quot;/data-share/renamed_cycler_files/FastCharge/FastCharge_0_CH33.csv&quot;, </span>
+<span class="s1">                  &quot;/data-share/renamed_cycler_files/FastCharge/FastCharge_1_CH44.csv&quot;, </span>
+<span class="s1">                  &quot;/data-share/renamed_cycler_files/FastCharge/FastCharge_2_CH29.csv&quot;]}&#39;</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+  <span class="nt">&quot;invalid_file_list&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;/data-share/renamed_cycler_files/FastCharge/FastCharge_0_CH33.csv&quot;</span><span class="p">,</span> 
+                       <span class="s2">&quot;/data-share/renamed_cycler_files/FastCharge/FastCharge_1_CH44.csv&quot;</span><span class="p">],</span> 
+  <span class="nt">&quot;file_list&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;/data-share/structure/FastCharge_2_CH29_structure.json&quot;</span><span class="p">],</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h2 id="featurize-add-features-for-machine-learning"><code>featurize</code>: add features for machine learning<a class="headerlink" href="#featurize-add-features-for-machine-learning" title="Permanent link">&para;</a></h2>
+<p>The <code>featurize</code> script will generate features according to the methods
+contained in beep.generate_features.  It places output files corresponding to 
+features in <code>/data-share/features/</code>.</p>
+<p>The input json must contain the following fields</p>
+<ul>
+<li><code>file_list</code> - a list of processed cycler runs for which to generate features</li>
+<li><code>mode</code> - mode for events i.e. 'test' or 'run'</li>
+<li><code>run_list</code> - list of run_ids for each of the files, used by the database for linking data</li>
+</ul>
+<p>The output json file will contain the following:</p>
+<ul>
+<li><code>file_list</code> - a list of filenames corresponding to the locations of the features</li>
+</ul>
+<p><strong>Example:</strong></p>
+<div class="codehilite"><pre><span></span><code>$ featurize <span class="s1">&#39;{</span>
+<span class="s1">    &quot;mode&quot;: &quot;events_off&quot;,</span>
+<span class="s1">    &quot;run_list&quot;: [1, 20, 34],</span>
+<span class="s1">    &quot;invalid_file_list&quot;: [&quot;/data-share/renamed_cycler_files/FastCharge/FastCharge_0_CH33.csv&quot;, </span>
+<span class="s1">                          &quot;/data-share/renamed_cycler_files/FastCharge/FastCharge_1_CH44.csv&quot;], </span>
+<span class="s1">    &quot;file_list&quot;: [&quot;/data-share/structure/FastCharge_2_CH29_structure.json&quot;]</span>
+<span class="s1">}&#39;</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+  <span class="nt">&quot;file_list&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;/data-share/features/FastCharge_2_CH29_full_model_features.json&quot;</span><span class="p">]}</span>
+</code></pre></div>
+
+<h2 id="run_model-run-a-machine-learning-model"><code>run_model</code>: run a machine learning model<a class="headerlink" href="#run_model-run-a-machine-learning-model" title="Permanent link">&para;</a></h2>
+<p>The <code>run_model</code> script will generate a model and create predictions
+based on the features previously generated by the generate_features.
+It stores its outputs in <code>/data-share/predictions/</code></p>
+<p>The input json must contain the following fields
+* <code>file_list</code> - list of files corresponding to model features
+* <code>mode</code> - mode for events i.e. 'test' or 'run'
+* <code>run_list</code> - list of run_ids for each of the files, used by the database for linking data</p>
+<p>The output json will contain the following fields
+* <code>file_list</code> - list of files corresponding to model predictions</p>
+<p><strong>Example:</strong></p>
+<div class="codehilite"><pre><span></span><code>$ run_model <span class="s1">&#39;{</span>
+<span class="s1">    &quot;mode&quot;: &quot;events_off&quot;,</span>
+<span class="s1">    &quot;run_list&quot;: [34],</span>
+<span class="s1">    &quot;file_list&quot;: [&quot;/data-share/features/FastCharge_2_CH29_full_model_features.json&quot;]</span>
+<span class="s1">}&#39;</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+  <span class="nt">&quot;file_list&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;/data-share/predictions/FastCharge_2_CH29_full_model_predictions.json&quot;</span><span class="p">],</span>
+<span class="p">}</span>
+</code></pre></div>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid" aria-label="Footer">
+        
+          <a href=".." class="md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+            </div>
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                Introduction
+              </div>
+            </div>
+          </a>
+        
+        
+          <a href="../data/" class="md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                Data requirements
+              </div>
+            </div>
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    </div>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+          <div class="md-footer-copyright__highlight">
+            Toyota Research Institute
+          </div>
+        
+        Made with
+        <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+          Material for MkDocs
+        </a>
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    
+      <script src="../assets/javascripts/vendor.6a3d08fc.min.js"></script>
+      <script src="../assets/javascripts/bundle.71201edf.min.js"></script><script id="__lang" type="application/json">{"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing"}</script>
+      
+      <script>
+        app = initialize({
+          base: "..",
+          features: [],
+          search: Object.assign({
+            worker: "../assets/javascripts/worker/search.4ac00218.min.js"
+          }, typeof search !== "undefined" && search)
+        })
+      </script>
+      
+    
+  </body>
+</html>

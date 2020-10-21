@@ -1,0 +1,1308 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for TRI-AMDD BEEP, for handling battery cycling data and predicting battery lifetines">
+      
+      
+      
+      <link rel="shortcut icon" href="../static/tri_cropped_favicon.png">
+      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-6.1.0">
+    
+    
+      
+        <title>Data requirements - BEEP - Battery Evaluation and Early Prediction</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.bc7e593a.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab28b872.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#ef5552">
+        
+      
+    
+    
+    
+      
+        
+        <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>body,input{font-family:"Roboto",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"Roboto Mono",SFMono-Regular,Consolas,Menlo,monospace}</style>
+      
+    
+    
+    
+    
+      
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="red" data-md-color-accent="orange">
+      
+  
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#data-requirements" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header-nav md-grid" aria-label="Header">
+    <a href=".." title="BEEP - Battery Evaluation and Early Prediction" class="md-header-nav__button md-logo" aria-label="BEEP - Battery Evaluation and Early Prediction">
+      
+  <img src="../static/tri_cropped.png" alt="logo">
+
+    </a>
+    <label class="md-header-nav__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header-nav__title" data-md-component="header-title">
+      
+        <div class="md-header-nav__ellipsis">
+          <span class="md-header-nav__topic md-ellipsis">
+            BEEP - Battery Evaluation and Early Prediction
+          </span>
+          <span class="md-header-nav__topic md-ellipsis">
+            
+              Data requirements
+            
+          </span>
+        </div>
+      
+    </div>
+    
+      <label class="md-header-nav__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" data-md-state="active">
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <button type="reset" class="md-search__icon md-icon" aria-label="Clear" data-md-component="search-reset" tabindex="-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header-nav__source">
+        
+<a href="https://github.com/tri-amdd/beep/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="BEEP - Battery Evaluation and Early Prediction" class="md-nav__button md-logo" aria-label="BEEP - Battery Evaluation and Early Prediction">
+      
+  <img src="../static/tri_cropped.png" alt="logo">
+
+    </a>
+    BEEP - Battery Evaluation and Early Prediction
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/tri-amdd/beep/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href=".." class="md-nav__link">
+      Introduction
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../cli/" class="md-nav__link">
+      Commands
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Data requirements
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+    
+    <a href="./" class="md-nav__link md-nav__link--active">
+      Data requirements
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#arbin" class="md-nav__link">
+    Arbin
+  </a>
+  
+    <nav class="md-nav" aria-label="Arbin">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cycler-data" class="md-nav__link">
+    Cycler Data
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metadata" class="md-nav__link">
+    Metadata
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#maccor" class="md-nav__link">
+    Maccor
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#indigo" class="md-nav__link">
+    Indigo
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#biologic" class="md-nav__link">
+    BioLogic
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#neware" class="md-nav__link">
+    Neware
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#arbin" class="md-nav__link">
+    Arbin
+  </a>
+  
+    <nav class="md-nav" aria-label="Arbin">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cycler-data" class="md-nav__link">
+    Cycler Data
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#metadata" class="md-nav__link">
+    Metadata
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#maccor" class="md-nav__link">
+    Maccor
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#indigo" class="md-nav__link">
+    Indigo
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#biologic" class="md-nav__link">
+    BioLogic
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#neware" class="md-nav__link">
+    Neware
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/tri-amdd/beep/edit/master/docs/data.md" title="Edit this page" class="md-content__button md-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+                  </a>
+                
+                
+                <h1 id="data-requirements">Data requirements<a class="headerlink" href="#data-requirements" title="Permanent link">&para;</a></h1>
+<p>BEEP automatically parses and structures data based on specific outputs from various 
+battery cyclers. The following column headers marked "required" are required for downstream processing of each 
+cycler. BEEP currently supports five brands of battery cyclers:</p>
+<ul>
+<li><a href="#arbin">Arbin</a></li>
+<li><a href="#maccor">Maccor</a></li>
+<li><a href="#indigo">Indigo</a></li>
+<li><a href="#biologic">BioLogic</a></li>
+<li><a href="#neware">Neware</a></li>
+</ul>
+<hr />
+<h2 id="arbin">Arbin<a class="headerlink" href="#arbin" title="Permanent link">&para;</a></h2>
+<p>Arbin data files are of the form <code>name_of_file_CHXX.csv</code> with an associated metadata file <code>name_of_file_CHXX_Metadata.csv</code></p>
+<h4 id="cycler-data">Cycler Data<a class="headerlink" href="#cycler-data" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Column name (case insensitive)</th>
+<th>Required</th>
+<th>Explanation</th>
+<th>Unit</th>
+<th>Data Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>data_point</code></td>
+<td></td>
+<td>index of this data point</td>
+<td></td>
+<td><code>int32</code></td>
+</tr>
+<tr>
+<td><code>test_time</code></td>
+<td></td>
+<td>time of data point relative to start</td>
+<td>seconds</td>
+<td><code>float32</code></td>
+</tr>
+<tr>
+<td><code>datetime</code></td>
+<td>✓</td>
+<td>time of data point relative to epoch time</td>
+<td>seconds</td>
+<td><code>float32</code></td>
+</tr>
+<tr>
+<td><code>step_time</code></td>
+<td></td>
+<td>elapsed time counted from the starting point of present active step</td>
+<td>seconds</td>
+<td><code>float32</code></td>
+</tr>
+<tr>
+<td><code>step_index</code></td>
+<td>✓</td>
+<td>currently running step number in the active schedule</td>
+<td></td>
+<td><code>int16</code></td>
+</tr>
+<tr>
+<td><code>cycle_index</code></td>
+<td>✓</td>
+<td>currently active test cycle number</td>
+<td></td>
+<td><code>int32</code></td>
+</tr>
+<tr>
+<td><code>current</code></td>
+<td>✓</td>
+<td>measured value of present channel current</td>
+<td>Amps</td>
+<td><code>float32</code></td>
+</tr>
+<tr>
+<td><code>voltage</code></td>
+<td>✓</td>
+<td>measured value of present channel voltage</td>
+<td>Volts</td>
+<td><code>float32</code></td>
+</tr>
+<tr>
+<td><code>charge_capacity</code></td>
+<td>✓</td>
+<td>cumulative value of present channel charge capacity</td>
+<td>Amp-hr</td>
+<td><code>float64</code></td>
+</tr>
+<tr>
+<td><code>discharge_capacity</code></td>
+<td>✓</td>
+<td>cumulative value of present channel discharge capacity</td>
+<td>Amp-hr</td>
+<td><code>float64</code></td>
+</tr>
+<tr>
+<td><code>charge_energy</code></td>
+<td>✓</td>
+<td>cumulative value of present channel charge energy</td>
+<td>Watt-hr</td>
+<td><code>float64</code></td>
+</tr>
+<tr>
+<td><code>discharge_energy</code></td>
+<td>✓</td>
+<td>cumulative value of present channel discharge energy</td>
+<td>Watt-hr</td>
+<td><code>float64</code></td>
+</tr>
+<tr>
+<td><code>dv/dt</code></td>
+<td></td>
+<td>the first-order change rate of voltage</td>
+<td>Volts/seconds</td>
+<td><code>float32</code></td>
+</tr>
+<tr>
+<td><code>internal_resistance</code></td>
+<td></td>
+<td>calculated internal resistance</td>
+<td>Ohms</td>
+<td><code>float32</code></td>
+</tr>
+<tr>
+<td><code>temperature</code></td>
+<td></td>
+<td>cell temperature</td>
+<td>°Celsius</td>
+<td><code>float32</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="metadata">Metadata<a class="headerlink" href="#metadata" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Field name</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>test_id</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>device_id</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>iv_ch_id</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>first_start_datetime</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>schedule_file_name</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>item_id</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>resumed_times</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>last_end_datetime</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>databases</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>grade_id</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>has_aux</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>has_special</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>schedule_version</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>log_aux_data_flag</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>log_special_data_flag</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>rowstate</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>canconfig_filename</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>m_ncanconfigmd5</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>value</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>value2</code></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="maccor">Maccor<a class="headerlink" href="#maccor" title="Permanent link">&para;</a></h2>
+<p>Maccor files are single tabular text files matching the regex pattern <code>".*\\d{5,6}.*\\d{3}"</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Column name (case insensitive)</th>
+<th>Required</th>
+<th>Explanation</th>
+<th>Unit</th>
+<th>Data Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rec#</code></td>
+<td>✓</td>
+<td>data point number (index)</td>
+<td></td>
+<td><code>int32</code></td>
+</tr>
+<tr>
+<td><code>cyc#</code></td>
+<td>✓</td>
+<td>cycle number</td>
+<td></td>
+<td><code>int32</code></td>
+</tr>
+<tr>
+<td><code>step</code></td>
+<td>✓</td>
+<td>step number</td>
+<td></td>
+<td><code>int16</code></td>
+</tr>
+<tr>
+<td><code>test (sec)</code></td>
+<td>✓</td>
+<td>total time elapsed</td>
+<td>seconds</td>
+<td><code>float32</code></td>
+</tr>
+<tr>
+<td><code>step (sec)</code></td>
+<td>✓</td>
+<td>time within this step</td>
+<td>seconds</td>
+<td><code>float32</code></td>
+</tr>
+<tr>
+<td><code>amp-hr</code></td>
+<td>✓</td>
+<td>charge capacity</td>
+<td>Amp-hr</td>
+<td><code>float64</code></td>
+</tr>
+<tr>
+<td><code>watt-hr</code></td>
+<td>✓</td>
+<td>charge energy</td>
+<td>Watt-hr</td>
+<td><code>float64</code></td>
+</tr>
+<tr>
+<td><code>amps</code></td>
+<td>✓</td>
+<td>channel current</td>
+<td>Amps</td>
+<td><code>float32</code></td>
+</tr>
+<tr>
+<td><code>volts</code></td>
+<td>✓</td>
+<td>channel voltage</td>
+<td>Volts</td>
+<td><code>float32</code></td>
+</tr>
+<tr>
+<td><code>state</code></td>
+<td>✓</td>
+<td>charging/discharging/etc. state of the battery</td>
+<td></td>
+<td><code>category</code></td>
+</tr>
+<tr>
+<td><code>es</code></td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td><code>category</code></td>
+</tr>
+<tr>
+<td><code>dpt time</code></td>
+<td>✓</td>
+<td>date and time of data point</td>
+<td>Date-Time</td>
+<td><code>str</code></td>
+</tr>
+<tr>
+<td><code>acimp/ohms</code></td>
+<td>✓</td>
+<td>AC impedance of circuit</td>
+<td>Ohm</td>
+<td><code>float32</code></td>
+</tr>
+<tr>
+<td><code>dcir/ohms</code></td>
+<td>✓</td>
+<td>DC internal resistance</td>
+<td>Ohm</td>
+<td><code>float32</code></td>
+</tr>
+<tr>
+<td><code>wf chg cap</code></td>
+<td>✓</td>
+<td>charge capacity (based on waveform, if available)</td>
+<td>Amp-hh</td>
+<td><code>float32</code></td>
+</tr>
+<tr>
+<td><code>wf dis cap</code></td>
+<td>✓</td>
+<td>discharge capacity (based on waveform, if available)</td>
+<td>Amp-hr</td>
+<td><code>float32</code></td>
+</tr>
+<tr>
+<td><code>wf chg e</code></td>
+<td>✓</td>
+<td>charge energy (based on waveform, if available)</td>
+<td>Watt-hr</td>
+<td><code>float32</code></td>
+</tr>
+<tr>
+<td><code>wf dis e</code></td>
+<td>✓</td>
+<td>discharge energy (based on waveform, if available)</td>
+<td>Watt-hr</td>
+<td><code>float32</code></td>
+</tr>
+<tr>
+<td><code>range</code></td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td><code>uint8</code></td>
+</tr>
+<tr>
+<td><code>var1</code></td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td><code>float16</code></td>
+</tr>
+<tr>
+<td><code>var2</code></td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td><code>float16</code></td>
+</tr>
+<tr>
+<td><code>var3</code></td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td><code>float16</code></td>
+</tr>
+<tr>
+<td><code>var4</code></td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td><code>float16</code></td>
+</tr>
+<tr>
+<td><code>var5</code></td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td><code>float16</code></td>
+</tr>
+<tr>
+<td><code>var6</code></td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td><code>float16</code></td>
+</tr>
+<tr>
+<td><code>var7</code></td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td><code>float16</code></td>
+</tr>
+<tr>
+<td><code>var8</code></td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td><code>float16</code></td>
+</tr>
+<tr>
+<td><code>var9</code></td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td><code>float16</code></td>
+</tr>
+<tr>
+<td><code>var10</code></td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td><code>float16</code></td>
+</tr>
+<tr>
+<td><code>var11</code></td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td><code>float16</code></td>
+</tr>
+<tr>
+<td><code>var12</code></td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td><code>float16</code></td>
+</tr>
+<tr>
+<td><code>var13</code></td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td><code>float16</code></td>
+</tr>
+<tr>
+<td><code>var14</code></td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td><code>float16</code></td>
+</tr>
+<tr>
+<td><code>var15</code></td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td><code>float16</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="indigo">Indigo<a class="headerlink" href="#indigo" title="Permanent link">&para;</a></h2>
+<p>Indigo files are single hierarchical data files (<code>*.h5</code>) with the mandatory group store field <code>"time_series_data"</code>. </p>
+<table>
+<thead>
+<tr>
+<th>Column name (case insensitive)</th>
+<th>Required</th>
+<th>Explanation</th>
+<th>Unit</th>
+<th>Data Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cell_coulomb_count_c</code></td>
+<td>✓</td>
+<td>instantaneous cell charge</td>
+<td>Coulombs</td>
+<td></td>
+</tr>
+<tr>
+<td><code>cell_current_a</code></td>
+<td>✓</td>
+<td></td>
+<td>A</td>
+<td></td>
+</tr>
+<tr>
+<td><code>cell_energy_j</code></td>
+<td>✓</td>
+<td>cell energy</td>
+<td>Joules</td>
+<td></td>
+</tr>
+<tr>
+<td><code>cell_id</code></td>
+<td>✓</td>
+<td>identifier of the cell</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>cell_power_w</code></td>
+<td></td>
+<td>instantaneous cell power</td>
+<td>Watts</td>
+<td></td>
+</tr>
+<tr>
+<td><code>cell_temperature_c</code></td>
+<td></td>
+<td>temperature of the cell</td>
+<td>°Celsius</td>
+<td></td>
+</tr>
+<tr>
+<td><code>cell_voltage_v</code></td>
+<td>✓</td>
+<td>voltage of the cell</td>
+<td>Volts</td>
+<td></td>
+</tr>
+<tr>
+<td><code>cycle_count</code></td>
+<td>✓</td>
+<td>index of the cycle</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>experiment_count</code></td>
+<td></td>
+<td>index of the experiment</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>experiment_type</code></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>half_cycle_count</code></td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>system_time_us</code></td>
+<td>✓</td>
+<td>test time of data point relative to epoch</td>
+<td>microseconds</td>
+<td></td>
+</tr>
+<tr>
+<td><code>time_s</code></td>
+<td></td>
+<td>time elapsed since test beginning</td>
+<td>seconds</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="biologic">BioLogic<a class="headerlink" href="#biologic" title="Permanent link">&para;</a></h2>
+<p>BioLogic files are ASCII text files of the form <code>*.mpt</code> with matching <code>*.mpl</code> log/metadata files.</p>
+<p><em>BioLogic cycler data is currently only supported for raw operations (e.g., ingestion via <code>RawCyclerRun</code> analysis) and is not supported for downstream processing.</em></p>
+<table>
+<thead>
+<tr>
+<th>Column name</th>
+<th>Required</th>
+<th>Explanation</th>
+<th>Unit</th>
+<th>Data Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cycle number</code></td>
+<td>✓</td>
+<td>index of this cycle</td>
+<td></td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td><code>half cycle</code></td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td><code>Ecell/V</code></td>
+<td>✓</td>
+<td>cell potential</td>
+<td>Volts</td>
+<td><code>float</code></td>
+</tr>
+<tr>
+<td><code>I/mA</code></td>
+<td>✓</td>
+<td>cell current</td>
+<td>mAmps</td>
+<td><code>float</code></td>
+</tr>
+<tr>
+<td><code>Q discharge/mA.h</code></td>
+<td>✓</td>
+<td>discharge capacity</td>
+<td>mAmp-hr</td>
+<td><code>float</code></td>
+</tr>
+<tr>
+<td><code>Q charge/mA.h</code></td>
+<td>✓</td>
+<td>charge capacty</td>
+<td>mAmp-hr</td>
+<td><code>float</code></td>
+</tr>
+<tr>
+<td><code>Energy charge/W.h</code></td>
+<td>✓</td>
+<td>charge energy</td>
+<td>Watt-hr</td>
+<td><code>float</code></td>
+</tr>
+<tr>
+<td><code>Energy discharge/W.h</code></td>
+<td>✓</td>
+<td>discharge energy</td>
+<td>Watt-hr</td>
+<td><code>float</code></td>
+</tr>
+</tbody>
+</table>
+<p>Various other fields in BioLogic data or metadata files are not required.</p>
+<h2 id="neware">Neware<a class="headerlink" href="#neware" title="Permanent link">&para;</a></h2>
+<p>Neware files are singular <code>*.csv</code> files.</p>
+<p><em>Note: Neware files use non-standard csv formatting; some fields may require further processing or structuring before input to <code>beep</code>.</em></p>
+<table>
+<thead>
+<tr>
+<th>Column name</th>
+<th>Required</th>
+<th>Explanation</th>
+<th>Unit</th>
+<th>Data Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Record ID</code></td>
+<td>✓</td>
+<td>index of this data point</td>
+<td></td>
+<td><code>int32</code></td>
+</tr>
+<tr>
+<td><code>Realtime</code></td>
+<td>✓</td>
+<td>date-time format for this point</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>Time(h:min:s.ms)</code></td>
+<td>✓</td>
+<td>recorded time for this point</td>
+<td>seconds</td>
+<td><code>float32</code></td>
+</tr>
+<tr>
+<td><code>Step ID</code></td>
+<td>✓</td>
+<td>index of this step</td>
+<td></td>
+<td><code>int16</code></td>
+</tr>
+<tr>
+<td><code>Cycle ID</code></td>
+<td>✓</td>
+<td>index of this cycle</td>
+<td></td>
+<td><code>int32</code></td>
+</tr>
+<tr>
+<td><code>Current(mA)</code></td>
+<td>✓</td>
+<td>cell current</td>
+<td>mAmps</td>
+<td><code>float32</code></td>
+</tr>
+<tr>
+<td><code>Voltage(V)</code></td>
+<td>✓</td>
+<td>cell voltage</td>
+<td>Volts</td>
+<td><code>float32</code></td>
+</tr>
+<tr>
+<td><code>Capacitance_Chg(mAh)</code></td>
+<td>✓</td>
+<td>charge capacity</td>
+<td>mAmp-hr</td>
+<td><code>float64</code></td>
+</tr>
+<tr>
+<td><code>Capacitance_DChg(mAh)</code></td>
+<td>✓</td>
+<td>discharge capacity</td>
+<td>mAmp-hr</td>
+<td><code>float64</code></td>
+</tr>
+<tr>
+<td><code>Engy_Chg(mWh)</code></td>
+<td>✓</td>
+<td>charge energy</td>
+<td>mWatt-hr</td>
+<td><code>float64</code></td>
+</tr>
+<tr>
+<td><code>Engy_DChg(mWh)</code></td>
+<td>✓</td>
+<td>discharge energy</td>
+<td>mWatt-hr</td>
+<td><code>float64</code></td>
+</tr>
+<tr>
+<td><code>DCIR(O)</code></td>
+<td>✓</td>
+<td>DC internal resistance</td>
+<td></td>
+<td><code>float32</code></td>
+</tr>
+<tr>
+<td><code>Capacity(mAh)</code></td>
+<td>✓</td>
+<td></td>
+<td>mAmp-hr</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Capacity Density(mAh/g)</code></td>
+<td>✓</td>
+<td></td>
+<td>mAmp-hr/gram</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Energy(mWh)</code></td>
+<td>✓</td>
+<td></td>
+<td>mWatt-hr</td>
+<td></td>
+</tr>
+<tr>
+<td><code>CmpEng(mWh/g)</code></td>
+<td>✓</td>
+<td></td>
+<td>mWatt-hr/gram</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Min-T(C)</code></td>
+<td>✓</td>
+<td>mimumum cell temperature</td>
+<td>°Celsius</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Max-T(C)</code></td>
+<td>✓</td>
+<td>max cell temperature</td>
+<td>°Celsius</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Avg-T(C)</code></td>
+<td>✓</td>
+<td>average cell temperature</td>
+<td>°Celsius</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Power(mW)</code></td>
+<td>✓</td>
+<td>instantaneous power</td>
+<td>mWatt</td>
+<td></td>
+</tr>
+<tr>
+<td><code>dQ/dV(mAh/V)</code></td>
+<td>✓</td>
+<td>differential capacity</td>
+<td>mAmp-hr/Volt</td>
+<td></td>
+</tr>
+<tr>
+<td><code>dQm/dV(mAh/V.g)</code></td>
+<td>✓</td>
+<td>differential capacity density</td>
+<td>mAmp-hr/Volt-gram</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Temperature(C)</code></td>
+<td>✓</td>
+<td>temperature (alternate sensor)</td>
+<td>°Celsius</td>
+<td><code>float32</code></td>
+</tr>
+</tbody>
+</table>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid" aria-label="Footer">
+        
+          <a href="../cli/" class="md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+            </div>
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                Commands
+              </div>
+            </div>
+          </a>
+        
+        
+      </nav>
+    </div>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+          <div class="md-footer-copyright__highlight">
+            Toyota Research Institute
+          </div>
+        
+        Made with
+        <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+          Material for MkDocs
+        </a>
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    
+      <script src="../assets/javascripts/vendor.6a3d08fc.min.js"></script>
+      <script src="../assets/javascripts/bundle.71201edf.min.js"></script><script id="__lang" type="application/json">{"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing"}</script>
+      
+      <script>
+        app = initialize({
+          base: "..",
+          features: [],
+          search: Object.assign({
+            worker: "../assets/javascripts/worker/search.4ac00218.min.js"
+          }, typeof search !== "undefined" && search)
+        })
+      </script>
+      
+    
+  </body>
+</html>
