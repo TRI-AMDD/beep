@@ -18,9 +18,13 @@ Please contact any of the maintainers for more information.
 
 
 ## Installation
-Use `pip install beep` to install.
+To a base install, do:
 
-If you want to develop BEEP, clone the repo via git and use 
+```bash
+pip install beep
+```
+
+If you want to develop BEEP and run tests, clone the repo via git and use 
 pip (or `python setup.py develop`)  for an editable install:
 
 ```bash
@@ -28,6 +32,8 @@ git clone git@github.com:ToyotaResearchInstitute/BEEP.git
 cd BEEP
 pip install -e .[tests]
 ```
+
+
 ## Environment
 To configure the use of AWS resources its necessary to set the environment variable `BEEP_ENV`. For most users `'dev'`
 is the appropriate choice since it assumes that no AWS resources are available. 
@@ -40,6 +46,8 @@ export BEEP_PROCESSING_DIR='/path/to/beep/data/'
 ```
 
 ## Testing
+Make sure you have installed the required testing packages (see installation).
+
 You can use pytest for running unittests. In order to run tests the environment variable
 needs to be set (i.e. `export BEEP_ENV='dev'`)
 
