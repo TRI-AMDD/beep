@@ -735,8 +735,7 @@ class RawCyclerRun(MSONable):
         data.rename(ARBIN_CONFIG["data_columns"], axis="columns", inplace=True)
         metadata = pd.read_csv(metadata_path)
         metadata.rename(str.lower, axis="columns", inplace=True)
-        metadata.rename(ARBIN_CONFIG["metadata_fields"], axis="columns",
-                        inplace=True)
+        metadata.rename(ARBIN_CONFIG["metadata_fields"], axis="columns", inplace=True)
         # Note the to_dict, which scrubs numpy typing
         metadata = {col: item[0] for col, item in metadata.to_dict("list").items()}
 
