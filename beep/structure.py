@@ -90,6 +90,7 @@ s = {"service": "DataStructurer"}
 
 VOLTAGE_RESOLUTION = 3
 
+
 class RawCyclerRun(MSONable):
     """
     Object corresponding to parsed cycler run, includes a factory method to
