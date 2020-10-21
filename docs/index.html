@@ -359,8 +359,11 @@ arbin, maccor and biologic cyclers.</p>
 <p>We are currently looking for experienced python developers to help us improve this package and implement new features.
 Please contact any of the maintainers for more information.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
-<p>Use <code>pip install beep</code> to install.</p>
-<p>If you want to develop BEEP, clone the repo via git and use 
+<p>To a base install, do:</p>
+<div class="codehilite"><pre><span></span><code>pip install beep
+</code></pre></div>
+
+<p>If you want to develop BEEP and run tests, clone the repo via git and use 
 pip (or <code>python setup.py develop</code>)  for an editable install:</p>
 <div class="codehilite"><pre><span></span><code>git clone git@github.com:ToyotaResearchInstitute/BEEP.git
 <span class="nb">cd</span> BEEP
@@ -378,6 +381,7 @@ is the appropriate choice since it assumes that no AWS resources are available. 
 </code></pre></div>
 
 <h2 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">&para;</a></h2>
+<p>Make sure you have installed the required testing packages (see installation).</p>
 <p>You can use pytest for running unittests. In order to run tests the environment variable
 needs to be set (i.e. <code>export BEEP_ENV='dev'</code>)</p>
 <div class="codehilite"><pre><span></span><code>pytest beep
