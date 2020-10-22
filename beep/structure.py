@@ -1812,8 +1812,7 @@ class EISpectrum(MSONable):
 def determine_whether_step_is_waveform_discharge(step_dataframe):
     """
     Helper function for driving profiles to determine whether a given dataframe corresponding
-    to a single cycle_index/step has both charging and discharging portions, only intended
-    to be used with a dataframe for single maccor step/cycle.
+    to a single cycle_index/step is a waveform discharge.
 
     Args:
          step_dataframe (pandas.DataFrame): dataframe to determine whether waveform step is present
@@ -1840,8 +1839,7 @@ def determine_whether_step_is_waveform_discharge(step_dataframe):
 def determine_whether_step_is_waveform_charge(step_dataframe):
     """
     Helper function for driving profiles to determine whether a given dataframe corresponding
-    to a single cycle_index/step has both charging and discharging portions, only intended
-    to be used with a dataframe for single maccor step/cycle.
+    to a single cycle_index/step is a waveform charge.
 
     Args:
          step_dataframe (pandas.DataFrame): dataframe to determine whether waveform step is present
