@@ -1,5 +1,11 @@
 
 
+v2020.10.22.15
+--------------
+* Add diagnostic parameters for PHEV cells
+* Update interpolation for time axis (TODO: make step specific) (Thanks Chirru Gopal)
+* Add documentation and better tutorial (Thanks Alex Dunn)
+
 v2020.10.19.20
 --------------
 * Change the method for ensuring monotonicity and add testing 

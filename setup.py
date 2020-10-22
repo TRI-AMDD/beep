@@ -8,6 +8,7 @@ pip_requirements = parse_requirements(
     os.path.join(this_dir, "requirements.txt"), PipSession())
 pip_requirements_test = parse_requirements(
     os.path.join(this_dir, "requirements-test.txt"), PipSession())
+
 reqs = [pii.requirement for pii in pip_requirements]
 reqs_test = [pii.requirement for pii in pip_requirements_test]
 
@@ -21,7 +22,7 @@ description = "beep is a python package supporting Battery Estimation and Early 
 
 setup(name="beep",
       url="https://github.com/TRI-AMDD/beep",
-      version="2020.10.19.20",
+      version="2020.10.22.16",
       description=description,
       long_description=long_description,
       long_description_content_type='text/markdown',
