@@ -821,6 +821,40 @@ class ProcedureToScheduleTest(unittest.TestCase):
             # shutil.copyfile(os.path.join(TEST_FILE_DIR, converted_sdu_name),
             #                 os.path.join(scratch_dir, converted_sdu_name))
 
+    def test_from_csv(self):
+        csv_file_list = os.path.join(TEST_FILE_DIR,
+                                     "data-share",
+                                     "raw",
+                                     "parameters",
+                                     "Talos_parameters - GP.csv")
+
+        with ScratchDir('.') as scratch_dir:
+            makedirs_p(os.path.join(scratch_dir, "procedures"))
+            makedirs_p(os.path.join(scratch_dir, "schedules"))
+            makedirs_p(os.path.join(scratch_dir, "names"))
+            generate_protocol_files_from_csv(csv_file_list, output_directory=scratch_dir)
+            if os.path.isfile(os.path.join(scratch_dir, "procedures", ".DS_Store")):
+                os.remove(os.path.join(scratch_dir, "procedures", ".DS_Store"))
+
+            procedure_list = os.listdir(os.path.join(scratch_dir, "procedures"))
+            for procedure_name in procedure_list:
+                sdu_test_input = os.path.join(SCHEDULE_TEMPLATE_DIR, "20170630-3_6C_9per_5C.sdu")
+                converted_sdu_name = procedure_name.split(".")[0] + ".sdu"
+                proc_dict = Procedure.from_file(os.path.join(scratch_dir, "procedures", procedure_name))
+                proc_dict.set_skip_to_end_diagnostic("4.4", "2.1", step_key="070")
+
+                sdu_test_output = os.path.join(scratch_dir, "schedules", converted_sdu_name)
+                test_step_dict = proc_dict["MaccorTestProcedure"]["ProcSteps"]["TestStep"]
+
+                converter = ProcedureToSchedule(test_step_dict)
+                global_min_cur = -2 * 1.5 * 4
+                global_max_cur = 2 * 1.5 * 4
+                converter.create_sdu(sdu_test_input, sdu_test_output, current_range="Range1",
+                                     global_v_range=[2.0, 4.5], global_temp_range=[0, 60],
+                                     global_current_range=[global_min_cur, global_max_cur])
+            self.assertEqual(len(os.listdir(os.path.join(scratch_dir, "procedures"))), 35)
+            self.assertEqual(len(os.listdir(os.path.join(scratch_dir, "schedules"))), 35)
+
 
 class ArbinScheduleTest(unittest.TestCase):
     def setUp(self):
