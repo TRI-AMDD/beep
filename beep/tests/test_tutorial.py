@@ -1,6 +1,8 @@
 import os
 import ast
+import shutil
 import unittest
+
 """
 Automatically test the code shown in the tutorial. Is skipped if there is no
 markdown source doc directory.
@@ -18,10 +20,11 @@ HAS_DOCS_SRC = os.path.isdir(docs_src_dir)
 
 
 class DocumentationTutorialTest(unittest.TestCase):
-    def setUp(self) -> None:
-        self.tutorial_src_path = os.path.join(docs_src_dir, "tutorial.md")
+    tutorial_src_path = os.path.join(docs_src_dir, "tutorial.md")
+    png_fname = os.path.join(this_dir, "tutorial_output.png")
 
-    @unittest.skipIf(not HAS_DOCS_SRC, "Docs directory not found, cannot test tutorial")
+    @unittest.skipIf(not HAS_DOCS_SRC,
+                     "Docs directory not found, cannot test tutorial")
     def test_tutorial_valid(self):
         self.assertTrue(os.path.exists(self.tutorial_src_path))
         blocks = read_code_blocks_from_md(self.tutorial_src_path)
@@ -34,15 +37,28 @@ class DocumentationTutorialTest(unittest.TestCase):
             is_valid = False
         self.assertTrue(is_valid)
 
-    @unittest.skipIf(not HAS_DOCS_SRC, "Docs directory not found, cannot test tutorial")
+    @unittest.skipIf(not HAS_DOCS_SRC,
+                     "Docs directory not found, cannot test tutorial")
     def test_tutorial_code(self):
         blocks = read_code_blocks_from_md(self.tutorial_src_path)
+
         for b in blocks:
             if "plt.show()" in b:
-                block_safe = b.replace("plt.show()", "plt.savefig('fname.png')")
+                block_safe = b.replace(
+                    "plt.show()",
+                    "plt.savefig('{}')".format(self.png_fname)
+                )
             else:
                 block_safe = b
             exec(block_safe)
+
+    def tearDown(self) -> None:
+        if os.path.exists(self.png_fname):
+            os.remove(self.png_fname)
+
+        data_dir = os.path.join(this_dir, "Severson-et-al")
+        if os.path.exists(data_dir):
+            shutil.rmtree(data_dir)
 
 
 def read_code_blocks_from_md(md_path):
