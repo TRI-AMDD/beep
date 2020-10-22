@@ -31,7 +31,8 @@ from beep.structure import (
     get_project_sequence,
     get_protocol_parameters,
     get_diagnostic_parameters,
-    determine_whether_step_is_waveform,
+    determine_whether_step_is_waveform_discharge,
+    determine_whether_step_is_waveform_charge,
     get_max_paused_over_threshold
 )
 from beep.conversion_schemas import STRUCTURE_DTYPES
@@ -365,9 +366,11 @@ class RawCyclerRunTest(unittest.TestCase):
     def test_whether_step_is_waveform(self):
         cycler_run = RawCyclerRun.from_file(self.maccor_file_w_waveform)
         self.assertTrue(cycler_run.data.loc[cycler_run.data.cycle_index == 6].
-                        groupby("step_index").apply(determine_whether_step_is_waveform).any())
+                        groupby("step_index").apply(determine_whether_step_is_waveform_discharge).any())
+        self.assertFalse(cycler_run.data.loc[cycler_run.data.cycle_index == 6].
+                        groupby("step_index").apply(determine_whether_step_is_waveform_charge).any())
         self.assertFalse(cycler_run.data.loc[cycler_run.data.cycle_index == 3].
-                        groupby("step_index").apply(determine_whether_step_is_waveform).any())
+                        groupby("step_index").apply(determine_whether_step_is_waveform_discharge).any())
 
 
     def test_get_interpolated_waveform_discharge_cycles(self):

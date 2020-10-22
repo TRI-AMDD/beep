@@ -313,8 +313,13 @@ class RawCyclerRun(MSONable):
         # If any regular cycle contains a waveform step, interpolate on test_time.
         if self.data[self.data.cycle_index.isin(reg_cycles)].\
                 groupby(["cycle_index", "step_index"]).\
-                apply(determine_whether_step_is_waveform).any():
+                apply(determine_whether_step_is_waveform_discharge).any():
             discharge_axis = 'test_time'
+
+        if self.data[self.data.cycle_index.isin(reg_cycles)].\
+                groupby(["cycle_index", "step_index"]).\
+                apply(determine_whether_step_is_waveform_charge).any():
+            charge_axis = 'test_time'
 
         interpolated_discharge = self.get_interpolated_steps(
             v_range,
@@ -1804,7 +1809,7 @@ class EISpectrum(MSONable):
         return cls(data, metadata)
 
 
-def determine_whether_step_is_waveform(step_dataframe):
+def determine_whether_step_is_waveform_discharge(step_dataframe):
     """
     Helper function for driving profiles to determine whether a given dataframe corresponding
     to a single cycle_index/step has both charging and discharging portions, only intended
@@ -1816,7 +1821,37 @@ def determine_whether_step_is_waveform(step_dataframe):
 
     # Check for waveform in maccor
     if len([col for col in step_dataframe.columns if '_wf_' in col]):
-        return (step_dataframe['_wf_chg_cap'].notna().any()) | (step_dataframe['_wf_dis_cap'].notna().any())
+        return (determine_whether_step_is_discharging(step_dataframe)) &\
+               ((step_dataframe['_wf_chg_cap'].notna().any()) |
+                (step_dataframe['_wf_dis_cap'].notna().any()))
+    elif not np.round(step_dataframe.voltage, VOLTAGE_RESOLUTION).is_monotonic:
+        # This is a placeholder logic for arbin waveform detection
+        # This fails for some arbin files that nominally have a CC-CV step.
+        # e.g. 2017-12-04_4_65C-69per_6C_CH29.csv
+        # TODO: survey more files and include additional heuristics/logic based on the size of
+        # and frequency of non-monotonicities to determine whether step is actually a waveform.
+
+        # All non-maccor files will evaluate to False by default for now
+        return False
+    else:
+        return False
+
+
+def determine_whether_step_is_waveform_charge(step_dataframe):
+    """
+    Helper function for driving profiles to determine whether a given dataframe corresponding
+    to a single cycle_index/step has both charging and discharging portions, only intended
+    to be used with a dataframe for single maccor step/cycle.
+
+    Args:
+         step_dataframe (pandas.DataFrame): dataframe to determine whether waveform step is present
+    """
+
+    # Check for waveform in maccor
+    if len([col for col in step_dataframe.columns if '_wf_' in col]):
+        return (determine_whether_step_is_charging(step_dataframe)) & \
+               ((step_dataframe['_wf_chg_cap'].notna().any()) |
+                (step_dataframe['_wf_dis_cap'].notna().any()))
     elif not np.round(step_dataframe.voltage, VOLTAGE_RESOLUTION).is_monotonic:
         # This is a placeholder logic for arbin waveform detection
         # This fails for some arbin files that nominally have a CC-CV step.
