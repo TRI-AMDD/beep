@@ -850,7 +850,7 @@ class ProcedureToScheduleTest(unittest.TestCase):
                 global_min_cur = -2 * 1.3 * 20
                 global_max_cur = 2 * 1.3 * 20
                 converter.create_sdu(sdu_test_input, sdu_test_output, current_range="Parallel-High",
-                                     global_v_range=[2.9, 4.4], global_temp_range=[0, 55],
+                                     global_v_range=[2.95, 4.2], global_temp_range=[0, 55],
                                      global_current_range=[global_min_cur, global_max_cur])
             self.assertEqual(len(os.listdir(os.path.join(scratch_dir, "procedures"))), 35)
             self.assertEqual(len(os.listdir(os.path.join(scratch_dir, "schedules"))), 35)
