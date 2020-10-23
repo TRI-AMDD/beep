@@ -21,7 +21,7 @@ HAS_DOCS_SRC = os.path.isdir(docs_src_dir)
 
 class DocumentationTutorialTest(unittest.TestCase):
     tutorial_src_path = os.path.join(docs_src_dir, "tutorial.md")
-    png_fname = os.path.join(this_dir, "tutorial_output.png")
+    png_fname = "tutorial_output.png"
 
     @unittest.skipIf(not HAS_DOCS_SRC,
                      "Docs directory not found, cannot test tutorial")
