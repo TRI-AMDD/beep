@@ -853,9 +853,9 @@ class ProcedureToScheduleTest(unittest.TestCase):
                                      global_v_range=[2.8, 4.2], global_temp_range=[0, 55],
                                      global_current_range=[global_min_cur, global_max_cur])
 
-            # Saving locally
-            shutil.copyfile(os.path.join(TEST_FILE_DIR, sdu_test_output),
-                            os.path.join(scratch_dir, sdu_test_output))
+                # Saving locally
+                # shutil.copyfile(os.path.join(scratch_dir, sdu_test_output),
+                #                 os.path.join(TEST_FILE_DIR, converted_sdu_name))
 
             self.assertEqual(len(os.listdir(os.path.join(scratch_dir, "procedures"))), 5)
             self.assertEqual(len(os.listdir(os.path.join(scratch_dir, "schedules"))), 5)
