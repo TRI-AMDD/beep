@@ -841,7 +841,7 @@ class ProcedureToScheduleTest(unittest.TestCase):
                 sdu_test_input = os.path.join(SCHEDULE_TEMPLATE_DIR, "20170630-3_6C_9per_5C.sdu")
                 converted_sdu_name = procedure_name.split(".")[0] + ".sdu"
                 proc_dict = Procedure.from_file(os.path.join(scratch_dir, "procedures", procedure_name))
-                proc_dict.set_skip_to_end_diagnostic("4.4", "2.9", step_key="070")
+                proc_dict.set_skip_to_end_diagnostic("4.19", "2.8", step_key="070")
 
                 sdu_test_output = os.path.join(scratch_dir, "schedules", converted_sdu_name)
                 test_step_dict = proc_dict["MaccorTestProcedure"]["ProcSteps"]["TestStep"]
@@ -850,10 +850,15 @@ class ProcedureToScheduleTest(unittest.TestCase):
                 global_min_cur = -2 * 1.3 * 20
                 global_max_cur = 2 * 1.3 * 20
                 converter.create_sdu(sdu_test_input, sdu_test_output, current_range="Parallel-High",
-                                     global_v_range=[2.95, 4.2], global_temp_range=[0, 55],
+                                     global_v_range=[2.8, 4.2], global_temp_range=[0, 55],
                                      global_current_range=[global_min_cur, global_max_cur])
-            self.assertEqual(len(os.listdir(os.path.join(scratch_dir, "procedures"))), 35)
-            self.assertEqual(len(os.listdir(os.path.join(scratch_dir, "schedules"))), 35)
+
+            # Saving locally
+            shutil.copyfile(os.path.join(TEST_FILE_DIR, sdu_test_output),
+                            os.path.join(scratch_dir, sdu_test_output))
+
+            self.assertEqual(len(os.listdir(os.path.join(scratch_dir, "procedures"))), 5)
+            self.assertEqual(len(os.listdir(os.path.join(scratch_dir, "schedules"))), 5)
 
     def test_from_csv_4(self):
         csv_file_list = os.path.join(TEST_FILE_DIR,
