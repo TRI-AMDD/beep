@@ -530,7 +530,7 @@ class GenerateProcedureTest(unittest.TestCase):
         with ScratchDir(".") as scratch_dir:
             makedirs_p(os.path.join(scratch_dir, "procedures"))
             makedirs_p(os.path.join(scratch_dir, "names"))
-            new_files, result, message = generate_protocol_files_from_csv(
+            _new_files, _generation_failures, result, message = generate_protocol_files_from_csv(
                 csv_file, output_directory=scratch_dir
             )
             self.assertEqual(
@@ -543,7 +543,7 @@ class GenerateProcedureTest(unittest.TestCase):
             makedirs_p(os.path.join(scratch_dir, "procedures"))
             makedirs_p(os.path.join(scratch_dir, "names"))
             dumpfn({"hello": "world"}, os.path.join("procedures", "name_000007.000"))
-            new_files, result, message = generate_protocol_files_from_csv(
+            _new_files, generation_failures, result, message = generate_protocol_files_from_csv(
                 csv_file, output_directory=scratch_dir
             )
             post_file = loadfn(os.path.join("procedures", "name_000007.000"))
@@ -555,8 +555,15 @@ class GenerateProcedureTest(unittest.TestCase):
             self.assertEqual(
                 message,
                 {
-                    "comment": "Unable to find template: EXP-D3.000",
-                    "error": "Not Found",
+                    "comment": "Generated 2 of 32 protocols",
+                    "error": "Failed to generate 30 of 32 protocols",
+                },
+            )
+            self.assertEqual(
+                generation_failures[0],
+                {
+                    "comment": "Unable to find template: EXP-SOH.000",
+                    "error": "Not Found"
                 },
             )
 
@@ -567,11 +574,11 @@ class GenerateProcedureTest(unittest.TestCase):
         with ScratchDir(".") as scratch_dir:
             makedirs_p(os.path.join(scratch_dir, "procedures"))
             makedirs_p(os.path.join(scratch_dir, "names"))
-            new_files, result, message = generate_protocol_files_from_csv(
+            _new_files, _generation_failures, result, message = generate_protocol_files_from_csv(
                 csv_file, output_directory=scratch_dir
             )
             self.assertEqual(result, "success")
-            self.assertEqual(message, {"comment": "Generated 2 protocols", "error": ""})
+            self.assertEqual(message, {"comment": "Generated 2 of 2 protocols", "error": ""})
             self.assertEqual(
                 len(os.listdir(os.path.join(scratch_dir, "procedures"))), 2
             )
@@ -644,7 +651,7 @@ class GenerateProcedureTest(unittest.TestCase):
         csv_file = os.path.join(TEST_FILE_DIR, "parameter_test.csv")
 
         # Test script functionality
-        with ScratchDir(".") as scratch_dir:
+        with ScratchDir(".") as _scratch_dir:
             # Set BEEP_PROCESSING_DIR directory to scratch_dir
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
             procedures_path = os.path.join("data-share", "protocols", "procedures")
