@@ -14,6 +14,7 @@ from scipy import signal
 from lmfit import models
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
+from beep.utils import parameters_lookup
 
 
 # TODO: document these params
@@ -907,7 +908,9 @@ def get_fractional_quantity_remaining(
 
 
 def get_fractional_quantity_remaining_nx(
-    processed_cycler_run, metric="discharge_energy", diagnostic_cycle_type="rpt_0.2C"
+        processed_cycler_run,
+        metric="discharge_energy",
+        diagnostic_cycle_type="rpt_0.2C"
 ):
     """
     Similar to get_fractional_quantity_remaining()
@@ -938,8 +941,11 @@ def get_fractional_quantity_remaining_nx(
 
     normalize_qty_throughput = normalize_qty + '_throughput'
     regular_summary = processed_cycler_run.summary.copy()
-    # TODO remove initialization cycle 0
+    regular_summary = regular_summary[regular_summary.cycle_index != 0]
     diagnostic_summary = processed_cycler_run.diagnostic_summary.copy()
+    # TODO the line below should become superfluous
+    regular_summary = regular_summary[
+        ~regular_summary.cycle_index.isin(diagnostic_summary.cycle_index)]
 
     regular_summary[normalize_qty_throughput] = regular_summary[normalize_qty].cumsum()
     diagnostic_summary[normalize_qty_throughput] = diagnostic_summary[normalize_qty].cumsum()
@@ -948,15 +954,10 @@ def get_fractional_quantity_remaining_nx(
     # (no partial cycles in the regular cycle summary) so that only full cycles are used for n
     summary_diag_cycle_type = summary_diag_cycle_type[summary_diag_cycle_type.cycle_index <=
                                                       regular_summary.cycle_index.max()]
-    cycle_indices = summary_diag_cycle_type.cycle_index
-
-    # initial_throughput = regular_summary.loc[
-    #     regular_summary.cycle_index == cycle_indices.iloc[0]
-    # ][normalize_qty_throughput].iloc[0]
 
     # Second gap in the regular cycles indicates the second set of diagnostics, bookending the
     # initial set of regular cycles.
-    first_degradation_cycle = int(regular_summary.cycle_index[regular_summary.cycle_index.diff() > 1].iloc[1])
+    first_degradation_cycle = int(regular_summary.cycle_index[regular_summary.cycle_index.diff() > 1].iloc[0])
     last_initial_cycle = int(regular_summary.cycle_index[regular_summary.cycle_index <
                                                          first_degradation_cycle].iloc[-1])
 
@@ -964,28 +965,31 @@ def get_fractional_quantity_remaining_nx(
             regular_summary.cycle_index == last_initial_cycle
         ][normalize_qty_throughput].values[0]
 
-    print(initial_regular_throughput)
     summary_diag_cycle_type['initial_regular_throughput'] = initial_regular_throughput
 
     summary_diag_cycle_type['normalized_regular_throughput'] = summary_diag_cycle_type.apply(
         lambda x: (1 / initial_regular_throughput) *
-        regular_summary[regular_summary.cycle_index < x['cycle_index']][normalize_qty_throughput].iloc[-1],
+        regular_summary[regular_summary.cycle_index < x['cycle_index']][normalize_qty_throughput].max(),
         axis=1
     )
     summary_diag_cycle_type['normalized_diagnostic_throughput'] = summary_diag_cycle_type.apply(
         lambda x: (1 / initial_regular_throughput) *
-        diagnostic_summary[diagnostic_summary.cycle_index < x['cycle_index']][normalize_qty_throughput].iloc[-1],
+        diagnostic_summary[diagnostic_summary.cycle_index < x['cycle_index']][normalize_qty_throughput].max(),
         axis=1
     )
-    print(summary_diag_cycle_type)
+
     # end of nx addition, calculate the fractional capacity compared to the first diagnostic cycle (reset)
     summary_diag_cycle_type[metric] = (
         summary_diag_cycle_type[metric]
         / processed_cycler_run.diagnostic_summary[metric].iloc[0]
     )
 
+    parameter_row, _ = parameters_lookup.get_protocol_parameters(processed_cycler_run.protocol)
+    summary_diag_cycle_type['diagnostic_start_cycle'] = parameter_row['diagnostic_start_cycle'].values[0]
+    summary_diag_cycle_type['diagnostic_interval'] = parameter_row['diagnostic_interval'].values[0]
     # TODO add number of initial regular cycles and interval to the dataframe
     summary_diag_cycle_type.columns = ["cycle_index", "fractional_metric",
                                        "initial_regular_throughput", "normalized_regular_throughput",
-                                       "normalized_diagnostic_throughput"]
+                                       "normalized_diagnostic_throughput", "diagnostic_start_cycle",
+                                       "diagnostic_interval"]
     return summary_diag_cycle_type

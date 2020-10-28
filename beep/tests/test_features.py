@@ -209,7 +209,8 @@ class TestFeaturizer(unittest.TestCase):
             self.assertIsInstance(features_reloaded, DiagnosticProperties)
             self.assertListEqual(
                 list(features_reloaded.X.iloc[2, :]),
-                [141, 0.9859837086597274, 91.17758004259996, 2.578137278917377, 'reset', 'discharge_energy'],
+                [141, 0.9859837086597274, 7.885284043, 4.323121513988055,
+                 21.12108276469096, 30, 100, 'reset', 'discharge_energy'],
             )
 
             # Workflow output
@@ -367,10 +368,12 @@ class TestFeaturizer(unittest.TestCase):
             folder = os.path.split(path)[-1]
             dumpfn(featurizer, featurizer.name)
             self.assertEqual(folder, "DiagnosticProperties")
-            self.assertEqual(featurizer.X.shape, (30, 6))
+            self.assertEqual(featurizer.X.shape, (30, 9))
+            print(list(featurizer.X.iloc[2, :]))
             self.assertListEqual(
                 list(featurizer.X.iloc[2, :]),
-                [141, 0.9859837086597274, 91.17758004259996, 2.578137278917377, 'reset', 'discharge_energy']
+                [141, 0.9859837086597274, 7.885284043, 4.323121513988055,
+                 21.12108276469096, 30, 100, 'reset', 'discharge_energy']
             )
 
     def test_get_fractional_quantity_remaining_nx(self):
@@ -379,25 +382,27 @@ class TestFeaturizer(unittest.TestCase):
         )
         pcycler_run = loadfn(processed_cycler_run_path)
         pcycler_run.summary = pcycler_run.summary[~pcycler_run.summary.cycle_index.isin(pcycler_run.diagnostic_summary.cycle_index)]
-        print(pcycler_run.summary.cycle_index)
+        # print(pcycler_run.summary.cycle_index)
+        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+        # test_param_path = os.path.join(TEST_FILE_DIR, "data-share", "raw", "parameters")
         sum_diag = featurizer_helpers.get_fractional_quantity_remaining_nx(pcycler_run,
                                                                            metric="discharge_energy",
                                                                            diagnostic_cycle_type="hppc")
         print(sum_diag["normalized_regular_throughput"])
         self.assertEqual(len(sum_diag.index), 16)
         self.assertEqual(sum_diag.cycle_index.max(), 1507)
-        self.assertEqual(np.around(sum_diag["initial_regular_throughput"].iloc[0], 3), np.around(254.3685238364, 3))
-        self.assertEqual(np.around(sum_diag["normalized_regular_throughput"].iloc[15], 3), np.around(42.131, 3))
-        self.assertEqual(np.around(sum_diag["normalized_diagnostic_throughput"].iloc[15], 3), np.around(4.75, 3))
+        self.assertEqual(np.around(sum_diag["initial_regular_throughput"].iloc[0], 3), np.around(237.001769, 3))
+        self.assertEqual(np.around(sum_diag["normalized_regular_throughput"].iloc[15], 3), np.around(45.145, 3))
+        self.assertEqual(np.around(sum_diag["normalized_diagnostic_throughput"].iloc[15], 3), np.around(5.098, 3))
 
         sum_diag = featurizer_helpers.get_fractional_quantity_remaining_nx(pcycler_run,
                                                                            metric="discharge_energy",
                                                                            diagnostic_cycle_type="rpt_1C")
         self.assertEqual(len(sum_diag.index), 16)
         self.assertEqual(sum_diag.cycle_index.max(), 1509)
-        self.assertEqual(np.around(sum_diag["initial_regular_throughput"].iloc[0], 3), np.around(320.629961, 3))
-        self.assertEqual(np.around(sum_diag["normalized_regular_throughput"].iloc[15], 3), np.around(37.241178, 3))
-        self.assertEqual(np.around(sum_diag["normalized_diagnostic_throughput"].iloc[15], 3), np.around(37.241178, 3))
+        self.assertEqual(np.around(sum_diag["initial_regular_throughput"].iloc[0], 3), np.around(237.001769, 3))
+        self.assertEqual(np.around(sum_diag["normalized_regular_throughput"].iloc[15], 3), np.around(45.145, 3))
+        self.assertEqual(np.around(sum_diag["normalized_diagnostic_throughput"].iloc[15], 3), np.around(5.229, 3))
 
     def test_generate_dQdV_peak_fits(self):
         processed_cycler_run_path = os.path.join(
