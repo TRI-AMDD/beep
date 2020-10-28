@@ -469,6 +469,11 @@ class RawCyclerRunTest(unittest.TestCase):
         )
         diag_summary = cycler_run.get_diagnostic_summary(diagnostic_available)
 
+        reg_summary = cycler_run.get_summary(diagnostic_available)
+        self.assertEqual(len(reg_summary.cycle_index.tolist()), 230)
+        self.assertEqual(reg_summary.cycle_index.tolist()[:10],
+                         [0, 6, 7, 8, 9, 10, 11, 12, 13, 14])
+
         # Check data types are being set correctly for diagnostic summary
         diag_dyptes = diag_summary.dtypes.tolist()
         diag_columns = diag_summary.columns.tolist()
@@ -553,17 +558,23 @@ class RawCyclerRunTest(unittest.TestCase):
 
         processed_cycler_run = cycler_run.to_processed_cycler_run()
         self.assertNotIn(
-            diag_summary.index.tolist(),
+            diag_summary.cycle_index.tolist(),
             processed_cycler_run.cycles_interpolated.cycle_index.unique(),
+        )
+        self.assertEqual(
+            reg_summary.cycle_index.tolist(),
+            processed_cycler_run.summary.cycle_index.tolist(),
         )
 
         processed_cycler_run_loc = os.path.join(
             TEST_FILE_DIR, "processed_diagnostic.json"
         )
+        # Dump to the structured file and check the file size
         dumpfn(processed_cycler_run, processed_cycler_run_loc)
         proc_size = os.path.getsize(processed_cycler_run_loc)
         self.assertLess(proc_size, 47000000)
 
+        # Reload the structured file and check for errors
         test = loadfn(processed_cycler_run_loc)
         self.assertIsInstance(test.diagnostic_summary, pd.DataFrame)
         diag_dyptes = test.diagnostic_summary.dtypes.tolist()
@@ -581,6 +592,8 @@ class RawCyclerRunTest(unittest.TestCase):
             self.assertEqual(
                 diag_dyptes[indx], STRUCTURE_DTYPES["diagnostic_interpolated"][col]
             )
+
+        self.assertEqual(test.summary.cycle_index.tolist()[:10], [0, 6, 7, 8, 9, 10, 11, 12, 13, 14])
 
         plt.figure()
         single_charge = test.cycles_interpolated[

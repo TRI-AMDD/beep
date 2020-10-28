@@ -372,7 +372,7 @@ class RawCyclerRun(MSONable):
 
     def get_summary(
         self,
-        diagnostic_available=None,
+        diagnostic_available=False,
         nominal_capacity=1.1,
         full_fast_charge=0.8,
         cycle_complete_discharge_ratio=0.97,
@@ -1458,7 +1458,8 @@ class ProcessedCyclerRun(MSONable):
             raw_cycler_run.metadata.get("protocol"),
             raw_cycler_run.metadata.get("channel_id"),
             raw_cycler_run.get_summary(
-                nominal_capacity=nominal_capacity, full_fast_charge=full_fast_charge
+                nominal_capacity=nominal_capacity, full_fast_charge=full_fast_charge,
+                diagnostic_available=diagnostic_available
             ),
             cycles_interpolated,
             diagnostic_summary,
