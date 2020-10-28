@@ -378,13 +378,26 @@ class TestFeaturizer(unittest.TestCase):
             TEST_FILE_DIR, "PreDiag_000233_00021F_truncated_structure.json"
         )
         pcycler_run = loadfn(processed_cycler_run_path)
+        pcycler_run.summary = pcycler_run.summary[~pcycler_run.summary.cycle_index.isin(pcycler_run.diagnostic_summary.cycle_index)]
+        print(pcycler_run.summary.cycle_index)
         sum_diag = featurizer_helpers.get_fractional_quantity_remaining_nx(pcycler_run,
                                                                            metric="discharge_energy",
                                                                            diagnostic_cycle_type="hppc")
+        print(sum_diag["normalized_regular_throughput"])
         self.assertEqual(len(sum_diag.index), 16)
         self.assertEqual(sum_diag.cycle_index.max(), 1507)
-        self.assertEqual(np.around(sum_diag.x.iloc[0], 3), np.around(320.629961, 3))
-        self.assertEqual(np.around(sum_diag.n.iloc[15], 3), np.around(37.241178, 3))
+        self.assertEqual(np.around(sum_diag["initial_regular_throughput"].iloc[0], 3), np.around(254.3685238364, 3))
+        self.assertEqual(np.around(sum_diag["normalized_regular_throughput"].iloc[15], 3), np.around(42.131, 3))
+        self.assertEqual(np.around(sum_diag["normalized_diagnostic_throughput"].iloc[15], 3), np.around(4.75, 3))
+
+        sum_diag = featurizer_helpers.get_fractional_quantity_remaining_nx(pcycler_run,
+                                                                           metric="discharge_energy",
+                                                                           diagnostic_cycle_type="rpt_1C")
+        self.assertEqual(len(sum_diag.index), 16)
+        self.assertEqual(sum_diag.cycle_index.max(), 1509)
+        self.assertEqual(np.around(sum_diag["initial_regular_throughput"].iloc[0], 3), np.around(320.629961, 3))
+        self.assertEqual(np.around(sum_diag["normalized_regular_throughput"].iloc[15], 3), np.around(37.241178, 3))
+        self.assertEqual(np.around(sum_diag["normalized_diagnostic_throughput"].iloc[15], 3), np.around(37.241178, 3))
 
     def test_generate_dQdV_peak_fits(self):
         processed_cycler_run_path = os.path.join(
