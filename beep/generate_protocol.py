@@ -218,8 +218,6 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
     else:
         message["error"] = "Failed to generate {} of {} protocols".format(num_generation_failures, num_files)
 
-
-
     return successfully_generated_files, file_generation_failures, result, message
 
 
