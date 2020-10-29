@@ -1,5 +1,19 @@
 
 
+v2020.10.29.16
+--------------
+* Adding asserts to check for the interval information
+* Move parameter functions and switch to those functions
+* Delete initialization cycle and add diagnostic intervals
+* Changed throughput calculations to only have regular cycles, with a separate column for diagnostic cycles
+* Fix structuring code so that diagnostic cycles are excluded from the summary
+* Uploading Iris_params csv file and adding test_from_csv function for Iris parameters
+* change fname for windows
+* docstring update
+* add filters for waveform discharge and charge
+* complete tutorial testing with teardown
+* tutoral working tests
+
 v2020.10.22.15
 --------------
 * Add diagnostic parameters for PHEV cells
