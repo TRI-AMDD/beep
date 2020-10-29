@@ -1,0 +1,6 @@
+project_name,seq_num,template,charge_constant_current_1,charge_percent_limit_1,charge_constant_current_2,charge_cutoff_voltage,charge_constant_voltage_time,charge_rest_time,discharge_constant_current,discharge_cutoff_voltage,discharge_rest_time,cell_temperature_nominal,cell_type,capacity_nominal,diagnostic_type,diagnostic_parameter_set,diagnostic_start_cycle,diagnostic_interval
+Iris,100,diagnosticV4.000,2,30,2,4.15,30,5,2,3,15,25,Panasonic_25Ah_Prismatic,25,HPPC+RPT,PHEVNMC,30,100
+Iris,101,diagnosticV4.000,2,30,2,4.15,30,5,2,3,15,25,Panasonic_25Ah_Prismatic,25,HPPC+RPT,PHEVNMC,30,100
+Iris,102,diagnosticV4.000,2,30,2,4.15,30,5,2,3,15,25,Panasonic_25Ah_Prismatic,25,HPPC+RPT,PHEVNMC,30,100
+Iris,103,diagnosticV4.000,2,30,2,4.15,30,5,2,3,15,25,Panasonic_25Ah_Prismatic,25,HPPC+RPT,PHEVNMC,30,100
+Iris,104,diagnosticV4.000,2,30,2,4.15,30,5,2,3,15,25,Panasonic_25Ah_Prismatic,25,HPPC+RPT,PHEVNMC,30,100

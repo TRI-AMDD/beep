@@ -57,7 +57,8 @@ class ProcedureToSchedule:
             sdu_input_name (str): the full path of the schedule file to use as a
                 shell for the steps
             sdu_output_name (str): the full path of the schedule file to output
-            current_range (str): Current 30A, 5A, 500mA, 20mA  ('Range1',2,3,4, respectively)
+            current_range (str): Current 30A, 5A, 500mA, 20mA  ('Range1',2,3,4, respectively, also Parallel-High is
+            an option)
             global_v_range (list): Global safety range for voltage in volts [min, max]
             global_temp_range (list): Global safety range for temperature in Celcius [min, max]
             global_current_range (list): Global safety range for current in Amps [min, max]
