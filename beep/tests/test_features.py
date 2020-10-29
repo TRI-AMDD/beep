@@ -394,6 +394,8 @@ class TestFeaturizer(unittest.TestCase):
         self.assertEqual(np.around(sum_diag["initial_regular_throughput"].iloc[0], 3), np.around(237.001769, 3))
         self.assertEqual(np.around(sum_diag["normalized_regular_throughput"].iloc[15], 3), np.around(45.145, 3))
         self.assertEqual(np.around(sum_diag["normalized_diagnostic_throughput"].iloc[15], 3), np.around(5.098, 3))
+        self.assertEqual(sum_diag['diagnostic_start_cycle'].iloc[0], 30)
+        self.assertEqual(sum_diag['diagnostic_interval'].iloc[0], 100)
 
         sum_diag = featurizer_helpers.get_fractional_quantity_remaining_nx(pcycler_run,
                                                                            metric="discharge_energy",
@@ -403,6 +405,8 @@ class TestFeaturizer(unittest.TestCase):
         self.assertEqual(np.around(sum_diag["initial_regular_throughput"].iloc[0], 3), np.around(237.001769, 3))
         self.assertEqual(np.around(sum_diag["normalized_regular_throughput"].iloc[15], 3), np.around(45.145, 3))
         self.assertEqual(np.around(sum_diag["normalized_diagnostic_throughput"].iloc[15], 3), np.around(5.229, 3))
+        self.assertEqual(sum_diag['diagnostic_start_cycle'].iloc[0], 30)
+        self.assertEqual(sum_diag['diagnostic_interval'].iloc[0], 100)
 
     def test_generate_dQdV_peak_fits(self):
         processed_cycler_run_path = os.path.join(
