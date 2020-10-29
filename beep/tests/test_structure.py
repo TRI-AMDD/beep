@@ -28,13 +28,11 @@ from beep.structure import (
     ProcessedCyclerRun,
     process_file_list_from_json,
     EISpectrum,
-    get_project_sequence,
-    get_protocol_parameters,
-    get_diagnostic_parameters,
     determine_whether_step_is_waveform_discharge,
     determine_whether_step_is_waveform_charge,
     get_max_paused_over_threshold
 )
+from beep.utils import parameters_lookup
 from beep.conversion_schemas import STRUCTURE_DTYPES
 from monty.serialization import loadfn, dumpfn
 from monty.tempfile import ScratchDir
@@ -305,7 +303,6 @@ class RawCyclerRunTest(unittest.TestCase):
             )
         )
 
-
     def test_get_interpolated_discharge_cycles(self):
         cycler_run = RawCyclerRun.from_file(self.arbin_file)
         all_interpolated = cycler_run.get_interpolated_cycles()
@@ -372,7 +369,6 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertFalse(cycler_run.data.loc[cycler_run.data.cycle_index == 3].
                         groupby("step_index").apply(determine_whether_step_is_waveform_discharge).any())
 
-
     def test_get_interpolated_waveform_discharge_cycles(self):
         cycler_run = RawCyclerRun.from_file(self.maccor_file_w_waveform)
         all_interpolated = cycler_run.get_interpolated_cycles()
@@ -383,7 +379,6 @@ class RawCyclerRunTest(unittest.TestCase):
                          cycler_run.data.loc[(cycler_run.data.cycle_index == 6) &
                                              (cycler_run.data.step_index == 33)].test_time.min())
         self.assertEqual(subset_interpolated[subset_interpolated.cycle_index == 6].shape[0], 1000)
-
 
     def test_get_interpolated_charge_cycles(self):
         cycler_run = RawCyclerRun.from_file(self.arbin_file)
@@ -469,6 +464,11 @@ class RawCyclerRunTest(unittest.TestCase):
         )
         diag_summary = cycler_run.get_diagnostic_summary(diagnostic_available)
 
+        reg_summary = cycler_run.get_summary(diagnostic_available)
+        self.assertEqual(len(reg_summary.cycle_index.tolist()), 230)
+        self.assertEqual(reg_summary.cycle_index.tolist()[:10],
+                         [0, 6, 7, 8, 9, 10, 11, 12, 13, 14])
+
         # Check data types are being set correctly for diagnostic summary
         diag_dyptes = diag_summary.dtypes.tolist()
         diag_columns = diag_summary.columns.tolist()
@@ -553,17 +553,23 @@ class RawCyclerRunTest(unittest.TestCase):
 
         processed_cycler_run = cycler_run.to_processed_cycler_run()
         self.assertNotIn(
-            diag_summary.index.tolist(),
+            diag_summary.cycle_index.tolist(),
             processed_cycler_run.cycles_interpolated.cycle_index.unique(),
+        )
+        self.assertEqual(
+            reg_summary.cycle_index.tolist(),
+            processed_cycler_run.summary.cycle_index.tolist(),
         )
 
         processed_cycler_run_loc = os.path.join(
             TEST_FILE_DIR, "processed_diagnostic.json"
         )
+        # Dump to the structured file and check the file size
         dumpfn(processed_cycler_run, processed_cycler_run_loc)
         proc_size = os.path.getsize(processed_cycler_run_loc)
         self.assertLess(proc_size, 47000000)
 
+        # Reload the structured file and check for errors
         test = loadfn(processed_cycler_run_loc)
         self.assertIsInstance(test.diagnostic_summary, pd.DataFrame)
         diag_dyptes = test.diagnostic_summary.dtypes.tolist()
@@ -581,6 +587,8 @@ class RawCyclerRunTest(unittest.TestCase):
             self.assertEqual(
                 diag_dyptes[indx], STRUCTURE_DTYPES["diagnostic_interpolated"][col]
             )
+
+        self.assertEqual(test.summary.cycle_index.tolist()[:10], [0, 6, 7, 8, 9, 10, 11, 12, 13, 14])
 
         plt.figure()
         single_charge = test.cycles_interpolated[
@@ -807,7 +815,7 @@ class RawCyclerRunTest(unittest.TestCase):
                          [2.3427])
 
     def test_get_project_name(self):
-        project_name_parts = get_project_sequence(
+        project_name_parts = parameters_lookup.get_project_sequence(
             os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010")
         )
         project_name = project_name_parts[0]
@@ -819,21 +827,21 @@ class RawCyclerRunTest(unittest.TestCase):
             TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010"
         )
         test_path = os.path.join("data-share", "raw", "parameters")
-        parameters, _ = get_protocol_parameters(filepath, parameters_path=test_path)
+        parameters, _ = parameters_lookup.get_protocol_parameters(filepath, parameters_path=test_path)
 
         self.assertEqual(parameters["diagnostic_type"].iloc[0], "HPPC+RPT")
         self.assertEqual(parameters["diagnostic_parameter_set"].iloc[0], "Tesla21700")
         self.assertEqual(parameters["seq_num"].iloc[0], 109)
         self.assertEqual(len(parameters.index), 1)
 
-        parameters_missing, project_missing = get_protocol_parameters(
+        parameters_missing, project_missing = parameters_lookup.get_protocol_parameters(
             "Fake", parameters_path=test_path
         )
         self.assertEqual(parameters_missing, None)
         self.assertEqual(project_missing, None)
 
         filepath = os.path.join(TEST_FILE_DIR, "PreDiag_000292_tztest.010")
-        parameters, _ = get_protocol_parameters(filepath, parameters_path=test_path)
+        parameters, _ = parameters_lookup.get_protocol_parameters(filepath, parameters_path=test_path)
         self.assertIsNone(parameters)
 
     def test_determine_structering_parameters(self):
@@ -970,7 +978,7 @@ class RawCyclerRunTest(unittest.TestCase):
         }
         diagnostic_parameter_path = os.path.join(MODULE_DIR, "procedure_templates")
         project_name = "PreDiag"
-        v_range = get_diagnostic_parameters(
+        v_range = parameters_lookup.get_diagnostic_parameters(
             diagnostic_available, diagnostic_parameter_path, project_name
         )
         self.assertEqual(v_range, [2.7, 4.2])

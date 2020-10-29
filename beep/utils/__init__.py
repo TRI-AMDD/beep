@@ -3,6 +3,7 @@ import hashlib
 import json
 from collections import OrderedDict
 from .workflow import Logger, WorkflowOutputs
+from .parameters_lookup import get_protocol_parameters, get_project_sequence, get_diagnostic_parameters
 from .splice import MaccorSplice
 from pydash import get, set_with, unset, merge
 
