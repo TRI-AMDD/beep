@@ -60,6 +60,13 @@ class DocumentationTutorialTest(unittest.TestCase):
         if os.path.exists(data_dir):
             shutil.rmtree(data_dir)
 
+        processed_dir = os.path.join(
+            os.environ.get("BEEP_PROCESSING_DIR", "/"), processed_dir
+        )
+        processed_dir = os.path.join(this_dir, "data-share")
+        if os.path.exists(processed_dir):
+            shutil.rmtree(processed_dir)
+
 
 def read_code_blocks_from_md(md_path):
     """
