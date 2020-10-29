@@ -184,9 +184,9 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
             names.append(filename_prefix + "_")
 
         elif ".sdu" in template:
-            failure = {
-                "comment": "Unable to find template: " + template,
-                "error": "Unsupported Template",
+            failure = {	
+                "comment": "Schedule file generation is not yet implemented",	
+                "error": "Not Implemented"
             }
             file_generation_failures.append(failure)
             logger.warning("Schedule file generation not yet implemented", extra=s)
