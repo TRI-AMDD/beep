@@ -33,7 +33,7 @@ from monty.json import MSONable
 from monty.serialization import loadfn, dumpfn
 from functools import reduce
 from beep import MODULE_DIR
-from beep.structure import get_protocol_parameters
+from beep.utils import parameters_lookup
 from beep.featurize import (
     RPTdQdVFeatures, HPPCResistanceVoltageFeatures,
     HPPCRelaxationFeatures, DiagnosticProperties,
@@ -342,6 +342,6 @@ def get_parameter_dict(file_list, parameters_path):
     """
     d = {}  # dict allows combining two different project parameter sets into the same structure
     for file in file_list:
-        param_row, _ = get_protocol_parameters(file, parameters_path)
+        param_row, _ = parameters_lookup.get_protocol_parameters(file, parameters_path)
         d[file] = param_row.to_dict('records')[0]  # to_dict('records') returns a list.
     return d
