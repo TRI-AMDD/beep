@@ -610,6 +610,18 @@ class RawCyclerRunTest(unittest.TestCase):
         all_interpolated = cycler_run.get_interpolated_cycles(
             v_range=[3.0, 4.2], resolution=10000
         )
+
+        self.assertSetEqual(set(all_interpolated.columns.tolist()),
+                            {'voltage',
+                             'test_time',
+                             'discharge_capacity',
+                             'current',
+                             'temperature',
+                             'charge_capacity',
+                             'internal_resistance',
+                             'cycle_index',
+                             'step_type'}
+                            )
         interp2 = all_interpolated[
             (all_interpolated.cycle_index == 2)
             & (all_interpolated.step_type == "discharge")
