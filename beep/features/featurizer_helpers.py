@@ -15,6 +15,7 @@ from lmfit import models
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 from beep.utils import parameters_lookup
+import os
 
 
 # TODO: document these params
@@ -972,19 +973,26 @@ def get_fractional_quantity_remaining_nx(
         regular_summary[regular_summary.cycle_index < x['cycle_index']][normalize_qty_throughput].max(),
         axis=1
     )
+    summary_diag_cycle_type['normalized_regular_throughput'].fillna(value=0, inplace=True)
     summary_diag_cycle_type['normalized_diagnostic_throughput'] = summary_diag_cycle_type.apply(
         lambda x: (1 / initial_regular_throughput) *
         diagnostic_summary[diagnostic_summary.cycle_index < x['cycle_index']][normalize_qty_throughput].max(),
         axis=1
     )
-
+    summary_diag_cycle_type['normalized_diagnostic_throughput'].fillna(value=0, inplace=True)
     # end of nx addition, calculate the fractional capacity compared to the first diagnostic cycle (reset)
     summary_diag_cycle_type[metric] = (
         summary_diag_cycle_type[metric]
         / processed_cycler_run.diagnostic_summary[metric].iloc[0]
     )
 
-    parameter_row, _ = parameters_lookup.get_protocol_parameters(processed_cycler_run.protocol)
+    if "\\" in processed_cycler_run.protocol:
+        protocol_name = processed_cycler_run.protocol.split("\\")[-1]
+    else:
+        _, protocol_name = os.path.split(processed_cycler_run.protocol)
+
+    parameter_row, _ = parameters_lookup.get_protocol_parameters(protocol_name)
+
     summary_diag_cycle_type['diagnostic_start_cycle'] = parameter_row['diagnostic_start_cycle'].values[0]
     summary_diag_cycle_type['diagnostic_interval'] = parameter_row['diagnostic_interval'].values[0]
     # TODO add number of initial regular cycles and interval to the dataframe

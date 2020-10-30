@@ -377,14 +377,14 @@ class TestFeaturizer(unittest.TestCase):
             )
 
     def test_get_fractional_quantity_remaining_nx(self):
-        processed_cycler_run_path = os.path.join(
+        processed_cycler_run_path_1 = os.path.join(
             TEST_FILE_DIR, "PreDiag_000233_00021F_truncated_structure.json"
         )
-        pcycler_run = loadfn(processed_cycler_run_path)
+        pcycler_run = loadfn(processed_cycler_run_path_1)
         pcycler_run.summary = pcycler_run.summary[~pcycler_run.summary.cycle_index.isin(pcycler_run.diagnostic_summary.cycle_index)]
-        # print(pcycler_run.summary.cycle_index)
+
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-        # test_param_path = os.path.join(TEST_FILE_DIR, "data-share", "raw", "parameters")
+
         sum_diag = featurizer_helpers.get_fractional_quantity_remaining_nx(pcycler_run,
                                                                            metric="discharge_energy",
                                                                            diagnostic_cycle_type="hppc")
@@ -394,6 +394,7 @@ class TestFeaturizer(unittest.TestCase):
         self.assertEqual(np.around(sum_diag["initial_regular_throughput"].iloc[0], 3), np.around(237.001769, 3))
         self.assertEqual(np.around(sum_diag["normalized_regular_throughput"].iloc[15], 3), np.around(45.145, 3))
         self.assertEqual(np.around(sum_diag["normalized_diagnostic_throughput"].iloc[15], 3), np.around(5.098, 3))
+        self.assertFalse(sum_diag.isnull().values.any())
         self.assertEqual(sum_diag['diagnostic_start_cycle'].iloc[0], 30)
         self.assertEqual(sum_diag['diagnostic_interval'].iloc[0], 100)
 
@@ -407,6 +408,24 @@ class TestFeaturizer(unittest.TestCase):
         self.assertEqual(np.around(sum_diag["normalized_diagnostic_throughput"].iloc[15], 3), np.around(5.229, 3))
         self.assertEqual(sum_diag['diagnostic_start_cycle'].iloc[0], 30)
         self.assertEqual(sum_diag['diagnostic_interval'].iloc[0], 100)
+
+        processed_cycler_run_path_2 = os.path.join(
+            TEST_FILE_DIR, "Talos_001383_NCR18650618001_CH31_truncated_structure.json"
+        )
+        pcycler_run = loadfn(processed_cycler_run_path_2)
+
+        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+
+        sum_diag = featurizer_helpers.get_fractional_quantity_remaining_nx(pcycler_run,
+                                                                           metric="discharge_energy",
+                                                                           diagnostic_cycle_type="hppc")
+        self.assertEqual(len(sum_diag.index), 3)
+        self.assertEqual(sum_diag.cycle_index.max(), 242)
+        self.assertEqual(np.around(sum_diag["initial_regular_throughput"].iloc[0], 3), np.around(331.428, 3))
+        self.assertEqual(np.around(sum_diag["normalized_regular_throughput"].iloc[2], 3), np.around(6.817, 3))
+        self.assertEqual(np.around(sum_diag["normalized_diagnostic_throughput"].iloc[2], 3), np.around(0.385, 3))
+        self.assertEqual(sum_diag['diagnostic_start_cycle'].iloc[0], 30)
+        self.assertEqual(sum_diag['diagnostic_interval'].iloc[0], 200)
 
     def test_generate_dQdV_peak_fits(self):
         processed_cycler_run_path = os.path.join(
