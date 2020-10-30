@@ -41,7 +41,7 @@ class DocumentationTutorialTest(unittest.TestCase):
                      "Docs directory not found, cannot test tutorial")
     def test_tutorial_code(self):
         blocks = read_code_blocks_from_md(self.tutorial_src_path)
-
+        os.environ["BEEP_PROCESSING_DIR"] = os.path.join(this_dir, "./tutorial")
         for b in blocks:
             if "plt.show()" in b:
                 block_safe = b.replace(
@@ -60,10 +60,7 @@ class DocumentationTutorialTest(unittest.TestCase):
         if os.path.exists(data_dir):
             shutil.rmtree(data_dir)
 
-        processed_dir = os.path.join(
-            os.environ.get("BEEP_PROCESSING_DIR", "/"), processed_dir
-        )
-        processed_dir = os.path.join(this_dir, "data-share")
+        processed_dir = os.path.join(this_dir, "./tutorial")
         if os.path.exists(processed_dir):
             shutil.rmtree(processed_dir)
 

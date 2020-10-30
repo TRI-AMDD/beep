@@ -21,7 +21,7 @@ We will also need to set two environment variables for beep.
 
 ```bash
 export BEEP_ENV="dev"
-export BEEP_PROCESSING_DIR="./tutorial"
+export BEEP_PROCESSING_DIR="./tutorial/"
 ``` 
 
 
