@@ -21,7 +21,7 @@ We will also need to set two environment variables for beep.
 
 ```bash
 export BEEP_ENV="dev"
-export BEEP_PROCESSING_DIR="tutorial"
+export BEEP_PROCESSING_DIR="./tutorial/"
 ``` 
 
 
@@ -39,7 +39,8 @@ import os
 import requests
 
 print('Beginning file download with requests')
-data_dir = './Severson-et-al/'
+this_dir = os.path.dirname(os.path.abspath(__file__))
+data_dir = os.path.join(this_dir, 'Severson-et-al')
 
 try:
     os.makedirs(data_dir)
