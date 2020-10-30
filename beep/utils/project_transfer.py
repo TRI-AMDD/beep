@@ -28,7 +28,7 @@ class ProjectTransfer:
             output_project (str): Name of the project to transfer the files to.
             bucket (str): Name of the S3 bucket.
             prefix (str): Prefix of the input and output project in the S3 bucket.
-            mode (str): mode to run in, if 'test' the output bucket is the 'beep-sync-test' bucket.
+            mode (str): mode to run in, if 'test' the output bucket is the 'beep-sync-test-stage' bucket.
         """
 
         self.input_project = input_project
@@ -93,7 +93,7 @@ class ProjectTransfer:
                 to_file.write(line)
                 shutil.copyfileobj(from_file, to_file)
                 if self.dry_run:
-                    output_bucket = "beep-sync-test"
+                    output_bucket = "beep-sync-test-stage"
                 else:
                     output_bucket = self.bucket
                 try:
