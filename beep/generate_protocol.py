@@ -82,7 +82,8 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
     # Read csv file
     protocol_params_df = pd.read_csv(csv_filename)
 
-    new_files = []
+    successfully_generated_files = []
+    file_generation_failures = []
     names = []
     result = ""
     message = {"comment": "", "error": ""}
@@ -167,27 +168,29 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
             filename = os.path.join(output_directory, "settings", filename)
 
         else:
-            warnings.warn("Unsupported file template {}, skipping.".format(template))
-            result = "error"
-            message = {
+            failure = {
                 "comment": "Unable to find template: " + template,
                 "error": "Not Found",
             }
+            file_generation_failures.append(failure)
+            warnings.warn("Unsupported file template {}, skipping.".format(template))
+            result = "error"
             continue
 
         logger.info(filename, extra=s)
         if not os.path.isfile(filename):
             protocol.to_file(filename)
-            new_files.append(filename)
+            successfully_generated_files.append(filename)
             names.append(filename_prefix + "_")
 
         elif ".sdu" in template:
+            failure = {	
+                "comment": "Schedule file generation is not yet implemented",	
+                "error": "Not Implemented"
+            }
+            file_generation_failures.append(failure)
             logger.warning("Schedule file generation not yet implemented", extra=s)
             result = "error"
-            message = {
-                "comment": "Schedule file generation is not yet implemented",
-                "error": "Not Implemented",
-            }
 
     # This block of code produces the file containing all of the run file
     # names produced in this function call. This is to make starting tests easier
@@ -202,14 +205,21 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
             wr.writerow([name])
     outputfile.close()
 
+    num_generated_files = len(successfully_generated_files)
+    num_generation_failures = len(file_generation_failures)
+    num_files = num_generated_files + num_generation_failures
+
+    message = {
+        "comment": "Generated {} of {} protocols".format(num_generated_files, num_files),
+        "error": ""
+    }
     if not result:
         result = "success"
-        message = {
-            "comment": "Generated {} protocols".format(str(len(new_files))),
-            "error": "",
-        }
+    else:
+        message["error"] = "Failed to generate {} of {} protocols".format(num_generation_failures, num_files)
+        logger.error(message["error"])
 
-    return new_files, result, message
+    return successfully_generated_files, file_generation_failures, result, message
 
 
 def process_csv_file_list_from_json(
@@ -240,12 +250,17 @@ def process_csv_file_list_from_json(
         os.environ.get("BEEP_PROCESSING_DIR", "/"), processed_dir
     )
     for filename in file_list:
-        output_files, result, message = generate_protocol_files_from_csv(
+        output_files, file_generation_failures, result, message = generate_protocol_files_from_csv(
             filename, output_directory=protocol_dir
         )
         all_output_files.extend(output_files)
 
-    output_data = {"file_list": all_output_files, "result": result, "message": message}
+    output_data = {
+        "file_list": all_output_files,
+        "failures": file_generation_failures,
+        "result": result,
+        "message": message
+    }
 
     # Workflow outputs
     outputs.put_generate_outputs_list(output_data, "complete")
