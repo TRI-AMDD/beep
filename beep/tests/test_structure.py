@@ -1077,7 +1077,9 @@ class CliTest(unittest.TestCase):
 class ProcessedCyclerRunTest(unittest.TestCase):
     def setUp(self):
         self.arbin_file = os.path.join(TEST_FILE_DIR, "FastCharge_000000_CH29.csv")
+        self.arbin_broken_file = os.path.join(TEST_FILE_DIR, "Talos_001385_NCR18650618003_CH33.csv")
         self.maccor_file = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000019_CH70.070")
+        self.maccor_broken_file = os.path.join(TEST_FILE_DIR, "PreDiag_000229_000229.034")
         self.neware_file = os.path.join(TEST_FILE_DIR, "raw", "neware_test.csv")
 
         self.maccor_file_w_diagnostics = os.path.join(
@@ -1116,6 +1118,25 @@ class ProcessedCyclerRunTest(unittest.TestCase):
                 cycles_interpolated_dyptes[indx],
                 STRUCTURE_DTYPES["cycles_interpolated"][col],
             )
+
+    def test_from_raw_cycler_run_arbin_broken(self):
+        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+        rcycler_run = RawCyclerRun.from_file(self.arbin_broken_file)
+        vrange, num_points, nominal_capacity, fast_charge, diag = rcycler_run.determine_structuring_parameters()
+        print(diag['parameter_set'])
+        self.assertEqual(diag['parameter_set'], 'NCR18650-618')
+        # pcycler_run = ProcessedCyclerRun.from_raw_cycler_run(rcycler_run)
+        # self.assertIsInstance(pcycler_run, ProcessedCyclerRun)
+
+    def test_from_raw_cycler_run_maccor_broken(self):
+        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+        rcycler_run = RawCyclerRun.from_file(self.maccor_broken_file)
+        vrange, num_points, nominal_capacity, fast_charge, diag = rcycler_run.determine_structuring_parameters()
+        print(diag['parameter_set'])
+        self.assertEqual(diag['parameter_set'], 'Tesla21700')
+        diag_interp = rcycler_run.get_interpolated_diagnostic_cycles(diag, resolution=1000, v_resolution=0.0005)
+        pcycler_run = ProcessedCyclerRun.from_raw_cycler_run(rcycler_run)
+        self.assertIsInstance(pcycler_run, ProcessedCyclerRun)
 
     def test_from_raw_cycler_run_maccor(self):
         rcycler_run = RawCyclerRun.from_file(self.maccor_file_w_diagnostics)
