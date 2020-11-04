@@ -197,8 +197,12 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
     _, namefile = os.path.split(csv_filename)
     namefile = namefile.split("_")[0] + "_names_"
     namefile = namefile + datetime.datetime.now().strftime("%Y%m%d_%H%M") + ".csv"
+
+    names_dir = os.path.join(output_directory, "names")
+    os.makedirs(names_dir, exist_ok=True)
+
     with open(
-        os.path.join(output_directory, "names", namefile), "w", newline=""
+        os.path.join(names_dir, namefile), "w", newline=""
     ) as outputfile:
         wr = csv.writer(outputfile)
         for name in names:
