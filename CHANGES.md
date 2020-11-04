@@ -1,5 +1,13 @@
 
 
+v2020.11.4.14
+-------------
+* Add parsing for files with paths in the protocol field
+* change test bucket from beep-sync-test to beep-sync-test-stage
+* Change file location for tutorial for safe processing
+* Add assert to ensure that list of columns for regular interpolated cycles are as expected
+
+
 v2020.10.29.16
 --------------
 * Adding asserts to check for the interval information
