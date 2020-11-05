@@ -1077,7 +1077,9 @@ class CliTest(unittest.TestCase):
 class ProcessedCyclerRunTest(unittest.TestCase):
     def setUp(self):
         self.arbin_file = os.path.join(TEST_FILE_DIR, "FastCharge_000000_CH29.csv")
+        self.arbin_broken_file = os.path.join(TEST_FILE_DIR, "Talos_001385_NCR18650618003_CH33_truncated.csv")
         self.maccor_file = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000019_CH70.070")
+        self.maccor_broken_file = os.path.join(TEST_FILE_DIR, "PreDiag_000229_000229_truncated.034")
         self.neware_file = os.path.join(TEST_FILE_DIR, "raw", "neware_test.csv")
 
         self.maccor_file_w_diagnostics = os.path.join(
@@ -1116,6 +1118,27 @@ class ProcessedCyclerRunTest(unittest.TestCase):
                 cycles_interpolated_dyptes[indx],
                 STRUCTURE_DTYPES["cycles_interpolated"][col],
             )
+
+    def test_from_arbin_insufficient_interpolation_length(self):
+        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+        rcycler_run = RawCyclerRun.from_file(self.arbin_broken_file)
+        vrange, num_points, nominal_capacity, fast_charge, diag = rcycler_run.determine_structuring_parameters()
+        print(diag['parameter_set'])
+        self.assertEqual(diag['parameter_set'], 'NCR18650-618')
+        diag_interp = rcycler_run.get_interpolated_diagnostic_cycles(diag, resolution=1000, v_resolution=0.0005)
+        print(diag_interp[diag_interp.cycle_index == 1].charge_capacity.median())
+        self.assertEqual(np.round(diag_interp[diag_interp.cycle_index == 1].charge_capacity.median(), 3),
+                         np.round(3.428818545441403, 3))
+
+    def test_from_maccor_insufficient_interpolation_length(self):
+        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+        rcycler_run = RawCyclerRun.from_file(self.maccor_broken_file)
+        vrange, num_points, nominal_capacity, fast_charge, diag = rcycler_run.determine_structuring_parameters()
+        print(diag['parameter_set'])
+        self.assertEqual(diag['parameter_set'], 'Tesla21700')
+        diag_interp = rcycler_run.get_interpolated_diagnostic_cycles(diag, resolution=1000, v_resolution=0.0005)
+        self.assertEqual(np.round(diag_interp[diag_interp.cycle_index == 1].charge_capacity.median(), 3),
+                         np.round(0.6371558214610992, 3))
 
     def test_from_raw_cycler_run_maccor(self):
         rcycler_run = RawCyclerRun.from_file(self.maccor_file_w_diagnostics)
