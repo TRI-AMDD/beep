@@ -594,7 +594,7 @@ class RawCyclerRun(MSONable):
                 as list, 'length' of the diagnostic in cycles and location
                 of the diagnostic
             resolution (int): resolution of interpolation
-            v_resolution (int): voltage delta to set for range based interpolation
+            v_resolution (float): voltage delta to set for range based interpolation
 
         Returns:
             (DataFrame) of interpolated diagnostic steps by step and cycle
@@ -669,6 +669,8 @@ class RawCyclerRun(MSONable):
 
         all_dfs = []
         for (cycle_index, step_index, step_index_counter), df in tqdm(group):
+            if len(df) < 2:
+                continue
             if diag_cycle_type[diag_cycles_at.index(cycle_index)] == "hppc":
                 v_hppc_step = [df.voltage.min(), df.voltage.max()]
                 hppc_resolution = int(
