@@ -1,5 +1,10 @@
 
 
+v2020.11.5.13
+-------------
+* Introduce fix for insufficient length in order to interpolate
+* generate output protocolnames dir if it doesn't exist
+
 v2020.11.4.14
 -------------
 * Add parsing for files with paths in the protocol field
