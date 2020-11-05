@@ -1,0 +1,2 @@
+,test_id,device_id,iv_ch_id,first_start_datetime,resumed_times,last_resume_datetime,last_end_datetime,schedule_file_name,databases,item_id,grade_id,has_aux,has_special,schedule_version,log_aux_data_flag,log_special_data_flag,rowstate,canconfig_filename,m_ncanconfigmd5,smbconfig_filename,smbconfigmd5,value,value2
+0,255,03603603,32,1597707942,0,0,1603583324,GABRIEL\PATRICK\TALOS_001385.SDU,"ArbinResult_90,ArbinResult_91,ArbinResult_92,ArbinResult_93,ArbinResult_94,",EL150800740679,0,0,0,Schedule Version 7.00.13,1,0,0,,,,,0.0,0.0
