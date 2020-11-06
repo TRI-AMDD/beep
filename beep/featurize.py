@@ -98,7 +98,8 @@ class BeepFeatures(MSONable, metaclass=ABCMeta):
 
     @classmethod
     def from_run(
-        cls, input_filename, feature_dir, processed_cycler_run, params_dict=None
+        cls, input_filename, feature_dir, processed_cycler_run,
+            params_dict=None, parameters_path="data-share/raw/parameters"
     ):
         """
         This method contains the workflow for the creation of the feature class
@@ -112,6 +113,8 @@ class BeepFeatures(MSONable, metaclass=ABCMeta):
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
             gets featurized. These could be filters for column or row operations
+            parameters_path (str): Root directory storing project parameter files.
+
         Returns:
             (beep.featurize.BeepFeatures): class object for the feature set
         """
@@ -121,7 +124,7 @@ class BeepFeatures(MSONable, metaclass=ABCMeta):
                 input_filename, feature_dir
             )
             feature_object = cls.features_from_processed_cycler_run(
-                processed_cycler_run, params_dict
+                processed_cycler_run, params_dict, parameters_path=parameters_path
             )
             metadata = cls.metadata_from_processed_cycler_run(
                 processed_cycler_run, params_dict
@@ -175,7 +178,8 @@ class BeepFeatures(MSONable, metaclass=ABCMeta):
 
     @classmethod
     @abstractmethod
-    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None):
+    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
+                                           parameters_path="data-share/raw/parameters"):
         raise NotImplementedError
 
     @classmethod
@@ -272,12 +276,15 @@ class RPTdQdVFeatures(BeepFeatures):
         return all(conditions)
 
     @classmethod
-    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None):
+    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
+                                           parameters_path="data-share/raw/parameters"):
         """
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun)
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
                 gets featurized. These could be filters for column or row operations
+            parameters_path (str): Root directory storing project parameter files.
+
 
         Returns:
              (pd.DataFrame) containing features based on gaussian fits to dQdV features in rpt cycles
@@ -397,7 +404,8 @@ class HPPCResistanceVoltageFeatures(BeepFeatures):
         return all(conditions)
 
     @classmethod
-    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None):
+    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
+                                           parameters_path="data-share/raw/parameters"):
         """
         This method calculates features based on voltage, diffusion and resistance changes in hppc cycles.
 
@@ -413,6 +421,8 @@ class HPPCResistanceVoltageFeatures(BeepFeatures):
             processed_cycler_run (beep.structure.ProcessedCyclerRun)
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
             gets featurized. These could be filters for column or row operations
+            parameters_path (str): Root directory storing project parameter files.
+
 
         Returns:
             dataframe of features based on voltage and resistance changes over a SOC window in hppc cycles
@@ -547,7 +557,8 @@ class HPPCRelaxationFeatures(BeepFeatures):
         return all(conditions)
 
     @classmethod
-    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None):
+    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
+                                           parameters_path="data-share/raw/parameters"):
         """
         This function returns all of the relaxation features in a dataframe for a given processed cycler run.
 
@@ -556,6 +567,7 @@ class HPPCRelaxationFeatures(BeepFeatures):
             you want the diagnostic features for.
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
             gets featurized. These could be filters for column or row operations
+            parameters_path (str): Root directory storing project parameter files.
 
         Returns:
             @featureDf(pd.DataFrame): Columns are either SOC{#%}_degrad{#%} where the first #% is the
@@ -643,7 +655,8 @@ class DiagnosticSummaryStats(BeepFeatures):
         return all(conditions)
 
     @classmethod
-    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None):
+    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
+                                           parameters_path="data-share/raw/parameters"):
         """
         Generate features listed in early prediction manuscript using both diagnostic and regular cycles
 
@@ -651,6 +664,8 @@ class DiagnosticSummaryStats(BeepFeatures):
             processed_cycler_run (beep.structure.ProcessedCyclerRun)
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
             gets featurized. These could be filters for column or row operations
+            parameters_path (str): Root directory storing project parameter files.
+
         Returns:
             X (pd.DataFrame): Dataframe containing the feature
         """
@@ -852,7 +867,8 @@ class DeltaQFastCharge(BeepFeatures):
         return all(conditions)
 
     @classmethod
-    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None):
+    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
+                                           parameters_path="data-share/raw/parameters"):
         """
         Generate features listed in early prediction manuscript, primarily related to the
         so called delta Q feature
@@ -860,6 +876,8 @@ class DeltaQFastCharge(BeepFeatures):
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
                 gets featurized. These could be filters for column or row operations
+            parameters_path (str): Root directory storing project parameter files.
+
         Returns:
             pd.DataFrame: features indicative of degradation, derived from the input data
         """
@@ -1045,7 +1063,8 @@ class TrajectoryFastCharge(DeltaQFastCharge):
         return all(conditions)
 
     @classmethod
-    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None):
+    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
+                                           parameters_path="data-share/raw/parameters"):
         """
         Calculate the outcomes from the input data. In particular, the number of cycles
         where we expect to reach certain thresholds of capacity loss
@@ -1053,6 +1072,8 @@ class TrajectoryFastCharge(DeltaQFastCharge):
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
             gets featurized. These could be filters for column or row operations
+            parameters_path (str): Root directory storing project parameter files.
+
         Returns:
             pd.DataFrame: cycles at which capacity/energy degradation exceeds thresholds
         """
@@ -1110,13 +1131,16 @@ class DiagnosticProperties(BeepFeatures):
             return True
 
     @classmethod
-    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None):
+    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
+                                           parameters_path="data-share/raw/parameters"):
         """
         Generates diagnostic-property features from processed cycler run, including values for n*x method
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
             gets featurized. These could be filters for column or row operations
+            parameters_path (str): Root directory storing project parameter files.
+
         Returns:
             pd.DataFrame: with "cycle_index", "fractional_metric", "x", "n", "cycle_type" and "metric" columns, rows
             for each diagnostic cycle of the cell
@@ -1129,7 +1153,7 @@ class DiagnosticProperties(BeepFeatures):
         for quantity in params_dict["quantities"]:
             for cycle_type in cycle_types:
                 summary_diag_cycle_type = featurizer_helpers.get_fractional_quantity_remaining_nx(
-                    processed_cycler_run, quantity, cycle_type
+                    processed_cycler_run, quantity, cycle_type, parameters_path=parameters_path
                 )
 
                 summary_diag_cycle_type["cycle_type"] = cycle_type

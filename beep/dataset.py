@@ -186,7 +186,8 @@ class BeepDataset(MSONable):
                                    feature_class_list=FEATURIZER_CLASSES,
                                    hyperparameter_dict=None, processed_dir="data-share/structure/",
                                    feature_dir="data-share/features/",
-                                   dataset_dir="data-share/datasets"):
+                                   dataset_dir="data-share/datasets",
+                                   parameters_path="data-share/raw/parameters"):
         """
         Method to assemble a dataset directly from a list of ProcessedCyclerRun objects
 
@@ -253,7 +254,8 @@ class BeepDataset(MSONable):
             for feature_class in feature_class_list:
                 # For a given feature_class, loop through multiple hyperparameter combinations, if provided.
                 for d in hyperparameter_dict[feature_class.class_feature_name]:
-                    obj = feature_class.from_run(processed_json, feature_dir, processed_cycler_run, d)
+                    obj = feature_class.from_run(processed_json, feature_dir, processed_cycler_run,
+                                                 d, parameters_path=parameters_path)
                     if obj:
                         df = obj.X
                         df['file'] = obj.metadata['protocol'].split('.')[0]
