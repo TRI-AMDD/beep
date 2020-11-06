@@ -161,6 +161,9 @@ class BeepDataset(MSONable):
                         obj = loadfn(feature_json)
                         df = obj.X
                         df['file'] = obj.metadata['protocol'].split('.')[0]
+                        # seq_num computation assumes file naming follows the convention:
+                        # ProjectName_SeqNum_Channel_ObjectName.json
+                        df['seq_num'] = int(os.path.basename(feature_json).split('_')[1])
                         feature_df = pd.concat([feature_df, df]).reset_index(drop=True)
                         # TODO: Need some logic for ensuring that features of a given class being concatenated
                         # row-wise have the same metadata dict
@@ -172,7 +175,7 @@ class BeepDataset(MSONable):
                 missing.loc[len(missing)] = \
                     ['', feature_class.class_feature_name]
 
-        df = reduce(lambda x, y: pd.merge(x, y, on='file', how='outer'), feature_df_list)
+        df = reduce(lambda x, y: pd.merge(x, y, on=['file', 'seq_num'], how='outer'), feature_df_list)
         # Outer-join used so that even partially featurized cells can be loaded into dataset
         # NaNs imputation to be done downstream by the user
 
@@ -254,6 +257,7 @@ class BeepDataset(MSONable):
                     if obj:
                         df = obj.X
                         df['file'] = obj.metadata['protocol'].split('.')[0]
+                        df['seq_num'] = int(os.path.basename(processed_json).split('_')[1])
                         feature_df_list[idx] = pd.concat([feature_df_list[idx], df]).reset_index(drop=True)
                     else:
                         failed_featurizations.loc[len(failed_featurizations)] = \
@@ -263,7 +267,7 @@ class BeepDataset(MSONable):
         for idx, feature_class in enumerate(feature_class_list):
             feature_sets[feature_class.class_feature_name] = list(feature_df_list[idx].columns)
 
-        df = reduce(lambda x, y: pd.merge(x, y, on='file', how='outer'), feature_df_list)
+        df = reduce(lambda x, y: pd.merge(x, y, on=['file', 'seq_num'], how='outer'), feature_df_list)
         return cls(name, df, hyperparameter_dict, df.file.unique(), feature_sets, dataset_dir, failed_featurizations)
 
     def generate_train_test_split(self, predictors=None, outcomes=None,

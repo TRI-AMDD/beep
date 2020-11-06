@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Module and scripts for generating descriptors (quantities listed
-in cell_analysis.m) from cycle-level summary statistics.
+Module and scripts for generating feature objects from structured
+battery cycling data, to be used as inputs for machine learning
+early prediction models.
 
 Usage:
     featurize [INPUT_JSON]
