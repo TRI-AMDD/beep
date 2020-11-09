@@ -39,19 +39,25 @@ from beep import logger, __version__
 
 VOLTAGE_RESOLUTION = 3
 
+#
+# @dataclass
+# class BeepData:
+#     raw: pd.DataFrame
+#     structured: pd.DataFrame
 
-@dataclass
-class BeepData:
-    raw: pd.DataFrame
-    structured: pd.DataFrame
 
-
-class BeepDatapath:
+class BEEPDatapath(abc.ABC):
 
     def __init__(self, raw_data, metadata, paths):
         self.raw_data = raw_data
         self.metadata = metadata
         self.paths = paths
+
+
+    # @property
+    # @abc.abstractmethod
+    # def schema(self):
+    #     raise NotImplementedError
 
     @classmethod
     @abc.abstractmethod
@@ -399,8 +405,7 @@ class BeepDatapath:
 
         """
         # Get the project name and the parameter file for the diagnostic
-        project_name_list = parameters_lookup.get_project_sequence(
-            self.filename)
+        project_name_list = parameters_lookup.get_project_sequence(self.filename)
         diag_path = os.path.join(MODULE_DIR, "procedure_templates")
         v_range = parameters_lookup.get_diagnostic_parameters(
             diagnostic_available, diag_path, project_name_list[0]
@@ -537,7 +542,7 @@ class BeepDatapath:
         return result
 
 
-class ArbinDatapath(BeepDatapath):
+class ArbinDatapath(BEEPDatapath):
 
     @classmethod
     def from_file(cls, path, metadata_path=None):
@@ -630,8 +635,7 @@ def interpolate_df(
     df["interpolated"] = False
 
     # Merge interpolated and uninterpolated DFs to use pandas interpolation
-    interpolated_df = interpolated_df.merge(df, how="outer", on=field_name,
-                                            sort=True)
+    interpolated_df = interpolated_df.merge(df, how="outer", on=field_name, sort=True)
     interpolated_df = interpolated_df.set_index(field_name)
     interpolated_df = interpolated_df.interpolate("slinear")
 
@@ -661,7 +665,7 @@ def step_is_chg_state(step_df, chg):
          step_dataframe (pandas.DataFrame): dataframe to determine whether
          charging or discharging
     """
-    cap = step_dataframe[["charge_capacity", "discharge_capacity"]]
+    cap = step_df[["charge_capacity", "discharge_capacity"]]
     cap = cap.diff(axis=0).mean(axis=0).diff().iloc[-1]
 
     if chg:  # Charging
@@ -750,12 +754,26 @@ if __name__ == "__main__":
 
     test_arbin_path = "/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/2017-12-04_4_65C-69per_6C_CH29.csv"
 
-    from beep.structure import RawCyclerRun as rcrv1
+    from beep.structure import RawCyclerRun as rcrv1, ProcessedCyclerRun as pcrv1
 
     rcr = rcrv1.from_arbin_file(test_arbin_path)
 
     print(rcr.data)
 
+
+    pcr = pcrv1.from_raw_cycler_run(rcr)
+
+    print(pcr.cycles_interpolated)
+
+
     ad = ArbinDatapath.from_file(test_arbin_path)
 
     print(ad.raw_data)
+
+
+    df =  ad.interpolate_cycles(v_range=None, resolution=1000, diagnostic_available=False, charge_axis="charge_capacity", discharge_axis="discharge_capacity")
+
+    print(df)
+
+    #todo: only processed_cycler run MSONable is used
+
