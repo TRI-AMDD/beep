@@ -37,7 +37,10 @@ from beep.conversion_schemas import (
 from beep.utils import WorkflowOutputs, parameters_lookup
 from beep import logger, __version__
 
+
+# todo: ALEXTODO this should be set in the class, and should not be overwritten
 VOLTAGE_RESOLUTION = 3
+
 
 #
 # @dataclass
@@ -48,11 +51,15 @@ VOLTAGE_RESOLUTION = 3
 
 class BEEPDatapath(abc.ABC):
 
-    def __init__(self, raw_data, metadata, paths):
+    def __init__(self, raw_data, metadata, paths=None):
         self.raw_data = raw_data
         self.metadata = metadata
-        self.paths = paths
+        self.paths = paths if paths else {"raw": None}
 
+        self.structured_summary = None     # equivalent of PCR.summary
+        self.structured_data = None        # equivalent of PCR.cycles_interpolated
+        self.diagnostic_data = None        # equivalent of PCR.diagnostic_interpolated
+        self.diagnostic_summary = None     # same name as in PCR
 
     # @property
     # @abc.abstractmethod
@@ -67,8 +74,54 @@ class BEEPDatapath(abc.ABC):
     def validate(self):
         pass
 
-    def structure(self):
+    def structure(self,
+        v_range=None,
+        resolution=1000,
+        diagnostic_resolution=500,
+        nominal_capacity=1.1,
+        full_fast_charge=0.8,
+        diagnostic_available=False,
+        charge_axis='charge_capacity',
+        discharge_axis='voltage'
+    ):
+        """
+        Method to invoke ProcessedCyclerRun from RawCyclerRun object
+
+        Args:
+            v_range ([int, int]): range of voltages for cycle interpolation.
+            resolution (int): resolution for cycle interpolation.
+            diagnostic_resolution (int): number of datapoints per step for
+                interpolating diagnostic cycles.
+            nominal_capacity (float): nominal capacity for summary stats.
+            full_fast_charge (float): full fast charge for summary stats.
+            diagnostic_available (dict): project metadata for processing
+                diagnostic cycles correctly.
         pass
+        """
+
+        logger.info("Beginning structuring...")
+
+        if diagnostic_available:
+            self.diagnostic_summary = self.summarize_diagnostic(
+                diagnostic_available
+            )
+            self.diagnostic_data = self.interpolate_diagnostic_cycles(
+                diagnostic_available, diagnostic_resolution
+            )
+
+        self.structured_data = self.interpolate_cycles(
+            v_range=v_range,
+            resolution=resolution,
+            diagnostic_available=diagnostic_available,
+            charge_axis=charge_axis,
+            discharge_axis=discharge_axis
+        )
+
+        self.structured_summary = self.summarize_cycles(
+            nominal_capacity=nominal_capacity,
+            full_fast_charge=full_fast_charge,
+            diagnostic_available=diagnostic_available
+        )
 
     def interpolate_step(
             self,
@@ -235,7 +288,8 @@ class BEEPDatapath(abc.ABC):
 
         return result.astype(STRUCTURE_DTYPES["cycles_interpolated"])
 
-    def get_summary(
+    # equivalent of get_summary
+    def summarize_cycles(
             self,
             diagnostic_available=False,
             nominal_capacity=1.1,
@@ -320,9 +374,9 @@ class BEEPDatapath(abc.ABC):
         # assumes that a cycle starts with a charge step and is then followed
         # by discharge step.
         charge_start_time = \
-        self.raw_data.groupby("cycle_index", as_index=False)[
-            "date_time_iso"
-        ].agg("first")
+            self.raw_data.groupby("cycle_index", as_index=False)[
+                "date_time_iso"
+            ].agg("first")
         charge_finish_time = (
             self.raw_data[
                 self.raw_data.charge_capacity >= nominal_capacity * full_fast_charge]
@@ -352,7 +406,9 @@ class BEEPDatapath(abc.ABC):
             self.raw_data.groupby("cycle_index")["date_time_iso"].transform(
                 "first")
         )
-        self.raw_data["time_since_cycle_start"] = (self.raw_data["time_since_cycle_start"] / np.timedelta64(1, "s")) / 60
+        self.raw_data["time_since_cycle_start"] = (self.raw_data[
+                                                       "time_since_cycle_start"] / np.timedelta64(
+            1, "s")) / 60
 
         # Group by cycle index and integrate time-temperature
         # using a lambda function.
@@ -386,7 +442,8 @@ class BEEPDatapath(abc.ABC):
         else:
             return summary.iloc[:-1]
 
-    def get_interpolated_diagnostic_cycles(
+    # equivalent of get_interpolated_diagnostic_cycles
+    def interpolate_diagnostic_cycles(
             self, diagnostic_available, resolution=1000, v_resolution=0.0005
     ):
         """
@@ -405,14 +462,14 @@ class BEEPDatapath(abc.ABC):
 
         """
         # Get the project name and the parameter file for the diagnostic
-        project_name_list = parameters_lookup.get_project_sequence(self.filename)
+        project_name_list = parameters_lookup.get_project_sequence(self.paths["raw"])
         diag_path = os.path.join(MODULE_DIR, "procedure_templates")
         v_range = parameters_lookup.get_diagnostic_parameters(
             diagnostic_available, diag_path, project_name_list[0]
         )
 
         # Determine the cycles and types of the diagnostic cycles
-        max_cycle = self.data.cycle_index.max()
+        max_cycle = self.raw_data.cycle_index.max()
         starts_at = [
             i for i in diagnostic_available["diagnostic_starts_at"] if
             i <= max_cycle
@@ -433,7 +490,7 @@ class BEEPDatapath(abc.ABC):
             )
             raise ValueError(errmsg)
 
-        diag_data = self.data[self.data["cycle_index"].isin(diag_cycles_at)]
+        diag_data = self.raw_data[self.raw_data["cycle_index"].isin(diag_cycles_at)]
 
         # Convert date_time_iso field into pd.datetime object
         diag_data.loc[:, "date_time_iso"] = pd.to_datetime(
@@ -542,6 +599,73 @@ class BEEPDatapath(abc.ABC):
         return result
 
 
+    def summarize_diagnostic(self, diagnostic_available):
+        """
+        Gets summary statistics for data according to location of
+        diagnostic cycles in the data
+
+        Args:
+            diagnostic_available (dict): dictionary with diagnostic_types
+                as list, 'length' of the diagnostic in cycles and location
+                of the diagnostic by cycle index
+
+        Returns:
+            (DataFrame) of summary statistics by cycle
+
+        """
+
+        max_cycle = self.raw_data.cycle_index.max()
+        starts_at = [
+            i for i in diagnostic_available["diagnostic_starts_at"] if i <= max_cycle
+        ]
+        diag_cycles_at = list(
+            itertools.chain.from_iterable(
+                [list(range(i, i + diagnostic_available["length"])) for i in starts_at]
+            )
+        )
+        diag_summary = self.raw_data.groupby("cycle_index").agg(
+            {
+                "discharge_capacity": "max",
+                "charge_capacity": "max",
+                "discharge_energy": "max",
+                "charge_energy": "max",
+                "temperature": ["max", "mean", "min"],
+                "date_time_iso": "first",
+                "cycle_index": "first",
+            },
+        )
+
+        diag_summary.columns = [
+            "discharge_capacity",
+            "charge_capacity",
+            "discharge_energy",
+            "charge_energy",
+            "temperature_maximum",
+            "temperature_average",
+            "temperature_minimum",
+            "date_time_iso",
+            "cycle_index",
+        ]
+        diag_summary = diag_summary[diag_summary.index.isin(diag_cycles_at)]
+
+        diag_summary["coulombic_efficiency"] = (
+            diag_summary["discharge_capacity"] / diag_summary["charge_capacity"]
+        )
+        diag_summary["paused"] = self.raw_data.groupby("cycle_index").apply(
+            get_max_paused_over_threshold
+        )
+
+        diag_summary.reset_index(drop=True, inplace=True)
+
+        diag_summary["cycle_type"] = pd.Series(
+            diagnostic_available["cycle_type"] * len(starts_at)
+        )
+
+        diag_summary = diag_summary.astype(STRUCTURE_DTYPES["diagnostic_summary"])
+
+        return diag_summary
+
+
 class ArbinDatapath(BEEPDatapath):
 
     @classmethod
@@ -635,7 +759,8 @@ def interpolate_df(
     df["interpolated"] = False
 
     # Merge interpolated and uninterpolated DFs to use pandas interpolation
-    interpolated_df = interpolated_df.merge(df, how="outer", on=field_name, sort=True)
+    interpolated_df = interpolated_df.merge(df, how="outer", on=field_name,
+                                            sort=True)
     interpolated_df = interpolated_df.set_index(field_name)
     interpolated_df = interpolated_df.interpolate("slinear")
 
@@ -651,7 +776,6 @@ def interpolate_df(
     # Remove duplicates
     interpolated_df = interpolated_df[~interpolated_df[field_name].duplicated()]
     return interpolated_df
-
 
 
 # todo: ALEXTODO: need docstring
@@ -670,7 +794,7 @@ def step_is_chg_state(step_df, chg):
 
     if chg:  # Charging
         return cap > 0
-    else:   # Discharging
+    else:  # Discharging
         return cap < 0
 
 
@@ -754,26 +878,36 @@ if __name__ == "__main__":
 
     test_arbin_path = "/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/2017-12-04_4_65C-69per_6C_CH29.csv"
 
-    from beep.structure import RawCyclerRun as rcrv1, ProcessedCyclerRun as pcrv1
+    from beep.structure import RawCyclerRun as rcrv1, \
+        ProcessedCyclerRun as pcrv1
 
     rcr = rcrv1.from_arbin_file(test_arbin_path)
 
     print(rcr.data)
+    #
+    # pcr = pcrv1.from_raw_cycler_run(rcr)
+    #
+    # print(pcr.cycles_interpolated)
+    #
+    # ad = ArbinDatapath.from_file(test_arbin_path)
+    #
+    # print(ad.raw_data)
+    #
+    # df = ad.interpolate_cycles(v_range=None, resolution=1000,
+    #                            diagnostic_available=False,
+    #                            charge_axis="charge_capacity",
+    #                            discharge_axis="discharge_capacity")
+    #
+    # print(df)
+
+    # todo: only processed_cycler run MSONable is used
+
+    from beep.validate import ValidatorBeep
 
 
-    pcr = pcrv1.from_raw_cycler_run(rcr)
+    df1 = rcr.data
+    df2 = pd.read_csv(test_arbin_path, index_col=0)
 
-    print(pcr.cycles_interpolated)
-
-
-    ad = ArbinDatapath.from_file(test_arbin_path)
-
-    print(ad.raw_data)
-
-
-    df =  ad.interpolate_cycles(v_range=None, resolution=1000, diagnostic_available=False, charge_axis="charge_capacity", discharge_axis="discharge_capacity")
-
-    print(df)
-
-    #todo: only processed_cycler run MSONable is used
-
+    vb = ValidatorBeep()
+    print(vb.validate_arbin_dataframe(df1))
+    print(vb.validate_arbin_dataframe(df2))
