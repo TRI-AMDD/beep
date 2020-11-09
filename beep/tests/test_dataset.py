@@ -43,7 +43,9 @@ class TestDataset(unittest.TestCase):
         dataset = BeepDataset.from_features('test_dataset', ['PreDiag'], FEATURIZER_CLASSES,
                                             feature_dir=os.path.join(TEST_FILE_DIR, 'data-share/features'))
         self.assertEqual(dataset.name, 'test_dataset')
-        self.assertEqual(dataset.data.shape, (2, 55))
+        self.assertEqual(dataset.data.shape, (2, 56))
+        #from pdb import set_trace; set_trace()
+        self.assertListEqual(list(dataset.data.seq_num), [196, 197])
         self.assertIsNone(dataset.X_test)
         self.assertSetEqual(set(dataset.feature_sets.keys()), {'RPTdQdVFeatures', 'DiagnosticSummaryStats'})
         self.assertEqual(dataset.missing.feature_class.iloc[0], 'HPPCResistanceVoltageFeatures')
@@ -59,7 +61,8 @@ class TestDataset(unittest.TestCase):
                                                              processed_dir=TEST_FILE_DIR,
                                                              feature_dir='data-share/features')
             self.assertEqual(dataset.name, 'test_dataset')
-            self.assertEqual(dataset.data.shape, (1, 118))
+            self.assertEqual(dataset.data.shape, (1, 119))
+            self.assertEqual(dataset.data.seq_num.iloc[0], 240)
             self.assertIsNone(dataset.X_test)
 
             self.assertEqual(dataset.missing.shape, (3, 2))
@@ -81,7 +84,7 @@ class TestDataset(unittest.TestCase):
                                                                            'raw',
                                                                            'parameters'))
 
-        self.assertEqual(dataset.data.shape, (2, 55))
+        self.assertEqual(dataset.data.shape, (2, 56))
         self.assertEqual(dataset.X_test.shape, (1, 6))
         self.assertEqual(dataset.X_train.shape, (1, 6))
 

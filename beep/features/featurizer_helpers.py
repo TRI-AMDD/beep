@@ -911,7 +911,8 @@ def get_fractional_quantity_remaining(
 def get_fractional_quantity_remaining_nx(
         processed_cycler_run,
         metric="discharge_energy",
-        diagnostic_cycle_type="rpt_0.2C"
+        diagnostic_cycle_type="rpt_0.2C",
+        parameters_path="data-share/raw/parameters"
 ):
     """
     Similar to get_fractional_quantity_remaining()
@@ -991,7 +992,7 @@ def get_fractional_quantity_remaining_nx(
     else:
         _, protocol_name = os.path.split(processed_cycler_run.protocol)
 
-    parameter_row, _ = parameters_lookup.get_protocol_parameters(protocol_name)
+    parameter_row, _ = parameters_lookup.get_protocol_parameters(protocol_name, parameters_path=parameters_path)
 
     summary_diag_cycle_type['diagnostic_start_cycle'] = parameter_row['diagnostic_start_cycle'].values[0]
     summary_diag_cycle_type['diagnostic_interval'] = parameter_row['diagnostic_interval'].values[0]
