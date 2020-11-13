@@ -42,13 +42,6 @@ from beep import logger, __version__
 VOLTAGE_RESOLUTION = 3
 
 
-#
-# @dataclass
-# class BeepData:
-#     raw: pd.DataFrame
-#     structured: pd.DataFrame
-
-
 class BEEPDatapath(abc.ABC):
 
     def __init__(self, raw_data, metadata, paths=None):
@@ -85,7 +78,6 @@ class BEEPDatapath(abc.ABC):
         discharge_axis='voltage'
     ):
         """
-        Method to invoke ProcessedCyclerRun from RawCyclerRun object
 
         Args:
             v_range ([int, int]): range of voltages for cycle interpolation.
@@ -793,9 +785,9 @@ def step_is_chg_state(step_df, chg):
     cap = cap.diff(axis=0).mean(axis=0).diff().iloc[-1]
 
     if chg:  # Charging
-        return cap > 0
-    else:  # Discharging
         return cap < 0
+    else:  # Discharging
+        return cap > 0
 
 
 def step_is_dchg(step_df):
@@ -902,12 +894,16 @@ if __name__ == "__main__":
 
     # todo: only processed_cycler run MSONable is used
 
-    from beep.validate import ValidatorBeep
+    from beep.validate import ValidatorBeep, SimpleValidator
 
 
     df1 = rcr.data
     df2 = pd.read_csv(test_arbin_path, index_col=0)
 
-    vb = ValidatorBeep()
-    print(vb.validate_arbin_dataframe(df1))
-    print(vb.validate_arbin_dataframe(df2))
+    # vb = ValidatorBeep()
+    # print(vb.validate_arbin_dataframe(df1))
+    # print(vb.validate_arbin_dataframe(df2))
+
+    # print(vb.errors)
+
+    sv = SimpleValidator()
