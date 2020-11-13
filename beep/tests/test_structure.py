@@ -47,9 +47,71 @@ TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 
 
-from beep.structure2 import ArbinDatapath
+from beep.structure2 import ArbinDatapath, BEEPDatapath
+
+
+class TestBEEPDatapath(unittest.TestCase):
+    """
+    Tests common to all datapaths.
+    """
+
+    def setUp(self) -> None:
+        # todo: use arbin memloaded df as truth df
+        pass
+
+    # based on RCRT.test_serialization
+    def test_serialization(self):
+        pass
+
+    # based on RCRT.test_binary_save
+    def test_binary_save(self):
+        pass
+
+    # based on RCRT.test_get_interpolated_charge_step
+    def test_interpolate_step(self):
+        pass
+
+    # based on RCRT.test_get_interpolated_discharge_cycles
+    def test_interpolate_cycles(self):
+        pass
+
+    # todo: ALEXTODO merge this with the discharge_cycles method
+    # based on RCRT.test_get_interpolated_charge_cycles
+    def test_get_interpolated_charge_cycles(self):
+        pass
+
+    # based on RCRT.test_interpolated_cycles_dtypes
+    def test_interpolated_cycles_dtypes(self):
+        pass
+
+    # based on RCRT.test_summary_dtypes
+    def test_summary_dtypes(self):
+        pass
+
+    # based on RCRT.test_get_diagnostic
+    # though it is based on maccor files
+    def test_get_diagnostic(self):
+        pass
+
+    # based on RCRT.test_get_summary
+    # though it is based on maccor files
+    def test_get_summary(self):
+        pass
+
+    # based on RCRT.test_get_energy
+    def test_get_energy(self):
+        pass
+
+    # based on RCRT.test_get_charge_throughput
+    def test_get_charge_throughput(self):
+        pass
+
+
 
 class TestArbinDatapath(unittest.TestCase):
+    """
+    Tests specific to Arbin cyclers.
+    """
     def setUp(self) -> None:
         self.bad_file = os.path.join(
             TEST_FILE_DIR, "2017-05-09_test-TC-contact_CH33.csv"
@@ -63,8 +125,7 @@ class TestArbinDatapath(unittest.TestCase):
     def test_from_file(self):
         ad = ArbinDatapath.from_file(self.good_file)
 
-
-
+    # todo: ALEXTODO move to TestBEEPDatapath
     # based on RCRT.test_get_interpolated_charge_step
     def test_get_interpolated_charge_step(self):
         adpath = ArbinDatapath.from_file(self.good_file)
@@ -89,6 +150,7 @@ class TestArbinDatapath(unittest.TestCase):
         self.assertTrue(np.all(np.array(lengths) == 1000))
         self.assertTrue(interpolated_charge["current"].mean() > 0)
 
+    # todo: ALEXTODO move to TestBEEPDatapath
     # based on RCRT.test_get_interpolated_discharge_cycles
     def test_get_interpolated_discharge_cycles(self):
         adpath = ArbinDatapath.from_file(self.good_file)
@@ -123,6 +185,67 @@ class TestArbinDatapath(unittest.TestCase):
                 pred[col_name].iloc[0], y_at_point[col_name].iloc[0], places=2
             )
 
+
+class TestMaccorDatapath(unittest.TestCase):
+    """
+    Tests specific to Maccor cyclers.
+    """
+
+    # based on RCRT.test_ingestion_maccor
+    def test_ingestion_maccor(self):
+        pass
+
+    # based on RCRT.test_timezone_maccor
+    def test_timezone_maccor(self):
+        pass
+
+    # based on RCRT.test_timestamp_maccor
+    def test_timestamp_maccor(self):
+        pass
+
+    # based on RCRT.test_quantity_sum_maccor
+    def test_quantity_sum_maccor(self):
+        pass
+
+    # based on RCRT.test_whether_step_is_waveform
+    def test_whether_step_is_waveform(self):
+        pass
+
+    # based on RCRT.test_get_interpolated_waveform_discharge_cycles
+    def test_get_interpolated_waveform_discharge_cycles(self):
+        pass
+
+
+    # based on RCRT.test_get_interpolated_cycles_maccor
+    def test_get_interpolated_cycles_maccor(self):
+        pass
+
+
+class TestIndigoDatapath(unittest.TestCase):
+    def setUp(self) -> None:
+        pass
+
+    # based on RCRT.test_ingestion_indigo
+    def test_ingestion_indigo(self):
+        pass
+
+
+class TestBioLogicDatapath(unittest.TestCase):
+    def setUp(self) -> None:
+        pass
+
+    # based on RCRT.test_ingestion_biologic
+    def test_ingestion_biologic(self):
+        pass
+
+
+class TestNewareDatapath(unittest.TestCase):
+    def setUp(self) -> None:
+        pass
+
+    # based on RCRT.test_ingestion_neware
+    def test_ingestion_neware(self):
+        pass
 
 
 class RawCyclerRunTest(unittest.TestCase):
@@ -437,7 +560,6 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertGreater(max(axis_1), max(axis_2))
         self.assertTrue(np.all(np.array(lengths) == 1000))
         self.assertTrue(interpolated_charge["current"].mean() > 0)
-
 
     def test_whether_step_is_waveform(self):
         cycler_run = RawCyclerRun.from_file(self.maccor_file_w_waveform)

@@ -268,6 +268,7 @@ class BEEPDatapath(abc.ABC):
             step_type="discharge",
             reg_cycles=reg_cycles,
             axis=discharge_axis,
+            desc="interpolating discharge cycles"
         )
         interpolated_charge = self.interpolate_step(
             v_range,
@@ -275,6 +276,7 @@ class BEEPDatapath(abc.ABC):
             step_type="charge",
             reg_cycles=reg_cycles,
             axis=charge_axis,
+            desc="interpolating charge cycles"
         )
         result = pd.concat(
             [interpolated_discharge, interpolated_charge], ignore_index=True
