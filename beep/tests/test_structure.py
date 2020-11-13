@@ -46,6 +46,85 @@ TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 
+
+from beep.structure2 import ArbinDatapath
+
+class TestArbinDatapath(unittest.TestCase):
+    def setUp(self) -> None:
+        self.bad_file = os.path.join(
+            TEST_FILE_DIR, "2017-05-09_test-TC-contact_CH33.csv"
+        )
+
+        self.good_file = os.path.join(
+            TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29.csv"
+        )
+
+
+    def test_from_file(self):
+        ad = ArbinDatapath.from_file(self.good_file)
+
+
+
+    # based on RCRT.test_get_interpolated_charge_step
+    def test_get_interpolated_charge_step(self):
+        adpath = ArbinDatapath.from_file(self.good_file)
+        reg_cycles = [i for i in adpath.raw_data.cycle_index.unique()]
+        v_range = [2.8, 3.5]
+        resolution = 1000
+        interpolated_charge = adpath.interpolate_step(
+            v_range,
+            resolution,
+            step_type="charge",
+            reg_cycles=reg_cycles,
+            axis="test_time",
+        )
+        lengths = [len(df) for index, df in interpolated_charge.groupby("cycle_index")]
+        axis_1 = interpolated_charge[
+            interpolated_charge.cycle_index == 5
+        ].charge_capacity.to_list()
+        axis_2 = interpolated_charge[
+            interpolated_charge.cycle_index == 10
+        ].charge_capacity.to_list()
+        self.assertGreater(max(axis_1), max(axis_2))
+        self.assertTrue(np.all(np.array(lengths) == 1000))
+        self.assertTrue(interpolated_charge["current"].mean() > 0)
+
+    # based on
+    def test_get_interpolated_discharge_cycles(self):
+        cycler_run = RawCyclerRun.from_file(self.arbin_file)
+        all_interpolated = cycler_run.get_interpolated_cycles()
+        all_interpolated = all_interpolated[(all_interpolated.step_type == "discharge")]
+        lengths = [len(df) for index, df in all_interpolated.groupby("cycle_index")]
+        self.assertTrue(np.all(np.array(lengths) == 1000))
+
+        # Found these manually
+        all_interpolated = all_interpolated.drop(columns=["step_type"])
+        y_at_point = all_interpolated.iloc[[1500]]
+        x_at_point = all_interpolated.voltage[1500]
+        cycle_1 = cycler_run.data[cycler_run.data["cycle_index"] == 1]
+
+        # Discharge step is 12
+        discharge = cycle_1[cycle_1.step_index == 12]
+        discharge = discharge.sort_values("voltage")
+
+        # Get an interval between which one can find the interpolated value
+        measurement_index = np.max(np.where(discharge.voltage - x_at_point < 0))
+        interval = discharge.iloc[measurement_index : measurement_index + 2]
+        interval = interval.drop(columns=["date_time_iso"])  # Drop non-numeric column
+
+        # Test interpolation with a by-hand calculation of slope
+        diff = np.diff(interval, axis=0)
+        pred = interval.iloc[[0]] + diff * (x_at_point - interval.voltage.iloc[0]) / (
+            interval.voltage.iloc[1] - interval.voltage.iloc[0]
+        )
+        pred = pred.reset_index()
+        for col_name in y_at_point.columns:
+            self.assertAlmostEqual(
+                pred[col_name].iloc[0], y_at_point[col_name].iloc[0], places=2
+            )
+
+
+
 class RawCyclerRunTest(unittest.TestCase):
     def setUp(self):
         self.arbin_bad = os.path.join(
