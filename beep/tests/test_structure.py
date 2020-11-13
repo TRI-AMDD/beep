@@ -89,10 +89,10 @@ class TestArbinDatapath(unittest.TestCase):
         self.assertTrue(np.all(np.array(lengths) == 1000))
         self.assertTrue(interpolated_charge["current"].mean() > 0)
 
-    # based on
+    # based on RCRT.test_get_interpolated_discharge_cycles
     def test_get_interpolated_discharge_cycles(self):
-        cycler_run = RawCyclerRun.from_file(self.arbin_file)
-        all_interpolated = cycler_run.get_interpolated_cycles()
+        adpath = ArbinDatapath.from_file(self.good_file)
+        all_interpolated =adpath.interpolate_cycles()
         all_interpolated = all_interpolated[(all_interpolated.step_type == "discharge")]
         lengths = [len(df) for index, df in all_interpolated.groupby("cycle_index")]
         self.assertTrue(np.all(np.array(lengths) == 1000))
@@ -101,7 +101,7 @@ class TestArbinDatapath(unittest.TestCase):
         all_interpolated = all_interpolated.drop(columns=["step_type"])
         y_at_point = all_interpolated.iloc[[1500]]
         x_at_point = all_interpolated.voltage[1500]
-        cycle_1 = cycler_run.data[cycler_run.data["cycle_index"] == 1]
+        cycle_1 = adpath.raw_data[adpath.raw_data["cycle_index"] == 1]
 
         # Discharge step is 12
         discharge = cycle_1[cycle_1.step_index == 12]

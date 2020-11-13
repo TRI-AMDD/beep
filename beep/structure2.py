@@ -115,6 +115,7 @@ class BEEPDatapath(abc.ABC):
             diagnostic_available=diagnostic_available
         )
 
+    # todo: ALEXTODO check docstring
     def interpolate_step(
             self,
             v_range,
@@ -122,6 +123,7 @@ class BEEPDatapath(abc.ABC):
             step_type="discharge",
             reg_cycles=None,
             axis="voltage",
+            desc=None
     ):
         """
         Gets interpolated cycles for the step specified, charge or discharge.
@@ -157,7 +159,7 @@ class BEEPDatapath(abc.ABC):
         cycle_indices = [c for c in cycle_indices if c in reg_cycles]
         cycle_indices.sort()
 
-        for cycle_index in tqdm(cycle_indices):
+        for cycle_index in tqdm(cycle_indices, desc=desc):
             # Use a cycle_index mask instead of a global groupby to save memory
             new_df = (
                 self.raw_data.loc[self.raw_data["cycle_index"] == cycle_index]
