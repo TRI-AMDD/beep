@@ -42,13 +42,21 @@ import matplotlib.pyplot as plt
 
 BIG_FILE_TESTS = os.environ.get("BIG_FILE_TESTS", None) == "True"
 SKIP_MSG = "Tests requiring large files with diagnostic cycles are disabled, set BIG_FILE_TESTS=True to run full tests"
-TEST_DIR = os.path.dirname(__file__)
+TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 
 
 from beep.structure2 import ArbinDatapath, BEEPDatapath
 
+
+class BEEPDatapathChildTest(BEEPDatapath):
+    """
+    A test class representing any child of BEEPDatapath.
+    """
+    @classmethod
+    def from_file(self, path, index_col=0, **kwargs):
+        return pd.read_csv(path, index_col=0, **kwargs)
 
 class TestBEEPDatapath(unittest.TestCase):
     """
@@ -57,7 +65,8 @@ class TestBEEPDatapath(unittest.TestCase):
 
     def setUp(self) -> None:
         # todo: use arbin memloaded df as truth df
-        pass
+        input_fname = os.path.join(TEST_FILE_DIR, "df_arbin_memloaded.csv")
+        self.input_df = pd.read_csv(input_fname, index_col=0)
 
     # based on RCRT.test_serialization
     def test_serialization(self):
@@ -79,6 +88,32 @@ class TestBEEPDatapath(unittest.TestCase):
     # based on RCRT.test_get_interpolated_charge_cycles
     def test_get_interpolated_charge_cycles(self):
         pass
+
+
+    # todo: ALEXTODO move to TestBEEPDatapath
+    # based on RCRT.test_get_interpolated_charge_step
+    def test_get_interpolated_charge_step(self):
+        dpath =
+        reg_cycles = [i for i in adpath.raw_data.cycle_index.unique()]
+        v_range = [2.8, 3.5]
+        resolution = 1000
+        interpolated_charge = adpath.interpolate_step(
+            v_range,
+            resolution,
+            step_type="charge",
+            reg_cycles=reg_cycles,
+            axis="test_time",
+        )
+        lengths = [len(df) for index, df in interpolated_charge.groupby("cycle_index")]
+        axis_1 = interpolated_charge[
+            interpolated_charge.cycle_index == 5
+        ].charge_capacity.to_list()
+        axis_2 = interpolated_charge[
+            interpolated_charge.cycle_index == 10
+        ].charge_capacity.to_list()
+        self.assertGreater(max(axis_1), max(axis_2))
+        self.assertTrue(np.all(np.array(lengths) == 1000))
+        self.assertTrue(interpolated_charge["current"].mean() > 0)
 
     # based on RCRT.test_interpolated_cycles_dtypes
     def test_interpolated_cycles_dtypes(self):
@@ -125,30 +160,6 @@ class TestArbinDatapath(unittest.TestCase):
     def test_from_file(self):
         ad = ArbinDatapath.from_file(self.good_file)
 
-    # todo: ALEXTODO move to TestBEEPDatapath
-    # based on RCRT.test_get_interpolated_charge_step
-    def test_get_interpolated_charge_step(self):
-        adpath = ArbinDatapath.from_file(self.good_file)
-        reg_cycles = [i for i in adpath.raw_data.cycle_index.unique()]
-        v_range = [2.8, 3.5]
-        resolution = 1000
-        interpolated_charge = adpath.interpolate_step(
-            v_range,
-            resolution,
-            step_type="charge",
-            reg_cycles=reg_cycles,
-            axis="test_time",
-        )
-        lengths = [len(df) for index, df in interpolated_charge.groupby("cycle_index")]
-        axis_1 = interpolated_charge[
-            interpolated_charge.cycle_index == 5
-        ].charge_capacity.to_list()
-        axis_2 = interpolated_charge[
-            interpolated_charge.cycle_index == 10
-        ].charge_capacity.to_list()
-        self.assertGreater(max(axis_1), max(axis_2))
-        self.assertTrue(np.all(np.array(lengths) == 1000))
-        self.assertTrue(interpolated_charge["current"].mean() > 0)
 
     # todo: ALEXTODO move to TestBEEPDatapath
     # based on RCRT.test_get_interpolated_discharge_cycles

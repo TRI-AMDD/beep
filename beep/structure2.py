@@ -708,6 +708,63 @@ class ArbinDatapath(BEEPDatapath):
         return cls(data, metadata, paths)
 
 
+
+# class MaccorDatapath(BEEPDatapath):
+#
+#     @classmethod
+#     def from_file(cls, path, metadata_path=None):
+#         """
+#         Method for ingestion of Maccor format files.
+#
+#         Args:
+#             filename (str): file path for maccor format file.
+#             include_eis (bool): whether to include the eis spectrum
+#                 in the ingestion procedure.
+#             validate (bool): whether to validate on instantiation.
+#         """
+#         with open(filename) as f:
+#             metadata_line = f.readline().strip()
+#
+#         # Parse data
+#         data = pd.read_csv(filename, delimiter="\t", skiprows=1)
+#         data.rename(str.lower, axis="columns", inplace=True)
+#         data = data.astype(MACCOR_CONFIG["data_types"])
+#         data.rename(MACCOR_CONFIG["data_columns"], axis="columns", inplace=True)
+#         data["charge_capacity"] = cls.get_maccor_quantity_sum(
+#             data, "capacity", "charge"
+#         )
+#         data["discharge_capacity"] = cls.get_maccor_quantity_sum(
+#             data, "capacity", "discharge"
+#         )
+#         data["charge_energy"] = cls.get_maccor_quantity_sum(data, "energy", "charge")
+#         data["discharge_energy"] = cls.get_maccor_quantity_sum(
+#             data, "energy", "discharge"
+#         )
+#
+#         # Parse metadata - kinda hackish way to do it, but it works
+#         metadata = parse_maccor_metadata(metadata_line)
+#         metadata = pd.DataFrame(metadata)
+#         _, channel_number = os.path.splitext(filename)
+#         metadata["channel_id"] = int(channel_number.replace(".", ""))
+#         metadata.rename(str.lower, axis="columns", inplace=True)
+#         metadata.rename(MACCOR_CONFIG["metadata_fields"], axis="columns", inplace=True)
+#         # Note the to_dict, which scrubs numpy typing
+#         metadata = {col: item[0] for col, item in metadata.to_dict("list").items()}
+#
+#         # Check for EIS files
+#         if include_eis:
+#             eis_pattern = ".*.".join(filename.rsplit(".", 1))
+#             all_eis_files = glob(eis_pattern)
+#             eis = EISpectrum.from_maccor_file(all_eis_files[0])
+#         else:
+#             eis = None
+#
+#         # standardizing time format
+#         data["date_time_iso"] = data["date_time"].apply(maccor_timestamp)
+
+        return cls(data, metadata, eis, validate, filename=filename)
+
+
 def interpolate_df(
         dataframe,
         field_name="voltage",
@@ -879,7 +936,11 @@ if __name__ == "__main__":
 
     rcr = rcrv1.from_arbin_file(test_arbin_path)
 
+    rcr.data.to_csv("df_arbin_memloaded.csv")
+
     print(rcr.data)
+
+    raise ValueError
     #
     # pcr = pcrv1.from_raw_cycler_run(rcr)
     #
