@@ -177,7 +177,6 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertTrue(np.all(np.array(lengths) == 1000))
         self.assertTrue(chg["current"].mean() > 0)
 
-
     # based on RCRT.test_interpolated_cycles_dtypes
     def test_interpolated_cycles_dtypes(self):
         pass
