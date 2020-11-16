@@ -73,14 +73,23 @@ class TestBEEPDatapath(unittest.TestCase):
         arbin_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_arbin_memloaded.csv")
         arbin_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_arbin_metadata_memloaded.json")
         self.data_nodiag = pd.read_csv(arbin_fname, index_col=0)
-        self.data_nodiag_meta = load_json(arbin_meta_fname)
+        self.metadata_nodiag = load_json(arbin_meta_fname)
 
         # Use maccor memloaded inputs as source of diagnostic truth
         maccor_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_w_diagnostic_memloaded.csv")
         maccor_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_w_diagnostic_metadata_memloaded.json")
         self.data_diag = pd.read_csv(maccor_fname, index_col=0)
-        self.data_diag_meta = load_json(maccor_meta_fname)
+        self.metadata_diag = load_json(maccor_meta_fname)
 
+        self.datapath_nodiag = BEEPDatapathChildTest(
+            raw_data=self.data_nodiag,
+            metadata=self.metadata_nodiag
+        )
+
+        self.datapath_diag = BEEPDatapathChildTest(
+            raw_data=self.data_diag,
+            metadata=self.metadata_nodiag
+        )
 
     # based on RCRT.test_serialization
     def test_serialization(self):
@@ -92,7 +101,72 @@ class TestBEEPDatapath(unittest.TestCase):
 
     # based on RCRT.test_get_interpolated_charge_step
     def test_interpolate_step(self):
-        pass
+        reg_cycles = [i for i in self.datapath_nodiag.raw_data.cycle_index.unique()]
+        v_range = [2.8, 3.5]
+        resolution = 1000
+
+        for step_type in ("charge", "discharge"):
+            interpolated_charge = self.datapath_nodiag.interpolate_step(
+                v_range,
+                resolution,
+                step_type=step_type,
+                reg_cycles=reg_cycles,
+                axis="test_time",
+            )
+            lengths = [len(df) for index, df in interpolated_charge.groupby("cycle_index")]
+            axis_1 = interpolated_charge[
+                interpolated_charge.cycle_index == 5
+            ].charge_capacity.to_list()
+            axis_2 = interpolated_charge[
+                interpolated_charge.cycle_index == 10
+            ].charge_capacity.to_list()
+            self.assertGreater(max(axis_1), max(axis_2))
+            self.assertTrue(np.all(np.array(lengths) == 1000))
+
+            if step_type == "charge":
+                self.assertTrue(interpolated_charge["current"].mean() > 0)
+            else:
+                self.assertTrue(interpolated_charge["current"].mean() < 0)
+
+    # based on RCRT.test_get_interpolated_discharge_cycles
+    def test_get_interpolated_discharge_cycles(self):
+        adpath = ArbinDatapath.from_file(self.good_file)
+        all_interpolated = adpath.interpolate_cycles()
+        all_interpolated = all_interpolated[
+            (all_interpolated.step_type == "discharge")]
+        lengths = [len(df) for index, df in
+                   all_interpolated.groupby("cycle_index")]
+        self.assertTrue(np.all(np.array(lengths) == 1000))
+
+        # Found these manually
+        all_interpolated = all_interpolated.drop(columns=["step_type"])
+        y_at_point = all_interpolated.iloc[[1500]]
+        x_at_point = all_interpolated.voltage[1500]
+        cycle_1 = adpath.raw_data[adpath.raw_data["cycle_index"] == 1]
+
+        # Discharge step is 12
+        discharge = cycle_1[cycle_1.step_index == 12]
+        discharge = discharge.sort_values("voltage")
+
+        # Get an interval between which one can find the interpolated value
+        measurement_index = np.max(
+            np.where(discharge.voltage - x_at_point < 0))
+        interval = discharge.iloc[measurement_index: measurement_index + 2]
+        interval = interval.drop(
+            columns=["date_time_iso"])  # Drop non-numeric column
+
+        # Test interpolation with a by-hand calculation of slope
+        diff = np.diff(interval, axis=0)
+        pred = interval.iloc[[0]] + diff * (
+                    x_at_point - interval.voltage.iloc[0]) / (
+                       interval.voltage.iloc[1] - interval.voltage.iloc[0]
+               )
+        pred = pred.reset_index()
+        for col_name in y_at_point.columns:
+            self.assertAlmostEqual(
+                pred[col_name].iloc[0], y_at_point[col_name].iloc[0],
+                places=2
+            )
 
     # based on RCRT.test_get_interpolated_discharge_cycles
     def test_interpolate_cycles(self):
@@ -107,27 +181,7 @@ class TestBEEPDatapath(unittest.TestCase):
     # # todo: ALEXTODO move to TestBEEPDatapath
     # # based on RCRT.test_get_interpolated_charge_step
     # def test_get_interpolated_charge_step(self):
-    #     dpath =
-    #     reg_cycles = [i for i in adpath.raw_data.cycle_index.unique()]
-    #     v_range = [2.8, 3.5]
-    #     resolution = 1000
-    #     interpolated_charge = adpath.interpolate_step(
-    #         v_range,
-    #         resolution,
-    #         step_type="charge",
-    #         reg_cycles=reg_cycles,
-    #         axis="test_time",
-    #     )
-    #     lengths = [len(df) for index, df in interpolated_charge.groupby("cycle_index")]
-    #     axis_1 = interpolated_charge[
-    #         interpolated_charge.cycle_index == 5
-    #     ].charge_capacity.to_list()
-    #     axis_2 = interpolated_charge[
-    #         interpolated_charge.cycle_index == 10
-    #     ].charge_capacity.to_list()
-    #     self.assertGreater(max(axis_1), max(axis_2))
-    #     self.assertTrue(np.all(np.array(lengths) == 1000))
-    #     self.assertTrue(interpolated_charge["current"].mean() > 0)
+
 
     # based on RCRT.test_interpolated_cycles_dtypes
     def test_interpolated_cycles_dtypes(self):
@@ -173,42 +227,6 @@ class TestArbinDatapath(unittest.TestCase):
 
     def test_from_file(self):
         ad = ArbinDatapath.from_file(self.good_file)
-
-
-    # todo: ALEXTODO move to TestBEEPDatapath
-    # based on RCRT.test_get_interpolated_discharge_cycles
-    def test_get_interpolated_discharge_cycles(self):
-        adpath = ArbinDatapath.from_file(self.good_file)
-        all_interpolated =adpath.interpolate_cycles()
-        all_interpolated = all_interpolated[(all_interpolated.step_type == "discharge")]
-        lengths = [len(df) for index, df in all_interpolated.groupby("cycle_index")]
-        self.assertTrue(np.all(np.array(lengths) == 1000))
-
-        # Found these manually
-        all_interpolated = all_interpolated.drop(columns=["step_type"])
-        y_at_point = all_interpolated.iloc[[1500]]
-        x_at_point = all_interpolated.voltage[1500]
-        cycle_1 = adpath.raw_data[adpath.raw_data["cycle_index"] == 1]
-
-        # Discharge step is 12
-        discharge = cycle_1[cycle_1.step_index == 12]
-        discharge = discharge.sort_values("voltage")
-
-        # Get an interval between which one can find the interpolated value
-        measurement_index = np.max(np.where(discharge.voltage - x_at_point < 0))
-        interval = discharge.iloc[measurement_index : measurement_index + 2]
-        interval = interval.drop(columns=["date_time_iso"])  # Drop non-numeric column
-
-        # Test interpolation with a by-hand calculation of slope
-        diff = np.diff(interval, axis=0)
-        pred = interval.iloc[[0]] + diff * (x_at_point - interval.voltage.iloc[0]) / (
-            interval.voltage.iloc[1] - interval.voltage.iloc[0]
-        )
-        pred = pred.reset_index()
-        for col_name in y_at_point.columns:
-            self.assertAlmostEqual(
-                pred[col_name].iloc[0], y_at_point[col_name].iloc[0], places=2
-            )
 
 
 class TestMaccorDatapath(unittest.TestCase):

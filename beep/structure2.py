@@ -139,6 +139,12 @@ class BEEPDatapath(abc.ABC):
         Returns:
             pandas.DataFrame: DataFrame corresponding to interpolated values.
         """
+
+        if not desc:
+            desc = \
+                f"Interpolating {step_type} ({v_range[0]} - {v_range[1]})V " \
+                f"(resolution {resolution})"
+
         if step_type == "discharge":
             step_filter = step_is_dchg
         elif step_type == "charge":
@@ -268,7 +274,6 @@ class BEEPDatapath(abc.ABC):
             step_type="discharge",
             reg_cycles=reg_cycles,
             axis=discharge_axis,
-            desc="interpolating discharge cycles"
         )
         interpolated_charge = self.interpolate_step(
             v_range,
@@ -276,7 +281,6 @@ class BEEPDatapath(abc.ABC):
             step_type="charge",
             reg_cycles=reg_cycles,
             axis=charge_axis,
-            desc="interpolating charge cycles"
         )
         result = pd.concat(
             [interpolated_discharge, interpolated_charge], ignore_index=True
