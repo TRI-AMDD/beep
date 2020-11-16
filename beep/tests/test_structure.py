@@ -129,31 +129,31 @@ class TestBEEPDatapath(unittest.TestCase):
                 self.assertTrue(interpolated_charge["current"].mean() < 0)
 
     # based on RCRT.test_get_interpolated_discharge_cycles
-    def test_get_interpolated_discharge_cycles(self):
-        adpath = ArbinDatapath.from_file(self.good_file)
-        all_interpolated = adpath.interpolate_cycles()
-        all_interpolated = all_interpolated[
-            (all_interpolated.step_type == "discharge")]
-        lengths = [len(df) for index, df in
-                   all_interpolated.groupby("cycle_index")]
+    # based on RCRT.test_get_interpolated_charge_cycles
+    def test_interpolate_cycles(self):
+        dp = self.datapath_nodiag
+        all_interpolated = dp.interpolate_cycles()
+
+
+        # Test discharge cycles
+        dchg = all_interpolated[(all_interpolated.step_type == "discharge")]
+        lengths = [len(df) for index, df in dchg.groupby("cycle_index")]
         self.assertTrue(np.all(np.array(lengths) == 1000))
 
         # Found these manually
-        all_interpolated = all_interpolated.drop(columns=["step_type"])
-        y_at_point = all_interpolated.iloc[[1500]]
-        x_at_point = all_interpolated.voltage[1500]
-        cycle_1 = adpath.raw_data[adpath.raw_data["cycle_index"] == 1]
+        dchg = dchg.drop(columns=["step_type"])
+        y_at_point = dchg.iloc[[1500]]
+        x_at_point = dchg.voltage[1500]
+        cycle_1 = dp.raw_data[dp.raw_data["cycle_index"] == 1]
 
         # Discharge step is 12
         discharge = cycle_1[cycle_1.step_index == 12]
         discharge = discharge.sort_values("voltage")
 
         # Get an interval between which one can find the interpolated value
-        measurement_index = np.max(
-            np.where(discharge.voltage - x_at_point < 0))
+        measurement_index = np.max(np.where(discharge.voltage - x_at_point < 0))
         interval = discharge.iloc[measurement_index: measurement_index + 2]
-        interval = interval.drop(
-            columns=["date_time_iso"])  # Drop non-numeric column
+        interval = interval.drop(columns=["date_time_iso"])  # Drop non-numeric column
 
         # Test interpolation with a by-hand calculation of slope
         diff = np.diff(interval, axis=0)
@@ -168,19 +168,14 @@ class TestBEEPDatapath(unittest.TestCase):
                 places=2
             )
 
-    # based on RCRT.test_get_interpolated_discharge_cycles
-    def test_interpolate_cycles(self):
-        pass
-
-    # todo: ALEXTODO merge this with the discharge_cycles method
-    # based on RCRT.test_get_interpolated_charge_cycles
-    def test_get_interpolated_charge_cycles(self):
-        pass
-
-
-    # # todo: ALEXTODO move to TestBEEPDatapath
-    # # based on RCRT.test_get_interpolated_charge_step
-    # def test_get_interpolated_charge_step(self):
+        # Test charge cycles
+        chg = all_interpolated[(all_interpolated.step_type == "charge")]
+        lengths = [len(df) for index, df in chg.groupby("cycle_index")]
+        axis_1 = chg[chg.cycle_index == 5].charge_capacity.to_list()
+        axis_2 = chg[chg.cycle_index == 10].charge_capacity.to_list()
+        self.assertEqual(axis_1, axis_2)
+        self.assertTrue(np.all(np.array(lengths) == 1000))
+        self.assertTrue(chg["current"].mean() > 0)
 
 
     # based on RCRT.test_interpolated_cycles_dtypes

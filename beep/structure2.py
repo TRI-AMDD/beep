@@ -143,7 +143,7 @@ class BEEPDatapath(abc.ABC):
         if not desc:
             desc = \
                 f"Interpolating {step_type} ({v_range[0]} - {v_range[1]})V " \
-                f"(resolution {resolution})"
+                f"({resolution} points)"
 
         if step_type == "discharge":
             step_filter = step_is_dchg
