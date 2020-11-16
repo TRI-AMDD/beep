@@ -55,8 +55,13 @@ class BEEPDatapathChildTest(BEEPDatapath):
     A test class representing any child of BEEPDatapath.
     """
     @classmethod
-    def from_file(self, path, index_col=0, **kwargs):
+    def from_file(cls, path, index_col=0, **kwargs):
         return pd.read_csv(path, index_col=0, **kwargs)
+
+
+def load_json(fname):
+    with open(fname, "r") as f:
+        return json.load(f)
 
 class TestBEEPDatapath(unittest.TestCase):
     """
@@ -64,9 +69,18 @@ class TestBEEPDatapath(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        # todo: use arbin memloaded df as truth df
-        input_fname = os.path.join(TEST_FILE_DIR, "df_arbin_memloaded.csv")
-        self.input_df = pd.read_csv(input_fname, index_col=0)
+        # Use arbin memloaded inputs as source of non-diagnostic truth
+        arbin_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_arbin_memloaded.csv")
+        arbin_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_arbin_metadata_memloaded.json")
+        self.data_nodiag = pd.read_csv(arbin_fname, index_col=0)
+        self.data_nodiag_meta = load_json(arbin_meta_fname)
+
+        # Use maccor memloaded inputs as source of diagnostic truth
+        maccor_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_w_diagnostic_memloaded.csv")
+        maccor_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_w_diagnostic_metadata_memloaded.json")
+        self.data_diag = pd.read_csv(maccor_fname, index_col=0)
+        self.data_diag_meta = load_json(maccor_meta_fname)
+
 
     # based on RCRT.test_serialization
     def test_serialization(self):
@@ -90,30 +104,30 @@ class TestBEEPDatapath(unittest.TestCase):
         pass
 
 
-    # todo: ALEXTODO move to TestBEEPDatapath
-    # based on RCRT.test_get_interpolated_charge_step
-    def test_get_interpolated_charge_step(self):
-        dpath =
-        reg_cycles = [i for i in adpath.raw_data.cycle_index.unique()]
-        v_range = [2.8, 3.5]
-        resolution = 1000
-        interpolated_charge = adpath.interpolate_step(
-            v_range,
-            resolution,
-            step_type="charge",
-            reg_cycles=reg_cycles,
-            axis="test_time",
-        )
-        lengths = [len(df) for index, df in interpolated_charge.groupby("cycle_index")]
-        axis_1 = interpolated_charge[
-            interpolated_charge.cycle_index == 5
-        ].charge_capacity.to_list()
-        axis_2 = interpolated_charge[
-            interpolated_charge.cycle_index == 10
-        ].charge_capacity.to_list()
-        self.assertGreater(max(axis_1), max(axis_2))
-        self.assertTrue(np.all(np.array(lengths) == 1000))
-        self.assertTrue(interpolated_charge["current"].mean() > 0)
+    # # todo: ALEXTODO move to TestBEEPDatapath
+    # # based on RCRT.test_get_interpolated_charge_step
+    # def test_get_interpolated_charge_step(self):
+    #     dpath =
+    #     reg_cycles = [i for i in adpath.raw_data.cycle_index.unique()]
+    #     v_range = [2.8, 3.5]
+    #     resolution = 1000
+    #     interpolated_charge = adpath.interpolate_step(
+    #         v_range,
+    #         resolution,
+    #         step_type="charge",
+    #         reg_cycles=reg_cycles,
+    #         axis="test_time",
+    #     )
+    #     lengths = [len(df) for index, df in interpolated_charge.groupby("cycle_index")]
+    #     axis_1 = interpolated_charge[
+    #         interpolated_charge.cycle_index == 5
+    #     ].charge_capacity.to_list()
+    #     axis_2 = interpolated_charge[
+    #         interpolated_charge.cycle_index == 10
+    #     ].charge_capacity.to_list()
+    #     self.assertGreater(max(axis_1), max(axis_2))
+    #     self.assertTrue(np.all(np.array(lengths) == 1000))
+    #     self.assertTrue(interpolated_charge["current"].mean() > 0)
 
     # based on RCRT.test_interpolated_cycles_dtypes
     def test_interpolated_cycles_dtypes(self):
