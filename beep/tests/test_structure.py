@@ -130,6 +130,7 @@ class TestBEEPDatapath(unittest.TestCase):
 
     # based on RCRT.test_get_interpolated_discharge_cycles
     # based on RCRT.test_get_interpolated_charge_cycles
+    # based on RCRT.test_interpolated_cycles_dtypes
     def test_interpolate_cycles(self):
         dp = self.datapath_nodiag
         all_interpolated = dp.interpolate_cycles()
@@ -177,9 +178,16 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertTrue(np.all(np.array(lengths) == 1000))
         self.assertTrue(chg["current"].mean() > 0)
 
-    # based on RCRT.test_interpolated_cycles_dtypes
-    def test_interpolated_cycles_dtypes(self):
-        pass
+
+        # Test dtypes
+        cycles_interpolated_dyptes = all_interpolated.dtypes.tolist()
+        cycles_interpolated_columns = all_interpolated.columns.tolist()
+        cycles_interpolated_dyptes = [str(dtyp) for dtyp in cycles_interpolated_dyptes]
+        for indx, col in enumerate(cycles_interpolated_columns):
+            self.assertEqual(
+                cycles_interpolated_dyptes[indx],
+                STRUCTURE_DTYPES["cycles_interpolated"][col],
+            )
 
     # based on RCRT.test_summary_dtypes
     def test_summary_dtypes(self):
