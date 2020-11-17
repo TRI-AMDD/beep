@@ -226,9 +226,30 @@ class TestBEEPDatapath(unittest.TestCase):
         pass
 
     # based on RCRT.test_get_summary
-    # though it is based on maccor files
-    def test_get_summary(self):
-        pass
+    def test_summarize_cycles(self):
+        summary = self.datapath_diag.summarize_cycles(nominal_capacity=4.7, full_fast_charge=0.8)
+        self.assertTrue(
+            set.issubset(
+                {
+                    "discharge_capacity",
+                    "charge_capacity",
+                    "dc_internal_resistance",
+                    "temperature_maximum",
+                    "temperature_average",
+                    "temperature_minimum",
+                    "date_time_iso",
+                    "charge_throughput",
+                    "energy_throughput",
+                    "charge_energy",
+                    "discharge_energy",
+                    "energy_efficiency",
+                },
+                set(summary.columns),
+            )
+        )
+        self.assertEqual(summary["cycle_index"].tolist(), list(range(0, 13)))
+        self.assertEqual(len(summary.index), len(summary["date_time_iso"]))
+        self.assertEqual(summary["paused"].max(), 0)
 
     # based on RCRT.test_get_energy
     def test_get_energy(self):
