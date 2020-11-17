@@ -44,6 +44,22 @@ VOLTAGE_RESOLUTION = 3
 
 class BEEPDatapath(abc.ABC):
 
+
+    FLOAT_COLUMNS = [
+        "test_time",
+        "current",
+        "voltage",
+        "charge_capacity",
+        "discharge_capacity",
+        "charge_energy",
+        "discharge_energy",
+        "internal_resistance",
+        "temperature",
+    ]
+    INT_COLUMNS = ["step_index", "cycle_index"]
+
+    IMPUTABLE_COLUMNS = ["temperature", "internal_resistance"]
+
     def __init__(self, raw_data, metadata, paths=None):
         self.raw_data = raw_data
         self.metadata = metadata
@@ -63,6 +79,37 @@ class BEEPDatapath(abc.ABC):
     @abc.abstractmethod
     def from_file(cls, path):
         raise NotImplementedError
+
+    @classmethod
+    def from_numpy(cls, name):
+        """
+        Load RawCyclerRun from numeric binary file
+
+        Args:
+            name (str): str prefix for numeric and metadata files
+
+        Returns:
+            beep_structure.RawCyclerRun loaded from binary files
+
+        """
+        loaded = np.load("{}.npz".format(name))
+        data = dict(zip(cls.FLOAT_COLUMNS, np.transpose(loaded["float_array"])))
+        data.update(dict(zip(cls.INT_COLUMNS, np.transpose(loaded["int_array"]))))
+        data = pd.DataFrame(data)
+        metadata = loadfn("{}.json".format(name))
+        return cls(data, metadata)
+
+    def to_numpy(self, name):
+        """
+        Save RawCyclerRun as a numeric array and metadata json
+
+        Args:
+            name (str): file prefix, saves to a .npz and .json file
+        """
+        float_array = np.array(self.raw_data[self.FLOAT_COLUMNS].astype(np.float64))
+        int_array = np.array(self.raw_data[self.INT_COLUMNS].astype(np.int64))
+        np.savez_compressed(name, float_array=float_array, int_array=int_array)
+        dumpfn(self.metadata, "{}.json".format(name))
 
     def validate(self):
         pass
@@ -664,6 +711,7 @@ class BEEPDatapath(abc.ABC):
         diag_summary = diag_summary.astype(STRUCTURE_DTYPES["diagnostic_summary"])
 
         return diag_summary
+
 
 
 class ArbinDatapath(BEEPDatapath):

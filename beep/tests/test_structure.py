@@ -58,11 +58,6 @@ class BEEPDatapathChildTest(BEEPDatapath):
     def from_file(cls, path, index_col=0, **kwargs):
         return pd.read_csv(path, index_col=0, **kwargs)
 
-
-def load_json(fname):
-    with open(fname, "r") as f:
-        return json.load(f)
-
 class TestBEEPDatapath(unittest.TestCase):
     """
     Tests common to all datapaths.
@@ -73,13 +68,13 @@ class TestBEEPDatapath(unittest.TestCase):
         arbin_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_arbin_memloaded.csv")
         arbin_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_arbin_metadata_memloaded.json")
         self.data_nodiag = pd.read_csv(arbin_fname, index_col=0)
-        self.metadata_nodiag = load_json(arbin_meta_fname)
+        self.metadata_nodiag = loadfn(arbin_meta_fname)
 
         # Use maccor memloaded inputs as source of diagnostic truth
         maccor_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_w_diagnostic_memloaded.csv")
         maccor_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_w_diagnostic_metadata_memloaded.json")
         self.data_diag = pd.read_csv(maccor_fname, index_col=0)
-        self.metadata_diag = load_json(maccor_meta_fname)
+        self.metadata_diag = loadfn(maccor_meta_fname)
 
         self.datapath_nodiag = BEEPDatapathChildTest(
             raw_data=self.data_nodiag,
@@ -96,8 +91,39 @@ class TestBEEPDatapath(unittest.TestCase):
         pass
 
     # based on RCRT.test_binary_save
-    def test_binary_save(self):
-        pass
+    def test_tofrom_numpy(self):
+        with ScratchDir("."):
+            self.datapath_nodiag.to_numpy("test")
+            loaded = BEEPDatapathChildTest.from_numpy("test")
+
+        # Test equivalence of columns
+        # More strict test
+        self.assertTrue(
+            np.all(
+                loaded.raw_data[BEEPDatapathChildTest.FLOAT_COLUMNS]
+                == self.datapath_nodiag.raw_data[BEEPDatapathChildTest.FLOAT_COLUMNS]
+            )
+        )
+        self.assertTrue(
+            np.all(
+                loaded.raw_data[BEEPDatapathChildTest.INT_COLUMNS]
+                == self.datapath_nodiag.raw_data[BEEPDatapathChildTest.INT_COLUMNS]
+            )
+        )
+
+        # Looser test (for future size testing)
+        self.assertTrue(
+            np.allclose(
+                loaded.raw_data[BEEPDatapathChildTest.FLOAT_COLUMNS],
+                self.datapath_nodiag.raw_data[BEEPDatapathChildTest.FLOAT_COLUMNS],
+            )
+        )
+        self.assertTrue(
+            np.all(
+                loaded.raw_data[BEEPDatapathChildTest.INT_COLUMNS]
+                == self.datapath_nodiag.raw_data[BEEPDatapathChildTest.INT_COLUMNS]
+            )
+        )
 
     # based on RCRT.test_get_interpolated_charge_step
     def test_interpolate_step(self):
@@ -155,6 +181,7 @@ class TestBEEPDatapath(unittest.TestCase):
         measurement_index = np.max(np.where(discharge.voltage - x_at_point < 0))
         interval = discharge.iloc[measurement_index: measurement_index + 2]
         interval = interval.drop(columns=["date_time_iso"])  # Drop non-numeric column
+
 
         # Test interpolation with a by-hand calculation of slope
         diff = np.diff(interval, axis=0)
