@@ -1,5 +1,10 @@
 
 
+v2020.11.19.15
+--------------
+* expose parameters_path in features and dataset classes - Thanks to Chirru Gopal
+* add seq_num to dataset.data attribute
+
 v2020.11.5.13
 -------------
 * Introduce fix for insufficient length in order to interpolate
