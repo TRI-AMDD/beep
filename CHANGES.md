@@ -1,5 +1,11 @@
 
 
+v2020.11.19.16
+--------------
+* add index for list of dicts key comparison
+* Clean up comments and labels
+* Adding charging features to the diagnostic summary stats class
+
 v2020.11.19.15
 --------------
 * expose parameters_path in features and dataset classes - Thanks to Chirru Gopal
