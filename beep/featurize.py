@@ -719,14 +719,10 @@ class DiagnosticSummaryStats(BeepFeatures):
                  start_list[params_dict["cycle_comp_num"][0]]:
                  start_list[params_dict["cycle_comp_num"][0]] + params_dict["Q_seg"]]
         QcDiff = [a_i - b_i for a_i, b_i in zip(Qc100_1, Qc10_1)]
-        QcDiff = [elem for elem in QcDiff if (math.isnan(elem) == False)]
+        QcDiff = [elem for elem in QcDiff if (math.isnan(elem) is False)]
 
         X[0] = np.log10(np.absolute(np.var(QcDiff)))
-        labels.append("abs_variance_discharge_capacity_difference_cycles_2:100")
-
         X[1] = np.log10(np.absolute(min(QcDiff)))
-        labels.append("abs_min_discharge_capacity_difference_cycles_2:100")
-
         X[2] = np.log10(np.absolute(np.mean(QcDiff)))
         X[3] = np.log10(np.absolute(skew(QcDiff)))
         X[4] = np.log10(np.absolute(kurtosis(QcDiff, fisher=False, bias=False)))
