@@ -232,7 +232,7 @@ class BeepDataset(MSONable):
                         hyperparameter_dict[feature_class.class_feature_name] = None
                 # if the provided hyperparameter dictionary has the wrong keys, raise error
                 elif set(FEATURE_HYPERPARAMS[feature_class.class_feature_name.keys()]) != \
-                        set(hyperparameter_dict[feature_class.class_feature_name].keys()):
+                        set(hyperparameter_dict[feature_class.class_feature_name][0].keys()):
                     raise ValueError('Invalid hyperparameter dictionary for' +
                                      feature_class.class_feature_name)
 
