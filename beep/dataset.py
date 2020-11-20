@@ -75,7 +75,7 @@ class BeepDataset(MSONable):
 
     """
 
-    def __init__(self, name, data, metadata, filenames, feature_sets, dataset_dir, missing=None):
+    def __init__(self, name, data, metadata, filenames, feature_sets, dataset_dir='data-share/datasets', missing=None):
 
         """
         Invokes BeepDataset object
@@ -118,7 +118,9 @@ class BeepDataset(MSONable):
             "data": self.data.to_dict("list"),
             "metadata": self.metadata,
             "filenames": self.filenames,
-            "feature_sets": self.feature_sets
+            "dataset_dir": self.dataset_dir,
+            "feature_sets": self.feature_sets,
+            "missing": self.missing.to_dict("list")
         }
         return obj
 
@@ -126,6 +128,7 @@ class BeepDataset(MSONable):
     def from_dict(cls, d):
         """MSONable deserialization method"""
         d["data"] = pd.DataFrame(d["data"])
+        d["missing"] = pd.DataFrame(d["missing"])
         return cls(**d)
 
     @classmethod

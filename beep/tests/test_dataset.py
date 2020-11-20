@@ -15,16 +15,15 @@
 
 import unittest
 import os
-import json
-import numpy as np
 from beep.featurize import (
     RPTdQdVFeatures,
     HPPCResistanceVoltageFeatures,
     DiagnosticSummaryStats,
 )
+from beep import MODULE_DIR
 from beep.dataset import BeepDataset
 from monty.tempfile import ScratchDir
-
+from monty.serialization import dumpfn, loadfn
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 DIAGNOSTIC_PROCESSED = os.path.join(TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json")
@@ -33,7 +32,9 @@ FASTCHARGE_PROCESSED = os.path.join(TEST_FILE_DIR, '2017-06-30_2C-10per_6C_CH10_
 BIG_FILE_TESTS = os.environ.get("BEEP_BIG_TESTS", False)
 SKIP_MSG = "Tests requiring large files with diagnostic cycles are disabled, set BIG_FILE_TESTS to run full tests"
 FEATURIZER_CLASSES = [RPTdQdVFeatures, HPPCResistanceVoltageFeatures, DiagnosticSummaryStats]
-
+FEATURE_HYPERPARAMS = loadfn(
+    os.path.join(MODULE_DIR, "features/feature_hyperparameters.yaml")
+)
 
 class TestDataset(unittest.TestCase):
     def setUp(self):
@@ -49,6 +50,22 @@ class TestDataset(unittest.TestCase):
         self.assertIsNone(dataset.X_test)
         self.assertSetEqual(set(dataset.feature_sets.keys()), {'RPTdQdVFeatures', 'DiagnosticSummaryStats'})
         self.assertEqual(dataset.missing.feature_class.iloc[0], 'HPPCResistanceVoltageFeatures')
+
+    def test_serialization(self):
+        with ScratchDir("."):
+            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
+            dataset = BeepDataset.from_features('test_dataset', ['PreDiag'], FEATURIZER_CLASSES,
+                                            feature_dir=os.path.join(TEST_FILE_DIR, 'data-share/features'))
+            dumpfn(dataset, 'temp_dataset.json')
+            dataset = loadfn('temp_dataset.json')
+            self.assertEqual(dataset.name, 'test_dataset')
+            self.assertEqual(dataset.data.shape, (2, 56))
+            # from pdb import set_trace; set_trace()
+            self.assertListEqual(list(dataset.data.seq_num), [196, 197])
+            self.assertIsNone(dataset.X_test)
+            self.assertSetEqual(set(dataset.feature_sets.keys()), {'RPTdQdVFeatures', 'DiagnosticSummaryStats'})
+            self.assertEqual(dataset.missing.feature_class.iloc[0], 'HPPCResistanceVoltageFeatures')
+
 
     def test_from_processed_cycler_run_list(self):
         with ScratchDir("."):
@@ -66,6 +83,34 @@ class TestDataset(unittest.TestCase):
             self.assertIsNone(dataset.X_test)
 
             self.assertEqual(dataset.missing.shape, (3, 2))
+            self.assertEqual(dataset.missing.filename.iloc[0],
+                             os.path.split(FASTCHARGE_PROCESSED)[1])
+
+    def test_dataset_with_custom_feature_hyperparameters(self):
+        with ScratchDir("."):
+            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
+            hyperparameter_dict = {'RPTdQdVFeatures': [
+                {'diag_ref': 0, 'diag_nr': 1, 'charge_y_n': 1, 'rpt_type': 'rpt_0.2C', 'plotting_y_n': 0},
+                {'diag_ref': 0, 'diag_nr': 1, 'charge_y_n': 1, 'rpt_type': 'rpt_1C', 'plotting_y_n': 0},
+                {'diag_ref': 0, 'diag_nr': 1, 'charge_y_n': 1, 'rpt_type': 'rpt_2C', 'plotting_y_n': 0}],
+                                   'HPPCResistanceVoltageFeatures': [
+                                       FEATURE_HYPERPARAMS['HPPCResistanceVoltageFeatures']],
+                                   'DiagnosticSummaryStats': [FEATURE_HYPERPARAMS['DiagnosticSummaryStats']]
+                                   }
+            dataset = BeepDataset.from_processed_cycler_runs('test_dataset',
+                                                             project_list=None,
+                                                             processed_run_list=[DIAGNOSTIC_PROCESSED,
+                                                                                 FASTCHARGE_PROCESSED],
+                                                             feature_class_list=FEATURIZER_CLASSES,
+                                                             processed_dir=TEST_FILE_DIR,
+                                                             hyperparameter_dict=hyperparameter_dict,
+                                                             feature_dir='data-share/features')
+            self.assertEqual(dataset.name, 'test_dataset')
+            self.assertEqual(dataset.data.shape, (1, 141))
+            self.assertEqual(dataset.data.seq_num.iloc[0], 240)
+            self.assertIsNone(dataset.X_test)
+
+            self.assertEqual(dataset.missing.shape, (5, 2))
             self.assertEqual(dataset.missing.filename.iloc[0],
                              os.path.split(FASTCHARGE_PROCESSED)[1])
 
