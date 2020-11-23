@@ -44,7 +44,6 @@ VOLTAGE_RESOLUTION = 3
 
 class BEEPDatapath(abc.ABC):
 
-
     FLOAT_COLUMNS = [
         "test_time",
         "current",

@@ -259,6 +259,19 @@ class TestBEEPDatapath(unittest.TestCase):
     def test_get_charge_throughput(self):
         pass
 
+    # todo: move this into it's own testing in beep.utils?
+    # based on RCRT.test_get_protocol_parameters
+    def test_get_protocol_parameters(self):
+        pass
+
+    # todo: move this into beep.utils testing
+    # based on RCRT.test_get_project_name
+    def test_get_project_name(self):
+        pass
+
+    # based on RCRT.test_determine_structering_parameters
+    def test_determine_structering_parameters(self):
+        pass
 
 
 class TestArbinDatapath(unittest.TestCase):
@@ -274,7 +287,6 @@ class TestArbinDatapath(unittest.TestCase):
             TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29.csv"
         )
 
-
     def test_from_file(self):
         ad = ArbinDatapath.from_file(self.good_file)
 
@@ -283,6 +295,11 @@ class TestMaccorDatapath(unittest.TestCase):
     """
     Tests specific to Maccor cyclers.
     """
+
+
+    # based on RCRT.test_waveform_charge_discharge_capacity
+    def test_waveform_charge_discharge_capacity(self):
+        pass
 
     # based on RCRT.test_ingestion_maccor
     def test_ingestion_maccor(self):
@@ -733,7 +750,7 @@ class RawCyclerRunTest(unittest.TestCase):
         for indx, col in enumerate(reg_columns):
             self.assertEqual(reg_dyptes[indx], STRUCTURE_DTYPES["summary"][col])
 
-    @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
+    # @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_get_diagnostic(self):
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
 
