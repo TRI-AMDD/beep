@@ -50,6 +50,24 @@ TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 from beep.structure2 import ArbinDatapath, BEEPDatapath
 
 
+# todo: Dont fit anywhere/ need to be integrated list
+#  - test_from_raw_cycler_run_arbin
+#  - test_from_raw_cycler_run_maccor
+#  - test_from_raw_cycler_run_neware
+#  - test_get_protocol_parameters  (move to beep.utils)
+#  - test_get_project_name (move to beep.utils)
+#  - test_get_diagnostic_parameters (move to beep.utils)
+#  - test_json_processing
+#  - test_auto_load
+
+
+
+# todo: methods of BDP that need explicit tests
+#  - structure
+#  - validate
+
+
+
 class BEEPDatapathChildTest(BEEPDatapath):
     """
     A test class representing any child of BEEPDatapath.
@@ -259,19 +277,40 @@ class TestBEEPDatapath(unittest.TestCase):
     def test_get_charge_throughput(self):
         pass
 
-    # todo: move this into it's own testing in beep.utils?
-    # based on RCRT.test_get_protocol_parameters
-    def test_get_protocol_parameters(self):
-        pass
-
-    # todo: move this into beep.utils testing
-    # based on RCRT.test_get_project_name
-    def test_get_project_name(self):
-        pass
-
     # based on RCRT.test_determine_structering_parameters
     def test_determine_structering_parameters(self):
         pass
+
+    # based on RCRT.test_get_interpolated_diagnostic_cycles
+    def test_get_interpolated_diagnostic_cycles(self):
+        pass
+
+    # based on RCRT.test_get_diagnostic_summary
+    def test_get_diagnostic_summary(self):
+        pass
+
+    # based on RCRT.test_determine_paused
+    def test_determine_paused(self):
+        pass
+
+    # based on PCRT.test_from_raw_cycler_run_parameters
+    def test_from_raw_cycler_run_parameters(self):
+        pass
+
+    # based on PCRT.test_get_cycle_life
+    def test_get_cycle_life(self):
+        pass
+
+    # based on PCRT.test_cycles_to_reach_set_capacities
+    def test_cycles_to_reach_set_capacities(self):
+        pass
+
+    # based on PCRT.test_capacities_at_set_cycles
+    def test_capacities_at_set_cycles(self):
+        pass
+
+
+
 
 
 class TestArbinDatapath(unittest.TestCase):
@@ -289,6 +328,10 @@ class TestArbinDatapath(unittest.TestCase):
 
     def test_from_file(self):
         ad = ArbinDatapath.from_file(self.good_file)
+
+    # based on PCRT.test_from_arbin_insufficient_interpolation_length
+    def test_from_arbin_insufficient_interpolation_length(self):
+        pass
 
 
 class TestMaccorDatapath(unittest.TestCase):
@@ -325,10 +368,15 @@ class TestMaccorDatapath(unittest.TestCase):
     def test_get_interpolated_waveform_discharge_cycles(self):
         pass
 
-
     # based on RCRT.test_get_interpolated_cycles_maccor
     def test_get_interpolated_cycles_maccor(self):
         pass
+
+    # based on PCRT.test_from_maccor_insufficient_interpolation_length
+    def test_from_maccor_insufficient_interpolation_length(self):
+        pass
+
+    # todo: test EIS methods
 
 
 class TestIndigoDatapath(unittest.TestCase):
