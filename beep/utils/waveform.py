@@ -87,7 +87,7 @@ class RapidChargeWave:
 
     def get_input_currents_both_to_final_soc(self, charging_c_rates):
         """
-        Helper function shift the charging rates for the smooth current to ensure that both the multistep and
+        Function to shift the charging rates for the smooth current to ensure that both the multistep and
         smooth charging functions reach the end in the same length of time.
 
         Args:
@@ -121,6 +121,17 @@ class RapidChargeWave:
         return current_smooth_time_adjusted, time_smooth_time_adjusted, current_multistep, time_multistep
 
     def offset_value(self, offset_test, *data):
+        """
+        Helper function shift the charging rates for the smooth current to ensure that both the multistep and
+        smooth charging functions reach the end in the same length of time.
+
+        Args:
+            offset_test (float): Amount to shift all of the c rates in the smooth curve
+            data (*args): ending time to hit, baseline charging rates to add to
+
+        returns
+        float: difference between the desired ending time and the actual ending time for the smooth curve
+        """
         time_end_multistep, charging_c_rates = data
         soc_vector = np.linspace(self.soc_i, self.soc_f, self.soc_points)
         return time_end_multistep - self.shift_smooth_by_offset(offset_test,
