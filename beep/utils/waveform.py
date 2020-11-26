@@ -86,6 +86,20 @@ class RapidChargeWave:
         self.soc_points = 1000
 
     def get_input_currents_both_to_final_soc(self, charging_c_rates):
+        """
+        Helper function shift the charging rates for the smooth current to ensure that both the multistep and
+        smooth charging functions reach the end in the same length of time.
+
+        Args:
+            charging_c_rates (list): c-rates for each of the charging steps. Each step is assumed to be an equal
+                SOC portion of the charge, and the length of the list just needs to be at least 1
+
+        returns
+        np.array: array with the adjusted smooth current as a function of soc
+        np.array: array with the corresponding time values
+        np.array: array with the multistep current as a function of soc
+        np.array: array with the corresponding time values
+        """
 
         current_multistep, soc_vector = self.get_input_current_multistep_soc_as_x(charging_c_rates)
 
@@ -111,7 +125,6 @@ class RapidChargeWave:
         soc_vector = np.linspace(self.soc_i, self.soc_f, self.soc_points)
         return time_end_multistep - self.shift_smooth_by_offset(offset_test,
                                                                 charging_c_rates)[0][soc_vector >= self.soc_f][0]
-
 
     def get_input_current_multistep_soc_as_x(self, charging_c_rates):
         """
@@ -160,29 +173,20 @@ class RapidChargeWave:
         mesh_points = np.linspace(self.soc_i, self.soc_f, len(charging_c_rates) + 1)
         mesh_points_mid = mesh_points
         mesh_points_mid[0:-1] += 1 / (len(mesh_points_mid)) * 0.5
-        # mesh_points_mid[-1] = mesh_points_mid[-1] * 1.01
 
-        mesh_points_mid = list([self.soc_i]) + list(mesh_points_mid) + list([self.soc_f*1.01])
-        # mesh_points_mid = np.array(mesh_points_mid)
+        mesh_points_mid = list([self.soc_i]) + list(mesh_points_mid) + list([self.soc_f * 1.01])
+        mesh_points_mid = np.array(mesh_points_mid)
 
         charging_c_rate_start = self.final_c_rate
-
-        interpolator = interpolate.PchipInterpolator(
-            mesh_points_mid,
-            [charging_c_rate_start] + charging_c_rates + [self.final_c_rate] + [self.final_c_rate],
-            axis=0,
-            extrapolate=0)
+        rates = np.array([charging_c_rate_start] + charging_c_rates + [self.final_c_rate] + [self.final_c_rate])
+        interpolator = interpolate.PchipInterpolator(mesh_points_mid, rates, axis=0, extrapolate=0)
 
         charging_c_rate_soc1_end = interpolator.__call__(mesh_points[1])
 
         charging_c_rate_start = np.max(
             [charging_c_rates[0] - (charging_c_rate_soc1_end - charging_c_rates[0]), self.final_c_rate])
-
-        interpolator = interpolate.PchipInterpolator(
-            mesh_points_mid,
-            [charging_c_rate_start] + charging_c_rates + [self.final_c_rate] + [self.final_c_rate],
-            axis=0,
-            extrapolate=0)
+        rates = np.array([charging_c_rate_start] + charging_c_rates + [self.final_c_rate] + [self.final_c_rate])
+        interpolator = interpolate.PchipInterpolator(mesh_points_mid, rates, axis=0, extrapolate=0)
 
         input_current = interpolator.__call__(soc_vector)
         input_current = np.nan_to_num(input_current, copy=False, nan=0)
@@ -211,7 +215,17 @@ class RapidChargeWave:
 
         return time_smooth_shifted, current_smooth_shifted
 
+    @staticmethod
+    def get_time_vector_from_c_vs_soc(soc_vector, current_soc_as_x):
+        """
+        Helper function to convert the soc vector to a time vector with the same datapoints
 
-    def get_time_vector_from_c_vs_soc(self, soc_vector, curent_soc_as_x):
-        time_vector = np.cumsum((1 / curent_soc_as_x) * np.gradient(soc_vector)) * 3600
+        Args:
+            soc_vector (np.array): numpy array with
+            current_soc_as_x (np.array): c-rates for all of the soc values
+
+        returns
+        np.array: array with the time corresponding to each of the current points
+        """
+        time_vector = np.cumsum((1 / current_soc_as_x) * np.gradient(soc_vector)) * 3600
         return time_vector
