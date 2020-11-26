@@ -157,11 +157,13 @@ class RapidChargeWave:
         for i, elem in enumerate(mesh_points[0:-1]):
             soc1 = mesh_points[i]
             soc2 = mesh_points[i + 1]
-            c_rate_i[i] = charging_c_rates[i] * np.heaviside(soc_vector - soc1, 0.5) * np.heaviside(soc2 - soc_vector, 0.5)
+            c_rate_i[i] = charging_c_rates[i] * np.heaviside(soc_vector - soc1, 0.5) * \
+                np.heaviside(soc2 - soc_vector, 0.5)
 
             multistep_current_raw = sum(c_rate_i)
 
-        c_rate_end = self.final_c_rate * np.heaviside(soc_vector - soc2, 0.5) * np.heaviside(self.soc_f - soc_vector, 0.5)
+        c_rate_end = self.final_c_rate * np.heaviside(soc_vector - soc2, 0.5) * \
+            np.heaviside(self.soc_f - soc_vector, 0.5)
 
         multistep_current = multistep_current_raw + c_rate_end
 
