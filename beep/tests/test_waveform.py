@@ -1,0 +1,83 @@
+# Copyright [2020] [Toyota Research Institute]
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Unit tests related to generating waveform files"""
+
+import os
+import unittest
+import json
+import numpy as np
+import datetime
+import shutil
+from copy import deepcopy
+
+import pandas as pd
+from beep.protocol import (
+    PROCEDURE_TEMPLATE_DIR,
+    SCHEDULE_TEMPLATE_DIR,
+    BIOLOGIC_TEMPLATE_DIR,
+)
+from beep.generate_protocol import generate_protocol_files_from_csv
+from beep.utils.waveform import convert_velocity_to_power_waveform, RapidChargeWave
+import matplotlib.pyplot as plt
+
+TEST_DIR = os.path.dirname(__file__)
+TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
+
+class ChargeWaveformTest(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_get_input_current_soc_as_x(self):
+        charging_c_rates = [0.7, 1.8, 1.5, 1.0]
+        above_80p_c_rate = 0.5
+        soc_initial = 0.05
+        soc_final = 0.8
+
+        charging = RapidChargeWave(charging_c_rates, above_80p_c_rate, soc_initial, soc_final)
+
+        current_multistep_soc_as_x, soc_vector = charging.get_input_current_multistep_soc_as_x()
+        self.assertEqual(np.round(np.mean(current_multistep_soc_as_x), 6), np.round(1.2492750000000001, 6))
+        self.assertEqual(np.round(np.median(current_multistep_soc_as_x), 6), np.round(1.25, 6))
+
+        current_smooth_soc_as_x, soc_vector = charging.get_input_current_smooth_soc_as_x()
+        self.assertEqual(np.round(np.mean(current_smooth_soc_as_x), 6), np.round(1.224568, 6))
+        self.assertEqual(np.round(np.median(current_smooth_soc_as_x), 6), np.round(1.297537, 6))
+
+        plt.plot(soc_vector, current_smooth_soc_as_x)
+        plt.plot(soc_vector, current_multistep_soc_as_x, linestyle='--')
+        plt.xlim(0, 1.05)
+        plt.ylim(0, 3)
+        plt.xlabel('SOC')
+        plt.ylabel('C rate [h$^{-1}$]')
+        plt.legend(['Smooth', 'Multistep CC', 'CC'])
+        plt.savefig(os.path.join(TEST_FILE_DIR, "soc_rapid_charge.png"))
+
+    def test_get_input_current_time_as_x(self):
+        charging_c_rates = [0.7, 1.8, 1.5, 1.0]
+        above_80p_c_rate = 0.5
+        soc_initial = 0.05
+        soc_final = 0.8
+
+        charging = RapidChargeWave(charging_c_rates, above_80p_c_rate, soc_initial, soc_final)
+
+        current_smooth, time_smooth, current_multistep, time_multistep = charging.get_input_currents_both_to_final_soc()
+
+        plt.plot(time_smooth, current_smooth)
+        plt.plot(time_multistep, current_multistep, linestyle='--')
+        # plt.xlim(0, 1.05)
+        plt.ylim(0, 3)
+        plt.xlabel('SOC')
+        plt.ylabel('C rate [h$^{-1}$]')
+        plt.legend(['Smooth', 'Multistep CC', 'CC'])
+        plt.savefig(os.path.join(TEST_FILE_DIR, "time_rapid_charge.png"))
