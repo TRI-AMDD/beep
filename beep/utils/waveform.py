@@ -92,19 +92,14 @@ class RapidChargeWave:
         time_multistep = self.get_time_vector_from_c_vs_soc(soc_vector, current_multistep)
         end_soc_time = time_multistep[soc_vector >= self.soc_f][0]
 
-        # time_diff_80p = lambda offset: time_multistep[soc_vector >= self.soc_f][0] - \
-        #     self.shift_smooth_by_offset(offset)[0][soc_vector >= self.soc_f][0]
-
         offset_solved = fsolve(self.offset_value,
                                0.01,
                                maxfev=1000,
                                factor=0.1,
                                epsfcn=0.01,
                                args=(end_soc_time, charging_c_rates))
-        print(offset_solved)
 
         charging_c_rates = list(np.add(charging_c_rates, offset_solved))
-        print(charging_c_rates)
 
         current_smooth_time_adjusted, soc_vector = self.get_input_current_smooth_soc_as_x(charging_c_rates)
         time_smooth_time_adjusted = self.get_time_vector_from_c_vs_soc(soc_vector, current_smooth_time_adjusted)
