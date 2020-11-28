@@ -120,3 +120,28 @@ class ChargeWaveformTest(unittest.TestCase):
         plt.ylabel('C rate [h$^{-1}$]')
         plt.legend(['Smooth', 'Multistep CC'])
         plt.savefig(os.path.join(TEST_FILE_DIR, "rapid_charge_matching.png"))
+
+    def test_get_input_current_uniform_time(self):
+        charging_c_rates = [0.7, 1.8, 1.5, 1.0]
+        above_80p_c_rate = 0.5
+        soc_initial = 0.05
+        soc_final = 0.8
+
+        charging = RapidChargeWave(above_80p_c_rate, soc_initial, soc_final)
+        current_smooth, current_multi, time_uniform = charging.get_currents_with_uniform_time_basis(charging_c_rates)
+        soc_smooth = np.sum(current_smooth) / 3600
+        soc_multistep = np.sum(current_multi) / 3600
+        self.assertEqual(np.round(soc_smooth + soc_initial, 2), soc_final)
+        self.assertEqual(np.round(soc_multistep + soc_initial, 2), soc_final)
+        self.assertTrue(np.all(np.diff(time_uniform) == 1))
+
+        plt.figure()
+        plt.plot(time_uniform, current_smooth)
+        plt.plot(time_uniform, current_multi, linestyle='--')
+
+        plt.ylim(0, 3)
+        plt.xlabel('Time [sec]')
+        plt.ylabel('C rate [h$^{-1}$]')
+        plt.legend(['Smooth', 'Multistep CC'])
+        plt.savefig(os.path.join(TEST_FILE_DIR, "rapid_charge_uniform.png"))
+

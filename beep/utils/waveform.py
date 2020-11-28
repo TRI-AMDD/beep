@@ -85,6 +85,44 @@ class RapidChargeWave:
         self.soc_f = soc_final
         self.soc_points = 1000
 
+    def get_currents_with_uniform_time_basis(self, charging_c_rates):
+        """
+        Function to re-interpolate all of the current values to a uniform time basis, with each time step 1 sec
+
+        Args:
+            charging_c_rates (list): c-rates for each of the charging steps. Each step is assumed to be an equal
+                SOC portion of the charge, and the length of the list just needs to be at least 1
+
+        returns
+        np.array: array with the adjusted smooth current as a function of uniform time basis
+        np.array: array with the multistep current as a function of the uniform time basis
+        np.array: array with the corresponding uniformly spaced time values
+        """
+        current_smooth, time_smooth, current_multistep, time_multistep = \
+            self.get_input_currents_both_to_final_soc(charging_c_rates)
+        end_time_smooth = np.int(np.round(np.max(time_smooth), 0))
+        end_time_multistep = np.int(np.round(np.max(time_multistep), 0))
+        assert end_time_smooth == end_time_multistep
+
+        time_uniform = np.arange(0, end_time_smooth, 1)
+        smooth_fill = (current_smooth[0], current_smooth[-1])
+
+        interpolate_smooth = interpolate.interp1d(time_smooth,
+                                                  current_smooth,
+                                                  bounds_error=False,
+                                                  fill_value=smooth_fill)
+        current_smooth_uniform = interpolate_smooth(time_uniform)
+
+        multistep_fill = (current_multistep[0], current_multistep[-1])
+        interpolate_multistep = interpolate.interp1d(time_multistep,
+                                                     current_multistep,
+                                                     bounds_error=False,
+                                                     fill_value=multistep_fill
+                                                     )
+        current_multistep_uniform = interpolate_multistep(time_uniform)
+
+        return current_smooth_uniform, current_multistep_uniform, time_uniform
+
     def get_input_currents_both_to_final_soc(self, charging_c_rates):
         """
         Function to shift the charging rates for the smooth current to ensure that both the multistep and
