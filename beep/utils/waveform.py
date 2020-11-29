@@ -63,7 +63,7 @@ def convert_velocity_to_power_waveform(waveform_file, velocity_units):
 class RapidChargeWave:
     """
        Object to produce charging waveforms, with direct comparison between stepwise and
-       smooth charging waveforms.
+       smooth charging waveforms. Algorithms written by Patrick Asinger.
 
     """
     def __init__(self,
@@ -73,8 +73,6 @@ class RapidChargeWave:
                  ):
         """
         Args:
-            charging_c_rates (list): c-rates for each of the charging steps. Each step is assumed to be an equal
-                SOC portion of the charge, and the length of the list just needs to be at least 1
             above_80p_c_rate (float): charging rate for the final step
             soc_initial (float): estimated starting soc for the fast charging portion of the cycle
             soc_final (float): estimated soc to end the fast charging portion of the cycle

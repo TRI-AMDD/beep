@@ -28,7 +28,7 @@ from beep.protocol import (
     BIOLOGIC_TEMPLATE_DIR,
 )
 from beep.generate_protocol import generate_protocol_files_from_csv
-from beep.utils.waveform import convert_velocity_to_power_waveform
+from beep.utils.waveform import convert_velocity_to_power_waveform, RapidChargeWave
 from beep.protocol.maccor import Procedure, \
     generate_maccor_waveform_file, insert_driving_parametersv1
 from beep.protocol.arbin import Schedule
@@ -282,6 +282,74 @@ class ProcedureTest(unittest.TestCase):
                 os.path.join(scratch_dir, waveform_name + ".MWF"),
                 os.path.join(TEST_FILE_DIR, waveform_name + ".MWF"),
             )
+
+    def test_generate_maccor_waveform_from_current(self):
+        charging_c_rates = [0.7, 1.8, 1.5, 1.0]
+        above_80p_c_rate = 0.5
+        soc_initial = 0.05
+        soc_final = 0.8
+        nominal_capacity = 4.84
+
+        mwf_config = {
+            "control_mode": "I",
+            "value_scale": 1,
+            "charge_limit_mode": "V",
+            "charge_limit_value": 4.2,
+            "discharge_limit_mode": "V",
+            "discharge_limit_value": 2.7,
+            "charge_end_mode": "V",
+            "charge_end_operation": ">=",
+            "charge_end_mode_value": 4.25,
+            "discharge_end_mode": "V",
+            "discharge_end_operation": "<=",
+            "discharge_end_mode_value": 2.5,
+            "report_mode": "T",
+            "report_value": 3.0000,
+            "range": "A",
+        }
+        with ScratchDir(".") as scratch_dir:
+            waveform_name = "smooth_current_test"
+            charging = RapidChargeWave(above_80p_c_rate, soc_initial, soc_final)
+            current_smooth, current_multi, time = charging.get_currents_with_uniform_time_basis(charging_c_rates)
+            df_smooth = pd.DataFrame({"current": current_smooth, "time": time})
+            mwf_config["value_scale"] = nominal_capacity * max(df_smooth["current"])
+
+            generate_maccor_waveform_file(
+                df_smooth,
+                waveform_name,
+                scratch_dir,
+                mwf_config=mwf_config
+            )
+
+            df_mwf = pd.read_csv(
+                os.path.join(scratch_dir, waveform_name + '.MWF'),
+                sep="\t",
+                header=None,
+            )
+            self.assertTrue(np.all(df_mwf.iloc[:, [1, ]] == 'I'))
+            self.assertGreater(df_mwf.loc[:, 2].max(), nominal_capacity * max(charging_c_rates))
+            self.assertEqual(len(df_mwf), 2467)
+
+            waveform_name = "multistep_current_test"
+            charging = RapidChargeWave(above_80p_c_rate, soc_initial, soc_final)
+            current_smooth, current_multi, time = charging.get_currents_with_uniform_time_basis(charging_c_rates)
+            df_smooth = pd.DataFrame({"current": current_multi, "time": time})
+            mwf_config["value_scale"] = nominal_capacity * max(df_smooth["current"])
+
+            generate_maccor_waveform_file(
+                df_smooth,
+                waveform_name,
+                scratch_dir,
+                mwf_config=mwf_config
+            )
+            df_mwf = pd.read_csv(
+                os.path.join(scratch_dir, waveform_name + '.MWF'),
+                sep="\t",
+                header=None,
+            )
+            self.assertTrue(np.all(df_mwf.iloc[:, [1, ]] == 'I'))
+            self.assertGreaterEqual(df_mwf.loc[:, 2].max(), nominal_capacity * max(charging_c_rates))
+            self.assertEqual(len(df_mwf), 19)
 
 
 class GenerateProcedureTest(unittest.TestCase):

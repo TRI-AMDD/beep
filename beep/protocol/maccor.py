@@ -1289,21 +1289,35 @@ def generate_maccor_waveform_file(df, file_prefix, file_directory, mwf_config=No
     if mwf_config is None:
         mwf_config = MACCOR_WAVEFORM_CONFIG
 
-    df["power"] = df["power"] / max(abs(df["power"])) * mwf_config["value_scale"]
+    if "power" in df.columns:
+        df["power"] = df["power"] / max(abs(df["power"])) * mwf_config["value_scale"]
+        df["step_counter"] = df["power"].diff().fillna(0).ne(0).cumsum()
+        df = df.groupby("step_counter").agg({"time": "count", "power": "first"})
 
-    df["step_counter"] = df["power"].diff().fillna(0).ne(0).cumsum()
-    df = df.groupby("step_counter").agg({"time": "count", "power": "first"})
+        df.rename(columns={"time": "duration"}, inplace=True)
 
-    df.rename(columns={"time": "duration"}, inplace=True)
+        df["control_mode"] = mwf_config["control_mode"]
 
-    df["control_mode"] = mwf_config["control_mode"]
+        if mwf_config["control_mode"] == "P":
+            df.loc[df["power"] == 0, "control_mode"] = "I"
 
-    if mwf_config["control_mode"] == "P":
-        df.loc[df["power"] == 0, "control_mode"] = "I"
+        df["value"] = np.round(abs(df["power"]), 5)
 
-    df["value"] = np.round(abs(df["power"]), 5)
+        mask = df["power"] <= 0
 
-    mask = df["power"] <= 0
+    elif "current" in df.columns:
+        df["current"] = df["current"] / max(abs(df["current"])) * mwf_config["value_scale"]
+        df["step_counter"] = df["current"].diff().fillna(0).ne(0).cumsum()
+        df = df.groupby("step_counter").agg({"time": "count", "current": "first"})
+
+        df.rename(columns={"time": "duration"}, inplace=True)
+
+        df["control_mode"] = mwf_config["control_mode"]
+
+        df["value"] = np.round(abs(df["current"]), 5)
+
+        mask = df["current"] <= 0
+
     df = df.assign(
         **{
             "state": "C",
