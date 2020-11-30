@@ -813,6 +813,8 @@ class GenerateProcedureTest(unittest.TestCase):
             self.assertEqual(lines[2033], "      <StepType>FastWave</StepType>\n")
             self.assertEqual(lines[2035], "      <StepValue>RapidC_smooth_100</StepValue>\n")
 
+            parsed.close()
+
     def test_console_script(self):
         csv_file = os.path.join(TEST_FILE_DIR, "parameter_test.csv")
 
