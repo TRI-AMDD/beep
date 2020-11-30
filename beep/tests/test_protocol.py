@@ -30,7 +30,7 @@ from beep.protocol import (
 from beep.generate_protocol import generate_protocol_files_from_csv
 from beep.utils.waveform import convert_velocity_to_power_waveform, RapidChargeWave
 from beep.protocol.maccor import Procedure, \
-    generate_maccor_waveform_file, insert_driving_parametersv1
+    generate_maccor_waveform_file, insert_driving_parametersv1, insert_charging_parametersv1
 from beep.protocol.arbin import Schedule
 from beep.protocol.biologic import Settings
 from beep.protocol.maccor_to_arbin import ProcedureToSchedule
@@ -184,7 +184,7 @@ class ProcedureTest(unittest.TestCase):
             "MaccorTestProcedure.ProcSteps.TestStep.9.Ends.EndEntry.0.Step", "011"
         )
 
-        procedure = procedure.insert_maccor_waveform_discharge(6, maccor_waveform_file)
+        procedure = procedure.insert_maccor_waveform(6, maccor_waveform_file)
         for step in procedure["MaccorTestProcedure"]["ProcSteps"]["TestStep"]:
             print(step["Ends"])
             if step["StepType"] in ["Charge", "Dischrge", "Rest"]:
@@ -475,8 +475,8 @@ class GenerateProcedureTest(unittest.TestCase):
         print(procedure["MaccorTestProcedure"]["ProcSteps"]["TestStep"][32])
         print(procedure["MaccorTestProcedure"]["ProcSteps"]["TestStep"][64])
 
-        procedure.insert_maccor_waveform_discharge(32, maccor_waveform_file)
-        procedure.insert_maccor_waveform_discharge(64, maccor_waveform_file)
+        procedure.insert_maccor_waveform(32, maccor_waveform_file)
+        procedure.insert_maccor_waveform(64, maccor_waveform_file)
         self.assertEqual(
             procedure["MaccorTestProcedure"]["ProcSteps"]["TestStep"][32]["StepType"],
             "FastWave",
@@ -714,6 +714,104 @@ class GenerateProcedureTest(unittest.TestCase):
         self.assertEqual(
             len(os.listdir(os.path.join(TEST_FILE_DIR, "procedures"))), 265
         )
+
+    def test_charging_waveform_from_csv(self):
+        csv_file = os.path.join(TEST_FILE_DIR,
+                                "data-share",
+                                "raw",
+                                "parameters",
+                                "RapidC_parameters - GP.csv")
+        protocol_params_df = pd.read_csv(csv_file)
+
+        with ScratchDir(".") as scratch_dir:
+            reg_params = protocol_params_df.iloc[1]
+            output_directory = scratch_dir
+
+            file_name = insert_charging_parametersv1(reg_params,
+                                                     waveform_directory=output_directory,
+                                                     voltage_limit_offset=0.01,
+                                                     max_c_rate=3.0)
+            self.assertTrue(os.path.isfile(os.path.join(output_directory, file_name)))
+            self.assertEqual(os.path.split(file_name)[1], "RapidC_step_101.MWF")
+
+    def test_charging_protocol_with_waveform(self):
+        csv_file = os.path.join(TEST_FILE_DIR,
+                                "data-share",
+                                "raw",
+                                "parameters",
+                                "RapidC_parameters - GP.csv")
+        protocol_params_df = pd.read_csv(csv_file)
+
+        successfully_generated_files = []
+        file_generation_failures = []
+        names = []
+        result = ""
+        message = {"comment": "", "error": ""}
+        with ScratchDir(".") as scratch_dir:
+            output_directory = scratch_dir
+            os.makedirs(os.path.join(output_directory, "procedures"))
+            for index, protocol_params in protocol_params_df.iterrows():
+                template = protocol_params["template"]
+                filename_prefix = "_".join(
+                    [
+                        protocol_params["project_name"],
+                        "{:06d}".format(protocol_params["seq_num"]),
+                    ]
+                )
+                if template in ["diagnosticV3.000", "diagnosticV4.000"]:
+                    diag_params_df = pd.read_csv(
+                        os.path.join(PROCEDURE_TEMPLATE_DIR, "PreDiag_parameters - DP.csv")
+                    )
+                    diagnostic_params = diag_params_df[
+                        diag_params_df["diagnostic_parameter_set"]
+                        == protocol_params["diagnostic_parameter_set"]
+                        ].squeeze()
+                    template_fullpath = os.path.join(PROCEDURE_TEMPLATE_DIR, template)
+                    if protocol_params["project_name"] == "RapidC":
+                        mwf_dir = os.path.join(output_directory, "mwf_files")
+                        waveform_name = insert_charging_parametersv1(protocol_params,
+                                                                     waveform_directory=mwf_dir)
+                        protocol = Procedure.generate_procedure_chargingv1(index,
+                                                                           protocol_params,
+                                                                           waveform_name,
+                                                                           template=template_fullpath)
+                    else:
+                        print("Test did not recognize project name correctly")
+                        raise NotImplementedError
+
+                    protocol.generate_procedure_diagcyclev3(
+                        protocol_params["capacity_nominal"], diagnostic_params
+                    )
+                    filename = "{}.000".format(filename_prefix)
+                    filename = os.path.join(output_directory, "procedures", filename)
+
+                if not os.path.isfile(filename):
+                    protocol.to_file(filename)
+                    successfully_generated_files.append(filename)
+                    names.append(filename_prefix + "_")
+
+                # Reference mwf file generated by the cycler for the same power waveform.
+                df_mwf = pd.read_csv(
+                    waveform_name,
+                    sep="\t",
+                    header=None,
+                )
+                self.assertTrue(np.all(df_mwf.iloc[:, [1, ]] == 'I'))
+                self.assertEqual(df_mwf.loc[:, 4].max(), protocol_params["charge_cutoff_voltage"] - 0.01)
+                # self.assertEqual(len(df_mwf), 19)
+
+            self.assertTrue(os.path.isfile(filename))
+            self.assertEqual(len(os.listdir(mwf_dir)), 2)
+
+            parsed = open(
+                os.path.join(scratch_dir, "procedures", "RapidC_000100.000")
+            )
+
+            lines = parsed.readlines()
+            self.assertEqual(lines[972], "      <StepType>FastWave</StepType>\n")
+            self.assertEqual(lines[974], "      <StepValue>RapidC_smooth_100</StepValue>\n")
+            self.assertEqual(lines[2033], "      <StepType>FastWave</StepType>\n")
+            self.assertEqual(lines[2035], "      <StepValue>RapidC_smooth_100</StepValue>\n")
 
     def test_console_script(self):
         csv_file = os.path.join(TEST_FILE_DIR, "parameter_test.csv")
