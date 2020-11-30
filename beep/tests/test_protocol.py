@@ -798,7 +798,7 @@ class GenerateProcedureTest(unittest.TestCase):
                 )
                 self.assertTrue(np.all(df_mwf.iloc[:, [1, ]] == 'I'))
                 self.assertEqual(df_mwf.loc[:, 4].max(), protocol_params["charge_cutoff_voltage"] - 0.01)
-                # self.assertEqual(len(df_mwf), 19)
+                self.assertEqual(df_mwf.loc[:, 4].min(), protocol_params["charge_cutoff_voltage"] - 0.01)
 
             self.assertTrue(os.path.isfile(filename))
             self.assertEqual(len(os.listdir(mwf_dir)), 2)
@@ -850,6 +850,27 @@ class GenerateProcedureTest(unittest.TestCase):
             json_input = json.dumps({"file_list": [csv_file]})
             os.system("generate_protocol {}".format(os_format(json_input)))
             self.assertEqual(len(os.listdir(procedures_path)), 36)
+
+    def test_console_script_3(self):
+        csv_file = os.path.join(TEST_FILE_DIR,
+                                "data-share",
+                                "raw",
+                                "parameters",
+                                "RapidC_parameters - GP.csv")
+
+        # Test script functionality
+        with ScratchDir(".") as scratch_dir:
+            # Set BEEP_PROCESSING_DIR directory to scratch_dir
+            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
+            procedures_path = os.path.join("data-share", "protocols", "procedures")
+            names_path = os.path.join("data-share", "protocols", "names")
+            makedirs_p(procedures_path)
+            makedirs_p(names_path)
+
+            # Test the script
+            json_input = json.dumps({"file_list": [csv_file]})
+            os.system("generate_protocol {}".format(os_format(json_input)))
+            self.assertEqual(len(os.listdir(procedures_path)), 2)
 
 
 class ProcedureToScheduleTest(unittest.TestCase):
