@@ -106,7 +106,7 @@ class TestDataset(unittest.TestCase):
                                                              hyperparameter_dict=hyperparameter_dict,
                                                              feature_dir='data-share/features')
             self.assertEqual(dataset.name, 'test_dataset')
-            self.assertEqual(dataset.data.shape, (1, 141))
+            self.assertEqual(dataset.data.shape, (1, 135))
             self.assertEqual(dataset.data.seq_num.iloc[0], 240)
             self.assertIsNone(dataset.X_test)
 
