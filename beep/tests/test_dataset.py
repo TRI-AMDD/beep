@@ -90,9 +90,9 @@ class TestDataset(unittest.TestCase):
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
             hyperparameter_dict = {'RPTdQdVFeatures': [
-                {'diag_ref': 0, 'diag_nr': 1, 'charge_y_n': 1, 'rpt_type': 'rpt_0.2C', 'plotting_y_n': 0},
-                {'diag_ref': 0, 'diag_nr': 1, 'charge_y_n': 1, 'rpt_type': 'rpt_1C', 'plotting_y_n': 0},
-                {'diag_ref': 0, 'diag_nr': 1, 'charge_y_n': 1, 'rpt_type': 'rpt_2C', 'plotting_y_n': 0}],
+                {'diag_ref': 0, 'diag_nr': 1, 'charge_y_n': 0, 'rpt_type': 'rpt_0.2C', 'plotting_y_n': 0},
+                {'diag_ref': 0, 'diag_nr': 1, 'charge_y_n': 0, 'rpt_type': 'rpt_1C', 'plotting_y_n': 0},
+                {'diag_ref': 0, 'diag_nr': 1, 'charge_y_n': 0, 'rpt_type': 'rpt_2C', 'plotting_y_n': 0}],
                                    'HPPCResistanceVoltageFeatures': [
                                        FEATURE_HYPERPARAMS['HPPCResistanceVoltageFeatures']],
                                    'DiagnosticSummaryStats': [FEATURE_HYPERPARAMS['DiagnosticSummaryStats']]
