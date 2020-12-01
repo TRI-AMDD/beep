@@ -70,17 +70,20 @@ class RapidChargeWave:
                  above_80p_c_rate,
                  soc_initial,
                  soc_final,
+                 max_c_rate,
                  ):
         """
         Args:
             above_80p_c_rate (float): charging rate for the final step
             soc_initial (float): estimated starting soc for the fast charging portion of the cycle
             soc_final (float): estimated soc to end the fast charging portion of the cycle
+            max_c_rate (float): maximum charging rate for the beginning of charge
 
         """
         self.final_c_rate = above_80p_c_rate
         self.soc_i = soc_initial
         self.soc_f = soc_final
+        self.max_c_rate = max_c_rate
         self.soc_points = 1000
 
     def get_currents_with_uniform_time_basis(self, charging_c_rates):
@@ -233,7 +236,8 @@ class RapidChargeWave:
         charging_c_rate_soc1_end = interpolator.__call__(mesh_points[1])
 
         charging_c_rate_start = np.max(
-            [charging_c_rates[0] - (charging_c_rate_soc1_end - charging_c_rates[0]), self.final_c_rate])
+            [charging_c_rates[0] - (charging_c_rate_soc1_end - charging_c_rates[0]), charging_c_rates[0]])
+        charging_c_rate_start = np.min([self.max_c_rate, charging_c_rate_start])
         rates = np.array([charging_c_rate_start] + charging_c_rates + [self.final_c_rate] + [self.final_c_rate])
         interpolator = interpolate.PchipInterpolator(mesh_points_mid, rates, axis=0, extrapolate=0)
 

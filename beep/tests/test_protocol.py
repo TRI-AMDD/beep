@@ -288,6 +288,7 @@ class ProcedureTest(unittest.TestCase):
         above_80p_c_rate = 0.5
         soc_initial = 0.05
         soc_final = 0.8
+        max_c_rate = 3.0
         nominal_capacity = 4.84
 
         mwf_config = {
@@ -309,7 +310,7 @@ class ProcedureTest(unittest.TestCase):
         }
         with ScratchDir(".") as scratch_dir:
             waveform_name = "smooth_current_test"
-            charging = RapidChargeWave(above_80p_c_rate, soc_initial, soc_final)
+            charging = RapidChargeWave(above_80p_c_rate, soc_initial, soc_final, max_c_rate)
             current_smooth, current_multi, time = charging.get_currents_with_uniform_time_basis(charging_c_rates)
             df_smooth = pd.DataFrame({"current": current_smooth, "time": time})
             mwf_config["value_scale"] = nominal_capacity * max(df_smooth["current"])
@@ -328,10 +329,10 @@ class ProcedureTest(unittest.TestCase):
             )
             self.assertTrue(np.all(df_mwf.iloc[:, [1, ]] == 'I'))
             self.assertGreater(df_mwf.loc[:, 2].max(), nominal_capacity * max(charging_c_rates))
-            self.assertEqual(len(df_mwf), 2467)
+            self.assertEqual(len(df_mwf), 1969)
 
             waveform_name = "multistep_current_test"
-            charging = RapidChargeWave(above_80p_c_rate, soc_initial, soc_final)
+            charging = RapidChargeWave(above_80p_c_rate, soc_initial, soc_final, max_c_rate)
             current_smooth, current_multi, time = charging.get_currents_with_uniform_time_basis(charging_c_rates)
             df_smooth = pd.DataFrame({"current": current_multi, "time": time})
             mwf_config["value_scale"] = nominal_capacity * max(df_smooth["current"])

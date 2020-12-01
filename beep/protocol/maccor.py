@@ -1408,7 +1408,7 @@ def insert_charging_parametersv1(reg_params, waveform_directory=None, max_c_rate
     soc_final = reg_params["charge_percent_limit_1"] / 100
     charging_c_rates = [reg_params["charge_current_param_1"], reg_params["charge_current_param_2"],
                         reg_params["charge_current_param_3"], reg_params["charge_current_param_4"]]
-    charging = RapidChargeWave(above_80p_c_rate, soc_initial, soc_final)
+    charging = RapidChargeWave(above_80p_c_rate, soc_initial, soc_final, max_c_rate)
     current_smooth, current_step, time_uniform = charging.get_currents_with_uniform_time_basis(charging_c_rates)
 
     assert np.max(current_smooth) <= max_c_rate, "Maximum c-rate exceeded during smooth charge, abort"
