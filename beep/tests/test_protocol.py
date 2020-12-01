@@ -729,7 +729,6 @@ class GenerateProcedureTest(unittest.TestCase):
 
             file_name = insert_charging_parametersv1(reg_params,
                                                      waveform_directory=output_directory,
-                                                     voltage_limit_offset=0.01,
                                                      max_c_rate=3.0)
             self.assertTrue(os.path.isfile(os.path.join(output_directory, file_name)))
             self.assertEqual(os.path.split(file_name)[1], "RapidC_step_101.MWF")

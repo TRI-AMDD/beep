@@ -710,13 +710,17 @@ class Procedure(DashOrderedDict):
             protocol_index (int): number of the protocol file being
                 generated from this file.
             reg_param (pandas.DataFrame): containing the following quantities
-
-                charge_percent_limit_1 (float): % of nominal capacity
-                charge_constant_current_2 (float): C
+                charge_type_1 (str): {'smooth', 'step'} type of charging waveform
+                charge_start_soc_1 (float): assumed starting soc for the charge
+                charge_current_param_1 (float): c-rate for first charging window
+                charge_current_param_2 (float): c-rate for second charging window
+                charge_current_param_3 (float): c-rate for third charging window
+                charge_current_param_4 (float): c-rate for fourth charging window
+                charge_percent_limit_1 (float): % of nominal capacity to end fast charging
+                charge_constant_current_2 (float): c-rate for final charging segment
                 charge_cutoff_voltage (float): V
                 charge_constant_voltage_time (integer): mins
                 charge_rest_time (integer): mins
-                discharge_profile (str): {'US06', 'LA4', '9Lap'}
                 profile_charge_limit (float): upper limit voltage for the profile
                 max_profile_power (float): maximum power setpoint during the profile
                 n_repeats (int): number of repetitions for the profile
@@ -1362,23 +1366,24 @@ def insert_driving_parametersv1(reg_params, waveform_directory=None):
     return file_path
 
 
-def insert_charging_parametersv1(reg_params, waveform_directory=None, voltage_limit_offset=0.01, max_c_rate=3.0):
+def insert_charging_parametersv1(reg_params, waveform_directory=None, max_c_rate=3.0):
     """
+    This function generates the waveform file for rapid charging. The charging windows are
+    equally divide up the soc window (defined by charge_start_soc_1 to charge_percent_limit_1)
+
     Args:
         reg_params (pandas.DataFrame): containing the following quantities
-            charge_type_1 (str): {'smooth', 'step'}
-            charge_current_param_1 (float): charge c-rate for first 20%
-            charge_current_param_2 (float): charge c-rate for 20% to 40%
-            charge_current_param_3 (float): charge c-rate for 40% to 60%
-            charge_current_param_4 (float): charge c-rate for 60% to 80%
-            charge_percent_limit_1 (float): fraction for the fast charge portion
-            charge_constant_current_2 (float): charge c-rate for final charge portion
-            capacity_nominal (float): expected capacity of cell for c-rate calculations
+            charge_type_1 (str): {'smooth', 'step'} type of charging waveform
+            charge_start_soc_1 (float): assumed starting soc for the charge
+            charge_current_param_1 (float): c-rate for first charging window
+            charge_current_param_2 (float): c-rate for second charging window
+            charge_current_param_3 (float): c-rate for third charging window
+            charge_current_param_4 (float): c-rate for fourth charging window
+            charge_percent_limit_1 (float): % of nominal capacity to end fast charging
+            charge_constant_current_2 (float): c-rate for final charging segment
             charge_cutoff_voltage (float): upper voltage limit for the charge
+            capacity_nominal (float): expected capacity of cell for c-rate calculations
         waveform_directory (str): path to save waveform files
-        voltage_limit_offset (float): amount to offset the limit so that if the cell enters the
-            final charge at the voltage limit for the waveform, it does not immediately skip to
-            the constant voltage portion of the charge
         max_c_rate (float): maximum charging c-rate for safety and cycler limits
     """
     mwf_config = {
@@ -1399,7 +1404,7 @@ def insert_charging_parametersv1(reg_params, waveform_directory=None, voltage_li
         "range": "A",
     }
     above_80p_c_rate = reg_params["charge_constant_current_2"]
-    soc_initial = 0.05
+    soc_initial = reg_params["charge_start_percent_1"] / 100
     soc_final = reg_params["charge_percent_limit_1"] / 100
     charging_c_rates = [reg_params["charge_current_param_1"], reg_params["charge_current_param_2"],
                         reg_params["charge_current_param_3"], reg_params["charge_current_param_4"]]
@@ -1420,7 +1425,7 @@ def insert_charging_parametersv1(reg_params, waveform_directory=None, voltage_li
         os.makedirs(waveform_directory)
 
     mwf_config["value_scale"] = reg_params["capacity_nominal"] * max(df_charge["current"])
-    mwf_config["charge_limit_value"] = reg_params["charge_cutoff_voltage"] - voltage_limit_offset
+    mwf_config["charge_limit_value"] = reg_params["charge_cutoff_voltage"] - reg_params["charge_voltage_offset_1"]
 
     waveform_name = "{}_{}_{}".format(reg_params["project_name"], reg_params["charge_type_1"], reg_params["seq_num"])
     assert len(waveform_name) < 25, "Waveform name is too long"
