@@ -339,6 +339,87 @@ class BeepDataset(MSONable):
         return self.dataset_dir
 
 
+def get_threshold_targets(dataset_diagnostic_properties,
+                          cycle_type_target="rpt_1C",
+                          basis="discharge_energy",
+                          threshold=0.80,
+                          filter_kinks=None,
+                          extrapolate_threshold=True):
+    """
+    Method to generate a
+
+    Args:
+        processed_dir (dict): target directory.
+
+    Returns:
+         Path to serialized dataset
+
+    """
+    threshold_values_df_list = []
+    # Only use the target cycle type and basis for calculation
+    cycle_type_target_df = dataset_diagnostic_properties[dataset_diagnostic_properties.cycle_type == cycle_type_target]
+    cycle_type_target_df = cycle_type_target_df[cycle_type_target_df['metric'] == basis]
+
+    for indx, run in enumerate(dataset_diagnostic_properties['file'].unique()):
+        # Look at one run at a time
+        run_target_df = cycle_type_target_df[cycle_type_target_df['file'] == run]
+
+        # Filter to truncate data from cells that have a sudden drop in the fractional metric (something wrong with the test)
+        if filter_kinks and np.any(run_target_df['fractional_metric'].diff().diff() < filter_kinks):
+            last_good_cycle = run_target_df[run_target_df['fractional_metric'].diff().diff() < filter_kinks][
+                'cycle_index'].min()
+            #         print(last_good_cycle)
+            run_target_df = run_target_df[run_target_df['cycle_index'] < last_good_cycle]
+
+        x_throughput_axis = run_target_df['normalized_regular_throughput']
+        x_cycle_axis = run_target_df['cycle_index']
+        y_interpolation_axis = run_target_df['fractional_metric']
+
+        # Logic around how to deal with cells that have not crossed the threshold
+        if run_target_df['fractional_metric'].min() > threshold and not extrapolate_threshold:
+            print(run)
+            continue
+        elif run_target_df['fractional_metric'].min() > threshold and extrapolate_threshold:
+            fill_value = "extrapolate"
+            bounds_error = False
+            x_throughput_linspace = np.linspace(x_throughput_axis.min(), 2 * x_throughput_axis.max(), num=1000)
+            x_cycle_linspace = np.linspace(x_cycle_axis.min(), 2 * x_cycle_axis.max(), num=1000)
+        else:
+            fill_value = np.nan
+            bounds_error = True
+            x_throughput_linspace = np.linspace(x_throughput_axis.min(), x_throughput_axis.max(), num=1000)
+            x_cycle_linspace = np.linspace(x_cycle_axis.min(), x_cycle_axis.max(), num=1000)
+
+        f_throughput = interpolate.interp1d(x_throughput_axis, y_interpolation_axis, kind='linear',
+                                            bounds_error=bounds_error, fill_value=fill_value)
+        f_cycle = interpolate.interp1d(x_cycle_axis, y_interpolation_axis, kind='linear', bounds_error=bounds_error,
+                                       fill_value=fill_value)
+
+        throughput_crossing_array = abs(f_throughput(x_throughput_linspace) - threshold)
+        cycle_crossing_array = abs(f_cycle(x_cycle_linspace) - threshold)
+        throughput_to_threshold = x_throughput_linspace[np.argmin(throughput_crossing_array)]
+        cycles_to_threshold = x_cycle_linspace[np.argmin(cycle_crossing_array)]
+
+        if ~(throughput_to_threshold > 0) or ~(cycles_to_threshold > 0):
+            print(run)
+            continue
+
+        real_throughput_to_threshold = throughput_to_threshold * run_target_df['initial_regular_throughput'].values[0]
+
+        threshold_dict = {
+            "file": [run],
+            "seq_num": [int(run.split("_")[1])],
+            'initial_regular_throughput': run_target_df['initial_regular_throughput'].values[0],
+            cycle_type_target + basis + str(threshold) + "_normalized_reg_throughput": [throughput_to_threshold],
+            cycle_type_target + basis + str(threshold) + "_real_reg_throughput": [real_throughput_to_threshold],
+            cycle_type_target + basis + str(threshold) + "_cycles": [cycles_to_threshold]
+        }
+
+        threshold_values_df_list.append(pd.DataFrame(threshold_dict))
+    threshold_targets_df = pd.concat(threshold_values_df_list)
+    threshold_targets_df.reset_index(drop=True, inplace=True)
+    return threshold_targets_df
+
 def get_parameter_dict(file_list, parameters_path):
     """
     Helper function to generate a dictionary with
