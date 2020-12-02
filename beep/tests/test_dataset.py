@@ -65,6 +65,7 @@ class TestDataset(unittest.TestCase):
             self.assertIsNone(dataset.X_test)
             self.assertSetEqual(set(dataset.feature_sets.keys()), {'RPTdQdVFeatures', 'DiagnosticSummaryStats'})
             self.assertEqual(dataset.missing.feature_class.iloc[0], 'HPPCResistanceVoltageFeatures')
+            self.assertIsInstance(dataset.filenames, list)
 
 
     def test_from_processed_cycler_run_list(self):

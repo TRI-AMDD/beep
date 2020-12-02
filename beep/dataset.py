@@ -129,6 +129,7 @@ class BeepDataset(MSONable):
         """MSONable deserialization method"""
         d["data"] = pd.DataFrame(d["data"])
         d["missing"] = pd.DataFrame(d["missing"])
+        d["filenames"] = list(d["filenames"])
         return cls(**d)
 
     @classmethod
