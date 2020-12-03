@@ -210,7 +210,7 @@ def generate_dQdV_peak_fits(
 
     Args:
         processed_cycler_run: processed_cycler_run (beep.structure.ProcessedCyclerRun)
-        diag_nr: if 1, takes dQdV of 1st RPT past the initial diagnostic, 0 (default) is initial dianostic
+        diag_nr: if 1, takes dQdV of 1st RPT past the initial diagnostic, 0 (default) is initial diagnostic
         charge_y_n: if 1 (default), takes charge dQdV, if 0, takes discharge dQdV
 
     Returns:
