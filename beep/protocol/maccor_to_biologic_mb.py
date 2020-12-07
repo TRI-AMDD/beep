@@ -57,3 +57,45 @@ class MaccorToBiologicMb:
             return "{:.3f}".format(num * 1e3), "mV"
         else:
             return "{:.3f}".format(num), "V"
+
+    def _convert_amps(self, val_str):
+        decimal_sig_figs = self._get_decimal_sig_figs(val_str)
+        num = float(val_str)
+
+        if num < 1e-9 or decimal_sig_figs > 12:
+            return "{:.3f}".format(num * 1e12), "pA"
+        if num < 1e-6 or decimal_sig_figs > 9:
+            return "{:.3f}".format(num * 1e9), "nA"
+        elif num < 1e-3 or decimal_sig_figs > 6:
+            return "{:.3f}".format(num * 1e6), "\N{Micro Sign}A"
+        elif num < 1 or decimal_sig_figs > 3:
+            return "{:.3f}".format(num * 1e3), "mA"
+        else:
+            return "{:.3f}".format(num), "A"
+            
+    def _convert_watts(self, val_str):
+        decimal_sig_figs = self._get_decimal_sig_figs(val_str)
+        num = float(val_str)
+
+        if num < 1e-3 or decimal_sig_figs > 6:
+            return "{:.3f}".format(num * 1e6), "\N{Micro Sign}W"
+        elif num < 1 or decimal_sig_figs > 3:
+            return "{:.3f}".format(num * 1e3), "mW"
+        else:
+            return "{:.3f}".format(num), "W"
+
+    def _convert_ohms(self, val_str):
+        decimal_sig_figs = self._get_decimal_sig_figs(val_str)
+        num = float(val_str)
+        print(decimal_sig_figs)
+
+        if num < 1e-3 or decimal_sig_figs > 6:
+            return "{:.3f}".format(num * 1e6), "\N{Micro Sign}Ohms"
+        elif num < 1 or decimal_sig_figs > 3:
+            return "{:.3f}".format(num * 1e3), "mOhms"
+        elif num < 1e3 or decimal_sig_figs > 0:
+            return "{:.3f}".format(num), "Ohms"
+        elif num < 1e6 or decimal_sig_figs > -3:
+            return "{:.3f}".format(num * 1e-3), "kOhms"
+        else:
+            return "{:.3f}".format(num * 1e-6), "MOhms"
