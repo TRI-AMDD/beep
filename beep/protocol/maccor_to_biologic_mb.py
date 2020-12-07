@@ -377,3 +377,71 @@ class MaccorToBiologicMb:
                 raise Exception("Unsupported ReportType", report_type)
 
         return new_seq
+
+
+    def _create_loop_seq(self, seq_num, seq_num_to_loop_to, num_loops):
+        loop_seq = self.blank_seq.copy()
+        loop_seq["Ns"] = seq_num
+        loop_seq["type"] = "Loop"
+        loop_seq["loop_repeat"] = num_loops
+        loop_seq["ctrl_seq"] = seq_num
+        loop_seq["lim1_seq"] = seq_num + 1
+        loop_seq["lim2_seq"] = seq_num + 1
+        loop_seq["lim3_seq"] = seq_num + 1
+        # automatically added to loops, semantically useless
+        loop_seq["Apply I/C"] = "C / N"
+        loop_seq["ctrl1_val"] = "100.000"
+
+        return loop_seq
+
+    """
+    creates the seqs that will act as an advance cycle step
+    when the Biologic cycle definition is set to loop
+    """
+    def _create_advance_cyle_seqs(self, seq_num):
+        # Biologic Maccord Bat does not support real Advance Cycle sequences
+        # however we can simulate them if the cycle definition is set to Loop
+        # which means that for every successful loop the cycle num advances
+        #
+        # we create an  "empty loop" seq that has the number of loops set to 0, this is immediately
+        # passed over whenever we reach it. Immediately following that empty loop, we create
+        # another loop that goes back to the empty loop exaclty once, this advances the cycle number
+
+        if seq_num == 0:
+            # the ctrl_seq field, (the seq we loop to) must be smaller the the Ns field (the seq num)
+            # but also a non-negative integer this is not posssible if the seq num is 0
+            raise Exception(
+                "Biologic does not support advancing cycle number at step 1/seq 0"
+            )
+
+        blank_loop_seq = self._create_loop_seq(seq_num, 0, 0)
+        adv_cycle_loop_seq = self._create_loop_seq(seq_num + 1, seq_num, 1)
+
+        return blank_loop_seq, adv_cycle_loop_seq
+
+
+    def _unroll_loop(self, loop, num_loops, loop_start_seq_num, loop_post_seq_num):
+        unrolled_loop = loop.copy()
+
+        # if num loops is zero, should return original loop
+        for i in range(1, num_loops + 1):
+            for seq in loop:
+                unrolled_seq = seq.copy()
+                unrolled_seq["Ns"] += len(loop) * i
+
+                for j in range(0, 3):
+                    goto_field = "lim{}_seq".format(j + 1)
+                    goto_seq_num = int(seq[goto_field])
+                    # make gotos internal to the loop work during unrolled portions
+                    # print("do we alter?", loop_start_seq_num <= goto_seq_num and goto_seq_num < loop_post_seq_num)
+                    if (
+                        loop_start_seq_num <= goto_seq_num
+                        and goto_seq_num <= loop_post_seq_num
+                    ):
+                        unrolled_seq[goto_field] = goto_seq_num + (len(loop) * i)
+
+                unrolled_loop.append(unrolled_seq)
+
+        assert len(unrolled_loop) == len(loop) * (num_loops + 1)
+
+        return unrolled_loop
