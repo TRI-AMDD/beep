@@ -72,7 +72,7 @@ class MaccorToBiologicMb:
             return "{:.3f}".format(num * 1e3), "mA"
         else:
             return "{:.3f}".format(num), "A"
-            
+
     def _convert_watts(self, val_str):
         decimal_sig_figs = self._get_decimal_sig_figs(val_str)
         num = float(val_str)
@@ -99,3 +99,46 @@ class MaccorToBiologicMb:
             return "{:.3f}".format(num * 1e-3), "kOhms"
         else:
             return "{:.3f}".format(num * 1e-6), "MOhms"
+
+    def _convert_time(self, time_str):
+        # Maccor time strings always contain two colons
+        # at least one section must be a parseable float
+        # "00:32:50" - 32 minutes and 50 seconds
+        # "::.5" - 5 ms
+        # "3600::" - 3600 hours
+        #
+        # are all possible values
+        # the smallest possible value is
+        # "::.01" - 10ms
+        # longest value unknown
+        hour_str, min_str, sec_str = time_str.split(":")
+        hours = 0.0 if hour_str == "" else float(hour_str)
+        mins = 0.0 if min_str == "" else float(min_str)
+        secs = 0.0 if sec_str == "" else float(sec_str)
+
+        if mins == 0.0 and secs == 0.0:
+            return "{:.3f}".format(int(hours)), "hr"
+
+        if secs == 0.0:
+            total_time_min = int(hours * 60 + mins)
+            return "{:.3f}".format(total_time_min), "mn"
+
+        if secs % 1.0 == 0.0:
+            total_time_sec = int(hours * 60 * 60 + mins * 60 + secs)
+            return "{:.3f}".format(total_time_sec), "s"
+
+        total_time_ms = int(hours * 60 * 60 * 1000 + mins * 60 * 1000 + secs * 1000)
+
+        biologic_max_time_num = 1e10  # taken from biologic ec-lab software
+        if total_time_ms < biologic_max_time_num:
+            return "{:.3f}".format(total_time_ms), "ms"
+        else:
+            # max hours in maccor is 3600, may exceed representable time in ms but not seconds
+            total_time_sec = total_time_ms / 1000
+            print(
+                (
+                    "Warning: lost precision converting time {} to {} {}, "
+                    "Biologic does not have the precision to represent this number"
+                ).format(time_str, total_time_sec, "s")
+            )
+            return "{:.3f}".format(total_time_sec), "s"
