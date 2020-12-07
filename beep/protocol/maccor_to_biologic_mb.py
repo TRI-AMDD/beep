@@ -445,3 +445,159 @@ class MaccorToBiologicMb:
         assert len(unrolled_loop) == len(loop) * (num_loops + 1)
 
         return unrolled_loop
+
+    """
+    Converts Maccor protcol file to biologic file
+    if loops do not advance a step immediately before looping, will attempt to unroll the loop
+    and provide a [encoding-REPLACE] in the "initial state" field of the biologic file.
+    """
+    def _create_biologic_seqs_from_maccor_ast(self, maccor_ast):
+        steps = get(maccor_ast, "MaccorTestProcedure.ProcSteps.TestStep")
+        if steps is None:
+            print(
+                'Failure: could not find path: "MaccorTestProcedure.ProcSteps.TestStep" to steps'
+            )
+            return
+
+        curr_seq_num = 0
+        loop_seq_count_stack = [0]
+        loop_will_unroll_stack = [False]
+
+        num_steps = len(steps)
+        seq_num_by_step_num = {num_steps: END_SEQ_NUM}
+        loop_unroll_status_by_idx = {}
+        adv_cycle_ignore_status_by_idx = {}
+
+        assert steps[-1]["StepType"] == "End"
+        for idx, step in enumerate(steps[0:-1]):
+            step_num = idx + 1
+            seq_num_by_step_num[step_num] = curr_seq_num
+            is_last_step_in_loop = steps[idx + 1]["StepType"][0:4] == "Loop"
+            curr_loop_will_unroll = loop_will_unroll_stack[-1]
+            step_type = step["StepType"]
+
+            if step_type[0:2] == "Do":
+                # no nested loops in Maccor
+                # we don't care about marking base protocol as will_unroll
+                loop_will_unroll_stack[-1] = True
+
+                loop_will_unroll_stack.append(False)
+                loop_seq_count_stack.append(0)
+            elif (
+                step_type == "AdvCycle"
+                and is_last_step_in_loop
+                and not curr_loop_will_unroll
+            ):
+                adv_cycle_ignore_status_by_idx[idx] = {"ignore": True}
+            elif step_type == "AdvCycle":
+                loop_will_unroll_stack[-1] = True
+                adv_cycle_ignore_status_by_idx[idx] = {"ignore": False}
+
+                # creating adv cycle requires 2 seqs
+                loop_seq_count_stack[-1] += 2
+                curr_seq_num += 2
+            elif step_type[0:4] == "Loop":
+                assert step["Ends"]["EndEntry"]["EndType"] == "Loop Cnt"
+                num_loops = int(step["Ends"]["EndEntry"]["Value"])
+                curr_loop_seq_count = loop_seq_count_stack.pop()
+
+                loop_will_unroll_stack.pop()
+                loop_unroll_status_by_idx[idx] = {"will_unroll": curr_loop_will_unroll}
+
+                if curr_loop_will_unroll:
+                    # add unrolled loop seqs
+                    # curr_loop_seq_count *= num_loops
+                    curr_seq_num += curr_loop_seq_count * num_loops
+                    curr_loop_seq_count *= num_loops + 1
+                else:
+                    # add loop seq
+                    curr_seq_num += 1
+                    curr_loop_seq_count += 1
+
+                loop_seq_count_stack[-1] += curr_loop_seq_count
+            elif is_last_step_in_loop:
+                # last step is not adv cycle, must unroll
+                loop_will_unroll_stack[-1] = True
+
+                loop_seq_count_stack[-1] += 1
+                curr_seq_num += 1
+            else:
+                # physical step
+                loop_seq_count_stack[-1] += 1
+                curr_seq_num += 1
+
+        assert len(loop_seq_count_stack) == 1
+        assert len(loop_will_unroll_stack) == 1
+
+        pre_computed_seq_count = loop_seq_count_stack.pop()
+        assert pre_computed_seq_count == curr_seq_num
+
+        seq_loop_stack = [[]]
+        loop_start_seq_num_stack = []
+        step_num_goto_lower_bound = 0
+        end_step_num = len(steps)
+
+        # ignore end step
+        for idx, step in enumerate(steps[0:-1]):
+            step_type = step["StepType"]
+            step_num = idx + 1
+            seq_num = seq_num_by_step_num[step_num]
+
+            if step_type[0:2] == "Do":
+                step_num_goto_lower_bound = step_num
+                seq_loop_stack.append([])
+                loop_start_seq_num_stack.append(seq_num)
+            elif step_type[0:4] == "Loop" and step_num:
+                step_num_goto_lower_bound = step_num
+                loop_start_seq_num = loop_start_seq_num_stack.pop()
+
+                assert step["Ends"]["EndEntry"]["EndType"] == "Loop Cnt"
+                num_loops = int(step["Ends"]["EndEntry"]["Value"])
+
+                loop_will_unoll = loop_unroll_status_by_idx[idx]["will_unroll"]
+                loop = seq_loop_stack.pop()
+
+                if loop_will_unoll:
+                    unrolled_loop = self._unroll_loop(
+                        loop, num_loops, loop_start_seq_num, seq_num
+                    )
+                    assert len(unrolled_loop) == (len(loop) * (num_loops + 1))
+                    print(
+                        "loop ending at step {} unrolled to {} seqs".format(
+                            step_num, len(unrolled_loop)
+                        )
+                    )
+                    loop = unrolled_loop
+                else:
+                    loop_seq = self._create_loop_seq(
+                        seq_num, loop_start_seq_num, num_loops
+                    )
+                    loop.append(loop_seq)
+
+                seq_loop_stack[-1] += loop
+            elif step_type == "AdvCycle":
+                if not adv_cycle_ignore_status_by_idx[idx]["ignore"]:
+                    step_num_goto_lower_bound = step_num
+
+                    blank_loop_seq, adv_cycle_loop_seq = self._create_advance_cyle_seqs(
+                        seq_num
+                    )
+                    seq_loop_stack[-1].append(blank_loop_seq)
+                    seq_loop_stack[-1].append(adv_cycle_loop_seq)
+            else:
+                seq = self._proc_step_to_seq(
+                    step,
+                    step_num,
+                    seq_num_by_step_num,
+                    step_num_goto_lower_bound,
+                    end_step_num,
+                )
+                seq_loop_stack[-1].append(seq)
+
+        assert len(seq_loop_stack) == 1
+
+        seqs = seq_loop_stack.pop()
+        assert len(seqs) == pre_computed_seq_count
+
+        print("conversion created {} seqs".format(pre_computed_seq_count))
+        return seqs
