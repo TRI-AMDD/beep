@@ -25,6 +25,7 @@ from pydash import get, unset, set_
 # magic number for biologic
 END_SEQ_NUM = 9999
 
+
 class MaccorToBiologicMb:
     """
     Collection of methods to convert maccor protocol files to biologic modulo bat protocol files
@@ -40,13 +41,14 @@ class MaccorToBiologicMb:
         schema = OrderedDict(BIOLOGIC_SCHEMA)
         self.blank_seq = OrderedDict(schema["blank_seq"])
 
-
     def _get_decimal_sig_figs(self, val_str):
         match_p10 = re.search("(e|E)([-+]?[0-9]+)", val_str)
         p10 = 0 if match_p10 is None else int(match_p10.groups()[1])
 
         match_sig_figs = re.search("\\.([0-9]*[1-9])", val_str)
-        explicit_sig_figs = 0 if match_sig_figs is None else len(match_sig_figs.groups(1)[0])
+        explicit_sig_figs = (
+            0 if match_sig_figs is None else len(match_sig_figs.groups(1)[0])
+        )
 
         return explicit_sig_figs - p10
 
@@ -378,7 +380,6 @@ class MaccorToBiologicMb:
 
         return new_seq
 
-
     def _create_loop_seq(self, seq_num, seq_num_to_loop_to, num_loops):
         loop_seq = self.blank_seq.copy()
         loop_seq["Ns"] = seq_num
@@ -398,6 +399,7 @@ class MaccorToBiologicMb:
     creates the seqs that will act as an advance cycle step
     when the Biologic cycle definition is set to loop
     """
+
     def _create_advance_cyle_seqs(self, seq_num):
         # Biologic Maccord Bat does not support real Advance Cycle sequences
         # however we can simulate them if the cycle definition is set to Loop
@@ -418,7 +420,6 @@ class MaccorToBiologicMb:
         adv_cycle_loop_seq = self._create_loop_seq(seq_num + 1, seq_num, 1)
 
         return blank_loop_seq, adv_cycle_loop_seq
-
 
     def _unroll_loop(self, loop, num_loops, loop_start_seq_num, loop_post_seq_num):
         unrolled_loop = loop.copy()
@@ -451,6 +452,7 @@ class MaccorToBiologicMb:
     if loops do not advance a step immediately before looping, will attempt to unroll the loop
     and provide a [encoding-REPLACE] in the "initial state" field of the biologic file.
     """
+
     def _create_biologic_seqs_from_maccor_ast(self, maccor_ast):
         steps = get(maccor_ast, "MaccorTestProcedure.ProcSteps.TestStep")
         if steps is None:
@@ -602,10 +604,10 @@ class MaccorToBiologicMb:
         print("conversion created {} seqs".format(pre_computed_seq_count))
         return seqs
 
-
     """
     returns the AST for a Maccor diagnostic file
     """
+
     def load_maccor_ast(self, maccorFilePath, encoding="UTF-8"):
         with open(maccorFilePath, "rb") as f:
             text = f.read().decode(encoding)
@@ -617,6 +619,7 @@ class MaccorToBiologicMb:
     resulting string assumes generated file will have
     LATIN-1 i.e. ISO-8859-1 encoding
     """
+
     def maccor_ast_to_protocol_str(self, maccor_ast, col_width=20):
         # encoding is assumed due to superscript 2 here, as well as
         # micro sign elsewhere in code, they would presumably be
@@ -679,10 +682,10 @@ class MaccorToBiologicMb:
 
         return file_str
 
-    
     """
     convert loaded maccor AST to biologic procedure file
     """
+
     def maccor_ast_to_protocol_file(self, maccor_ast, fp, col_width=20):
         file_str = self.maccor_ast_to_protocol_str(maccor_ast, col_width)
         with open(fp, "wb") as f:
@@ -693,10 +696,10 @@ class MaccorToBiologicMb:
     biologic fp should include a .mps extension
     file has LATIN-1 i.e. ISO-8859-1 encoding
     """
+
     def convert(self, maccor_fp, biologic_fp, maccor_encoding="utf-8", col_width=20):
         maccor_ast = self.load_maccor_ast(maccor_fp, maccor_encoding)
         self.maccor_ast_to_protocol_file(maccor_ast, biologic_fp, col_width)
-
 
     """
     accepts a maccor AST and a predicate to filter EndEntries in each step
@@ -704,6 +707,7 @@ class MaccorToBiologicMb:
       OrderedDict() - EndEntry from maccor
       int - step number derived from test step index
     """
+
     def remove_end_entries_by_pred(self, maccor_ast, pred):
         new_ast = copy.deepcopy(maccor_ast)
         steps = get(new_ast, "MaccorTestProcedure.ProcSteps.TestStep")
@@ -716,17 +720,19 @@ class MaccorToBiologicMb:
             if get(step, "Ends.EndEntry") is None:
                 continue
             elif type(get(step, "Ends.EndEntry")) == list:
-                filtered = list(filter(
-                    lambda end_entry: pred(end_entry, step_num),
-                    step["Ends"]["EndEntry"],
-                ))
+                filtered = list(
+                    filter(
+                        lambda end_entry: pred(end_entry, step_num),
+                        step["Ends"]["EndEntry"],
+                    )
+                )
 
                 if len(filtered) == 0:
                     unset(step, "Ends.EndEntry")
                 elif len(filtered) == 1:
                     set_(step, "Ends.EndEntry", filtered[0])
                 else:
-                     set_(step, "Ends.EndEntry", filtered)   
+                    set_(step, "Ends.EndEntry", filtered)
             else:
                 if not pred(get(step, "Ends.EndEntry"), step_num):
                     unset(step, "Ends.EndEntry")
