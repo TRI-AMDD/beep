@@ -679,3 +679,21 @@ class MaccorToBiologicMb:
 
         return file_str
 
+    
+    """
+    convert loaded maccor AST to biologic procedure file
+    """
+    def maccor_ast_to_protocol_file(self, maccor_ast, fp, col_width=20):
+        file_str = self.maccor_ast_to_protocol_str(maccor_ast, col_width)
+        with open(fp, "wb") as f:
+            f.write(file_str.encode("ISO-8859-1"))
+
+    """
+    converts maccor AST to biologic protocol
+    biologic fp should include a .mps extension
+    file has LATIN-1 i.e. ISO-8859-1 encoding
+    """
+    def convert(self, maccor_fp, biologic_fp, maccor_encoding="utf-8", col_width=20):
+        maccor_ast = self.load_maccor_ast(maccor_fp, maccor_encoding)
+        self.maccor_ast_to_protocol_file(maccor_ast, biologic_fp, col_width)
+
