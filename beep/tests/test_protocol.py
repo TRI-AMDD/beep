@@ -732,7 +732,7 @@ class GenerateProcedureTest(unittest.TestCase):
                                                      waveform_directory=output_directory,
                                                      max_c_rate=3.0)
             self.assertTrue(os.path.isfile(os.path.join(output_directory, file_name)))
-            self.assertEqual(os.path.split(file_name)[1], "RapidC_step_101.MWF")
+            self.assertEqual(os.path.split(file_name)[1], "RapidC_smooth_101.MWF")
 
     def test_charging_protocol_with_waveform(self):
         csv_file = os.path.join(TEST_FILE_DIR,
@@ -801,7 +801,7 @@ class GenerateProcedureTest(unittest.TestCase):
                 self.assertEqual(df_mwf.loc[:, 4].min(), protocol_params["charge_cutoff_voltage"] - 0.01)
 
             self.assertTrue(os.path.isfile(filename))
-            self.assertEqual(len(os.listdir(mwf_dir)), 2)
+            self.assertEqual(len(os.listdir(mwf_dir)), 30)
 
             parsed = open(
                 os.path.join(scratch_dir, "procedures", "RapidC_000100.000")
@@ -872,7 +872,7 @@ class GenerateProcedureTest(unittest.TestCase):
             # Test the script
             json_input = json.dumps({"file_list": [csv_file]})
             os.system("generate_protocol {}".format(os_format(json_input)))
-            self.assertEqual(len(os.listdir(procedures_path)), 2)
+            self.assertEqual(len(os.listdir(procedures_path)), 30)
 
 
 class ProcedureToScheduleTest(unittest.TestCase):

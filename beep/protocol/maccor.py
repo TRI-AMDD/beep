@@ -1403,16 +1403,16 @@ def insert_charging_parametersv1(reg_params, waveform_directory=None, max_c_rate
         "report_value": 3.0000,
         "range": "A",
     }
-    above_80p_c_rate = reg_params["charge_constant_current_2"]
     soc_initial = reg_params["charge_start_percent_1"] / 100
     soc_final = reg_params["charge_percent_limit_1"] / 100
     charging_c_rates = [reg_params["charge_current_param_1"], reg_params["charge_current_param_2"],
                         reg_params["charge_current_param_3"], reg_params["charge_current_param_4"]]
+    above_80p_c_rate = max([charging_c_rates[-1] * 0.8, reg_params["charge_constant_current_2"]])
     charging = RapidChargeWave(above_80p_c_rate, soc_initial, soc_final, max_c_rate)
     current_smooth, current_step, time_uniform = charging.get_currents_with_uniform_time_basis(charging_c_rates)
 
-    assert np.max(current_smooth) <= max_c_rate, "Maximum c-rate exceeded during smooth charge, abort"
-    assert np.max(current_step) <= max_c_rate, "Maximum c-rate exceeded during step charge, abort"
+    assert np.max(current_smooth) <= max_c_rate, "Maximum c-rate exceeded in {}, abort".format(reg_params["seq_num"])
+    assert np.max(current_step) <= max_c_rate, "Maximum c-rate exceeded in {}, abort".format(reg_params["seq_num"])
 
     if reg_params["charge_type_1"] == "smooth":
         df_charge = pd.DataFrame({"current": current_smooth, "time": time_uniform})
