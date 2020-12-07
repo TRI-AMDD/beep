@@ -16,7 +16,12 @@
 import os
 import unittest
 import xmltodict
+from collections import OrderedDict
+
 from beep.protocol.maccor_to_biologic_mb import MaccorToBiologicMb
+
+TEST_DIR = os.path.dirname(__file__)
+TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 
 class ConversionTest(unittest.TestCase):
@@ -633,4 +638,36 @@ class ConversionTest(unittest.TestCase):
                msg="At line {} expected:{}\ngot:\n:{}".format(i + 1, expected_lines[i], actual_lines[i])
             )
 
-    
+    def test_remove_end_entries_by_pred(self):
+        converter = MaccorToBiologicMb()
+        fp = os.path.join(TEST_FILE_DIR, "diagnosticV4.000")
+        maccor_ast = converter.load_maccor_ast(fp)
+
+        def pred(end_entry, step_num):
+            goto_step = int(end_entry["Step"])
+            # filter all goto step 70s, except when that is Next Step
+            return  goto_step != 70 or step_num == 69
+
+        filtered_ast = converter.remove_end_entries_by_pred(maccor_ast, pred)
+        filtered_steps = filtered_ast["MaccorTestProcedure"]["ProcSteps"]["TestStep"]
+        
+        step_1_filtered_end_entry = filtered_steps[0]["Ends"]["EndEntry"]
+        self.assertEqual(
+            OrderedDict,
+            type(step_1_filtered_end_entry),
+        )
+        self.assertEqual(
+            step_1_filtered_end_entry["Step"],
+            "002"
+        )
+
+        step_68_filtered_end_entry = filtered_steps[68]["Ends"]["EndEntry"]
+        self.assertEqual(
+            OrderedDict,
+            type(step_68_filtered_end_entry),
+        )
+        self.assertEqual(
+            step_68_filtered_end_entry["Step"],
+            "070"
+        )
+        
