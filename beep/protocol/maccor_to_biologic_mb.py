@@ -142,3 +142,238 @@ class MaccorToBiologicMb:
                 ).format(time_str, total_time_sec, "s")
             )
             return "{:.3f}".format(total_time_sec), "s"
+
+    def _proc_step_to_seq(
+        self, test_step, step_num, seq_from_step_num, goto_lower_bound, end_step_num
+    ):
+        """
+        converts steps that are not related to control flow to sequence dicts
+        (control flow steps are DO, LOOP, ADV CYCLE)
+        """
+        seq_num = seq_from_step_num[step_num]
+        assert seq_num is not None
+
+        new_seq = self.blank_seq.copy()
+        new_seq["Ns"] = seq_num
+        new_seq["lim1_seq"] = seq_num + 1
+        new_seq["lim2_seq"] = seq_num + 1
+        new_seq["lim3_seq"] = seq_num + 1
+
+        # while biologic does not have >= or <= these are functionally
+        # equivalent to > and < for bounds checks on floating points
+        # most of the time
+        operator_map = {
+            ">=": ">",
+            "<=": "<",
+        }
+
+        step_type = test_step["StepType"]
+        assert type(step_type) == str
+
+        step_mode = test_step["StepMode"]
+        step_value = test_step["StepValue"]
+
+        if step_type == "Rest":
+            new_seq["type"] = "Rest"
+            new_seq["Apply I/C"] = "I"
+
+            # magic number
+            new_seq["N"] = "1.00"
+
+            # should this depend on the previous step?
+            # it seems like the value only matters if we were advancing cycle number
+            # on charge discharge alternance. By default EC-lab seems to set this
+            # to the previous steps charge/discharge
+            new_seq["charge/discharge"] = "Charge"
+
+        # Maccor intentionally misspells Discharge
+        elif step_type not in ["Charge", "Dischrge"]:
+            raise Exception("Unsupported Control StepType", step_type)
+        elif step_mode == "Current":
+            assert type(step_value) == str
+            # does this need to be formatted? e.g. 1.0 from Maccor vs 1.000 for biologic
+            ctrl1_val, ctrl1_val_unit = self._convert_amps(step_value)
+            new_seq["ctrl1_val"] = ctrl1_val
+            new_seq["ctrl1_val_unit"] = ctrl1_val_unit
+
+            new_seq["type"] = "CC"
+            new_seq["Apply I/C"] = "C / N"
+            new_seq["ctrl1_val_vs"] = "<None>"
+
+            # magic number, unsure what this does
+            new_seq["N"] = "15.00"
+            new_seq["charge/discharge"] = (
+                "Charge" if step_type == "Charge" else "Discharge"
+            )
+        elif step_mode == "Voltage":
+            # does this need to be formatted? e.g. 1.0 from Maccor vs 1.000 for biologic
+            assert type(step_value) == str
+
+            ctrl1_val, ctrl1_val_unit = self._convert_amps(step_value)
+            new_seq["ctrl1_val"] = ctrl1_val
+            new_seq["ctrl1_val_unit"] = ctrl1_val_unit
+
+            new_seq["type"] = "CV"
+            new_seq["Apply I/C"] = "C / N"
+            new_seq["ctrl1_val_vs"] = "Ref"
+
+            # magic number, unsure what this does
+            new_seq["N"] = "15.00"
+            new_seq["charge/discharge"] = (
+                "Charge" if step_type == "Charge" else "Discharge"
+            )
+        else:
+            raise Exception("Unsupported Charge/Discharge StepMode", step_mode)
+
+        end_entries = test_step["Ends"]["EndEntry"]
+        end_entries_list = (
+            end_entries
+            if isinstance(end_entries, list)
+            else []
+            if end_entries is None
+            else [end_entries]
+        )
+
+        # maccor end entries are conceptually equivalent to biologic limits
+        num_lims = len(end_entries_list)
+        if num_lims > 3:
+            raise Exception(
+                (
+                    "Step {} has more than 3 EndEntries, the max allowed"
+                    " by Biologic. Either remove some limits from the source"
+                    " loaded diagnostic file or filter by number using the"
+                    " remove_end_entries_with_target_gotos method"
+                ).format(step_num)
+            )
+
+        new_seq["lim_nb"] = num_lims
+
+        for idx, end_entry in enumerate(end_entries_list):
+            lim_num = idx + 1
+
+            end_type = end_entry["EndType"]
+            assert type(end_type) == str
+
+            end_oper = end_entry["Oper"]
+            assert type(end_oper) == str
+
+            end_value = end_entry["Value"]
+            assert type(end_value) == str
+
+            goto_step_num_str = end_entry["Step"]
+            assert type(goto_step_num_str) == str
+            goto_step_num = int(goto_step_num_str)
+
+            if goto_step_num < goto_lower_bound or goto_step_num > end_step_num:
+                raise Exception(
+                    "GOTO in step "
+                    + str(step_num)
+                    + " to location that could break loop.\nGOTO Lowerbound: "
+                    + str(goto_lower_bound)
+                    + "\nGOTO target step num: "
+                    + str(goto_step_num)
+                    + "\nGOTO upperbound (end): "
+                    + str(end_step_num)
+                )
+
+            assert goto_step_num in seq_from_step_num
+            goto_seq = seq_from_step_num[goto_step_num]
+            new_seq["lim{}_seq".format(lim_num)] = goto_seq
+
+            if goto_step_num != step_num + 1:
+                new_seq["lim{}_action".format(lim_num)] = "Goto sequence"
+
+            if end_type == "StepTime":
+                if end_oper != "=":
+                    raise Exception(
+                        "Unsupported StepTime operator in EndEntry", end_oper
+                    )
+
+                lim_value, lim_value_unit = self._convert_time(end_value)
+
+                new_seq["lim{0}_type".format(lim_num)] = "Time"
+                new_seq["lim{0}_value_unit".format(lim_num)] = lim_value_unit
+                new_seq["lim{0}_value".format(lim_num)] = lim_value
+                # even though maccor claims it checks for time equal to some threshold
+                # it's actually looking for time greater than or equal to that threshold
+                # biologic has no >=  so we use >1
+                new_seq["lim{0}_comp".format(lim_num)] = ">"
+            elif end_type == "Voltage":
+                if operator_map[end_oper] is None:
+                    raise Exception(
+                        "Unsupported Voltage operator in EndEntry", end_oper
+                    )
+
+                lim_value, lim_value_unit = self._convert_volts(end_value)
+
+                new_seq["lim{0}_comp".format(lim_num)] = operator_map[end_oper]
+                new_seq["lim{0}_type".format(lim_num)] = "Voltage"
+                new_seq["lim{0}_value".format(lim_num)] = lim_value
+                new_seq["lim{0}_value_unit".format(lim_num)] = lim_value_unit
+            elif end_type == "Current":
+                if operator_map[end_oper] is None:
+                    raise Exception(
+                        "Unsupported Voltage operator in EndEntry", end_oper
+                    )
+
+                lim_value, lim_value_unit = self._convert_amps(end_value)
+
+                new_seq["lim{0}_comp".format(lim_num)] = operator_map[end_oper]
+                new_seq["lim{0}_type".format(lim_num)] = "Current"
+                new_seq["lim{0}_value".format(lim_num)] = lim_value
+                new_seq["lim{0}_value_unit".format(lim_num)] = lim_value_unit
+            else:
+                raise Exception("Unsupported EndType", end_type)
+
+        report_entries = test_step["Reports"]["ReportEntry"]
+        report_entries_list = (
+            report_entries
+            if isinstance(report_entries, list)
+            else []
+            if report_entries is None
+            else [report_entries]
+        )
+
+        num_reports = len(report_entries_list)
+        if num_reports > 3:
+            raise Exception(
+                (
+                    "Step {} has more than 3 ReportyEntries, the max allowed"
+                    " by Biologic. Either remove them from the source file"
+                    " or pre-process the loaded maccor_ast"
+                ).format(step_num)
+            )
+
+        new_seq["rec_nb"] = num_reports
+
+        for idx, report in enumerate(report_entries_list):
+            rec_num = idx + 1
+
+            report_type = report["ReportType"]
+            assert type(report_type) == str
+
+            report_value = report["Value"]
+            assert type(report_value) == str
+
+            if report_type == "StepTime":
+                rec_value, rec_value_unit = self._convert_time(report_value)
+
+                new_seq["rec{0}_type".format(rec_num)] = "Time"
+                new_seq["rec{0}_value".format(rec_num)] = rec_value
+                new_seq["rec{0}_value_unit".format(rec_num)] = rec_value_unit
+            elif report_type == "Voltage":
+                rec_value, rec_value_unit = self._convert_volts(report_value)
+
+                new_seq["rec{0}_type".format(rec_num)] = "Voltage"
+                new_seq["rec{0}_value".format(rec_num)] = rec_value
+                new_seq["rec{0}_value_unit".format(rec_num)] = rec_value_unit
+            elif report_type == "Current":
+                rec_value, rec_value_unit = self._convert_amps(report_value)
+
+                new_seq["rec{0}_type".format(rec_num)] = "Current"
+                new_seq["rec{0}_value".format(rec_num)] = rec_value
+                new_seq["rec{0}_value_unit".format(rec_num)] = rec_value_unit
+            else:
+                raise Exception("Unsupported ReportType", report_type)
+
+        return new_seq
