@@ -20,7 +20,7 @@ import xmltodict
 from beep.protocol import PROTOCOL_SCHEMA_DIR
 from monty.serialization import loadfn
 from collections import OrderedDict
-from pydash import get, unset
+from pydash import get, unset, set_
 
 # magic number for biologic
 END_SEQ_NUM = 9999
@@ -716,14 +716,17 @@ class MaccorToBiologicMb:
             if get(step, "Ends.EndEntry") is None:
                 continue
             elif type(get(step, "Ends.EndEntry")) == list:
-                filtered = filter(
+                filtered = list(filter(
                     lambda end_entry: pred(end_entry, step_num),
                     step["Ends"]["EndEntry"],
-                )
+                ))
 
-                step["Ends"]["EndEntry"] = list(filtered)
-                if len(step["Ends"]["EndEntry"]) == 0:
+                if len(filtered) == 0:
                     unset(step, "Ends.EndEntry")
+                elif len(filtered) == 1:
+                    set_(step, "Ends.EndEntry", filtered[0])
+                else:
+                     set_(step, "Ends.EndEntry", filtered)   
             else:
                 if not pred(get(step, "Ends.EndEntry"), step_num):
                     unset(step, "Ends.EndEntry")
