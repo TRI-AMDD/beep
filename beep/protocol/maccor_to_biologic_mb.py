@@ -39,3 +39,21 @@ class MaccorToBiologicMb:
         )
         schema = OrderedDict(BIOLOGIC_SCHEMA)
         self.blank_seq = OrderedDict(schema["blank_seq"])
+
+
+    def _get_decimal_sig_figs(self, val_str):
+        match_p10 = re.search("(e|E)([-+]?[0-9]+)", val_str)
+        p10 = 0 if match_p10 is None else int(match_p10.groups()[1])
+
+        match_sig_figs = re.search("\\.([0-9]*[1-9])", val_str)
+        explicit_sig_figs = 0 if match_sig_figs is None else len(match_sig_figs.groups(1)[0])
+
+        return explicit_sig_figs - p10
+
+    def _convert_volts(self, val_str):
+        decimal_sig_figs = self._get_decimal_sig_figs(val_str)
+        num = float(val_str)
+        if num < 1 or decimal_sig_figs > 3:
+            return "{:.3f}".format(num * 1e3), "mV"
+        else:
+            return "{:.3f}".format(num), "V"
