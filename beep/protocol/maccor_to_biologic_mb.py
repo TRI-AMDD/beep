@@ -601,3 +601,81 @@ class MaccorToBiologicMb:
 
         print("conversion created {} seqs".format(pre_computed_seq_count))
         return seqs
+
+
+    """
+    returns the AST for a Maccor diagnostic file
+    """
+    def load_maccor_ast(self, maccorFilePath, encoding="UTF-8"):
+        with open(maccorFilePath, "rb") as f:
+            text = f.read().decode(encoding)
+
+        return xmltodict.parse(text, process_namespaces=False, strip_whitespace=True)
+
+    """
+    converts maccor AST to biologic protocol
+    resulting string assumes generated file will have
+    LATIN-1 i.e. ISO-8859-1 encoding
+    """
+    def maccor_ast_to_protocol_str(self, maccor_ast, col_width=20):
+        # encoding is assumed due to superscript 2 here, as well as
+        # micro sign elsewhere in code, they would presumably be
+        # handled by their unicode alternatives in UTF-8 but we
+        # haven't seen that fileformat so we're not sure
+
+        # based on sample biologic mps file
+        file_str = (
+            "BT-LAB SETTING FILE\r\n\r\n"
+            "Number of linked techniques : 1\r\n\r\n"
+            "Filename : C:\\dummy.mps\r\n\r\n"
+            "Device : BCS-805\r\n"
+            "Ecell ctrl range : min = 0.00 V, max = 10.00 V\r\n"
+            "Electrode material : \r\n"
+            "Initial state : \r\n"
+            "Electrolyte : \r\n"
+            "Comments : \r\n"
+            "Mass of active material : 0.001 mg\r\n"
+            " at x = 0.000\r\n"  # leading space intentional
+            "Molecular weight of active material (at x = 0) : 0.001 g/mol\r\n"
+            "Atomic weight of intercalated ion : 0.001 g/mol\r\n"
+            "Acquisition started at : xo = 0.000\r\n"
+            "Number of e- transfered per intercalated ion : 1\r\n"
+            "for DX = 1, DQ = 26.802 mA.h\r\n"
+            "Battery capacity : 2.280 mA.h\r\n"
+            "Electrode surface area : 0.001 cm\N{superscript two}\r\n"
+            "Characteristic mass : 9.130 mg\r\n"
+            "Cycle Definition : Loop\r\n"
+            "Turn to OCV between techniques\r\n\r\n"
+            "Technique : 1\r\n"
+            "Modulo Bat\r\n"
+        )
+        # ordering from blank_seq template is _vital_ for this to work
+
+        seqs = self._create_biologic_seqs_from_maccor_ast(maccor_ast)
+
+        for key in OrderedDict.keys(self.blank_seq):
+            if len(key) > col_width:
+                raise Exception(
+                    "seq key {} has length greater than col width {}".format(
+                        key, col_width
+                    )
+                )
+
+            field_row = key.ljust(col_width, " ")
+            for seq_num, seq in enumerate(seqs):
+                if key not in seq:
+                    raise Exception(
+                        "Could not find field {} in seq {}".format(key, seq_num)
+                    )
+
+                if len(str(seq[key])) > col_width:
+                    raise Exception(
+                        "{} in seq {} is greater than column width".format(
+                            seq[key], seq_num
+                        )
+                    )
+                field_row += str(seq[key]).ljust(col_width, " ")
+            file_str += field_row + "\r\n"
+
+        return file_str
+
