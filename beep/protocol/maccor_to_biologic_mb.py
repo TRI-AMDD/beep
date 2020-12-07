@@ -697,3 +697,35 @@ class MaccorToBiologicMb:
         maccor_ast = self.load_maccor_ast(maccor_fp, maccor_encoding)
         self.maccor_ast_to_protocol_file(maccor_ast, biologic_fp, col_width)
 
+
+    """
+    accepts a maccor AST and a predicate to filter EndEntries in each step
+    predicate accepts arguments:
+      OrderedDict() - EndEntry from maccor
+      int - step number derived from test step index
+    """
+    def remove_end_entries_by_pred(self, maccor_ast, pred):
+        new_ast = copy.deepcopy(maccor_ast)
+        steps = get(new_ast, "MaccorTestProcedure.ProcSteps.TestStep")
+        if steps is None:
+            print("Could not find any Maccor steps loaded")
+            return maccor_ast
+
+        for i, step in enumerate(steps):
+            step_num = i + 1
+            if get(step, "Ends.EndEntry") is None:
+                continue
+            elif type(get(step, "Ends.EndEntry")) == list:
+                filtered = filter(
+                    lambda end_entry: pred(end_entry, step_num),
+                    step["Ends"]["EndEntry"],
+                )
+
+                step["Ends"]["EndEntry"] = list(filtered)
+                if len(step["Ends"]["EndEntry"]) == 0:
+                    unset(step, "Ends.EndEntry")
+            else:
+                if not pred(get(step, "Ends.EndEntry"), step_num):
+                    unset(step, "Ends.EndEntry")
+
+        return new_ast
