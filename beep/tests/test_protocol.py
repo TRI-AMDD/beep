@@ -644,7 +644,7 @@ class GenerateProcedureTest(unittest.TestCase):
         if os.path.isfile(os.path.join(TEST_FILE_DIR, "procedures", ".DS_Store")):
             os.remove(os.path.join(TEST_FILE_DIR, "procedures", ".DS_Store"))
         self.assertEqual(
-            len(os.listdir(os.path.join(TEST_FILE_DIR, "procedures"))), 265
+            len(os.listdir(os.path.join(TEST_FILE_DIR, "procedures"))), 335
         )
 
     def test_console_script(self):

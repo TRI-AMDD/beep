@@ -123,7 +123,7 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
             filename = "{}.000".format(filename_prefix)
             filename = os.path.join(output_directory, "procedures", filename)
         # TODO: how are these different?
-        elif template in ["diagnosticV3.000", "diagnosticV4.000"]:
+        elif template in ["diagnosticV3.000", "diagnosticV4.000", "diagnosticV5.000"]:
             diag_params_df = pd.read_csv(
                 os.path.join(PROCEDURE_TEMPLATE_DIR, "PreDiag_parameters - DP.csv")
             )
