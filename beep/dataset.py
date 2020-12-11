@@ -40,6 +40,7 @@ from beep.featurize import (
     DiagnosticSummaryStats
 )
 from sklearn.model_selection import train_test_split
+from scipy import interpolate
 
 FEATURE_HYPERPARAMS = loadfn(
     os.path.join(MODULE_DIR, "features/feature_hyperparameters.yaml")
@@ -419,6 +420,7 @@ def get_threshold_targets(dataset_diagnostic_properties,
     threshold_targets_df = pd.concat(threshold_values_df_list)
     threshold_targets_df.reset_index(drop=True, inplace=True)
     return threshold_targets_df
+
 
 def get_parameter_dict(file_list, parameters_path):
     """

@@ -21,9 +21,10 @@ from beep.featurize import (
     DiagnosticSummaryStats,
 )
 from beep import MODULE_DIR
-from beep.dataset import BeepDataset
+from beep.dataset import BeepDataset, get_threshold_targets
 from monty.tempfile import ScratchDir
 from monty.serialization import dumpfn, loadfn
+
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 DIAGNOSTIC_PROCESSED = os.path.join(TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json")
@@ -153,3 +154,10 @@ class TestDataset(unittest.TestCase):
                           }
 
         self.assertDictEqual(dataset.train_cells_parameter_dict, parameter_dict)
+
+    def test_get_threshold_targets(self):
+        dataset_diagnostic_properties = loadfn(os.path.join(TEST_FILE_DIR, "diagnostic_properties.json"))
+        threshold_targets_df = get_threshold_targets(dataset_diagnostic_properties,
+                                                     cycle_type_target="rpt_1C")
+        print(threshold_targets_df)
+        self.assertEqual(1, 2)
