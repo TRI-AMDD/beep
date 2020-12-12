@@ -89,7 +89,6 @@ class MaccorToBiologicMb:
     def _convert_ohms(self, val_str):
         decimal_sig_figs = self._get_decimal_sig_figs(val_str)
         num = float(val_str)
-        print(decimal_sig_figs)
 
         if num < 1e-3 or decimal_sig_figs > 6:
             return "{:.3f}".format(num * 1e6), "\N{Micro Sign}Ohms"
@@ -146,7 +145,7 @@ class MaccorToBiologicMb:
             return "{:.3f}".format(total_time_sec), "s"
 
     def _proc_step_to_seq(
-        self, test_step, step_num, seq_from_step_num, goto_lower_bound, end_step_num
+        self, proc_step, step_num, seq_from_step_num, goto_lower_bound, end_step_num
     ):
         """
         converts steps that are not related to control flow to sequence dicts
@@ -169,11 +168,11 @@ class MaccorToBiologicMb:
             "<=": "<",
         }
 
-        step_type = test_step["StepType"]
+        step_type = proc_step["StepType"]
         assert type(step_type) == str
 
-        step_mode = test_step["StepMode"]
-        step_value = test_step["StepValue"]
+        step_mode = proc_step["StepMode"]
+        step_value = proc_step["StepValue"]
 
         if step_type == "Rest":
             new_seq["type"] = "Rest"
@@ -207,6 +206,12 @@ class MaccorToBiologicMb:
             new_seq["charge/discharge"] = (
                 "Charge" if step_type == "Charge" else "Discharge"
             )
+
+            voltage_lim = get(proc_step, "Limits.Voltage")
+            if voltage_lim is not None:
+                voltage_lim_val, voltage_lim_unit = self._convert_volts(voltage_lim)
+                new_seq["ctrl2_val"] = voltage_lim_val
+                new_seq["ctrl2_val_unit"] = voltage_lim_unit
         elif step_mode == "Voltage":
             # does this need to be formatted? e.g. 1.0 from Maccor vs 1.000 for biologic
             assert type(step_value) == str
@@ -224,10 +229,16 @@ class MaccorToBiologicMb:
             new_seq["charge/discharge"] = (
                 "Charge" if step_type == "Charge" else "Discharge"
             )
+
+            current_lim = get(proc_step, "Limits.Current")
+            if current_lim is not None:
+                current_lim_val, current_lim_unit = self._convert_amps(current_lim)
+                new_seq["ctrl2_val"] = current_lim_val
+                new_seq["ctrl2_val_unit"] = current_lim_unit
         else:
             raise Exception("Unsupported Charge/Discharge StepMode", step_mode)
 
-        end_entries = test_step["Ends"]["EndEntry"]
+        end_entries = proc_step["Ends"]["EndEntry"]
         end_entries_list = (
             end_entries
             if isinstance(end_entries, list)
@@ -327,7 +338,7 @@ class MaccorToBiologicMb:
             else:
                 raise Exception("Unsupported EndType", end_type)
 
-        report_entries = test_step["Reports"]["ReportEntry"]
+        report_entries = proc_step["Reports"]["ReportEntry"]
         report_entries_list = (
             report_entries
             if isinstance(report_entries, list)
