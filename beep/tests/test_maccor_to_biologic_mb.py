@@ -25,6 +25,8 @@ TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 
 class ConversionTest(unittest.TestCase):
+    maxDiff = None
+
     def maccor_values_to_biologic_value_and_unit_test(self, func, tests):
         for value_str, expected_value_str, expected_unit in tests:
             actual_value, actual_unit = func(value_str)            
@@ -369,9 +371,7 @@ class ConversionTest(unittest.TestCase):
             "      <StepType> Charge </StepType>"
             "      <StepMode>Voltage </StepMode>"
             "      <StepValue>3.3</StepValue>"
-            "      <Limits>"
-            "        <Voltage>4.2</Voltage>"
-            "      </Limits>"
+            "      <Limits/>"
             "      <Ends>"
             "        <EndEntry>"
             "          <EndType>Current </EndType>"
@@ -563,8 +563,8 @@ class ConversionTest(unittest.TestCase):
             "ctrl1_val                               1.000               3.300               3.300               3.300               142.900             100.000             100.000             100.000             \r\n"
             "ctrl1_val_unit                          A                   A                   A                   A                   mA                                                                              \r\n"
             "ctrl1_val_vs                            <None>              Ref                 Ref                 Ref                 <None>                                                                          \r\n"
-            "ctrl2_val                                                                                                                                                                                               \r\n"
-            "ctrl2_val_unit                                                                                                                                                                                          \r\n"
+            "ctrl2_val                                                                                                               4.200                                                                           \r\n"
+            "ctrl2_val_unit                                                                                                          V                                                                               \r\n"
             "ctrl2_val_vs                                                                                                                                                                                            \r\n"
             "ctrl3_val                                                                                                                                                                                               \r\n"
             "ctrl3_val_unit                                                                                                                                                                                          \r\n"
@@ -635,7 +635,7 @@ class ConversionTest(unittest.TestCase):
             self.assertEqual(
                expected_lines[i],
                actual_lines[i],
-               msg="At line {} expected:{}\ngot:\n:{}".format(i + 1, expected_lines[i], actual_lines[i])
+               msg="At line {} expected:\n\"{}\"\ngot:\n\"{}\"".format(i + 1, expected_lines[i], actual_lines[i])
             )
 
     def test_remove_end_entries_by_pred(self):
