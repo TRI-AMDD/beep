@@ -19,6 +19,7 @@ from beep.featurize import (
     RPTdQdVFeatures,
     HPPCResistanceVoltageFeatures,
     DiagnosticSummaryStats,
+    DiagnosticProperties
 )
 from beep import MODULE_DIR
 from beep.dataset import BeepDataset, get_threshold_targets
@@ -67,6 +68,13 @@ class TestDataset(unittest.TestCase):
             self.assertSetEqual(set(dataset.feature_sets.keys()), {'RPTdQdVFeatures', 'DiagnosticSummaryStats'})
             self.assertEqual(dataset.missing.feature_class.iloc[0], 'HPPCResistanceVoltageFeatures')
             self.assertIsInstance(dataset.filenames, list)
+
+            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
+            dataset2 = BeepDataset.from_features('test_dataset', ['PreDiag'], [RPTdQdVFeatures],
+                                                feature_dir=os.path.join(TEST_FILE_DIR, 'data-share/features'))
+            dumpfn(dataset2, "temp_dataset_2.json")
+            dataset2 = loadfn('temp_dataset_2.json')
+            self.assertEqual(dataset2.missing.columns.to_list(), ["filename", "feature_class"])
 
 
     def test_from_processed_cycler_run_list(self):
@@ -157,7 +165,12 @@ class TestDataset(unittest.TestCase):
 
     def test_get_threshold_targets(self):
         dataset_diagnostic_properties = loadfn(os.path.join(TEST_FILE_DIR, "diagnostic_properties.json"))
-        threshold_targets_df = get_threshold_targets(dataset_diagnostic_properties,
+        threshold_targets_df = get_threshold_targets(dataset_diagnostic_properties.data,
                                                      cycle_type_target="rpt_1C")
         print(threshold_targets_df)
-        self.assertEqual(1, 2)
+        self.assertEqual(len(threshold_targets_df), 92)
+        threshold_targets_df = get_threshold_targets(dataset_diagnostic_properties.data,
+                                                     cycle_type_target="rpt_1C",
+                                                     extrapolate_threshold=False)
+        print(threshold_targets_df)
+        self.assertEqual(len(threshold_targets_df), 64)
