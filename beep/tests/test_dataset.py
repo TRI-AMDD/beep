@@ -164,7 +164,7 @@ class TestDataset(unittest.TestCase):
         self.assertDictEqual(dataset.train_cells_parameter_dict, parameter_dict)
 
     def test_get_threshold_targets(self):
-        dataset_diagnostic_properties = loadfn(os.path.join(TEST_FILE_DIR, "diagnostic_properties.json"))
+        dataset_diagnostic_properties = loadfn(os.path.join(TEST_FILE_DIR, "diagnostic_properties_2.json"))
         threshold_targets_df = get_threshold_targets(dataset_diagnostic_properties.data,
                                                      cycle_type_target="rpt_1C")
         print(threshold_targets_df)
