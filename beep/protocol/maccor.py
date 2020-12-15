@@ -715,7 +715,8 @@ class Procedure(DashOrderedDict):
                 charge_current_param_1 (float): c-rate for first charging window
                 charge_current_param_2 (float): c-rate for second charging window
                 charge_current_param_3 (float): c-rate for third charging window
-                charge_current_param_4 (float): c-rate for fourth charging window
+                charge_soc_param_1 (float): soc upper bound for first charging window
+                charge_soc_param_2 (float): soc upper bound for second charging window
                 charge_percent_limit_1 (float): % of nominal capacity to end fast charging
                 charge_constant_current_2 (float): c-rate for final charging segment
                 charge_cutoff_voltage (float): V
@@ -1366,7 +1367,7 @@ def insert_driving_parametersv1(reg_params, waveform_directory=None):
     return file_path
 
 
-def insert_charging_parametersv1(reg_params, waveform_directory=None, max_c_rate=3.0):
+def insert_charging_parametersv1(reg_params, waveform_directory=None, max_c_rate=3.0, min_c_rate=0.2):
     """
     This function generates the waveform file for rapid charging. The charging windows are
     equally divide up the soc window (defined by charge_start_soc_1 to charge_percent_limit_1)
@@ -1379,12 +1380,14 @@ def insert_charging_parametersv1(reg_params, waveform_directory=None, max_c_rate
             charge_current_param_2 (float): c-rate for second charging window
             charge_current_param_3 (float): c-rate for third charging window
             charge_current_param_4 (float): c-rate for fourth charging window
+
             charge_percent_limit_1 (float): % of nominal capacity to end fast charging
             charge_constant_current_2 (float): c-rate for final charging segment
             charge_cutoff_voltage (float): upper voltage limit for the charge
             capacity_nominal (float): expected capacity of cell for c-rate calculations
         waveform_directory (str): path to save waveform files
         max_c_rate (float): maximum charging c-rate for safety and cycler limits
+        min_c_rate (float): minimum charging c-rate
     """
     mwf_config = {
         "control_mode": "I",
@@ -1406,10 +1409,14 @@ def insert_charging_parametersv1(reg_params, waveform_directory=None, max_c_rate
     soc_initial = reg_params["charge_start_percent_1"] / 100
     soc_final = reg_params["charge_percent_limit_1"] / 100
     charging_c_rates = [reg_params["charge_current_param_1"], reg_params["charge_current_param_2"],
-                        reg_params["charge_current_param_3"], reg_params["charge_current_param_4"]]
-    above_80p_c_rate = max([charging_c_rates[-1] * 0.8, reg_params["charge_constant_current_2"]])
-    charging = RapidChargeWave(above_80p_c_rate, soc_initial, soc_final, max_c_rate)
-    current_smooth, current_step, time_uniform = charging.get_currents_with_uniform_time_basis(charging_c_rates)
+                        reg_params["charge_current_param_3"], reg_params["charge_constant_current_2"]]
+
+    soc_points = [soc_initial, reg_params["charge_soc_param_1"], reg_params["charge_soc_param_2"], soc_final]
+    final_c_rate = charging_c_rates[-1]
+
+    charging = RapidChargeWave(final_c_rate, soc_initial, soc_final, max_c_rate, min_c_rate)
+    current_smooth, current_step, time_uniform = charging.get_currents_with_uniform_time_basis(charging_c_rates,
+                                                                                               soc_points)
 
     assert np.max(current_smooth) <= max_c_rate, "Maximum c-rate exceeded in {}, abort".format(reg_params["seq_num"])
     assert np.max(current_step) <= max_c_rate, "Maximum c-rate exceeded in {}, abort".format(reg_params["seq_num"])

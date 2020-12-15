@@ -284,11 +284,13 @@ class ProcedureTest(unittest.TestCase):
             )
 
     def test_generate_maccor_waveform_from_current(self):
-        charging_c_rates = [0.7, 1.8, 1.5, 1.0]
-        above_80p_c_rate = 0.5
-        soc_initial = 0.05
-        soc_final = 0.8
+        charging_c_rates = [0.5, 2.5, 2.0, 0.2]
+        soc_points = [0.05, 0.25, 0.65, 0.8]
+        final_c_rate = charging_c_rates[-1]
+        soc_initial = soc_points[0]
+        soc_final = soc_points[-1]
         max_c_rate = 3.0
+        min_c_rate = 0.2
         nominal_capacity = 4.84
 
         mwf_config = {
@@ -310,8 +312,9 @@ class ProcedureTest(unittest.TestCase):
         }
         with ScratchDir(".") as scratch_dir:
             waveform_name = "smooth_current_test"
-            charging = RapidChargeWave(above_80p_c_rate, soc_initial, soc_final, max_c_rate)
-            current_smooth, current_multi, time = charging.get_currents_with_uniform_time_basis(charging_c_rates)
+            charging = RapidChargeWave(final_c_rate, soc_initial, soc_final, max_c_rate, min_c_rate)
+            current_smooth, current_multi, time = charging.get_currents_with_uniform_time_basis(charging_c_rates,
+                                                                                                soc_points)
             df_smooth = pd.DataFrame({"current": current_smooth, "time": time})
             mwf_config["value_scale"] = nominal_capacity * max(df_smooth["current"])
 
@@ -329,11 +332,12 @@ class ProcedureTest(unittest.TestCase):
             )
             self.assertTrue(np.all(df_mwf.iloc[:, [1, ]] == 'I'))
             self.assertGreater(df_mwf.loc[:, 2].max(), nominal_capacity * max(charging_c_rates))
-            self.assertEqual(len(df_mwf), 1969)
+            self.assertEqual(len(df_mwf), 1662)
 
             waveform_name = "multistep_current_test"
-            charging = RapidChargeWave(above_80p_c_rate, soc_initial, soc_final, max_c_rate)
-            current_smooth, current_multi, time = charging.get_currents_with_uniform_time_basis(charging_c_rates)
+            charging = RapidChargeWave(final_c_rate, soc_initial, soc_final, max_c_rate, min_c_rate)
+            current_smooth, current_multi, time = charging.get_currents_with_uniform_time_basis(charging_c_rates,
+                                                                                                soc_points)
             df_smooth = pd.DataFrame({"current": current_multi, "time": time})
             mwf_config["value_scale"] = nominal_capacity * max(df_smooth["current"])
 
@@ -350,7 +354,7 @@ class ProcedureTest(unittest.TestCase):
             )
             self.assertTrue(np.all(df_mwf.iloc[:, [1, ]] == 'I'))
             self.assertGreaterEqual(df_mwf.loc[:, 2].max(), nominal_capacity * max(charging_c_rates))
-            self.assertEqual(len(df_mwf), 19)
+            self.assertEqual(len(df_mwf), 15)
 
 
 class GenerateProcedureTest(unittest.TestCase):
@@ -730,7 +734,7 @@ class GenerateProcedureTest(unittest.TestCase):
 
             file_name = insert_charging_parametersv1(reg_params,
                                                      waveform_directory=output_directory,
-                                                     max_c_rate=3.0)
+                                                     max_c_rate=3.0, min_c_rate=0.2)
             self.assertTrue(os.path.isfile(os.path.join(output_directory, file_name)))
             self.assertEqual(os.path.split(file_name)[1], "RapidC_smooth_101.MWF")
 
@@ -801,7 +805,7 @@ class GenerateProcedureTest(unittest.TestCase):
                 self.assertEqual(df_mwf.loc[:, 4].min(), protocol_params["charge_cutoff_voltage"] - 0.01)
 
             self.assertTrue(os.path.isfile(filename))
-            self.assertEqual(len(os.listdir(mwf_dir)), 30)
+            self.assertEqual(len(os.listdir(mwf_dir)), 60)
 
             parsed = open(
                 os.path.join(scratch_dir, "procedures", "RapidC_000100.000")
@@ -872,7 +876,7 @@ class GenerateProcedureTest(unittest.TestCase):
             # Test the script
             json_input = json.dumps({"file_list": [csv_file]})
             os.system("generate_protocol {}".format(os_format(json_input)))
-            self.assertEqual(len(os.listdir(procedures_path)), 30)
+            self.assertEqual(len(os.listdir(procedures_path)), 60)
 
 
 class ProcedureToScheduleTest(unittest.TestCase):

@@ -67,32 +67,36 @@ class RapidChargeWave:
 
     """
     def __init__(self,
-                 above_80p_c_rate,
+                 final_c_rate,
                  soc_initial,
                  soc_final,
                  max_c_rate,
+                 min_c_rate
                  ):
         """
         Args:
-            above_80p_c_rate (float): charging rate for the final step
+            final_c_rate (float): charging rate for the final step
             soc_initial (float): estimated starting soc for the fast charging portion of the cycle
             soc_final (float): estimated soc to end the fast charging portion of the cycle
-            max_c_rate (float): maximum charging rate for the beginning of charge
+            max_c_rate (float): maximum charging rate for the charge
+            min_c_rate (float): minimum charging rate for the charge
 
         """
-        self.final_c_rate = above_80p_c_rate
+        self.final_c_rate = final_c_rate
         self.soc_i = soc_initial
         self.soc_f = soc_final
         self.max_c_rate = max_c_rate
+        self.min_c_rate = min_c_rate
         self.soc_points = 1000
 
-    def get_currents_with_uniform_time_basis(self, charging_c_rates):
+    def get_currents_with_uniform_time_basis(self, charging_c_rates, mesh_points):
         """
         Function to re-interpolate all of the current values to a uniform time basis, with each time step 1 sec
 
         Args:
             charging_c_rates (list): c-rates for each of the charging steps. Each step is assumed to be an equal
                 SOC portion of the charge, and the length of the list just needs to be at least 1
+            mesh_points (list): soc values for beginning and end of each of the charging windows
 
         returns
         np.array: array with the adjusted smooth current as a function of uniform time basis
@@ -100,7 +104,7 @@ class RapidChargeWave:
         np.array: array with the corresponding uniformly spaced time values
         """
         current_smooth, time_smooth, current_multistep, time_multistep = \
-            self.get_input_currents_both_to_final_soc(charging_c_rates)
+            self.get_input_currents_both_to_final_soc(charging_c_rates, mesh_points)
         end_time_smooth = np.int(np.round(np.max(time_smooth), 0))
         end_time_multistep = np.int(np.round(np.max(time_multistep), 0))
         assert end_time_smooth == end_time_multistep
@@ -124,7 +128,7 @@ class RapidChargeWave:
 
         return current_smooth_uniform, current_multistep_uniform, time_uniform
 
-    def get_input_currents_both_to_final_soc(self, charging_c_rates):
+    def get_input_currents_both_to_final_soc(self, charging_c_rates, mesh_points):
         """
         Function to shift the charging rates for the smooth current to ensure that both the multistep and
         smooth charging functions reach the end in the same length of time.
@@ -132,6 +136,7 @@ class RapidChargeWave:
         Args:
             charging_c_rates (list): c-rates for each of the charging steps. Each step is assumed to be an equal
                 SOC portion of the charge, and the length of the list just needs to be at least 1
+            mesh_points (list): soc values for beginning and end of each of the charging windows
 
         returns
         np.array: array with the adjusted smooth current as a function of soc
@@ -140,7 +145,7 @@ class RapidChargeWave:
         np.array: array with the corresponding time values
         """
 
-        current_multistep, soc_vector = self.get_input_current_multistep_soc_as_x(charging_c_rates)
+        current_multistep, soc_vector = self.get_input_current_multistep_soc_as_x(charging_c_rates, mesh_points)
 
         time_multistep = self.get_time_vector_from_c_vs_soc(soc_vector, current_multistep)
         end_soc_time = time_multistep[soc_vector >= self.soc_f][0]
@@ -150,11 +155,11 @@ class RapidChargeWave:
                                maxfev=1000,
                                factor=0.1,
                                epsfcn=0.01,
-                               args=(end_soc_time, charging_c_rates))
+                               args=(end_soc_time, charging_c_rates, mesh_points))
 
         charging_c_rates = list(np.add(charging_c_rates, offset_solved))
 
-        current_smooth_time_adjusted, soc_vector = self.get_input_current_smooth_soc_as_x(charging_c_rates)
+        current_smooth_time_adjusted, soc_vector = self.get_input_current_smooth_soc_as_x(charging_c_rates, mesh_points)
         time_smooth_time_adjusted = self.get_time_vector_from_c_vs_soc(soc_vector, current_smooth_time_adjusted)
 
         return current_smooth_time_adjusted, time_smooth_time_adjusted, current_multistep, time_multistep
@@ -171,12 +176,13 @@ class RapidChargeWave:
         returns
         float: difference between the desired ending time and the actual ending time for the smooth curve
         """
-        time_end_multistep, charging_c_rates = data
+        time_end_multistep, charging_c_rates, mesh_points = data
         soc_vector = np.linspace(self.soc_i, self.soc_f, self.soc_points)
         return time_end_multistep - self.shift_smooth_by_offset(offset_test,
-                                                                charging_c_rates)[0][soc_vector >= self.soc_f][0]
+                                                                charging_c_rates,
+                                                                mesh_points)[0][soc_vector >= self.soc_f][0]
 
-    def get_input_current_multistep_soc_as_x(self, charging_c_rates):
+    def get_input_current_multistep_soc_as_x(self, charging_c_rates, mesh_points):
         """
         Helper function to generate a waveform with stepwise charging currents. Should return a vector
         of current values and vector of corresponding state of charge (soc) values.
@@ -184,12 +190,12 @@ class RapidChargeWave:
         Args:
             charging_c_rates (list): c-rates for each of the charging steps. Each step is assumed to be an equal
                 SOC portion of the charge, and the length of the list just needs to be at least 1
+            mesh_points (list): soc values for beginning and end of each of the charging windows
 
         returns
         np.array: array with the current as a function of soc
         np.array: array with the corresponding soc values
         """
-        mesh_points = np.linspace(self.soc_i, self.soc_f, len(charging_c_rates) + 1)
         soc_vector = np.linspace(self.soc_i, self.soc_f, self.soc_points)
         c_rate_i = np.zeros((len(mesh_points) - 1, len(soc_vector)))
 
@@ -208,7 +214,7 @@ class RapidChargeWave:
 
         return multistep_current, soc_vector
 
-    def get_input_current_smooth_soc_as_x(self, charging_c_rates):
+    def get_input_current_smooth_soc_as_x(self, charging_c_rates, mesh_points):
         """
         Helper function to generate a waveform with smoothly varying charging current. Should return a vector
         of current values and vector of corresponding state of charge (soc) values.
@@ -216,21 +222,27 @@ class RapidChargeWave:
         Args:
             charging_c_rates (list): c-rates for each of the charging steps. Each step is assumed to be an equal
                 SOC portion of the charge, and the length of the list just needs to be at least 1
+            mesh_points (list): soc values for beginning and end of each of the charging windows
 
         returns
         np.array: array with the current as a function of soc
         np.array: array with the corresponding soc values
         """
+        mesh_points_mid = np.copy(mesh_points)
+
+        for indx in range(len(mesh_points) - 1):
+            mesh_points_mid[indx] = (mesh_points[indx] + mesh_points[indx + 1]) / 2
+
         soc_vector = np.linspace(self.soc_i, self.soc_f, self.soc_points)
-        mesh_points = np.linspace(self.soc_i, self.soc_f, len(charging_c_rates) + 1)
-        mesh_points_mid = mesh_points
-        mesh_points_mid[0:-1] += 1 / (len(mesh_points_mid)) * 0.5
 
         mesh_points_mid = list([self.soc_i]) + list(mesh_points_mid) + list([self.soc_f * 1.01])
         mesh_points_mid = np.array(mesh_points_mid)
 
-        charging_c_rate_start = self.final_c_rate
-        rates = np.array([charging_c_rate_start] + charging_c_rates + [self.final_c_rate] + [self.final_c_rate])
+        charging_c_rate_start = charging_c_rates[0]
+        rates = np.clip([charging_c_rate_start] + charging_c_rates + [charging_c_rates[-1]],
+                        self.min_c_rate,
+                        self.max_c_rate)
+
         interpolator = interpolate.PchipInterpolator(mesh_points_mid, rates, axis=0, extrapolate=0)
 
         charging_c_rate_soc1_end = interpolator.__call__(mesh_points[1])
@@ -238,7 +250,11 @@ class RapidChargeWave:
         charging_c_rate_start = np.max(
             [charging_c_rates[0] - (charging_c_rate_soc1_end - charging_c_rates[0]), charging_c_rates[0]])
         charging_c_rate_start = np.min([self.max_c_rate, charging_c_rate_start])
-        rates = np.array([charging_c_rate_start] + charging_c_rates + [self.final_c_rate] + [self.final_c_rate])
+
+        rates = np.clip([charging_c_rate_start] + charging_c_rates + [charging_c_rates[-1]],
+                        self.min_c_rate,
+                        self.max_c_rate)
+
         interpolator = interpolate.PchipInterpolator(mesh_points_mid, rates, axis=0, extrapolate=0)
 
         input_current = interpolator.__call__(soc_vector)
@@ -247,7 +263,7 @@ class RapidChargeWave:
 
         return input_curent_smooth_soc_as_x, soc_vector
 
-    def shift_smooth_by_offset(self, offset, charging_c_rates):
+    def shift_smooth_by_offset(self, offset, charging_c_rates, mesh_points):
         """
         Helper function to shift the current values of the smooth charging curve to achieve the desired SOC sooner.
 
@@ -255,6 +271,7 @@ class RapidChargeWave:
             offset (float): amount to shift the current values
             charging_c_rates (list): c-rates for each of the charging steps. Each step is assumed to be an equal
                 SOC portion of the charge, and the length of the list just needs to be at least 1
+            mesh_points (list): soc values for beginning and end of each of the charging windows
 
         returns
         np.array: array with the current as a function of soc
@@ -262,7 +279,7 @@ class RapidChargeWave:
         """
         shifted_c_rates = list(np.add(charging_c_rates, offset))
 
-        current_smooth_shifted, soc_vector = self.get_input_current_smooth_soc_as_x(shifted_c_rates)
+        current_smooth_shifted, soc_vector = self.get_input_current_smooth_soc_as_x(shifted_c_rates, mesh_points)
 
         time_smooth_shifted = self.get_time_vector_from_c_vs_soc(soc_vector, current_smooth_shifted)
 

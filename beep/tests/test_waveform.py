@@ -28,24 +28,27 @@ class ChargeWaveformTest(unittest.TestCase):
         pass
 
     def test_get_input_current_soc_as_x(self):
-        charging_c_rates = [0.7, 1.8, 1.5, 1.0]
-        above_80p_c_rate = 0.2
-        soc_initial = 0.05
-        soc_final = 0.8
+        charging_c_rates = [0.5, 2.5, 2.0, 0.2]
+        soc_points = [0.05, 0.25, 0.65, 0.8]
+        final_c_rate = charging_c_rates[-1]
+        soc_initial = soc_points[0]
+        soc_final = soc_points[-1]
         max_c_rate = 3.0
+        min_c_rate = 0.2
 
-        charging = RapidChargeWave(above_80p_c_rate, soc_initial, soc_final, max_c_rate)
+        charging = RapidChargeWave(final_c_rate, soc_initial, soc_final, max_c_rate, min_c_rate)
 
-        current_multistep_soc_as_x, soc_vector = charging.get_input_current_multistep_soc_as_x(charging_c_rates)
-        self.assertEqual(np.round(np.mean(current_multistep_soc_as_x), 6), np.round(1.2492, 6))
-        self.assertEqual(np.round(np.median(current_multistep_soc_as_x), 6), np.round(1.25, 6))
-        self.assertEqual(np.round(np.max(current_multistep_soc_as_x), 6), np.round(1.8, 6))
-        self.assertEqual(np.round(np.min(current_multistep_soc_as_x), 6), np.round(0.35, 6))
+        current_multistep_soc_as_x, soc_vector = charging.get_input_current_multistep_soc_as_x(charging_c_rates,
+                                                                                               soc_points)
+        self.assertEqual(np.round(np.mean(current_multistep_soc_as_x), 6), np.round(1.8648, 6))
+        self.assertEqual(np.round(np.median(current_multistep_soc_as_x), 6), np.round(2.5, 6))
+        self.assertEqual(np.round(np.max(current_multistep_soc_as_x), 6), np.round(2.5, 6))
+        self.assertEqual(np.round(np.min(current_multistep_soc_as_x), 6), np.round(0.25, 6))
 
-        current_smooth_soc_as_x, soc_vector = charging.get_input_current_smooth_soc_as_x(charging_c_rates)
-        self.assertEqual(np.round(np.mean(current_smooth_soc_as_x), 6), np.round(1.213584, 6))
-        self.assertEqual(np.round(np.median(current_smooth_soc_as_x), 6), np.round(1.294162, 6))
-        self.assertEqual(np.round(np.max(current_smooth_soc_as_x), 6), np.round(1.8, 6))
+        current_smooth_soc_as_x, soc_vector = charging.get_input_current_smooth_soc_as_x(charging_c_rates, soc_points)
+        self.assertEqual(np.round(np.mean(current_smooth_soc_as_x), 6), np.round(1.631819, 6))
+        self.assertEqual(np.round(np.median(current_smooth_soc_as_x), 6), np.round(1.991661, 6))
+        self.assertEqual(np.round(np.max(current_smooth_soc_as_x), 6), np.round(2.5, 6))
         self.assertEqual(np.round(np.min(current_smooth_soc_as_x), 6), np.round(0.2, 6))
 
         plt.figure()
@@ -59,25 +62,28 @@ class ChargeWaveformTest(unittest.TestCase):
         plt.savefig(os.path.join(TEST_FILE_DIR, "rapid_charge_soc.png"))
 
     def test_get_input_current_time_as_x(self):
-        charging_c_rates = [0.7, 1.8, 1.5, 1.0]
-        above_80p_c_rate = 0.2
-        soc_initial = 0.05
-        soc_final = 0.8
+        charging_c_rates = [0.5, 2.5, 2.0, 0.2]
+        soc_points = [0.05, 0.25, 0.65, 0.8]
+        final_c_rate = charging_c_rates[-1]
+        soc_initial = soc_points[0]
+        soc_final = soc_points[-1]
         max_c_rate = 3.0
+        min_c_rate = 0.2
 
-        charging = RapidChargeWave(above_80p_c_rate, soc_initial, soc_final, max_c_rate)
+        charging = RapidChargeWave(final_c_rate, soc_initial, soc_final, max_c_rate, min_c_rate)
 
-        current_multistep_soc_as_x, soc_vector = charging.get_input_current_multistep_soc_as_x(charging_c_rates)
+        current_multistep_soc_as_x, soc_vector = charging.get_input_current_multistep_soc_as_x(charging_c_rates,
+                                                                                               soc_points)
         time_multistep = charging.get_time_vector_from_c_vs_soc(soc_vector, current_multistep_soc_as_x)
-        self.assertEqual(np.round(np.mean(time_multistep), 6), np.round(1337.679174, 6))
-        self.assertEqual(np.round(np.median(time_multistep), 6), np.round(1345.388245, 6))
-        self.assertEqual(np.round(np.max(time_multistep), 3), 2472.825)
+        self.assertEqual(np.round(np.mean(time_multistep), 6), np.round(1552.953655, 6))
+        self.assertEqual(np.round(np.median(time_multistep), 6), np.round(1701.081081, 6))
+        self.assertEqual(np.round(np.max(time_multistep), 3), 2296.358)
 
-        current_smooth_soc_as_x, soc_vector = charging.get_input_current_smooth_soc_as_x(charging_c_rates)
+        current_smooth_soc_as_x, soc_vector = charging.get_input_current_smooth_soc_as_x(charging_c_rates, soc_points)
         time_smooth = charging.get_time_vector_from_c_vs_soc(soc_vector, current_smooth_soc_as_x)
-        self.assertEqual(np.round(np.mean(time_smooth), 6), np.round(1292.118085, 6))
-        self.assertEqual(np.round(np.median(time_smooth), 6), np.round(1294.725026, 6))
-        self.assertEqual(np.round(np.max(time_smooth), 3), 2787.107)
+        self.assertEqual(np.round(np.mean(time_smooth), 6), np.round(1503.457129, 6))
+        self.assertEqual(np.round(np.median(time_smooth), 6), np.round(1644.678275, 6))
+        self.assertEqual(np.round(np.max(time_smooth), 3), 2539.486)
 
         plt.figure()
         plt.plot(time_smooth, current_smooth_soc_as_x)
@@ -90,16 +96,18 @@ class ChargeWaveformTest(unittest.TestCase):
         plt.savefig(os.path.join(TEST_FILE_DIR, "rapid_charge_time.png"))
 
     def test_get_input_current_matching_time(self):
-        charging_c_rates = [0.7, 1.8, 1.5, 1.0]
-        above_80p_c_rate = 0.2
-        soc_initial = 0.05
-        soc_final = 0.8
+        charging_c_rates = [2.5, 0.5, 2.0, 0.2]
+        soc_points = [0.05, 0.25, 0.65, 0.8]
+        final_c_rate = charging_c_rates[-1]
+        soc_initial = soc_points[0]
+        soc_final = soc_points[-1]
         max_c_rate = 3.0
+        min_c_rate = 0.2
 
-        charging = RapidChargeWave(above_80p_c_rate, soc_initial, soc_final, max_c_rate)
+        charging = RapidChargeWave(final_c_rate, soc_initial, soc_final, max_c_rate, min_c_rate)
 
         current_smooth, time_smooth, current_multistep, time_multistep = \
-            charging.get_input_currents_both_to_final_soc(charging_c_rates)
+            charging.get_input_currents_both_to_final_soc(charging_c_rates, soc_points)
         self.assertEqual(np.round(np.max(time_smooth), 3), np.round(np.max(time_multistep), 3))
 
         plt.figure()
@@ -113,16 +121,18 @@ class ChargeWaveformTest(unittest.TestCase):
         plt.savefig(os.path.join(TEST_FILE_DIR, "rapid_charge_matching.png"))
 
     def test_dropping_current_matching_time(self):
-        charging_c_rates = [2.484693814, 1.662448583, 2.968537966, 1.373551161]
-        above_80p_c_rate = max([charging_c_rates[-1] * 0.9, 0.2])
-        soc_initial = 0.05
-        soc_final = 0.8
+        charging_c_rates = [2.5, 0.5, 2.0, 0.2]
+        soc_points = [0.05, 0.25, 0.65, 0.8]
+        final_c_rate = charging_c_rates[-1]
+        soc_initial = soc_points[0]
+        soc_final = soc_points[-1]
         max_c_rate = 3.0
+        min_c_rate = 0.2
 
-        charging = RapidChargeWave(above_80p_c_rate, soc_initial, soc_final, max_c_rate)
+        charging = RapidChargeWave(final_c_rate, soc_initial, soc_final, max_c_rate, min_c_rate)
 
         current_smooth, time_smooth, current_multistep, time_multistep = \
-            charging.get_input_currents_both_to_final_soc(charging_c_rates)
+            charging.get_input_currents_both_to_final_soc(charging_c_rates, soc_points)
 
         plt.figure()
         plt.plot(time_smooth, current_smooth)
@@ -138,14 +148,17 @@ class ChargeWaveformTest(unittest.TestCase):
         self.assertEqual(np.round(np.max(time_smooth), 3), np.round(np.max(time_multistep), 3))
 
     def test_get_input_current_uniform_time(self):
-        charging_c_rates = [2.484693814, 1.662448583, 2.968537966, 1.373551161]
-        above_80p_c_rate = 0.2
-        soc_initial = 0.05
-        soc_final = 0.8
+        charging_c_rates = [0.5, 2.5, 2.0, 0.2]
+        soc_points = [0.05, 0.25, 0.65, 0.8]
+        final_c_rate = charging_c_rates[-1]
+        soc_initial = soc_points[0]
+        soc_final = soc_points[-1]
         max_c_rate = 3.0
+        min_c_rate = 0.2
 
-        charging = RapidChargeWave(above_80p_c_rate, soc_initial, soc_final, max_c_rate)
-        current_smooth, current_multi, time_uniform = charging.get_currents_with_uniform_time_basis(charging_c_rates)
+        charging = RapidChargeWave(final_c_rate, soc_initial, soc_final, max_c_rate, min_c_rate)
+        current_smooth, current_multi, time_uniform = charging.get_currents_with_uniform_time_basis(charging_c_rates,
+                                                                                                    soc_points)
         soc_smooth = np.sum(current_smooth) / 3600
         soc_multistep = np.sum(current_multi) / 3600
 
