@@ -96,7 +96,7 @@ class ChargeWaveformTest(unittest.TestCase):
         plt.savefig(os.path.join(TEST_FILE_DIR, "rapid_charge_time.png"))
 
     def test_get_input_current_matching_time(self):
-        charging_c_rates = [2.5, 0.5, 2.0, 0.2]
+        charging_c_rates = [0.5, 2.5, 2.0, 0.2]
         soc_points = [0.05, 0.25, 0.65, 0.8]
         final_c_rate = charging_c_rates[-1]
         soc_initial = soc_points[0]
