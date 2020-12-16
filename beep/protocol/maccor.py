@@ -757,7 +757,6 @@ class Procedure(DashOrderedDict):
         reg_param["charge_constant_current_2"] = reg_param["charge_current_param_4"]
         reg_param["charge_percent_limit_1"] = reg_param["charge_fast_soc_limit"]
 
-
         # Start of initial set of regular cycles
         reg_charge_idx = 27 + 1
         obj.insert_charge_regcyclev3(reg_charge_idx, reg_param)
