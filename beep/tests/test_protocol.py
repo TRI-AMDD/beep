@@ -333,8 +333,8 @@ class ProcedureTest(unittest.TestCase):
             self.assertTrue(np.all(df_mwf.iloc[:, [1, ]] == 'I'))
             self.assertGreater(df_mwf.loc[:, 2].max(), nominal_capacity * max(charging_c_rates))
             self.assertEqual(len(df_mwf), 1572)
-            shutil.copyfile(os.path.join(scratch_dir, waveform_name + '.MWF'),
-                            os.path.join(TEST_FILE_DIR, waveform_name + '.MWF'))
+            # shutil.copyfile(os.path.join(scratch_dir, waveform_name + '.MWF'),
+            #                 os.path.join(TEST_FILE_DIR, waveform_name + '.MWF'))
 
             waveform_name = "multistep_current_test"
             charging = RapidChargeWave(final_c_rate, soc_initial, soc_final, max_c_rate, min_c_rate)
