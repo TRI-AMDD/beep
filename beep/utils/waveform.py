@@ -103,6 +103,7 @@ class RapidChargeWave:
         np.array: array with the multistep current as a function of the uniform time basis
         np.array: array with the corresponding uniformly spaced time values
         """
+        assert np.all(np.diff(mesh_points)) > 0
         current_smooth, time_smooth, current_multistep, time_multistep = \
             self.get_input_currents_both_to_final_soc(charging_c_rates, mesh_points)
         end_time_smooth = np.int(np.round(np.max(time_smooth), 0))
