@@ -108,17 +108,19 @@ class ChargeWaveformTest(unittest.TestCase):
 
         current_smooth, time_smooth, current_multistep, time_multistep = \
             charging.get_input_currents_both_to_final_soc(charging_c_rates, soc_points)
-        self.assertEqual(np.round(np.max(time_smooth), 3), np.round(np.max(time_multistep), 3))
 
         plt.figure()
         plt.plot(time_smooth, current_smooth)
         plt.plot(time_multistep, current_multistep, linestyle='--')
 
-        plt.ylim(0, 3)
+        plt.ylim(0, 3.5)
         plt.xlabel('Time [sec]')
         plt.ylabel('C rate [h$^{-1}$]')
         plt.legend(['Smooth', 'Multistep CC'])
         plt.savefig(os.path.join(TEST_FILE_DIR, "rapid_charge_matching.png"))
+
+        self.assertEqual(np.round(np.max(time_smooth), 3), np.round(np.max(time_multistep), 3))
+        self.assertLessEqual(np.max(current_smooth), max_c_rate)
 
     def test_dropping_current_matching_time(self):
         charging_c_rates = [2.5, 0.5, 2.0, 0.2]

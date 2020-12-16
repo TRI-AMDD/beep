@@ -157,7 +157,8 @@ class RapidChargeWave:
                                epsfcn=0.01,
                                args=(end_soc_time, charging_c_rates, mesh_points))
 
-        charging_c_rates = list(np.add(charging_c_rates, offset_solved))
+        charging_c_rates = [charging_c_rates[0]] + list(np.add(charging_c_rates[1:-1], offset_solved)) + \
+                           [charging_c_rates[-1]]
 
         current_smooth_time_adjusted, soc_vector = self.get_input_current_smooth_soc_as_x(charging_c_rates, mesh_points)
         time_smooth_time_adjusted = self.get_time_vector_from_c_vs_soc(soc_vector, current_smooth_time_adjusted)
@@ -170,7 +171,7 @@ class RapidChargeWave:
         smooth charging functions reach the end in the same length of time.
 
         Args:
-            offset_test (float): Amount to shift all of the c rates in the smooth curve
+            offset_test (float): Amount to shift all of the non-edge c rates in the smooth curve
             data (*args): ending time to hit, baseline charging rates to add to
 
         returns
@@ -268,7 +269,7 @@ class RapidChargeWave:
         Helper function to shift the current values of the smooth charging curve to achieve the desired SOC sooner.
 
         Args:
-            offset (float): amount to shift the current values
+            offset (float): Amount to shift all of the non-edge c rates in the smooth curve
             charging_c_rates (list): c-rates for each of the charging steps. Each step is assumed to be an equal
                 SOC portion of the charge, and the length of the list just needs to be at least 1
             mesh_points (list): soc values for beginning and end of each of the charging windows
@@ -277,7 +278,8 @@ class RapidChargeWave:
         np.array: array with the current as a function of soc
         np.array: array with the corresponding soc values
         """
-        shifted_c_rates = list(np.add(charging_c_rates, offset))
+        shifted_c_rates = [charging_c_rates[0]] + list(np.add(charging_c_rates[1:-1], offset)) + [charging_c_rates[-1]]
+        # shifted_c_rates = list(np.add(charging_c_rates, offset))
 
         current_smooth_shifted, soc_vector = self.get_input_current_smooth_soc_as_x(shifted_c_rates, mesh_points)
 

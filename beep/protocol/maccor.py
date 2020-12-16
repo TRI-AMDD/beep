@@ -704,7 +704,7 @@ class Procedure(DashOrderedDict):
     @classmethod
     def generate_procedure_chargingv1(cls, protocol_index, reg_param, waveform_name, template=None):
         """
-        Generates a procedure according to the diagnosticV3 template.
+        Generates a procedure according to the diagnosticV4 template.
 
         Args:
             protocol_index (int): number of the protocol file being
@@ -715,11 +715,11 @@ class Procedure(DashOrderedDict):
                 charge_current_param_1 (float): c-rate for first charging window
                 charge_current_param_2 (float): c-rate for second charging window
                 charge_current_param_3 (float): c-rate for third charging window
-                charge_soc_param_1 (float): soc upper bound for first charging window
-                charge_soc_param_2 (float): soc upper bound for second charging window
-                charge_percent_limit_1 (float): % of nominal capacity to end fast charging
-                charge_constant_current_2 (float): c-rate for final charging segment
-                charge_cutoff_voltage (float): V
+                charge_current_param_4 (float): c-rate for fourth charging window
+                charge_soc_param_1 (float): soc point for dividing first charging window from second window
+                charge_soc_param_2 (float): soc point for dividing second charging window from third window
+                charge_fast_soc_limit (float): % of nominal capacity to end fast charging
+                charge_cutoff_voltage (float): upper voltage limit for the charge
                 charge_constant_voltage_time (integer): mins
                 charge_rest_time (integer): mins
                 profile_charge_limit (float): upper limit voltage for the profile
@@ -752,8 +752,11 @@ class Procedure(DashOrderedDict):
         dc_idx = 1
         obj.insert_resistance_regcyclev2(dc_idx, reg_param)
 
-        # Set variable necessary to use regcyclev3 function
+        # Set variables necessary to use regcyclev3 function
         reg_param["charge_constant_current_1"] = 1
+        reg_param["charge_constant_current_2"] = reg_param["charge_current_param_4"]
+        reg_param["charge_percent_limit_1"] = reg_param["charge_fast_soc_limit"]
+
 
         # Start of initial set of regular cycles
         reg_charge_idx = 27 + 1
@@ -1369,20 +1372,21 @@ def insert_driving_parametersv1(reg_params, waveform_directory=None):
 
 def insert_charging_parametersv1(reg_params, waveform_directory=None, max_c_rate=3.0, min_c_rate=0.2):
     """
-    This function generates the waveform file for rapid charging. The charging windows are
-    equally divide up the soc window (defined by charge_start_soc_1 to charge_percent_limit_1)
+    This function generates the waveform file for rapid charging. The charging rate parameters
+    are applied over SOC windows defined by charge_start_soc, charge_soc_param_1,
+    charge_soc_param_2, fast_charge_soc_limit.
 
     Args:
         reg_params (pandas.DataFrame): containing the following quantities
             charge_type_1 (str): {'smooth', 'step'} type of charging waveform
-            charge_start_soc_1 (float): assumed starting soc for the charge
+            charge_start_soc (float): assumed starting soc for the charge
             charge_current_param_1 (float): c-rate for first charging window
             charge_current_param_2 (float): c-rate for second charging window
             charge_current_param_3 (float): c-rate for third charging window
             charge_current_param_4 (float): c-rate for fourth charging window
-
-            charge_percent_limit_1 (float): % of nominal capacity to end fast charging
-            charge_constant_current_2 (float): c-rate for final charging segment
+            charge_soc_param_1 (float): soc point for dividing first charging window from second window
+            charge_soc_param_2 (float): soc point for dividing second charging window from third window
+            charge_fast_soc_limit (float): fraction of nominal capacity to end fast charging
             charge_cutoff_voltage (float): upper voltage limit for the charge
             capacity_nominal (float): expected capacity of cell for c-rate calculations
         waveform_directory (str): path to save waveform files
@@ -1406,10 +1410,10 @@ def insert_charging_parametersv1(reg_params, waveform_directory=None, max_c_rate
         "report_value": 3.0000,
         "range": "A",
     }
-    soc_initial = reg_params["charge_start_percent_1"] / 100
-    soc_final = reg_params["charge_percent_limit_1"] / 100
+    soc_initial = reg_params["charge_start_soc"]
+    soc_final = reg_params["charge_fast_soc_limit"]
     charging_c_rates = [reg_params["charge_current_param_1"], reg_params["charge_current_param_2"],
-                        reg_params["charge_current_param_3"], reg_params["charge_constant_current_2"]]
+                        reg_params["charge_current_param_3"], reg_params["charge_current_param_4"]]
 
     soc_points = [soc_initial, reg_params["charge_soc_param_1"], reg_params["charge_soc_param_2"], soc_final]
     final_c_rate = charging_c_rates[-1]
