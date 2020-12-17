@@ -352,7 +352,8 @@ def get_threshold_targets(dataset_diagnostic_properties,
     used to evaluate the factional metric can be set be cycle_type_target. The point at which the cell crosses the
     threshold is determined with a linear interpolation between diagnostic cycles. In the event that the cell has not
     yet reached the threshold, the point at which it is expected to reach the threshold can be calculated by linear
-    extrapolation from the last two diagnostic cycles. The filter kinks option allows for removal of
+    extrapolation from the last two diagnostic cycles. The filter kinks option allows for removal of cells with an
+    abrupt change in degradation rate, possibly indicating some error or problem with the experiment.
 
     Args:
         dataset_diagnostic_properties (BeepDataset.data): Data attribute of dataset object created from the
