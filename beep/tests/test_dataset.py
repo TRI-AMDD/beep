@@ -164,13 +164,30 @@ class TestDataset(unittest.TestCase):
         self.assertDictEqual(dataset.train_cells_parameter_dict, parameter_dict)
 
     def test_get_threshold_targets(self):
-        dataset_diagnostic_properties = loadfn(os.path.join(TEST_FILE_DIR, "diagnostic_properties_2.json"))
+        dataset_diagnostic_properties = loadfn(os.path.join(TEST_FILE_DIR, "diagnostic_properties_test.json"))
         threshold_targets_df = get_threshold_targets(dataset_diagnostic_properties.data,
                                                      cycle_type_target="rpt_1C")
-        print(threshold_targets_df)
         self.assertEqual(len(threshold_targets_df), 92)
+        self.assertEqual(threshold_targets_df.columns.to_list(), ['file',
+                                                                  'seq_num',
+                                                                  'initial_regular_throughput',
+                                                                  'rpt_1Cdischarge_energy0.8_normalized_reg_throughput',
+                                                                  'rpt_1Cdischarge_energy0.8_real_reg_throughput',
+                                                                  'rpt_1Cdischarge_energy0.8_cycles']
+                         )
+        self.assertEqual(threshold_targets_df[threshold_targets_df['seq_num'] == 154].round(decimals=3).to_dict("list"),
+                         {
+                             'file': ['PredictionDiagnostics_000154'],
+                             'seq_num': [154],
+                             'initial_regular_throughput': [489.31],
+                             'rpt_1Cdischarge_energy0.8_normalized_reg_throughput': [4.453],
+                             'rpt_1Cdischarge_energy0.8_real_reg_throughput': [2178.925],
+                             'rpt_1Cdischarge_energy0.8_cycles': [159.766]
+                          }
+                         )
         threshold_targets_df = get_threshold_targets(dataset_diagnostic_properties.data,
                                                      cycle_type_target="rpt_1C",
                                                      extrapolate_threshold=False)
-        print(threshold_targets_df)
         self.assertEqual(len(threshold_targets_df), 64)
+        self.assertEqual(threshold_targets_df['rpt_1Cdischarge_energy0.8_real_reg_throughput'].round(decimals=3)
+                         .median(), 2016.976)

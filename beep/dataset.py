@@ -347,13 +347,27 @@ def get_threshold_targets(dataset_diagnostic_properties,
                           filter_kinks=None,
                           extrapolate_threshold=True):
     """
-    Method to generate a
+    Method to generate a data frame with cycle number and throughputs at which the cell drops below a fractional metric.
+    The metric being used is set by the basis variable and the value of the threshold can be varied. The cycle being
+    used to evaluate the factional metric can be set be cycle_type_target. The point at which the cell crosses the
+    threshold is determined with a linear interpolation between diagnostic cycles. In the event that the cell has not
+    yet reached the threshold, the point at which it is expected to reach the threshold can be calculated by linear
+    extrapolation from the last two diagnostic cycles. The filter kinks option allows for removal of
 
     Args:
-        processed_dir (dict): target directory.
+        dataset_diagnostic_properties (BeepDataset.data): Data attribute of dataset object created from the
+            DiagnosticProperties feature
+        cycle_type_target (str): Type of diagnostic cycle being used to measure the fractional metric
+        basis (str): The metric being used for fractional capacity
+        threshold (float): Value for the fractional metric to be considered above or below threshold
+        filter_kinks (float): If set, cutoff value for the second derivative of the fractional metric (cells with an
+            abrupt change in degradation rate might have something else going on)
+        extrapolate_threshold (bool): Should threshold crossing point be extrapolated for cells that have not yet
+            reached the threshold (warning: this uses a linear extrapolation from the last two diagnostic cycles)
 
     Returns:
-         Path to serialized dataset
+         pd.DataFrame: Each row is a seq_num and contains the interpolated throughput and cycle number at which
+            that particular run crossed the threshold.
 
     """
     threshold_values_df_list = []
@@ -365,7 +379,8 @@ def get_threshold_targets(dataset_diagnostic_properties,
         # Look at one run at a time
         run_target_df = cycle_type_target_df[cycle_type_target_df['file'] == run]
 
-        # Filter to truncate data from cells that have a sudden drop in the fractional metric (something wrong with the test)
+        # Filter to truncate data from cells that have a sudden drop in the fractional metric
+        # (something wrong with the test)
         if filter_kinks and np.any(run_target_df['fractional_metric'].diff().diff() < filter_kinks):
             last_good_cycle = run_target_df[run_target_df['fractional_metric'].diff().diff() < filter_kinks][
                 'cycle_index'].min()
