@@ -341,8 +341,8 @@ class BeepDataset(MSONable):
 
 
 def get_threshold_targets(dataset_diagnostic_properties,
-                          cycle_type_target="rpt_1C",
-                          basis="discharge_energy",
+                          cycle_type="rpt_1C",
+                          metric="discharge_energy",
                           threshold=0.80,
                           filter_kinks=None,
                           extrapolate_threshold=True):
@@ -358,11 +358,11 @@ def get_threshold_targets(dataset_diagnostic_properties,
     Args:
         dataset_diagnostic_properties (BeepDataset.data): Data attribute of dataset object created from the
             DiagnosticProperties feature
-        cycle_type_target (str): Type of diagnostic cycle being used to measure the fractional metric
-        basis (str): The metric being used for fractional capacity
+        cycle_type (str): Type of diagnostic cycle being used to measure the fractional metric
+        metric (str): The metric being used for fractional capacity
         threshold (float): Value for the fractional metric to be considered above or below threshold
         filter_kinks (float): If set, cutoff value for the second derivative of the fractional metric (cells with an
-            abrupt change in degradation rate might have something else going on)
+            abrupt change in degradation rate might have something else going on). Typical value might be 0.04
         extrapolate_threshold (bool): Should threshold crossing point be extrapolated for cells that have not yet
             reached the threshold (warning: this uses a linear extrapolation from the last two diagnostic cycles)
 
@@ -373,8 +373,8 @@ def get_threshold_targets(dataset_diagnostic_properties,
     """
     threshold_values_df_list = []
     # Only use the target cycle type and basis for calculation
-    cycle_type_target_df = dataset_diagnostic_properties[dataset_diagnostic_properties.cycle_type == cycle_type_target]
-    cycle_type_target_df = cycle_type_target_df[cycle_type_target_df['metric'] == basis]
+    cycle_type_target_df = dataset_diagnostic_properties[dataset_diagnostic_properties.cycle_type == cycle_type]
+    cycle_type_target_df = cycle_type_target_df[cycle_type_target_df['metric'] == metric]
 
     for indx, run in enumerate(dataset_diagnostic_properties['file'].unique()):
         # Look at one run at a time
@@ -427,9 +427,9 @@ def get_threshold_targets(dataset_diagnostic_properties,
             "file": [run],
             "seq_num": [int(run.split("_")[1])],
             'initial_regular_throughput': run_target_df['initial_regular_throughput'].values[0],
-            cycle_type_target + basis + str(threshold) + "_normalized_reg_throughput": [throughput_to_threshold],
-            cycle_type_target + basis + str(threshold) + "_real_reg_throughput": [real_throughput_to_threshold],
-            cycle_type_target + basis + str(threshold) + "_cycles": [cycles_to_threshold]
+            cycle_type + metric + str(threshold) + "_normalized_reg_throughput": [throughput_to_threshold],
+            cycle_type + metric + str(threshold) + "_real_reg_throughput": [real_throughput_to_threshold],
+            cycle_type + metric + str(threshold) + "_cycles": [cycles_to_threshold]
         }
 
         threshold_values_df_list.append(pd.DataFrame(threshold_dict))
