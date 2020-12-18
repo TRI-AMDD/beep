@@ -186,7 +186,7 @@ class TestDataset(unittest.TestCase):
                           }
                          )
         threshold_targets_df = get_threshold_targets(dataset_diagnostic_properties.data,
-                                                     cycle_type_target="rpt_1C",
+                                                     cycle_type="rpt_1C",
                                                      extrapolate_threshold=False)
         self.assertEqual(len(threshold_targets_df), 64)
         self.assertEqual(threshold_targets_df['rpt_1Cdischarge_energy0.8_real_reg_throughput'].round(decimals=3)
