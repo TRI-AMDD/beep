@@ -166,7 +166,7 @@ class TestDataset(unittest.TestCase):
     def test_get_threshold_targets(self):
         dataset_diagnostic_properties = loadfn(os.path.join(TEST_FILE_DIR, "diagnostic_properties_test.json"))
         threshold_targets_df = get_threshold_targets(dataset_diagnostic_properties.data,
-                                                     cycle_type_target="rpt_1C")
+                                                     cycle_type="rpt_1C")
         self.assertEqual(len(threshold_targets_df), 92)
         self.assertEqual(threshold_targets_df.columns.to_list(), ['file',
                                                                   'seq_num',
