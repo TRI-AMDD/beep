@@ -722,7 +722,7 @@ class GenerateProcedureTest(unittest.TestCase):
         if os.path.isfile(os.path.join(TEST_FILE_DIR, "procedures", ".DS_Store")):
             os.remove(os.path.join(TEST_FILE_DIR, "procedures", ".DS_Store"))
         self.assertEqual(
-            len(os.listdir(os.path.join(TEST_FILE_DIR, "procedures"))), 335
+            len(os.listdir(os.path.join(TEST_FILE_DIR, "procedures"))), 386
         )
 
     def test_charging_waveform_from_csv(self):
