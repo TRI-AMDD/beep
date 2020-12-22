@@ -119,6 +119,7 @@ class Procedure(DashOrderedDict):
         Writes object to maccor-formatted xml file using xmltodict
         unparse function.
 
+        filename (str): full path and name to save the output
         encoding (str): text encoding of output file
 
         Args:
@@ -558,10 +559,6 @@ class Procedure(DashOrderedDict):
         """
         assert (
             reg_param["charge_cutoff_voltage"] > reg_param["discharge_cutoff_voltage"]
-        )
-        assert (
-            reg_param["charge_constant_current_1"]
-            <= reg_param["charge_constant_current_2"]
         )
 
         rest_idx = 0
