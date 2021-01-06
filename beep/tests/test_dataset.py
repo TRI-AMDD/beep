@@ -25,6 +25,7 @@ from beep import MODULE_DIR
 from beep.dataset import BeepDataset, get_threshold_targets
 from monty.tempfile import ScratchDir
 from monty.serialization import dumpfn, loadfn
+import shutil
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
@@ -76,10 +77,14 @@ class TestDataset(unittest.TestCase):
             dataset2 = loadfn('temp_dataset_2.json')
             self.assertEqual(dataset2.missing.columns.to_list(), ["filename", "feature_class"])
 
-
     def test_from_processed_cycler_run_list(self):
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
+            os.makedirs(os.path.join(os.getcwd(), "data-share", "raw", "parameters"))
+            parameter_files = os.listdir(os.path.join(TEST_FILE_DIR, "data-share", "raw", "parameters"))
+            for file in parameter_files:
+                shutil.copy(os.path.join(TEST_FILE_DIR, "data-share", "raw", "parameters", file),
+                            os.path.join(os.getcwd(), "data-share", "raw", "parameters"))
             dataset = BeepDataset.from_processed_cycler_runs('test_dataset',
                                                              project_list=None,
                                                              processed_run_list=[DIAGNOSTIC_PROCESSED,
@@ -99,6 +104,11 @@ class TestDataset(unittest.TestCase):
     def test_dataset_with_custom_feature_hyperparameters(self):
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
+            os.makedirs(os.path.join(os.getcwd(), "data-share", "raw", "parameters"))
+            parameter_files = os.listdir(os.path.join(TEST_FILE_DIR, "data-share", "raw", "parameters"))
+            for file in parameter_files:
+                shutil.copy(os.path.join(TEST_FILE_DIR, "data-share", "raw", "parameters", file),
+                            os.path.join(os.getcwd(), "data-share", "raw", "parameters"))
             hyperparameter_dict = {'RPTdQdVFeatures': [
                 {'diag_ref': 0, 'diag_nr': 1, 'charge_y_n': 0, 'rpt_type': 'rpt_0.2C', 'plotting_y_n': 0},
                 {'diag_ref': 0, 'diag_nr': 1, 'charge_y_n': 0, 'rpt_type': 'rpt_1C', 'plotting_y_n': 0},
