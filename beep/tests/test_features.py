@@ -327,7 +327,8 @@ class TestFeaturizer(unittest.TestCase):
                 for step_iter in hppc_cycle_step.step_index_counter.unique():
                     hppc_cycle_step_iter = hppc_cycle_step[(hppc_cycle_step.step_index_counter == step_iter)]
                     duration = hppc_cycle_step_iter.test_time.max() - hppc_cycle_step_iter.test_time.min()
-                    median_crate = np.round(hppc_cycle_step.current.median() / parameter_row["capacity_nominal"].iloc[0], 2)
+                    median_crate = np.round(hppc_cycle_step.current.median() /
+                                            parameter_row["capacity_nominal"].iloc[0], 2)
                     print(step, median_crate, duration)
 
         step_ind = featurizer_helpers.get_step_index(pcycler_run,
