@@ -332,7 +332,7 @@ class TestFeaturizer(unittest.TestCase):
 
         step_ind = featurizer_helpers.get_step_index(pcycler_run,
                                                      cycle_type="hppc",
-                                                     diag_index=0)
+                                                     diag_pos=0)
         self.assertEqual(len(step_ind.values()), 6)
         print([step_ind["hppc_long_rest"],
                step_ind["hppc_discharge_pulse"],
@@ -350,7 +350,7 @@ class TestFeaturizer(unittest.TestCase):
         })
         step_ind = featurizer_helpers.get_step_index(pcycler_run,
                                                      cycle_type="hppc",
-                                                     diag_index=1)
+                                                     diag_pos=1)
         self.assertEqual(len(step_ind.values()), 6)
         self.assertEqual(step_ind, {
             'hppc_charge_to_soc': 41,
@@ -372,8 +372,6 @@ class TestFeaturizer(unittest.TestCase):
             print(np.round(diffusion_df.iloc[0].to_list(), 3))
             self.assertEqual(np.round(diffusion_df.iloc[0].to_list(), 3)[0], -0.016)
             self.assertEqual(np.round(diffusion_df.iloc[0].to_list(), 3)[5], -0.011)
-
-                                 # [-0.016 -0.017 -0.011 -0.012 -0.012 -0.011 -0.017 -0.019]
 
     def test_HPPCRelaxationFeatures_class(self):
         with ScratchDir("."):

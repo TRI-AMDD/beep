@@ -592,7 +592,7 @@ def get_V_I(df):
     return result
 
 
-def get_v_diff(processed_cycler_run, diag_pos, soc_window, baseline_step_index=15, measured_step_index=47):
+def get_v_diff(processed_cycler_run, diag_pos, soc_window):
     """
     This method calculates the variance of voltage difference between a specified hppc cycle and the first
     one during a specified state of charge window.
@@ -602,8 +602,6 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window, baseline_step_index=1
         diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
         if rpt_0.2C, occurs at cycle_index = [2, 37, 142, 244 ...], <diag_pos>=0 would correspond to cycle_index 2
         soc_window (int): step index counter corresponding to the soc window of interest.
-        baseline_step_index (int): step index of the initial hppc cycle (TODO automatically get value in the method)
-        measured_step_index (int): step index of the comparison hppc cycle (TODO automatically get value in the method)
 
     Returns:
         a dataframe that contains the variance of the voltage differences
@@ -624,10 +622,10 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window, baseline_step_index=1
     #         but that in the initial hppc cycle has a step number of 15
     step_ind_1 = get_step_index(processed_cycler_run,
                                 cycle_type="hppc",
-                                diag_index=0)
+                                diag_pos=0)
     step_ind_2 = get_step_index(processed_cycler_run,
                                 cycle_type="hppc",
-                                diag_index=1)
+                                diag_pos=1)
 
     hppc_data_2_d = hppc_data_2.loc[hppc_data_2.step_index == step_ind_2["hppc_discharge_to_next_soc"]]
     hppc_data_1_d = hppc_data_1.loc[hppc_data_1.step_index == step_ind_1["hppc_discharge_to_next_soc"]]
@@ -722,7 +720,7 @@ def get_diffusion_coeff(processed_cycler_run, diag_pos):
 
     step_ind = get_step_index(processed_cycler_run,
                               cycle_type="hppc",
-                              diag_index=diag_pos)
+                              diag_pos=diag_pos)
     steps = [step_ind["hppc_long_rest"],
              step_ind["hppc_discharge_pulse"],
              step_ind["hppc_short_rest"],
@@ -1016,14 +1014,14 @@ def get_fractional_quantity_remaining_nx(
     return summary_diag_cycle_type
 
 
-def get_step_index(pcycler_run, cycle_type="hppc", diag_index=0):
+def get_step_index(pcycler_run, cycle_type="hppc", diag_pos=0):
     """
         Gets the step indices of the diagnostic cycle which correspond to specific attributes
 
         Args:
             pcycler_run (beep.structure.ProcessedCyclerRun): processed data
             cycle_type (str): which diagnostic cycle type to evaluate
-            diag_index (int): which iteration of the diagnostic cycle to use (0 for first, 1 for second, -1 for last)
+            diag_pos (int): which iteration of the diagnostic cycle to use (0 for first, 1 for second, -1 for last)
 
         Returns:
             dict: descriptive keys with step index as values
@@ -1044,7 +1042,7 @@ def get_step_index(pcycler_run, cycle_type="hppc", diag_index=0):
     step_indices_annotated = {}
     diag_data = pcycler_run.diagnostic_interpolated
     cycles = diag_data.loc[diag_data.cycle_type == cycle_type]
-    cycle = cycles[cycles.cycle_index == cycles.cycle_index.unique()[diag_index]]
+    cycle = cycles[cycles.cycle_index == cycles.cycle_index.unique()[diag_pos]]
 
     if cycle_type == "hppc":
         for step in cycle.step_index.unique():
