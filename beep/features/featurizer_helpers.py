@@ -622,8 +622,15 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window, baseline_step_index=1
 
     #         the discharge steps in later hppc cycles has a step number of 47
     #         but that in the initial hppc cycle has a step number of 15
-    hppc_data_2_d = hppc_data_2.loc[hppc_data_2.step_index == measured_step_index]
-    hppc_data_1_d = hppc_data_1.loc[hppc_data_1.step_index == baseline_step_index]
+    step_ind_1 = get_step_index(processed_cycler_run,
+                                cycle_type="hppc",
+                                diag_index=0)
+    step_ind_2 = get_step_index(processed_cycler_run,
+                                cycle_type="hppc",
+                                diag_index=1)
+
+    hppc_data_2_d = hppc_data_2.loc[hppc_data_2.step_index == step_ind_2["hppc_discharge_to_next_soc"]]
+    hppc_data_1_d = hppc_data_1.loc[hppc_data_1.step_index == step_ind_1["hppc_discharge_to_next_soc"]]
     step_counters_1 = hppc_data_1_d.step_index_counter.unique()
     step_counters_2 = hppc_data_2_d.step_index_counter.unique()
     chosen_1 = hppc_data_1_d.loc[
@@ -696,7 +703,7 @@ def get_diffusion_coeff(processed_cycler_run, diag_pos):
 
     Args:
         processed_cycler_run (beep.structure.ProcessedCyclerRun)
-        diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
+        diag_pos (int): diagnostic cycle occurrence for a specific <diagnostic_cycle_type>. e.g.
         if rpt_0.2C, occurs at cycle_index = [2, 37, 142, 244 ...], <diag_pos>=0 would correspond to cycle_index 2
 
     Returns:
@@ -713,10 +720,14 @@ def get_diffusion_coeff(processed_cycler_run, diag_pos):
 
     counters = []
 
-    if diag_pos == 0:
-        steps = [11, 12, 13, 14, 15]
-    else:
-        steps = [43, 44, 45, 46, 47]
+    step_ind = get_step_index(processed_cycler_run,
+                              cycle_type="hppc",
+                              diag_index=diag_pos)
+    steps = [step_ind["hppc_long_rest"],
+             step_ind["hppc_discharge_pulse"],
+             step_ind["hppc_short_rest"],
+             step_ind["hppc_charge_pulse"],
+             step_ind["hppc_discharge_to_next_soc"]]
 
     for step in steps:
         counters.append(
@@ -924,6 +935,7 @@ def get_fractional_quantity_remaining_nx(
         processed_cycler_run (beep.structure.ProcessedCyclerRun): information about cycler run
         metric (str): column name to use for measuring degradation
         diagnostic_cycle_type (str): the diagnostic cycle to use for computing the amount of degradation
+        parameters_path (str): path to the parameters file for this run
 
     Returns:
         a dataframe with cycle_index, corresponding degradation relative to the first measured value, 'x',
@@ -1002,3 +1014,73 @@ def get_fractional_quantity_remaining_nx(
                                        "normalized_diagnostic_throughput", "diagnostic_start_cycle",
                                        "diagnostic_interval"]
     return summary_diag_cycle_type
+
+
+def get_step_index(pcycler_run, cycle_type="hppc", diag_index=0):
+    """
+        Gets the step indices of the diagnostic cycle which correspond to specific attributes
+
+        Args:
+            pcycler_run (beep.structure.ProcessedCyclerRun): processed data
+            cycle_type (str): which diagnostic cycle type to evaluate
+            diag_index (int): which iteration of the diagnostic cycle to use (0 for first, 1 for second, -1 for last)
+
+        Returns:
+            dict: descriptive keys with step index as values
+    """
+
+    pulse_time = 120  # time in seconds used to decide if a current is a pulse or an soc change
+    pulse_c_rate = 0.5  # c-rate to decide if a current is a discharge pulse
+    rest_long_vs_short = 600  # time in seconds to decide if the rest is the long or short rest step
+    parameters_path = os.path.join(os.environ.get("BEEP_PROCESSING_DIR", "/"), "data-share", "raw", "parameters")
+
+    if "\\" in pcycler_run.protocol:
+        protocol_name = pcycler_run.protocol.split("\\")[-1]
+    else:
+        _, protocol_name = os.path.split(pcycler_run.protocol)
+
+    parameter_row, _ = parameters_lookup.get_protocol_parameters(protocol_name, parameters_path=parameters_path)
+
+    step_indices_annotated = {}
+    diag_data = pcycler_run.diagnostic_interpolated
+    cycles = diag_data.loc[diag_data.cycle_type == cycle_type]
+    cycle = cycles[cycles.cycle_index == cycles.cycle_index.unique()[diag_index]]
+
+    if cycle_type == "hppc":
+        for step in cycle.step_index.unique():
+            cycle_step = cycle[(cycle.step_index == step)]
+            median_crate = np.round(cycle_step.current.median() / parameter_row["capacity_nominal"].iloc[0], 2)
+            mean_crate = np.round(cycle_step.current.mean() / parameter_row["capacity_nominal"].iloc[0], 2)
+            remaining_time = cycle.test_time.max() - cycle_step.test_time.max()
+            step_counter_duration = []
+            for step_iter in cycle_step.step_index_counter.unique():
+                cycle_step_iter = cycle_step[(cycle_step.step_index_counter == step_iter)]
+                duration = cycle_step_iter.test_time.max() - cycle_step_iter.test_time.min()
+                step_counter_duration.append(duration)
+            median_duration = np.round(np.median(step_counter_duration), 0)
+
+            if median_crate == 0.0:
+                if median_duration > rest_long_vs_short:
+                    step_indices_annotated["hppc_long_rest"] = step
+                elif rest_long_vs_short >= median_duration > 0:
+                    step_indices_annotated["hppc_short_rest"] = step
+                else:
+                    raise ValueError
+            elif median_crate <= -pulse_c_rate and median_duration < pulse_time:
+                step_indices_annotated["hppc_discharge_pulse"] = step
+            elif median_crate >= pulse_c_rate and median_duration < pulse_time:
+                step_indices_annotated["hppc_charge_pulse"] = step
+            elif mean_crate == median_crate < 0 and median_duration > pulse_time:
+                step_indices_annotated["hppc_discharge_to_next_soc"] = step
+            elif mean_crate != median_crate < 0 and remaining_time == 0.0:
+                step_indices_annotated["hppc_final_discharge"] = step
+            elif mean_crate == median_crate < 0 and median_duration == 0.0 and remaining_time == 0.0:
+                step_indices_annotated["hppc_final_discharge"] = step
+            elif median_crate > 0 and median_duration > pulse_time:
+                step_indices_annotated["hppc_charge_to_soc"] = step
+
+        assert len(cycle.step_index.unique()) == len(step_indices_annotated.values())
+    else:
+        raise NotImplementedError
+
+    return step_indices_annotated
