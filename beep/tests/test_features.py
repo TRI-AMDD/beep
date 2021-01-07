@@ -31,6 +31,7 @@ from beep.featurize import (
     DiagnosticSummaryStats,
 )
 from beep.features import featurizer_helpers
+from beep.utils import parameters_lookup
 from monty.serialization import dumpfn, loadfn
 from monty.tempfile import ScratchDir
 
@@ -305,6 +306,73 @@ class TestFeaturizer(unittest.TestCase):
                 [featurizer.X.columns[0], featurizer.X.columns[-1]],
                 ["ohmic_r_d0", "D_8"],
             )
+
+    def test_get_step_index(self):
+        pcycler_run_loc = os.path.join(
+            TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
+        )
+        parameters_path = os.path.join(TEST_FILE_DIR, "data-share", "raw", "parameters")
+        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+        pcycler_run = loadfn(pcycler_run_loc)
+        data = pcycler_run.diagnostic_interpolated
+        hppc_cycles = data.loc[data.cycle_type == "hppc"]
+        print(hppc_cycles.step_index.unique())
+        _, protocol_name = os.path.split(pcycler_run.protocol)
+        parameter_row, _ = parameters_lookup.get_protocol_parameters(protocol_name, parameters_path=parameters_path)
+
+        for cycle in hppc_cycles.cycle_index.unique():
+            hppc_cycle = hppc_cycles[hppc_cycles.cycle_index == cycle]
+            for step in hppc_cycle.step_index.unique():
+                hppc_cycle_step = hppc_cycle[(hppc_cycle.step_index == step)]
+                for step_iter in hppc_cycle_step.step_index_counter.unique():
+                    hppc_cycle_step_iter = hppc_cycle_step[(hppc_cycle_step.step_index_counter == step_iter)]
+                    duration = hppc_cycle_step_iter.test_time.max() - hppc_cycle_step_iter.test_time.min()
+                    median_crate = np.round(hppc_cycle_step.current.median() /
+                                            parameter_row["capacity_nominal"].iloc[0], 2)
+                    print(step, median_crate, duration)
+
+        step_ind = featurizer_helpers.get_step_index(pcycler_run,
+                                                     cycle_type="hppc",
+                                                     diag_pos=0)
+        self.assertEqual(len(step_ind.values()), 6)
+        print([step_ind["hppc_long_rest"],
+               step_ind["hppc_discharge_pulse"],
+               step_ind["hppc_short_rest"],
+               step_ind["hppc_charge_pulse"],
+               step_ind["hppc_discharge_to_next_soc"]])
+
+        self.assertEqual(step_ind, {
+            'hppc_charge_to_soc': 9,
+            'hppc_long_rest': 11,
+            'hppc_discharge_pulse': 12,
+            'hppc_short_rest': 13,
+            'hppc_charge_pulse': 14,
+            'hppc_discharge_to_next_soc': 15
+        })
+        step_ind = featurizer_helpers.get_step_index(pcycler_run,
+                                                     cycle_type="hppc",
+                                                     diag_pos=1)
+        self.assertEqual(len(step_ind.values()), 6)
+        self.assertEqual(step_ind, {
+            'hppc_charge_to_soc': 41,
+            'hppc_long_rest': 43,
+            'hppc_discharge_pulse': 44,
+            'hppc_short_rest': 45,
+            'hppc_charge_pulse': 46,
+            'hppc_discharge_to_next_soc': 47
+        })
+
+    def test_get_diffusion_coeff(self):
+        with ScratchDir("."):
+            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+            pcycler_run_loc = os.path.join(
+                TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
+            )
+            pcycler_run = loadfn(pcycler_run_loc)
+            diffusion_df = featurizer_helpers.get_diffusion_coeff(pcycler_run, 1)
+            print(np.round(diffusion_df.iloc[0].to_list(), 3))
+            self.assertEqual(np.round(diffusion_df.iloc[0].to_list(), 3)[0], -0.016)
+            self.assertEqual(np.round(diffusion_df.iloc[0].to_list(), 3)[5], -0.011)
 
     def test_HPPCRelaxationFeatures_class(self):
         with ScratchDir("."):
