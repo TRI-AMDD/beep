@@ -563,13 +563,14 @@ class RawCyclerRun(MSONable):
             "date_time_iso",
             "cycle_index",
         ]
+        diag_summary["paused"] = self.data.groupby("cycle_index").apply(
+            get_max_paused_over_threshold
+        )
+
         diag_summary = diag_summary[diag_summary.index.isin(diag_cycles_at)]
 
         diag_summary["coulombic_efficiency"] = (
             diag_summary["discharge_capacity"] / diag_summary["charge_capacity"]
-        )
-        diag_summary["paused"] = self.data.groupby("cycle_index").apply(
-            get_max_paused_over_threshold
         )
 
         diag_summary.reset_index(drop=True, inplace=True)
