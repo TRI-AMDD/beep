@@ -16,8 +16,8 @@ state:
   type: list
 volts:
   schema:
-    max: 4.45
-    min: 1.2
+    max: 5.0
+    min: 0
     type: float
   type: list
 amps:
