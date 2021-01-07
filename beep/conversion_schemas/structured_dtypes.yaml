@@ -25,7 +25,7 @@ summary:
   energy_throughput: 'float32'
   charge_duration: 'float32'
   time_temperature_integrated: 'float64'
-  paused: 'int8'
+  paused: 'int32'
 
 diagnostic_summary:
   discharge_capacity: 'float64'
@@ -38,7 +38,7 @@ diagnostic_summary:
   date_time_iso: 'object'
   cycle_index: 'int32'
   coulombic_efficiency: 'float64'
-  paused: 'int8'
+  paused: 'int32'
   cycle_type: 'category'
 
 diagnostic_interpolated:
