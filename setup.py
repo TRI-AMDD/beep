@@ -22,7 +22,7 @@ description = "beep is a python package supporting Battery Estimation and Early 
 
 setup(name="beep",
       url="https://github.com/TRI-AMDD/beep",
-      version="2020.12.22.14",
+      version="2021.1.11.15",
       description=description,
       long_description=long_description,
       long_description_content_type='text/markdown',

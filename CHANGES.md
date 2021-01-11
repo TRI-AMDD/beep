@@ -1,5 +1,11 @@
 
 
+v2021.1.11.15
+-------------
+* Change dtype to fix negative paused value
+* Change the validation voltage limits
+* Working version of the step finder
+
 v2020.12.22.14
 --------------
 * Update protocol generation for PreDiag project
