@@ -9,6 +9,7 @@ cyc#:
     min_is_below: 2
     max_at_least: 1
     type: integer
+    monotonic: 'increasing'
   type: list
 state:
   schema:
