@@ -245,10 +245,10 @@ class ValidationMaccorTest(unittest.TestCase):
         df = pd.read_csv(path, delimiter="\t", skiprows=1)
         df["State"] = df["State"].astype(str)
         df["current"] = df["Amps"]
-        df["Cyc#"] = df.loc[df["Cyc#"] == 89, "Cyc#"]
+        df.loc[df["Cyc#"] == 89, "Cyc#"] = 0
         validity, reason = v.validate(df)
         self.assertFalse(validity)
-        self.assertEqual(reason, "Cyc# needs to be monotonically increasing for processing")
+        self.assertEqual(reason, "cyc# needs to be monotonically increasing for processing")
 
 
 class ValidationEisTest(unittest.TestCase):
