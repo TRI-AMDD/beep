@@ -461,7 +461,6 @@ class SimpleValidator(object):
                     )
                     return False, reason
 
-
         return True, ""
 
     def validate_from_paths(
