@@ -438,6 +438,33 @@ class TestFeaturizer(unittest.TestCase):
             self.assertEqual(np.round(featurizer.X['var_discharging_capacity'].iloc[0], 3),
                              np.round(-3.771727344982484, 3))
 
+            # Test diagnostic with regular cycles
+            pcycler_run = loadfn(os.path.join(TEST_FILE_DIR, "PreDiag_000296_00270E_structure.json"))
+            params_dict = {
+                "diagnostic_cycle_type": "rpt_0.2C",
+                "cycle_comp_num": [0, 1],
+                "Q_seg": 500,
+                "use_regular_cycles": True,
+                "regular_cycle_comp_num": [10, 100]
+            }
+            features = DiagnosticSummaryStats.features_from_processed_cycler_run(
+                processed_cycler_run=pcycler_run, params_dict=params_dict
+            )
+            self.assertAlmostEqual(features.X['var_discharging_capacity'].iloc[0], 0.764316)
+
+            # Test diagnostic with regular cycles with different index
+            params_dict = {
+                "diagnostic_cycle_type": "rpt_0.2C",
+                "cycle_comp_num": [0, 1],
+                "Q_seg": 500,
+                "use_regular_cycles": True,
+                "regular_cycle_comp_num": [11, 100]
+            }
+            features = DiagnosticSummaryStats.features_from_processed_cycler_run(
+                processed_cycler_run=pcycler_run, params_dict=params_dict
+            )
+            self.assertAlmostEqual(features.X['var_discharging_capacity'].iloc[0], 0.764316)
+
     def test_DiagnosticProperties_class(self):
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR

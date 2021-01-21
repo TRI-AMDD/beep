@@ -218,14 +218,14 @@ class BeepFeatures(MSONable, metaclass=ABCMeta):
 
 class RPTdQdVFeatures(BeepFeatures):
     """
-        Object corresponding to features generated from dQdV curves in rate performance
-        test cycles. Includes constructors to create the features, object names and metadata
-        attributes in the object
-            name (str): predictor object name.
-            X (pandas.DataFrame): features in DataFrame format.
-            metadata (dict): information about the conditions, data
-                and code used to produce features
-        """
+    Object corresponding to features generated from dQdV curves in rate performance
+    test cycles. Includes constructors to create the features, object names and metadata
+    attributes in the object
+        name (str): predictor object name.
+        X (pandas.DataFrame): features in DataFrame format.
+        metadata (dict): information about the conditions, data
+            and code used to produce features
+    """
 
     # Class name for the feature object
     class_feature_name = "RPTdQdVFeatures"
@@ -676,50 +676,42 @@ class DiagnosticSummaryStats(BeepFeatures):
         X = pd.DataFrame(np.zeros((1, 42)))
 
         # Determine beginning and end of investigated cycle type
-        index_pos_list = [
-            i
-            for i in range(len(diagnostic_interpolated.cycle_type))
-            if diagnostic_interpolated.cycle_type[i]
-            == params_dict["diagnostic_cycle_type"]
-        ]
+        index_pos_list = np.where(
+            diagnostic_interpolated.cycle_type == params_dict["diagnostic_cycle_type"])[0]
 
-        end_list = [
-            index_pos_list[i]
-            for i in range(len(index_pos_list) - 1)
-            if index_pos_list[i + 1] != index_pos_list[i] + 1
-        ]
-        start_list = [
-            index_pos_list[i]
-            for i in range(1, len(index_pos_list))
-            if index_pos_list[i - 1] != index_pos_list[i] - 1
-        ]
-        end_list.append(index_pos_list[-1])
-        start_list.insert(0, index_pos_list[0])
+        ipl_diff = np.diff(index_pos_list)
 
-        if (
-            diagnostic_interpolated.cycle_type[0]
-            == params_dict["diagnostic_cycle_type"]
-        ):
-            start_list.insert(0, 1)
-        if (
-            diagnostic_interpolated.cycle_type[
-                len(diagnostic_interpolated.cycle_type) - 1
-            ]
-            == params_dict["diagnostic_cycle_type"]
-        ):
-            end_list.append(len(diagnostic_interpolated.cycle_type) - 1)
+        # TODO: can I delete these?  Not sure they're being used
+        # end_list = index_pos_list[0:-1][ipl_diff != 1]
+        # end_list = np.append(end_list, index_pos_list[-1])
+
+        start_list = index_pos_list[1:][ipl_diff != 1]
+        start_list = np.insert(start_list, 0, index_pos_list[0])
 
         # Create features
 
         # Charging Capacity features
-        Qc100_1 = diagnostic_interpolated.charge_capacity[
-                  start_list[params_dict["cycle_comp_num"][1]]:
-                  start_list[params_dict["cycle_comp_num"][1]] + params_dict["Q_seg"]]
-        Qc10_1 = diagnostic_interpolated.charge_capacity[
-                 start_list[params_dict["cycle_comp_num"][0]]:
-                 start_list[params_dict["cycle_comp_num"][0]] + params_dict["Q_seg"]]
-        QcDiff = [a_i - b_i for a_i, b_i in zip(Qc100_1, Qc10_1)]
-        QcDiff = [elem for elem in QcDiff if (math.isnan(elem) is False)]
+        if params_dict.get("use_regular_cycles"):
+            reg_cycle_comp_num = params_dict.get("regular_cycle_comp_num")
+            cycle_comp_1 = processed_cycler_run.cycles_interpolated[
+                processed_cycler_run.cycles_interpolated.cycle_index == reg_cycle_comp_num[1]
+            ]
+            cycle_comp_0 = processed_cycler_run.cycles_interpolated[
+                processed_cycler_run.cycles_interpolated.cycle_index == reg_cycle_comp_num[0]
+            ]
+            Qc100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].charge_capacity
+            Qc10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].charge_capacity
+            QcDiff = Qc100_1.values - Qc10_1.values
+            QcDiff = QcDiff[~np.isnan(QcDiff)]
+        else:
+            Qc100_1 = diagnostic_interpolated.charge_capacity[
+                      start_list[params_dict["cycle_comp_num"][1]]:
+                      start_list[params_dict["cycle_comp_num"][1]] + params_dict["Q_seg"]]
+            Qc10_1 = diagnostic_interpolated.charge_capacity[
+                     start_list[params_dict["cycle_comp_num"][0]]:
+                     start_list[params_dict["cycle_comp_num"][0]] + params_dict["Q_seg"]]
+            QcDiff = Qc100_1.values - Qc10_1.values
+            QcDiff = QcDiff[~np.isnan(QcDiff)]
 
         X[0] = np.log10(np.absolute(np.var(QcDiff)))
         X[1] = np.log10(np.absolute(min(QcDiff)))
@@ -730,20 +722,26 @@ class DiagnosticSummaryStats(BeepFeatures):
         X[6] = np.log10(np.sum(np.square(QcDiff)))
 
         # Discharging Capacity features
-        Qd100_1 = diagnostic_interpolated.discharge_capacity[
-            start_list[params_dict["cycle_comp_num"][1]]
-            + params_dict["Q_seg"]
-            + 1: start_list[params_dict["cycle_comp_num"][1]]
-            + 2 * params_dict["Q_seg"]
-        ]
-        Qd10_1 = diagnostic_interpolated.discharge_capacity[
-            start_list[params_dict["cycle_comp_num"][0]]
-            + params_dict["Q_seg"]
-            + 1: start_list[params_dict["cycle_comp_num"][0]]
-            + 2 * params_dict["Q_seg"]
-        ]
-        QdDiff = [a_i - b_i for a_i, b_i in zip(Qd100_1, Qd10_1)]
-        QdDiff = [elem for elem in QdDiff if (math.isnan(elem) is False)]
+        if params_dict.get("use_regular_cycles"):
+            Qd100_1 = cycle_comp_1[cycle_comp_1.step_type == "discharge"].discharge_capacity
+            Qd10_1 = cycle_comp_0[cycle_comp_0.step_type == "discharge"].discharge_capacity
+            QdDiff = Qd100_1.values - Qd10_1.values
+            QdDiff = QdDiff[~np.isnan(QdDiff)]
+        else:
+            Qd100_1 = diagnostic_interpolated.discharge_capacity[
+                start_list[params_dict["cycle_comp_num"][1]]
+                + params_dict["Q_seg"]
+                + 1: start_list[params_dict["cycle_comp_num"][1]]
+                + 2 * params_dict["Q_seg"]
+            ]
+            Qd10_1 = diagnostic_interpolated.discharge_capacity[
+                start_list[params_dict["cycle_comp_num"][0]]
+                + params_dict["Q_seg"]
+                + 1: start_list[params_dict["cycle_comp_num"][0]]
+                + 2 * params_dict["Q_seg"]
+            ]
+            QdDiff = Qd100_1.values - Qd10_1.values
+            QdDiff = QdDiff[~np.isnan(QdDiff)]
 
         X[7] = np.log10(np.absolute(np.var(QdDiff)))
         X[8] = np.log10(np.absolute(min(QdDiff)))
@@ -754,14 +752,20 @@ class DiagnosticSummaryStats(BeepFeatures):
         X[13] = np.log10(np.sum(np.square(QdDiff)))
 
         # Charging Energy features
-        Ec100_1 = processed_cycler_run.diagnostic_interpolated.charge_energy[
-                  start_list[params_dict["cycle_comp_num"][1]]:
-                  start_list[params_dict["cycle_comp_num"][1]] + params_dict["Q_seg"]]
-        Ec10_1 = processed_cycler_run.diagnostic_interpolated.charge_energy[
-                 start_list[params_dict["cycle_comp_num"][0]]:
-                 start_list[params_dict["cycle_comp_num"][0]] + params_dict["Q_seg"]]
-        EcDiff = [a_i - b_i for a_i, b_i in zip(Ec100_1, Ec10_1)]
-        EcDiff = [elem for elem in EcDiff if (math.isnan(elem) is False)]
+        if params_dict.get("use_regular_cycles"):
+            Ec100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].charge_energy
+            Ec10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].charge_energy
+            EcDiff = Ec100_1.values - Ec10_1.values
+            EcDiff = EcDiff[~np.isnan(EcDiff)]
+        else:
+            Ec100_1 = processed_cycler_run.diagnostic_interpolated.charge_energy[
+                      start_list[params_dict["cycle_comp_num"][1]]:
+                      start_list[params_dict["cycle_comp_num"][1]] + params_dict["Q_seg"]]
+            Ec10_1 = processed_cycler_run.diagnostic_interpolated.charge_energy[
+                     start_list[params_dict["cycle_comp_num"][0]]:
+                     start_list[params_dict["cycle_comp_num"][0]] + params_dict["Q_seg"]]
+            EcDiff = Ec100_1.values - Ec10_1.values
+            EcDiff = EcDiff[~np.isnan(EcDiff)]
 
         X[14] = np.log10(np.absolute(np.var(EcDiff)))
         X[15] = np.log10(np.absolute(min(EcDiff)))
@@ -772,20 +776,26 @@ class DiagnosticSummaryStats(BeepFeatures):
         X[20] = np.log10(np.sum(np.square(EcDiff)))
 
         # Discharging Energy features
-        Ed100_1 = diagnostic_interpolated.discharge_energy[
-            start_list[params_dict["cycle_comp_num"][1]]
-            + params_dict["Q_seg"]
-            + 1: start_list[params_dict["cycle_comp_num"][1]]
-            + 2 * params_dict["Q_seg"]
-        ]
-        Ed10_1 = diagnostic_interpolated.discharge_energy[
-            start_list[params_dict["cycle_comp_num"][0]]
-            + params_dict["Q_seg"]
-            + 1: start_list[params_dict["cycle_comp_num"][0]]
-            + 2 * params_dict["Q_seg"]
-        ]
-        EdDiff = [a_i - b_i for a_i, b_i in zip(Ed100_1, Ed10_1)]
-        EdDiff = [elem for elem in EdDiff if (math.isnan(elem) is False)]
+        if params_dict.get("use_regular_cycles"):
+            Ed100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].discharge_energy
+            Ed10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].discharge_energy
+            EdDiff = Ed100_1.values - Ed10_1.values
+            EdDiff = EdDiff[~np.isnan(EdDiff)]
+        else:
+            Ed100_1 = diagnostic_interpolated.discharge_energy[
+                start_list[params_dict["cycle_comp_num"][1]]
+                + params_dict["Q_seg"]
+                + 1: start_list[params_dict["cycle_comp_num"][1]]
+                + 2 * params_dict["Q_seg"]
+            ]
+            Ed10_1 = diagnostic_interpolated.discharge_energy[
+                start_list[params_dict["cycle_comp_num"][0]]
+                + params_dict["Q_seg"]
+                + 1: start_list[params_dict["cycle_comp_num"][0]]
+                + 2 * params_dict["Q_seg"]
+            ]
+            EdDiff = Ed100_1.values - Ed10_1.values
+            EdDiff = EdDiff[~np.isnan(EdDiff)]
 
         X[21] = np.log10(np.absolute(np.var(EdDiff)))
         X[22] = np.log10(np.absolute(min(EdDiff)))
@@ -802,8 +812,8 @@ class DiagnosticSummaryStats(BeepFeatures):
         dQdVc10_1 = processed_cycler_run.diagnostic_interpolated.charge_dQdV[
                     start_list[params_dict["cycle_comp_num"][0]]:
                     start_list[params_dict["cycle_comp_num"][0]] + params_dict["Q_seg"]]
-        dQdVcDiff = [a_i - b_i for a_i, b_i in zip(dQdVc100_1, dQdVc10_1)]
-        dQdVcDiff = [elem for elem in dQdVcDiff if (math.isnan(elem) is False)]
+        dQdVcDiff = dQdVc100_1.values - dQdVc10_1.values
+        dQdVcDiff = dQdVcDiff[~np.isnan(dQdVcDiff)]
 
         X[28] = np.log10(np.absolute(np.var(dQdVcDiff)))
         X[29] = np.log10(np.absolute(min(dQdVcDiff)))
@@ -826,8 +836,8 @@ class DiagnosticSummaryStats(BeepFeatures):
             + 1: start_list[params_dict["cycle_comp_num"][0]]
             + 2 * params_dict["Q_seg"]
         ]
-        dQdVdDiff = [a_i - b_i for a_i, b_i in zip(dQdVd100_1, dQdVd10_1)]
-        dQdVdDiff = [elem for elem in dQdVdDiff if (math.isnan(elem) is False)]
+        dQdVdDiff = dQdVd100_1.values - dQdVd10_1.values
+        dQdVdDiff = dQdVdDiff[~np.isnan(dQdVdDiff)]
 
         X[35] = np.log10(np.absolute(np.var(dQdVdDiff)))
         X[36] = np.log10(np.absolute(min(dQdVdDiff)))

@@ -16,6 +16,8 @@ DiagnosticSummaryStats:
   diagnostic_cycle_type: 'rpt_0.2C'
   cycle_comp_num: [0, 1]
   Q_seg: 500
+  use_regular_cycles: false
+  regular_cycle_comp_num: [10, 100]
 DeltaQFastCharge:
   init_pred_cycle: 10
   mid_pred_cycle: 91
