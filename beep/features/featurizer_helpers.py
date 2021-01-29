@@ -370,11 +370,16 @@ def get_hppc_ocv(processed_cycler_run, diag_pos):
     cycle_hppc_0 = cycle_hppc.loc[cycle_hppc.cycle_index == cycles[0]]
     #     in case that cycle 2 correspond to two cycles one is real cycle 2, one is at the end
     cycle_hppc_0 = cycle_hppc_0.loc[cycle_hppc_0.test_time < 250000]
+    first_diagnostic_steps = get_step_index(processed_cycler_run,
+                                            cycle_type="hppc",
+                                            diag_pos=0)
+    later_diagnostic_steps = get_step_index(processed_cycler_run,
+                                            cycle_type="hppc",
+                                            diag_pos=0)
+    step_first = first_diagnostic_steps['hppc_long_rest']
+    step_later = later_diagnostic_steps['hppc_long_rest']
 
-    step = 11
-    step_later = 43
-
-    voltage_1 = get_hppc_ocv_helper(cycle_hppc_0, step)
+    voltage_1 = get_hppc_ocv_helper(cycle_hppc_0, step_first)
     chosen = cycle_hppc.loc[cycle_hppc.cycle_index == cycles[diag_pos]]
     voltage_2 = get_hppc_ocv_helper(chosen, step_later)
 
@@ -415,13 +420,13 @@ def get_chosen_df(processed_cycler_run, diag_pos):
     return chosen
 
 
-def res_calc(chosen, diag_pos, soc, step_ocv, step_cur, index):
+def res_calc(chosen, steps, soc, step_ocv, step_cur, index):
     """
     This function calculates resistances at different socs and a specific pulse duration for a specified hppc cycle.
 
     Args:
         chosen(pd.DataFrame): a dataframe for a specific diagnostic cycle you are interested in.
-        diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
+        steps (list): list of step numbers for the specific occurrence of the diagnostic
         if rpt_0.2C, occurs at cycle_index = [2, 37, 142, 244 ...], <diag_pos>=0 would correspond to cycle_index 2
         soc (int): step index counter corresponding to the soc window of interest.
         step_ocv (int): 0 corresponds to the 1h-rest, and 2 corresponds to the 40s-rest.
@@ -434,11 +439,6 @@ def res_calc(chosen, diag_pos, soc, step_ocv, step_cur, index):
     """
 
     counters = []
-
-    if diag_pos == 0:
-        steps = [11, 12, 13, 14, 15]
-    else:
-        steps = [43, 44, 45, 46, 47]
 
     for step in steps:
         counters.append(
@@ -494,42 +494,52 @@ def get_resistance_soc_duration_hppc(processed_cycler_run, diag_pos):
     """
 
     resistances = pd.DataFrame()
+    step_dict = get_step_index(processed_cycler_run,
+                               cycle_type="hppc",
+                               diag_pos=diag_pos)
+    steps = [
+        step_dict['hppc_long_rest'],
+        step_dict['hppc_discharge_pulse'],
+        step_dict['hppc_short_rest'],
+        step_dict['hppc_charge_pulse'],
+        step_dict['hppc_discharge_to_next_soc']
+        ]
 
     chosen = get_chosen_df(processed_cycler_run, diag_pos)
 
     resistance = []
     for i in range(9):
-        res = res_calc(chosen, diag_pos, i, 0, 1, "last")
+        res = res_calc(chosen, steps, i, 0, 1, "last")
         resistance.append(res)
     resistances["discharge_pulse_last"] = resistance
 
     resistance = []
     for i in range(9):
-        res = res_calc(chosen, diag_pos, i, 0, 1, 0.001)
+        res = res_calc(chosen, steps, i, 0, 1, 0.001)
         resistance.append(res)
     resistances["discharge_pulse_0.001s"] = resistance
 
     resistance = []
     for i in range(9):
-        res = res_calc(chosen, diag_pos, i, 0, 1, 2)
+        res = res_calc(chosen, steps, i, 0, 1, 2)
         resistance.append(res)
     resistances["discharge_pulse_2s"] = resistance
 
     resistance = []
     for i in range(9):
-        res = res_calc(chosen, diag_pos, i, 2, 3, "last")
+        res = res_calc(chosen, steps, i, 2, 3, "last")
         resistance.append(res)
     resistances["charge_pulse_last"] = resistance
 
     resistance = []
     for i in range(9):
-        res = res_calc(chosen, diag_pos, i, 2, 3, 2)
+        res = res_calc(chosen, steps, i, 2, 3, 2)
         resistance.append(res)
     resistances["charge_pulse_2s"] = resistance
 
     resistance = []
     for i in range(9):
-        res = res_calc(chosen, diag_pos, i, 2, 3, 0.001)
+        res = res_calc(chosen, steps, i, 2, 3, 0.001)
         resistance.append(res)
     resistances["charge_pulse_0.001s"] = resistance
 
@@ -1030,6 +1040,7 @@ def get_step_index(pcycler_run, cycle_type="hppc", diag_pos=0):
     pulse_time = 120  # time in seconds used to decide if a current is a pulse or an soc change
     pulse_c_rate = 0.5  # c-rate to decide if a current is a discharge pulse
     rest_long_vs_short = 600  # time in seconds to decide if the rest is the long or short rest step
+    soc_change_threshold = 0.05
     parameters_path = os.path.join(os.environ.get("BEEP_PROCESSING_DIR", "/"), "data-share", "raw", "parameters")
 
     if "\\" in pcycler_run.protocol:
@@ -1068,11 +1079,11 @@ def get_step_index(pcycler_run, cycle_type="hppc", diag_pos=0):
                 step_indices_annotated["hppc_discharge_pulse"] = step
             elif median_crate >= pulse_c_rate and median_duration < pulse_time:
                 step_indices_annotated["hppc_charge_pulse"] = step
-            elif mean_crate == median_crate < 0 and median_duration > pulse_time:
+            elif mean_crate == median_crate < 0 and abs(mean_crate * median_duration/3600) > soc_change_threshold:
                 step_indices_annotated["hppc_discharge_to_next_soc"] = step
             elif mean_crate != median_crate < 0 and remaining_time == 0.0:
                 step_indices_annotated["hppc_final_discharge"] = step
-            elif mean_crate == median_crate < 0 and median_duration == 0.0 and remaining_time == 0.0:
+            elif mean_crate == median_crate < 0 and remaining_time == 0.0:
                 step_indices_annotated["hppc_final_discharge"] = step
             elif median_crate > 0 and median_duration > pulse_time:
                 step_indices_annotated["hppc_charge_to_soc"] = step

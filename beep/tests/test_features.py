@@ -306,11 +306,11 @@ class TestFeaturizer(unittest.TestCase):
                 [featurizer.X.columns[0], featurizer.X.columns[-1]],
                 ["ohmic_r_d0", "D_8"],
             )
-
     def test_get_step_index(self):
         pcycler_run_loc = os.path.join(
             TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
         )
+
         parameters_path = os.path.join(TEST_FILE_DIR, "data-share", "raw", "parameters")
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
         pcycler_run = loadfn(pcycler_run_loc)
@@ -360,6 +360,44 @@ class TestFeaturizer(unittest.TestCase):
             'hppc_short_rest': 45,
             'hppc_charge_pulse': 46,
             'hppc_discharge_to_next_soc': 47
+        })
+
+    def test_get_step_index_2(self):
+        pcycler_run_loc = os.path.join(
+            TEST_FILE_DIR, "PreDiag_000400_000084_truncated_structure.json"
+        )
+        parameters_path = os.path.join(TEST_FILE_DIR, "data-share", "raw", "parameters")
+        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+        pcycler_run = loadfn(pcycler_run_loc)
+        _, protocol_name = os.path.split(pcycler_run.protocol)
+        parameter_row, _ = parameters_lookup.get_protocol_parameters(protocol_name, parameters_path=parameters_path)
+
+        step_ind = featurizer_helpers.get_step_index(pcycler_run,
+                                                     cycle_type="hppc",
+                                                     diag_pos=0)
+        self.assertEqual(len(step_ind.values()), 7)
+
+        self.assertEqual(step_ind, {
+            'hppc_charge_to_soc': 9,
+            'hppc_long_rest': 11,
+            'hppc_discharge_pulse': 12,
+            'hppc_short_rest': 13,
+            'hppc_charge_pulse': 14,
+            'hppc_discharge_to_next_soc': 15,
+            'hppc_final_discharge': 17
+        })
+        step_ind = featurizer_helpers.get_step_index(pcycler_run,
+                                                     cycle_type="hppc",
+                                                     diag_pos=1)
+        self.assertEqual(len(step_ind.values()), 7)
+        self.assertEqual(step_ind, {
+            'hppc_charge_to_soc': 41,
+            'hppc_long_rest': 43,
+            'hppc_discharge_pulse': 44,
+            'hppc_short_rest': 45,
+            'hppc_charge_pulse': 46,
+            'hppc_discharge_to_next_soc': 47,
+            'hppc_final_discharge': 49
         })
 
     def test_get_diffusion_coeff(self):
