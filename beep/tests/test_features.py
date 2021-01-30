@@ -306,6 +306,16 @@ class TestFeaturizer(unittest.TestCase):
                 [featurizer.X.columns[0], featurizer.X.columns[-1]],
                 ["ohmic_r_d0", "D_8"],
             )
+
+    def test_get_hppc_ocv(self):
+        pcycler_run_loc = os.path.join(
+            TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
+        )
+        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+        pcycler_run = loadfn(pcycler_run_loc)
+        hppc_ocv_features = featurizer_helpers.get_hppc_ocv(pcycler_run, 1)
+        self.assertEqual(np.round(hppc_ocv_features['variance of ocv'].iloc[0], 6), 0.000016)
+
     def test_get_step_index(self):
         pcycler_run_loc = os.path.join(
             TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
