@@ -378,7 +378,6 @@ def get_hppc_ocv(processed_cycler_run, diag_pos):
                                             diag_pos=diag_pos)
     step_first = first_diagnostic_steps['hppc_long_rest']
     step_later = later_diagnostic_steps['hppc_long_rest']
-    assert step_first != step_later
 
     voltage_1 = get_hppc_ocv_helper(cycle_hppc_0, step_first)
     selected_diag_df = cycle_hppc.loc[cycle_hppc.cycle_index == cycles[diag_pos]]
@@ -414,11 +413,11 @@ def get_chosen_df(processed_cycler_run, diag_pos):
     cycles = hppc_cycle.cycle_index.unique()
     diag_num = cycles[diag_pos]
 
-    chosen = hppc_cycle.loc[hppc_cycle.cycle_index == diag_num]
-    chosen = chosen.sort_values(by="test_time")
-    chosen["diagnostic_time"] = (chosen.test_time - chosen.test_time.min()) / 3600
+    selected_diag_df = hppc_cycle.loc[hppc_cycle.cycle_index == diag_num]
+    selected_diag_df = selected_diag_df.sort_values(by="test_time")
+    selected_diag_df["diagnostic_time"] = (selected_diag_df.test_time - selected_diag_df.test_time.min()) / 3600
 
-    return chosen
+    return selected_diag_df
 
 
 def res_calc(selected_diag_df, steps, soc, step_ocv, step_cur, index):
@@ -724,8 +723,8 @@ def get_diffusion_coeff(processed_cycler_run, diag_pos):
     cycles = hppc_cycle.cycle_index.unique()
     diag_num = cycles[diag_pos]
 
-    chosen = hppc_cycle.loc[hppc_cycle.cycle_index == diag_num]
-    chosen = chosen.sort_values(by="test_time")
+    selected_diag_df = hppc_cycle.loc[hppc_cycle.cycle_index == diag_num]
+    selected_diag_df = selected_diag_df.sort_values(by="test_time")
 
     counters = []
 
@@ -740,14 +739,14 @@ def get_diffusion_coeff(processed_cycler_run, diag_pos):
 
     for step in steps:
         counters.append(
-            chosen[chosen.step_index == step].step_index_counter.unique().tolist()
+            selected_diag_df[selected_diag_df.step_index == step].step_index_counter.unique().tolist()
         )
 
     result = pd.DataFrame()
 
     for i in range(1, min(len(counters[1]), 9)):
-        discharge = chosen.loc[chosen.step_index_counter == counters[1][i]]
-        rest = chosen.loc[chosen.step_index_counter == counters[2][i]]
+        discharge = selected_diag_df.loc[selected_diag_df.step_index_counter == counters[1][i]]
+        rest = selected_diag_df.loc[selected_diag_df.step_index_counter == counters[2][i]]
         rest["diagnostic_time"] = rest.test_time - rest.test_time.min()
         t_d = discharge.test_time.max() - discharge.test_time.min()
         v = rest.voltage
