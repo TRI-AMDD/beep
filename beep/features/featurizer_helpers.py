@@ -375,13 +375,14 @@ def get_hppc_ocv(processed_cycler_run, diag_pos):
                                             diag_pos=0)
     later_diagnostic_steps = get_step_index(processed_cycler_run,
                                             cycle_type="hppc",
-                                            diag_pos=0)
+                                            diag_pos=diag_pos)
     step_first = first_diagnostic_steps['hppc_long_rest']
     step_later = later_diagnostic_steps['hppc_long_rest']
+    assert step_first != step_later
 
     voltage_1 = get_hppc_ocv_helper(cycle_hppc_0, step_first)
-    chosen = cycle_hppc.loc[cycle_hppc.cycle_index == cycles[diag_pos]]
-    voltage_2 = get_hppc_ocv_helper(chosen, step_later)
+    selected_diag_df = cycle_hppc.loc[cycle_hppc.cycle_index == cycles[diag_pos]]
+    voltage_2 = get_hppc_ocv_helper(selected_diag_df, step_later)
 
     dv = list_minus(voltage_1, voltage_2)
 
@@ -420,12 +421,12 @@ def get_chosen_df(processed_cycler_run, diag_pos):
     return chosen
 
 
-def res_calc(chosen, steps, soc, step_ocv, step_cur, index):
+def res_calc(selected_diag_df, steps, soc, step_ocv, step_cur, index):
     """
     This function calculates resistances at different socs and a specific pulse duration for a specified hppc cycle.
 
     Args:
-        chosen(pd.DataFrame): a dataframe for a specific diagnostic cycle you are interested in.
+        selected_diag_df(pd.DataFrame): a dataframe for a specific diagnostic cycle you are interested in.
         steps (list): list of step numbers for the specific occurrence of the diagnostic
         if rpt_0.2C, occurs at cycle_index = [2, 37, 142, 244 ...], <diag_pos>=0 would correspond to cycle_index 2
         soc (int): step index counter corresponding to the soc window of interest.
@@ -442,35 +443,35 @@ def res_calc(chosen, steps, soc, step_ocv, step_cur, index):
 
     for step in steps:
         counters.append(
-            chosen[chosen.step_index == step].step_index_counter.unique().tolist()
+            selected_diag_df[selected_diag_df.step_index == step].step_index_counter.unique().tolist()
         )
 
     if index == "last":
         index = -1
     else:
-        start = chosen[
-            (chosen.step_index_counter == counters[step_cur][soc])
+        start = selected_diag_df[
+            (selected_diag_df.step_index_counter == counters[step_cur][soc])
         ].diagnostic_time.min()
         stop = start + index / 3600
         index = len(
-            chosen[
-                (chosen.step_index_counter == counters[step_cur][soc])
-                & (chosen.diagnostic_time > start)
-                & (chosen.diagnostic_time < stop)
+            selected_diag_df[
+                (selected_diag_df.step_index_counter == counters[step_cur][soc])
+                & (selected_diag_df.diagnostic_time > start)
+                & (selected_diag_df.diagnostic_time < stop)
             ]
         )
 
     if len(counters[step_ocv]) < soc - 1:
         return None
 
-    v_ocv = chosen[(chosen.step_index_counter == counters[step_ocv][soc])].voltage.iloc[
+    v_ocv = selected_diag_df[(selected_diag_df.step_index_counter == counters[step_ocv][soc])].voltage.iloc[
         -1
     ]
     #     i_ocv = chosen[(chosen.step_index_counter == counters[step_ocv][soc])].current.tail(5).mean()
-    v_dis = chosen[(chosen.step_index_counter == counters[step_cur][soc])].voltage.iloc[
+    v_dis = selected_diag_df[(selected_diag_df.step_index_counter == counters[step_cur][soc])].voltage.iloc[
         index
     ]
-    i_dis = chosen[(chosen.step_index_counter == counters[step_cur][soc])].current.iloc[
+    i_dis = selected_diag_df[(selected_diag_df.step_index_counter == counters[step_cur][soc])].current.iloc[
         index
     ]
     res = (v_dis - v_ocv) / i_dis
@@ -505,41 +506,41 @@ def get_resistance_soc_duration_hppc(processed_cycler_run, diag_pos):
         step_dict['hppc_discharge_to_next_soc']
         ]
 
-    chosen = get_chosen_df(processed_cycler_run, diag_pos)
+    selected_diag_df = get_chosen_df(processed_cycler_run, diag_pos)
 
     resistance = []
     for i in range(9):
-        res = res_calc(chosen, steps, i, 0, 1, "last")
+        res = res_calc(selected_diag_df, steps, i, 0, 1, "last")
         resistance.append(res)
     resistances["discharge_pulse_last"] = resistance
 
     resistance = []
     for i in range(9):
-        res = res_calc(chosen, steps, i, 0, 1, 0.001)
+        res = res_calc(selected_diag_df, steps, i, 0, 1, 0.001)
         resistance.append(res)
     resistances["discharge_pulse_0.001s"] = resistance
 
     resistance = []
     for i in range(9):
-        res = res_calc(chosen, steps, i, 0, 1, 2)
+        res = res_calc(selected_diag_df, steps, i, 0, 1, 2)
         resistance.append(res)
     resistances["discharge_pulse_2s"] = resistance
 
     resistance = []
     for i in range(9):
-        res = res_calc(chosen, steps, i, 2, 3, "last")
+        res = res_calc(selected_diag_df, steps, i, 2, 3, "last")
         resistance.append(res)
     resistances["charge_pulse_last"] = resistance
 
     resistance = []
     for i in range(9):
-        res = res_calc(chosen, steps, i, 2, 3, 2)
+        res = res_calc(selected_diag_df, steps, i, 2, 3, 2)
         resistance.append(res)
     resistances["charge_pulse_2s"] = resistance
 
     resistance = []
     for i in range(9):
-        res = res_calc(chosen, steps, i, 2, 3, 0.001)
+        res = res_calc(selected_diag_df, steps, i, 2, 3, 0.001)
         resistance.append(res)
     resistances["charge_pulse_0.001s"] = resistance
 
