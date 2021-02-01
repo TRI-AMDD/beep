@@ -20,6 +20,7 @@ import numpy as np
 import datetime
 import shutil
 from copy import deepcopy
+import xmltodict
 
 import pandas as pd
 from beep.protocol import (
@@ -27,7 +28,7 @@ from beep.protocol import (
     SCHEDULE_TEMPLATE_DIR,
     BIOLOGIC_TEMPLATE_DIR,
 )
-from beep.generate_protocol import generate_protocol_files_from_csv
+from beep.generate_protocol import generate_protocol_files_from_csv, template_detection
 from beep.utils.waveform import convert_velocity_to_power_waveform, RapidChargeWave
 from beep.protocol.maccor import Procedure, \
     generate_maccor_waveform_file, insert_driving_parametersv1, insert_charging_parametersv1
@@ -824,6 +825,21 @@ class GenerateProcedureTest(unittest.TestCase):
 
             parsed.close()
 
+
+class GenerateProtocolTest(unittest.TestCase):
+    def setup(self):
+        pass
+
+    def test_template_detection(self):
+        length_1 = template_detection(os.path.join(PROCEDURE_TEMPLATE_DIR, "diagnosticV1.000"))
+        self.assertEqual(72, length_1)
+
+        length_2 = template_detection(os.path.join(PROCEDURE_TEMPLATE_DIR, "diagnosticV5.000"))
+        self.assertEqual(96, length_2)
+
+        length_3 = template_detection(os.path.join(PROCEDURE_TEMPLATE_DIR, "EXP.000"))
+        self.assertEqual(23, length_3)
+
     def test_console_script(self):
         csv_file = os.path.join(TEST_FILE_DIR, "parameter_test.csv")
 
@@ -882,6 +898,7 @@ class GenerateProcedureTest(unittest.TestCase):
             json_input = json.dumps({"file_list": [csv_file]})
             os.system("generate_protocol {}".format(os_format(json_input)))
             self.assertEqual(len(os.listdir(procedures_path)), 60)
+
 
 
 class ProcedureToScheduleTest(unittest.TestCase):
