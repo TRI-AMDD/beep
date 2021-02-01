@@ -112,7 +112,6 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
     for index, protocol_params in protocol_params_df.iterrows():
         template = protocol_params["template"]
         protocol = None
-        print(template)
         # Filename for the output
         filename_prefix = "_".join(
             [
@@ -202,7 +201,6 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
             continue
 
         logger.info(filename, extra=s)
-        print(filename)
         protocol.to_file(filename)
         successfully_generated_files.append(filename)
         names.append(filename_prefix + "_")

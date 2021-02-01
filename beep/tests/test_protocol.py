@@ -531,7 +531,7 @@ class GenerateProcedureTest(unittest.TestCase):
                         "{:06d}".format(protocol_params["seq_num"]),
                     ]
                 )
-                if template == "drivingV1.000":
+                if template == "diagnosticV5.000":
                     diag_params_df = pd.read_csv(
                         os.path.join(PROCEDURE_TEMPLATE_DIR, "PreDiag_parameters - DP.csv")
                     )
@@ -617,7 +617,7 @@ class GenerateProcedureTest(unittest.TestCase):
             )
             self.assertEqual(result, "error")
 
-        # Test avoid overwriting file functionality
+        # Test overwriting file functionality
         with ScratchDir(".") as scratch_dir:
             makedirs_p(os.path.join(scratch_dir, "procedures"))
             makedirs_p(os.path.join(scratch_dir, "names"))
@@ -625,8 +625,9 @@ class GenerateProcedureTest(unittest.TestCase):
             _new_files, generation_failures, result, message = generate_protocol_files_from_csv(
                 csv_file, output_directory=scratch_dir
             )
-            post_file = loadfn(os.path.join("procedures", "name_000007.000"))
-            self.assertEqual(post_file, {"hello": "world"})
+            # To test avoiding overwriting file uncomment lines below
+            # post_file = loadfn(os.path.join("procedures", "name_000007.000"))
+            # self.assertEqual(post_file, {"hello": "world"})
             self.assertEqual(
                 len(os.listdir(os.path.join(scratch_dir, "procedures"))), 3
             )
@@ -634,8 +635,8 @@ class GenerateProcedureTest(unittest.TestCase):
             self.assertEqual(
                 message,
                 {
-                    "comment": "Generated 2 of 32 protocols",
-                    "error": "Failed to generate 30 of 32 protocols",
+                    "comment": "Generated 3 of 33 protocols",
+                    "error": "Failed to generate 30 of 33 protocols",
                 },
             )
             self.assertEqual(
