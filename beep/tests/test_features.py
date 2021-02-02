@@ -30,10 +30,12 @@ from beep.featurize import (
     DiagnosticProperties,
     DiagnosticSummaryStats,
 )
+from beep.structure import RawCyclerRun
 from beep.features import featurizer_helpers
 from beep.utils import parameters_lookup
 from monty.serialization import dumpfn, loadfn
 from monty.tempfile import ScratchDir
+from beep.utils.s3 import download_s3_object
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
@@ -44,7 +46,7 @@ MACCOR_FILE_W_PARAMETERS = os.path.join(
     TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010"
 )
 
-BIG_FILE_TESTS = os.environ.get("BEEP_BIG_TESTS", False)
+BIG_FILE_TESTS = os.environ.get("BIG_FILE_TESTS", None) == "True"
 SKIP_MSG = "Tests requiring large files with diagnostic cycles are disabled, set BIG_FILE_TESTS to run full tests"
 
 
@@ -611,3 +613,48 @@ class TestFeaturizer(unittest.TestCase):
             print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var(v_diff)'], decimals=8),
                              np.round(9.71e-06, decimals=8))
+
+
+class TestRawToFeatures(unittest.TestCase):
+    def setUp(self):
+        self.maccor_file_w_parameters_s3 = {
+            "bucket": "beep-sync-test-stage",
+            "key": "big_file_tests/PreDiag_000287_000128.092"
+        }
+        self.maccor_file_w_parameters = os.path.join(
+            TEST_FILE_DIR, "PreDiag_000287_000128.092"
+        )
+
+    @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
+    def test_raw_to_features(self):
+        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+
+        download_s3_object(bucket=self.maccor_file_w_parameters_s3["bucket"],
+                           key=self.maccor_file_w_parameters_s3["key"],
+                           destination_path=self.maccor_file_w_parameters)
+
+        with ScratchDir("."):
+            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+            # os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
+            cycler_run = RawCyclerRun.from_file(self.maccor_file_w_parameters)
+            processed_cycler_run = cycler_run.to_processed_cycler_run()
+            processed_cycler_run_path = os.path.join(
+                TEST_FILE_DIR, "processed_diagnostic.json"
+            )
+            # Dump to the structured file and check the file size
+            dumpfn(processed_cycler_run, processed_cycler_run_path)
+            # Create dummy json obj
+            json_obj = {
+                "file_list": [processed_cycler_run_path],
+                "run_list": [0],
+            }
+            json_string = json.dumps(json_obj)
+
+            newjsonpaths = process_file_list_from_json(
+                json_string, processed_dir=os.getcwd()
+            )
+            reloaded = json.loads(newjsonpaths)
+            result_list = ['success', 'success', 'success', 'success', 'success', 'success', 'success']
+            self.assertEqual(reloaded['result_list'], result_list)
+            rpt_df = loadfn(reloaded['file_list'][0])
+            self.assertEqual(np.round(rpt_df.X['m0_Amp_rpt_0.2C_1'].iloc[0], 6), 0.867371)
