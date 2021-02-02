@@ -841,6 +841,36 @@ class GenerateProtocolTest(unittest.TestCase):
         length_3 = template_detection(os.path.join(PROCEDURE_TEMPLATE_DIR, "EXP.000"))
         self.assertEqual(23, length_3)
 
+    def test_console_schedule_file(self):
+        csv_file = os.path.join(TEST_FILE_DIR, "unsupported_test.csv")
+        with ScratchDir(".") as _scratch_dir:
+            # Set BEEP_PROCESSING_DIR directory to scratch_dir
+            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
+            schedules_path = os.path.join("data-share", "protocols", "schedules")
+            names_path = os.path.join("data-share", "protocols", "names")
+            makedirs_p(schedules_path)
+            makedirs_p(names_path)
+
+            # Test the script
+            json_input = json.dumps({"file_list": [csv_file]})
+            os.system("generate_protocol {}".format(os_format(json_input)))
+            self.assertEqual(len(os.listdir(schedules_path)), 0)
+
+    def test_console_settings_file(self):
+        csv_file = os.path.join(TEST_FILE_DIR, "data-share", "raw", "parameters", "Form_parameters - GP.csv")
+        with ScratchDir(".") as _scratch_dir:
+            # Set BEEP_PROCESSING_DIR directory to scratch_dir
+            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
+            settings_path = os.path.join("data-share", "protocols", "settings")
+            names_path = os.path.join("data-share", "protocols", "names")
+            makedirs_p(settings_path)
+            makedirs_p(names_path)
+
+            # Test the script
+            json_input = json.dumps({"file_list": [csv_file]})
+            os.system("generate_protocol {}".format(os_format(json_input)))
+            self.assertEqual(len(os.listdir(settings_path)), 16)
+
     def test_console_script(self):
         csv_file = os.path.join(TEST_FILE_DIR, "parameter_test.csv")
 
@@ -899,7 +929,6 @@ class GenerateProtocolTest(unittest.TestCase):
             json_input = json.dumps({"file_list": [csv_file]})
             os.system("generate_protocol {}".format(os_format(json_input)))
             self.assertEqual(len(os.listdir(procedures_path)), 60)
-
 
 
 class ProcedureToScheduleTest(unittest.TestCase):

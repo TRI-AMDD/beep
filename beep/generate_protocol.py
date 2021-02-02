@@ -205,113 +205,6 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
         successfully_generated_files.append(filename)
         names.append(filename_prefix + "_")
 
-        #
-        #
-        # # Switch for template invocation
-        # if template == "EXP.000":
-        #     protocol = Procedure.from_exp(
-        #         **protocol_params[["cutoff_voltage", "charge_rate", "discharge_rate"]]
-        #     )
-        #     filename = "{}.000".format(filename_prefix)
-        #     filename = os.path.join(output_directory, "procedures", filename)
-        # elif template == "diagnosticV2.000":
-        #     diag_params_df = pd.read_csv(
-        #         os.path.join(PROCEDURE_TEMPLATE_DIR, "PreDiag_parameters - DP.csv")
-        #     )
-        #     diagnostic_params = diag_params_df[
-        #         diag_params_df["diagnostic_parameter_set"]
-        #         == protocol_params["diagnostic_parameter_set"]
-        #     ].squeeze()
-        #
-        #     # TODO: should these be separated?
-        #     protocol = Procedure.from_regcyclev2(protocol_params)
-        #     protocol.add_procedure_diagcyclev2(
-        #         protocol_params["capacity_nominal"], diagnostic_params
-        #     )
-        #     filename = "{}.000".format(filename_prefix)
-        #     filename = os.path.join(output_directory, "procedures", filename)
-        # # Each of these templates below has minor fixes to the avoid issues
-        # # V3 fixes an error where the second portion of the charge gets skipped if the first charge rate is high
-        # # V4 fixes the safety limits for the lower voltage
-        # # V5 fixes the exit step for the safety condition during the final diagnostic and the storage cycle
-        # elif template in ["diagnosticV3.000", "diagnosticV4.000", "diagnosticV5.000"]:
-        #     diag_params_df = pd.read_csv(
-        #         os.path.join(PROCEDURE_TEMPLATE_DIR, "PreDiag_parameters - DP.csv")
-        #     )
-        #     diagnostic_params = diag_params_df[
-        #         diag_params_df["diagnostic_parameter_set"]
-        #         == protocol_params["diagnostic_parameter_set"]
-        #     ].squeeze()
-        #     template_fullpath = os.path.join(PROCEDURE_TEMPLATE_DIR, template)
-        #     if protocol_params["project_name"] == "RapidC":
-        #         mwf_dir = os.path.join(output_directory, "mwf_files")
-        #         waveform_name = insert_charging_parametersv1(protocol_params,
-        #                                                      waveform_directory=mwf_dir)
-        #         protocol = Procedure.generate_procedure_chargingv1(index,
-        #                                                            protocol_params,
-        #                                                            waveform_name,
-        #                                                            template=template_fullpath)
-        #     else:
-        #         protocol = Procedure.generate_procedure_regcyclev3(index,
-        #                                                            protocol_params,
-        #                                                            template=template_fullpath)
-        #     protocol.generate_procedure_diagcyclev3(
-        #         protocol_params["capacity_nominal"], diagnostic_params
-        #     )
-        #     filename = "{}.000".format(filename_prefix)
-        #     filename = os.path.join(output_directory, "procedures", filename)
-        # elif template == "drivingV1.000":
-        #     diag_params_df = pd.read_csv(
-        #         os.path.join(PROCEDURE_TEMPLATE_DIR, "PreDiag_parameters - DP.csv")
-        #     )
-        #     diagnostic_params = diag_params_df[
-        #         diag_params_df["diagnostic_parameter_set"]
-        #         == protocol_params["diagnostic_parameter_set"]
-        #         ].squeeze()
-        #     mwf_dir = os.path.join(output_directory, "mwf_files")
-        #     waveform_name = insert_driving_parametersv1(protocol_params,
-        #                                                 waveform_directory=mwf_dir)
-        #     template_fullpath = os.path.join(PROCEDURE_TEMPLATE_DIR, template)
-        #     protocol = Procedure.generate_procedure_drivingv1(index,
-        #                                                       protocol_params,
-        #                                                       waveform_name,
-        #                                                       template=template_fullpath)
-        #     protocol.generate_procedure_diagcyclev3(
-        #         protocol_params["capacity_nominal"], diagnostic_params
-        #     )
-        #     filename = "{}.000".format(filename_prefix)
-        #     filename = os.path.join(output_directory, "procedures", filename)
-        # elif template == "formationV1.mps":
-        #     protocol = Settings.from_file(os.path.join(BIOLOGIC_TEMPLATE_DIR, template))
-        #     protocol = protocol.formation_protocol_bcs(protocol, protocol_params)
-        #     filename = "{}.mps".format(filename_prefix)
-        #     filename = os.path.join(output_directory, "settings", filename)
-        #
-        # else:
-        #     failure = {
-        #         "comment": "Unable to find template: " + template,
-        #         "error": "Not Found",
-        #     }
-        #     file_generation_failures.append(failure)
-        #     warnings.warn("Unsupported file template {}, skipping.".format(template))
-        #     result = "error"
-        #     continue
-        #
-        # logger.info(filename, extra=s)
-        # if not os.path.isfile(filename):
-        #     protocol.to_file(filename)
-        #     successfully_generated_files.append(filename)
-        #     names.append(filename_prefix + "_")
-        #
-        # elif ".sdu" in template:
-        #     failure = {
-        #         "comment": "Schedule file generation is not yet implemented",
-        #         "error": "Not Implemented"
-        #     }
-        #     file_generation_failures.append(failure)
-        #     logger.warning("Schedule file generation not yet implemented", extra=s)
-        #     result = "error"
-
     # This block of code produces the file containing all of the run file
     # names produced in this function call. This is to make starting tests easier
     _, namefile = os.path.split(csv_filename)
@@ -321,9 +214,7 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
     names_dir = os.path.join(output_directory, "names")
     os.makedirs(names_dir, exist_ok=True)
 
-    with open(
-        os.path.join(names_dir, namefile), "w", newline=""
-    ) as outputfile:
+    with open(os.path.join(names_dir, namefile), "w", newline="") as outputfile:
         wr = csv.writer(outputfile)
         for name in names:
             wr.writerow([name])
