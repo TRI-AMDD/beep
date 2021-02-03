@@ -122,7 +122,7 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
         if ".000" in template:  # Extension for maccor procedure files
             template_fullpath = os.path.join(PROCEDURE_TEMPLATE_DIR, template)
             template_length = template_detection(template_fullpath)
-            if "diagnostic_parameter_set" in protocol_params:
+            if "diagnostic_parameter_set" in protocol_params:  # For parameters include diagnostics load those values
                 diag_params_df = pd.read_csv(
                     os.path.join(PROCEDURE_TEMPLATE_DIR, "PreDiag_parameters - DP.csv")
                 )
