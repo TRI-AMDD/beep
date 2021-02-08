@@ -1,5 +1,14 @@
 
 
+v2021.2.8.10
+------------
+* Add comments to clarify logic behind template invocation
+* Adding test for raw file to features to make sure that changes are compatible between modules
+* Initial refactor of the protocol generation logic
+* Add test to catch problems in hppc ocv computation
+* add assert for validation fail reason
+* add monotonicity check - Thanks Chirru!
+
 v2021.1.11.15
 -------------
 * Change dtype to fix negative paused value
