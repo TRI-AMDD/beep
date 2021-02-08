@@ -49,7 +49,6 @@ import os
 import json
 import numpy as np
 import pandas as pd
-import math
 from abc import ABCMeta, abstractmethod
 from docopt import docopt
 from monty.json import MSONable
@@ -135,13 +134,14 @@ class BeepFeatures(MSONable, metaclass=ABCMeta):
 
     @classmethod
     @abstractmethod
-    def validate_data(cls, processed_cycler_run):
+    def validate_data(cls, processed_cycler_run, params_dict=None):
         """
         Method for validation of input data, e.g. processed_cycler_runs
 
         Args:
             processed_cycler_run (ProcessedCyclerRun): processed_cycler_run
                 to validate
+            params_dict (dict): parameter dictionary for validation
 
         Returns:
             (bool): boolean for whether data is validated
@@ -234,7 +234,7 @@ class RPTdQdVFeatures(BeepFeatures):
         """
         Args:
             name (str): predictor object name
-            feature_object (pandas.DataFrame): features in DataFrame format.
+            X (pandas.DataFrame): features in DataFrame format.
             metadata (dict): information about the data and code used to produce features
         """
         super().__init__(name, X, metadata)
@@ -317,6 +317,10 @@ class RPTdQdVFeatures(BeepFeatures):
         elif (params_dict["rpt_type"] == "rpt_2C") and (params_dict["charge_y_n"] == 0):
             max_nr_peaks = 3
             cwt_range_input = np.arange(10, 50)
+        else:
+            raise ValueError("Unsupported rpt_type {} or charge_y_n {}".format(
+                params_dict['rpt_type'], params_dict['charge_y_n']
+            ))
 
         peak_fit_df_ref = featurizer_helpers.generate_dQdV_peak_fits(
             processed_cycler_run,
@@ -463,15 +467,15 @@ class HPPCResistanceVoltageFeatures(BeepFeatures):
 
 class HPPCRelaxationFeatures(BeepFeatures):
     """
-           Object corresponding to features built from relaxation time-contants
-           from hybrid pulse power characterization cycles.
-           Includes constructors to create the features, object names and metadata
-           attributes in the object
-               name (str): predictor object name.
-               X (pandas.DataFrame): features in DataFrame format.
-               metadata (dict): information about the conditions, data
-                   and code used to produce features
-           """
+    Object corresponding to features built from relaxation time-contants
+    from hybrid pulse power characterization cycles.
+    Includes constructors to create the features, object names and metadata
+    attributes in the object
+        name (str): predictor object name.
+        X (pandas.DataFrame): features in DataFrame format.
+        metadata (dict): information about the conditions, data
+            and code used to produce features
+    """
 
     # Class name for the feature object
     class_feature_name = "HPPCRelaxationFeatures"
@@ -480,7 +484,7 @@ class HPPCRelaxationFeatures(BeepFeatures):
         """
         Args:
             name (str): predictor object name
-            feature_object (pandas.DataFrame): features in DataFrame format.
+            X (pandas.DataFrame): features in DataFrame format.
             metadata (dict): information about the data and code used to produce features
         """
         super().__init__(name, X, metadata)
@@ -595,26 +599,25 @@ class HPPCRelaxationFeatures(BeepFeatures):
         return pd.DataFrame(dict(zip(col_names, full_feature_array)), index=[0])
 
 
-class DiagnosticSummaryStats(BeepFeatures):
+class RegularCycleSummaryStats(BeepFeatures):
     """
-   Object corresponding to summary statistics from a diagnostic cycle of
-   specific type. Includes constructors to create the features, object names
-   and metadata attributes in the object
+    Object corresponding to summary statistics from
+    regular cycles
 
-   name (str): predictor object name.
-   X (pandas.DataFrame): features in DataFrame format.
-   metadata (dict): information about the conditions, data
-       and code used to produce features
-   """
+    name (str): predictor object name.
+    X (pandas.DataFrame): features in DataFrame format.
+    metadata (dict): information about the conditions, data
+        and code used to produce features
+    """
 
     # Class name for the feature object
-    class_feature_name = "DiagnosticSummaryStats"
+    class_feature_name = "RegularCycleSummaryStats"
 
     def __init__(self, name, X, metadata):
         """
         Args:
             name (str): predictor object name
-            feature_object (pandas.DataFrame): features in DataFrame format.
+            X (pandas.DataFrame): features in DataFrame format.
             metadata (dict): information about the data and code used to produce features
         """
         super().__init__(name, X, metadata)
@@ -640,7 +643,7 @@ class DiagnosticSummaryStats(BeepFeatures):
             params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
         conditions = []
         if not hasattr(processed_cycler_run, "diagnostic_summary") & hasattr(
-            processed_cycler_run, "diagnostic_interpolated"
+                processed_cycler_run, "diagnostic_interpolated"
         ):
             return False
         if processed_cycler_run.diagnostic_summary.empty:
@@ -653,6 +656,36 @@ class DiagnosticSummaryStats(BeepFeatures):
             )
 
         return all(conditions)
+
+    STANDARD_OPERATION_NAMES = ["var", "min", "mean", "skew", "kurtosis", "abs", "square"]
+
+    @staticmethod
+    def get_standard_operation_values(array):
+        """
+        Static method for getting values corresponding
+        to standard 7 operations that many beep features
+        use, i.e. log of absolute value of each of
+        variance, min, mean, skew, kurtosis, the sum of
+        the absolute values and the sum of squares
+
+        Args:
+            array (list, np.ndarray): array of values to get
+                standard operation values for, e.g. cycle
+                discharging capacity, QcDiff, etc.
+
+        Returns:
+            [float]: list of features
+
+        """
+        return np.array([
+            np.log10(np.absolute(np.var(array))),
+            np.log10(np.absolute(min(array))),
+            np.log10(np.absolute(np.mean(array))),
+            np.log10(np.absolute(skew(array))),
+            np.log10(np.absolute(kurtosis(array, fisher=False, bias=False))),
+            np.log10(np.sum(np.absolute(array))),
+            np.log10(np.sum(np.square(array)))
+        ])
 
     @classmethod
     def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
@@ -671,6 +704,133 @@ class DiagnosticSummaryStats(BeepFeatures):
         """
         if params_dict is None:
             params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
+
+        X = pd.DataFrame(np.zeros((1, 28)))
+
+        reg_cycle_comp_num = params_dict.get("cycle_comp_num")
+        cycle_comp_1 = processed_cycler_run.cycles_interpolated[
+            processed_cycler_run.cycles_interpolated.cycle_index == reg_cycle_comp_num[1]
+            ]
+        cycle_comp_0 = processed_cycler_run.cycles_interpolated[
+            processed_cycler_run.cycles_interpolated.cycle_index == reg_cycle_comp_num[0]
+            ]
+        Qc100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].charge_capacity
+        Qc10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].charge_capacity
+        QcDiff = Qc100_1.values - Qc10_1.values
+        QcDiff = QcDiff[~np.isnan(QcDiff)]
+
+        X[0:7] = cls.get_standard_operation_values(QcDiff)
+
+        Qd100_1 = cycle_comp_1[cycle_comp_1.step_type == "discharge"].discharge_capacity
+        Qd10_1 = cycle_comp_0[cycle_comp_0.step_type == "discharge"].discharge_capacity
+        QdDiff = Qd100_1.values - Qd10_1.values
+        QdDiff = QdDiff[~np.isnan(QdDiff)]
+
+        X[7:14] = cls.get_standard_operation_values(QdDiff)
+
+        # Charging Energy features
+        Ec100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].charge_energy
+        Ec10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].charge_energy
+        EcDiff = Ec100_1.values - Ec10_1.values
+        EcDiff = EcDiff[~np.isnan(EcDiff)]
+
+        X[14:21] = cls.get_standard_operation_values(EcDiff)
+
+        # Discharging Energy features
+        Ed100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].discharge_energy
+        Ed10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].discharge_energy
+        EdDiff = Ed100_1.values - Ed10_1.values
+        EdDiff = EdDiff[~np.isnan(EdDiff)]
+
+        X[21:28] = cls.get_standard_operation_values(EdDiff)
+
+        quantities = [
+            "charging_capacity",
+            "discharging_capacity",
+            "charging_energy",
+            "discharging_energy",
+        ]
+
+        X.columns = [y + "_" + x for x in quantities for y in cls.STANDARD_OPERATION_NAMES]
+        return X
+
+
+class DiagnosticSummaryStats(BeepFeatures, RegularCycleSummaryStats):
+    """
+    Object corresponding to summary statistics from a diagnostic cycle of
+    specific type. Includes constructors to create the features, object names
+    and metadata attributes in the object.  Inherits from RegularCycleSummaryStats
+    to reuse standard feature generation
+
+    name (str): predictor object name.
+    X (pandas.DataFrame): features in DataFrame format.
+    metadata (dict): information about the conditions, data
+        and code used to produce features
+    """
+
+    # Class name for the feature object
+    class_feature_name = "DiagnosticSummaryStats"
+
+    def __init__(self, name, X, metadata):
+        """
+        Args:
+            name (str): predictor object name
+            X (pandas.DataFrame): features in DataFrame format.
+            metadata (dict): information about the data and code used to produce features
+        """
+        super().__init__(name, X, metadata)
+        self.name = name
+        self.X = X
+        self.metadata = metadata
+
+    @classmethod
+    def validate_data(cls, processed_cycler_run, params_dict=None):
+        """
+        This function determines if the input data has the necessary attributes for
+        creation of this feature class. It should test for all of the possible reasons
+        that feature generation would fail for this particular input data.
+
+        Args:
+            processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
+            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
+            gets featurized. These could be filters for column or row operations
+
+        Returns:
+            bool: True/False indication of ability to proceed with feature generation
+        """
+        if params_dict is None:
+            params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
+        conditions = []
+        if not hasattr(processed_cycler_run, "diagnostic_summary") & hasattr(
+            processed_cycler_run, "diagnostic_interpolated"
+        ):
+            return False
+        if processed_cycler_run.diagnostic_summary.empty:
+            return False
+        else:
+            df = processed_cycler_run.diagnostic_summary
+            df = df[df.cycle_type == params_dict["diagnostic_cycle_type"]]
+            conditions.append(
+                df.cycle_index.nunique() >= max(params_dict["cycle_comp_num"]) + 1
+            )
+
+        return all(conditions)
+
+    @classmethod
+    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None):
+        """
+        Generate features listed in early prediction manuscript using both diagnostic and regular cycles
+
+        Args:
+            processed_cycler_run (beep.structure.ProcessedCyclerRun)
+            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
+                gets featurized. These could be filters for column or row operations
+
+        Returns:
+            X (pd.DataFrame): Dataframe containing the feature
+        """
+        if params_dict is None:
+            params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
         diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated
 
         X = pd.DataFrame(np.zeros((1, 42)))
@@ -681,129 +841,70 @@ class DiagnosticSummaryStats(BeepFeatures):
 
         ipl_diff = np.diff(index_pos_list)
 
-        # TODO: can I delete these?  Not sure they're being used
-        # end_list = index_pos_list[0:-1][ipl_diff != 1]
-        # end_list = np.append(end_list, index_pos_list[-1])
-
         start_list = index_pos_list[1:][ipl_diff != 1]
         start_list = np.insert(start_list, 0, index_pos_list[0])
 
         # Create features
 
         # Charging Capacity features
-        if params_dict.get("use_regular_cycles"):
-            reg_cycle_comp_num = params_dict.get("regular_cycle_comp_num")
-            cycle_comp_1 = processed_cycler_run.cycles_interpolated[
-                processed_cycler_run.cycles_interpolated.cycle_index == reg_cycle_comp_num[1]
-            ]
-            cycle_comp_0 = processed_cycler_run.cycles_interpolated[
-                processed_cycler_run.cycles_interpolated.cycle_index == reg_cycle_comp_num[0]
-            ]
-            Qc100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].charge_capacity
-            Qc10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].charge_capacity
-            QcDiff = Qc100_1.values - Qc10_1.values
-            QcDiff = QcDiff[~np.isnan(QcDiff)]
-        else:
-            Qc100_1 = diagnostic_interpolated.charge_capacity[
-                      start_list[params_dict["cycle_comp_num"][1]]:
-                      start_list[params_dict["cycle_comp_num"][1]] + params_dict["Q_seg"]]
-            Qc10_1 = diagnostic_interpolated.charge_capacity[
-                     start_list[params_dict["cycle_comp_num"][0]]:
-                     start_list[params_dict["cycle_comp_num"][0]] + params_dict["Q_seg"]]
-            QcDiff = Qc100_1.values - Qc10_1.values
-            QcDiff = QcDiff[~np.isnan(QcDiff)]
+        Qc100_1 = diagnostic_interpolated.charge_capacity[
+                  start_list[params_dict["cycle_comp_num"][1]]:
+                  start_list[params_dict["cycle_comp_num"][1]] + params_dict["Q_seg"]]
+        Qc10_1 = diagnostic_interpolated.charge_capacity[
+                 start_list[params_dict["cycle_comp_num"][0]]:
+                 start_list[params_dict["cycle_comp_num"][0]] + params_dict["Q_seg"]]
+        QcDiff = Qc100_1.values - Qc10_1.values
+        QcDiff = QcDiff[~np.isnan(QcDiff)]
 
-        X[0] = np.log10(np.absolute(np.var(QcDiff)))
-        X[1] = np.log10(np.absolute(min(QcDiff)))
-        X[2] = np.log10(np.absolute(np.mean(QcDiff)))
-        X[3] = np.log10(np.absolute(skew(QcDiff)))
-        X[4] = np.log10(np.absolute(kurtosis(QcDiff, fisher=False, bias=False)))
-        X[5] = np.log10(np.sum(np.absolute(QcDiff)))
-        X[6] = np.log10(np.sum(np.square(QcDiff)))
+        X[0:7] = cls.get_standard_operation_values(QcDiff)
 
         # Discharging Capacity features
-        if params_dict.get("use_regular_cycles"):
-            Qd100_1 = cycle_comp_1[cycle_comp_1.step_type == "discharge"].discharge_capacity
-            Qd10_1 = cycle_comp_0[cycle_comp_0.step_type == "discharge"].discharge_capacity
-            QdDiff = Qd100_1.values - Qd10_1.values
-            QdDiff = QdDiff[~np.isnan(QdDiff)]
-        else:
-            Qd100_1 = diagnostic_interpolated.discharge_capacity[
-                start_list[params_dict["cycle_comp_num"][1]]
-                + params_dict["Q_seg"]
-                + 1: start_list[params_dict["cycle_comp_num"][1]]
-                + 2 * params_dict["Q_seg"]
-            ]
-            Qd10_1 = diagnostic_interpolated.discharge_capacity[
-                start_list[params_dict["cycle_comp_num"][0]]
-                + params_dict["Q_seg"]
-                + 1: start_list[params_dict["cycle_comp_num"][0]]
-                + 2 * params_dict["Q_seg"]
-            ]
-            QdDiff = Qd100_1.values - Qd10_1.values
-            QdDiff = QdDiff[~np.isnan(QdDiff)]
+        Qd100_1 = diagnostic_interpolated.discharge_capacity[
+            start_list[params_dict["cycle_comp_num"][1]]
+            + params_dict["Q_seg"]
+            + 1: start_list[params_dict["cycle_comp_num"][1]]
+            + 2 * params_dict["Q_seg"]
+        ]
+        Qd10_1 = diagnostic_interpolated.discharge_capacity[
+            start_list[params_dict["cycle_comp_num"][0]]
+            + params_dict["Q_seg"]
+            + 1: start_list[params_dict["cycle_comp_num"][0]]
+            + 2 * params_dict["Q_seg"]
+        ]
+        QdDiff = Qd100_1.values - Qd10_1.values
+        QdDiff = QdDiff[~np.isnan(QdDiff)]
 
-        X[7] = np.log10(np.absolute(np.var(QdDiff)))
-        X[8] = np.log10(np.absolute(min(QdDiff)))
-        X[9] = np.log10(np.absolute(np.mean(QdDiff)))
-        X[10] = np.log10(np.absolute(skew(QdDiff)))
-        X[11] = np.log10(np.absolute(kurtosis(QdDiff, fisher=False, bias=False)))
-        X[12] = np.log10(np.sum(np.absolute(QdDiff)))
-        X[13] = np.log10(np.sum(np.square(QdDiff)))
+        X[7:14] = cls.get_standard_operation_values(QdDiff)
 
         # Charging Energy features
-        if params_dict.get("use_regular_cycles"):
-            Ec100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].charge_energy
-            Ec10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].charge_energy
-            EcDiff = Ec100_1.values - Ec10_1.values
-            EcDiff = EcDiff[~np.isnan(EcDiff)]
-        else:
-            Ec100_1 = processed_cycler_run.diagnostic_interpolated.charge_energy[
-                      start_list[params_dict["cycle_comp_num"][1]]:
-                      start_list[params_dict["cycle_comp_num"][1]] + params_dict["Q_seg"]]
-            Ec10_1 = processed_cycler_run.diagnostic_interpolated.charge_energy[
-                     start_list[params_dict["cycle_comp_num"][0]]:
-                     start_list[params_dict["cycle_comp_num"][0]] + params_dict["Q_seg"]]
-            EcDiff = Ec100_1.values - Ec10_1.values
-            EcDiff = EcDiff[~np.isnan(EcDiff)]
+        Ec100_1 = processed_cycler_run.diagnostic_interpolated.charge_energy[
+                  start_list[params_dict["cycle_comp_num"][1]]:
+                  start_list[params_dict["cycle_comp_num"][1]] + params_dict["Q_seg"]]
+        Ec10_1 = processed_cycler_run.diagnostic_interpolated.charge_energy[
+                 start_list[params_dict["cycle_comp_num"][0]]:
+                 start_list[params_dict["cycle_comp_num"][0]] + params_dict["Q_seg"]]
+        EcDiff = Ec100_1.values - Ec10_1.values
+        EcDiff = EcDiff[~np.isnan(EcDiff)]
 
-        X[14] = np.log10(np.absolute(np.var(EcDiff)))
-        X[15] = np.log10(np.absolute(min(EcDiff)))
-        X[16] = np.log10(np.absolute(np.mean(EcDiff)))
-        X[17] = np.log10(np.absolute(skew(EcDiff)))
-        X[18] = np.log10(np.absolute(kurtosis(QcDiff, fisher=False, bias=False)))
-        X[19] = np.log10(np.sum(np.absolute(EcDiff)))
-        X[20] = np.log10(np.sum(np.square(EcDiff)))
+        X[14:21] = cls.get_standard_operation_values(EcDiff)
 
         # Discharging Energy features
-        if params_dict.get("use_regular_cycles"):
-            Ed100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].discharge_energy
-            Ed10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].discharge_energy
-            EdDiff = Ed100_1.values - Ed10_1.values
-            EdDiff = EdDiff[~np.isnan(EdDiff)]
-        else:
-            Ed100_1 = diagnostic_interpolated.discharge_energy[
-                start_list[params_dict["cycle_comp_num"][1]]
-                + params_dict["Q_seg"]
-                + 1: start_list[params_dict["cycle_comp_num"][1]]
-                + 2 * params_dict["Q_seg"]
-            ]
-            Ed10_1 = diagnostic_interpolated.discharge_energy[
-                start_list[params_dict["cycle_comp_num"][0]]
-                + params_dict["Q_seg"]
-                + 1: start_list[params_dict["cycle_comp_num"][0]]
-                + 2 * params_dict["Q_seg"]
-            ]
-            EdDiff = Ed100_1.values - Ed10_1.values
-            EdDiff = EdDiff[~np.isnan(EdDiff)]
+        Ed100_1 = diagnostic_interpolated.discharge_energy[
+            start_list[params_dict["cycle_comp_num"][1]]
+            + params_dict["Q_seg"]
+            + 1: start_list[params_dict["cycle_comp_num"][1]]
+            + 2 * params_dict["Q_seg"]
+        ]
+        Ed10_1 = diagnostic_interpolated.discharge_energy[
+            start_list[params_dict["cycle_comp_num"][0]]
+            + params_dict["Q_seg"]
+            + 1: start_list[params_dict["cycle_comp_num"][0]]
+            + 2 * params_dict["Q_seg"]
+        ]
+        EdDiff = Ed100_1.values - Ed10_1.values
+        EdDiff = EdDiff[~np.isnan(EdDiff)]
 
-        X[21] = np.log10(np.absolute(np.var(EdDiff)))
-        X[22] = np.log10(np.absolute(min(EdDiff)))
-        X[23] = np.log10(np.absolute(np.mean(EdDiff)))
-        X[24] = np.log10(np.absolute(skew(EdDiff)))
-        X[25] = np.log10(np.absolute(kurtosis(EdDiff, fisher=False, bias=False)))
-        X[26] = np.log10(np.sum(np.absolute(EdDiff)))
-        X[27] = np.log10(np.sum(np.square(EdDiff)))
+        X[21:28] = cls.get_standard_operation_values(EdDiff)
 
         # Charging dQdV features
         dQdVc100_1 = processed_cycler_run.diagnostic_interpolated.charge_dQdV[
@@ -815,13 +916,7 @@ class DiagnosticSummaryStats(BeepFeatures):
         dQdVcDiff = dQdVc100_1.values - dQdVc10_1.values
         dQdVcDiff = dQdVcDiff[~np.isnan(dQdVcDiff)]
 
-        X[28] = np.log10(np.absolute(np.var(dQdVcDiff)))
-        X[29] = np.log10(np.absolute(min(dQdVcDiff)))
-        X[30] = np.log10(np.absolute(np.mean(dQdVcDiff)))
-        X[31] = np.log10(np.absolute(skew(dQdVcDiff)))
-        X[32] = np.log10(np.absolute(kurtosis(QcDiff, fisher=False, bias=False)))
-        X[33] = np.log10(np.sum(np.absolute(dQdVcDiff)))
-        X[34] = np.log10(np.sum(np.square(dQdVcDiff)))
+        X[28:35] = cls.get_standard_operation_values(dQdVcDiff)
 
         # Discharging Capacity features
         dQdVd100_1 = diagnostic_interpolated.discharge_dQdV[
@@ -839,13 +934,7 @@ class DiagnosticSummaryStats(BeepFeatures):
         dQdVdDiff = dQdVd100_1.values - dQdVd10_1.values
         dQdVdDiff = dQdVdDiff[~np.isnan(dQdVdDiff)]
 
-        X[35] = np.log10(np.absolute(np.var(dQdVdDiff)))
-        X[36] = np.log10(np.absolute(min(dQdVdDiff)))
-        X[37] = np.log10(np.absolute(np.mean(dQdVdDiff)))
-        X[38] = np.log10(np.absolute(skew(dQdVdDiff)))
-        X[39] = np.log10(np.absolute(kurtosis(dQdVdDiff, fisher=False, bias=False)))
-        X[40] = np.log10(np.sum(np.absolute(dQdVdDiff)))
-        X[41] = np.log10(np.sum(np.square(dQdVdDiff)))
+        X[35:42] = cls.get_standard_operation_values(dQdVdDiff)
 
         operations = ["var", "min", "mean", "skew", "kurtosis", "abs", "square"]
         quantities = [
@@ -879,7 +968,7 @@ class DeltaQFastCharge(BeepFeatures):
         """
         Args:
             name (str): predictor object name
-            feature_object (pandas.DataFrame): features in DataFrame format.
+            X (pandas.DataFrame): features in DataFrame format.
             metadata (dict): information about the data and code used to produce features
         """
         super().__init__(name, X, metadata)
@@ -1541,10 +1630,6 @@ def process_file_list_from_json(file_list_json, processed_dir="data-share/featur
             and loaded, otherwise interpreted as a json string.
         processed_dir (str): location for processed cycler run output files
             to be placed.
-        features_label (str): name of feature generation method.
-        predict_only (bool): whether to calculate predictions or not.
-        prediction_type (str): Single or multi-point predictions.
-        predicted_quantity (str): quantity being predicted - cycle or capacity.
 
     Returns:
         str: json string of feature files (with key "file_list").
