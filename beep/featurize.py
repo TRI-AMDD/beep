@@ -714,7 +714,7 @@ class CycleSummaryStats(BeepFeatures):
         if params_dict is None:
             params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
 
-        X = pd.DataFrame(np.zeros((1, 28)))
+        X = pd.DataFrame(np.zeros((1, 14)))
 
         reg_cycle_comp_num = params_dict.get("cycle_comp_num")
         cycle_comp_1 = processed_cycler_run.cycles_interpolated[
@@ -735,9 +735,9 @@ class CycleSummaryStats(BeepFeatures):
         QdDiff = Qd100_1.values - Qd10_1.values
         QdDiff = QdDiff[~np.isnan(QdDiff)]
 
-
         X.loc[0, 7:13] = cls.get_standard_operation_values(QdDiff)
 
+        # TODO: should these be here?
         # # Charging Energy features
         # Ec100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].charge_energy
         # Ec10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].charge_energy
@@ -757,13 +757,12 @@ class CycleSummaryStats(BeepFeatures):
         quantities = [
             "charging_capacity",
             "discharging_capacity",
-            "charging_energy",
-            "discharging_energy",
+            # "charging_energy",
+            # "discharging_energy",
         ]
 
         X.columns = [y + "_" + x for x in quantities for y in cls.STANDARD_OPERATION_NAMES]
 
-        import pdb; pdb.set_trace()
         return X
 
 

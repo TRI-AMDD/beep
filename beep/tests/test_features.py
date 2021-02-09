@@ -443,11 +443,11 @@ class TestFeaturizer(unittest.TestCase):
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
             pcycler_run_loc = os.path.join(
-                TEST_FILE_DIR, "PreDiag_000296_00270E_structure.json"
+                TEST_FILE_DIR, "PreDiag_000296_00270E_truncated_structure.json"
             )
 
             # Test diagnostic with regular cycles
-            pcycler_run = loadfn(os.path.join(TEST_FILE_DIR, "PreDiag_000296_00270E_structure.json"))
+            pcycler_run = loadfn(pcycler_run_loc)
             featurizer = CycleSummaryStats.from_run(
                 pcycler_run_loc, os.getcwd(), pcycler_run
             )
@@ -461,6 +461,7 @@ class TestFeaturizer(unittest.TestCase):
                 pcycler_run_loc, os.getcwd(), pcycler_run, params_dict
             )
             self.assertAlmostEqual(features.X['square_discharging_capacity'].iloc[0], 0.7519596, 6)
+
 
     def test_DiagnosticProperties_class(self):
         with ScratchDir("."):
