@@ -599,7 +599,7 @@ class HPPCRelaxationFeatures(BeepFeatures):
         return pd.DataFrame(dict(zip(col_names, full_feature_array)), index=[0])
 
 
-class RegularCycleSummaryStats(BeepFeatures):
+class CycleSummaryStats(BeepFeatures):
     """
     Object corresponding to summary statistics from
     regular cycles
@@ -611,7 +611,7 @@ class RegularCycleSummaryStats(BeepFeatures):
     """
 
     # Class name for the feature object
-    class_feature_name = "RegularCycleSummaryStats"
+    class_feature_name = "CycleSummaryStats"
 
     def __init__(self, name, X, metadata):
         """
@@ -635,27 +635,36 @@ class RegularCycleSummaryStats(BeepFeatures):
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
-            gets featurized. These could be filters for column or row operations
+                gets featurized. These could be filters for column or row operations
         Returns:
             bool: True/False indication of ability to proceed with feature generation
         """
         if params_dict is None:
             params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
-        conditions = []
-        if not hasattr(processed_cycler_run, "diagnostic_summary") & hasattr(
-                processed_cycler_run, "diagnostic_interpolated"
-        ):
-            return False
-        if processed_cycler_run.diagnostic_summary.empty:
-            return False
-        else:
-            df = processed_cycler_run.diagnostic_summary
-            df = df[df.cycle_type == params_dict["diagnostic_cycle_type"]]
-            conditions.append(
-                df.cycle_index.nunique() >= max(params_dict["cycle_comp_num"]) + 1
-            )
 
-        return all(conditions)
+        # TODO: not sure this is necessary
+        # Check for data in each of the selected cycles
+        index_1, index_2 = params_dict['cycle_comp_num']
+        cycle_1 = processed_cycler_run.cycles_interpolated[
+            processed_cycler_run.cycles_interpolated.cycle_index == index_1]
+        cycle_2 = processed_cycler_run.cycles_interpolated[
+            processed_cycler_run.cycles_interpolated.cycle_index == index_2]
+        if len(cycle_1) == 0 or len(cycle_2) == 0:
+            return False
+
+        # TODO: check whether this is good
+        # Check for relevant data
+        required_columns = ['charge_capacity',
+                            'discharge_capacity'
+                            # 'charge_energy',
+                            # 'discharge_energy'
+                            ]
+        pcycler_run_columns = processed_cycler_run.cycles_interpolated.columns
+        if not all([column in pcycler_run_columns for column in required_columns]):
+            return False
+
+        return True
+
 
     STANDARD_OPERATION_NAMES = ["var", "min", "mean", "skew", "kurtosis", "abs", "square"]
 
@@ -696,7 +705,7 @@ class RegularCycleSummaryStats(BeepFeatures):
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun)
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
-            gets featurized. These could be filters for column or row operations
+                gets featurized. These could be filters for column or row operations
             parameters_path (str): Root directory storing project parameter files.
 
         Returns:
@@ -719,30 +728,31 @@ class RegularCycleSummaryStats(BeepFeatures):
         QcDiff = Qc100_1.values - Qc10_1.values
         QcDiff = QcDiff[~np.isnan(QcDiff)]
 
-        X[0:7] = cls.get_standard_operation_values(QcDiff)
+        X.loc[0, 0:6] = cls.get_standard_operation_values(QcDiff)
 
         Qd100_1 = cycle_comp_1[cycle_comp_1.step_type == "discharge"].discharge_capacity
         Qd10_1 = cycle_comp_0[cycle_comp_0.step_type == "discharge"].discharge_capacity
         QdDiff = Qd100_1.values - Qd10_1.values
         QdDiff = QdDiff[~np.isnan(QdDiff)]
 
-        X[7:14] = cls.get_standard_operation_values(QdDiff)
 
-        # Charging Energy features
-        Ec100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].charge_energy
-        Ec10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].charge_energy
-        EcDiff = Ec100_1.values - Ec10_1.values
-        EcDiff = EcDiff[~np.isnan(EcDiff)]
+        X.loc[0, 7:13] = cls.get_standard_operation_values(QdDiff)
 
-        X[14:21] = cls.get_standard_operation_values(EcDiff)
+        # # Charging Energy features
+        # Ec100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].charge_energy
+        # Ec10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].charge_energy
+        # EcDiff = Ec100_1.values - Ec10_1.values
+        # EcDiff = EcDiff[~np.isnan(EcDiff)]
 
-        # Discharging Energy features
-        Ed100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].discharge_energy
-        Ed10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].discharge_energy
-        EdDiff = Ed100_1.values - Ed10_1.values
-        EdDiff = EdDiff[~np.isnan(EdDiff)]
+        # X.loc[0, 14:20] = cls.get_standard_operation_values(EcDiff)
 
-        X[21:28] = cls.get_standard_operation_values(EdDiff)
+        # # Discharging Energy features
+        # Ed100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].discharge_energy
+        # Ed10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].discharge_energy
+        # EdDiff = Ed100_1.values - Ed10_1.values
+        # EdDiff = EdDiff[~np.isnan(EdDiff)]
+
+        # X.loc[0, 21:27] = cls.get_standard_operation_values(EdDiff)
 
         quantities = [
             "charging_capacity",
@@ -752,10 +762,12 @@ class RegularCycleSummaryStats(BeepFeatures):
         ]
 
         X.columns = [y + "_" + x for x in quantities for y in cls.STANDARD_OPERATION_NAMES]
+
+        import pdb; pdb.set_trace()
         return X
 
 
-class DiagnosticSummaryStats(BeepFeatures, RegularCycleSummaryStats):
+class DiagnosticSummaryStats(CycleSummaryStats):
     """
     Object corresponding to summary statistics from a diagnostic cycle of
     specific type. Includes constructors to create the features, object names
@@ -793,7 +805,7 @@ class DiagnosticSummaryStats(BeepFeatures, RegularCycleSummaryStats):
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
-            gets featurized. These could be filters for column or row operations
+                gets featurized. These could be filters for column or row operations
 
         Returns:
             bool: True/False indication of ability to proceed with feature generation
@@ -817,7 +829,8 @@ class DiagnosticSummaryStats(BeepFeatures, RegularCycleSummaryStats):
         return all(conditions)
 
     @classmethod
-    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None):
+    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
+                                           parameters_path="data-share/raw/parameters"):
         """
         Generate features listed in early prediction manuscript using both diagnostic and regular cycles
 
@@ -825,6 +838,7 @@ class DiagnosticSummaryStats(BeepFeatures, RegularCycleSummaryStats):
             processed_cycler_run (beep.structure.ProcessedCyclerRun)
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
                 gets featurized. These could be filters for column or row operations
+            parameters_path (str): Root directory storing project parameter files.
 
         Returns:
             X (pd.DataFrame): Dataframe containing the feature
@@ -856,7 +870,7 @@ class DiagnosticSummaryStats(BeepFeatures, RegularCycleSummaryStats):
         QcDiff = Qc100_1.values - Qc10_1.values
         QcDiff = QcDiff[~np.isnan(QcDiff)]
 
-        X[0:7] = cls.get_standard_operation_values(QcDiff)
+        X.loc[0, 0:6] = cls.get_standard_operation_values(QcDiff)
 
         # Discharging Capacity features
         Qd100_1 = diagnostic_interpolated.discharge_capacity[
@@ -874,7 +888,7 @@ class DiagnosticSummaryStats(BeepFeatures, RegularCycleSummaryStats):
         QdDiff = Qd100_1.values - Qd10_1.values
         QdDiff = QdDiff[~np.isnan(QdDiff)]
 
-        X[7:14] = cls.get_standard_operation_values(QdDiff)
+        X.loc[0, 7:13] = cls.get_standard_operation_values(QdDiff)
 
         # Charging Energy features
         Ec100_1 = processed_cycler_run.diagnostic_interpolated.charge_energy[
@@ -886,7 +900,7 @@ class DiagnosticSummaryStats(BeepFeatures, RegularCycleSummaryStats):
         EcDiff = Ec100_1.values - Ec10_1.values
         EcDiff = EcDiff[~np.isnan(EcDiff)]
 
-        X[14:21] = cls.get_standard_operation_values(EcDiff)
+        X.loc[0, 14:20] = cls.get_standard_operation_values(EcDiff)
 
         # Discharging Energy features
         Ed100_1 = diagnostic_interpolated.discharge_energy[
@@ -904,7 +918,7 @@ class DiagnosticSummaryStats(BeepFeatures, RegularCycleSummaryStats):
         EdDiff = Ed100_1.values - Ed10_1.values
         EdDiff = EdDiff[~np.isnan(EdDiff)]
 
-        X[21:28] = cls.get_standard_operation_values(EdDiff)
+        X.loc[0, 21:27] = cls.get_standard_operation_values(EdDiff)
 
         # Charging dQdV features
         dQdVc100_1 = processed_cycler_run.diagnostic_interpolated.charge_dQdV[
@@ -916,7 +930,7 @@ class DiagnosticSummaryStats(BeepFeatures, RegularCycleSummaryStats):
         dQdVcDiff = dQdVc100_1.values - dQdVc10_1.values
         dQdVcDiff = dQdVcDiff[~np.isnan(dQdVcDiff)]
 
-        X[28:35] = cls.get_standard_operation_values(dQdVcDiff)
+        X.loc[0, 28:34] = cls.get_standard_operation_values(dQdVcDiff)
 
         # Discharging Capacity features
         dQdVd100_1 = diagnostic_interpolated.discharge_dQdV[
@@ -934,7 +948,7 @@ class DiagnosticSummaryStats(BeepFeatures, RegularCycleSummaryStats):
         dQdVdDiff = dQdVd100_1.values - dQdVd10_1.values
         dQdVdDiff = dQdVdDiff[~np.isnan(dQdVdDiff)]
 
-        X[35:42] = cls.get_standard_operation_values(dQdVdDiff)
+        X.loc[0, 35:41] = cls.get_standard_operation_values(dQdVdDiff)
 
         operations = ["var", "min", "mean", "skew", "kurtosis", "abs", "square"]
         quantities = [
