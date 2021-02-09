@@ -665,7 +665,6 @@ class CycleSummaryStats(BeepFeatures):
 
         return True
 
-
     STANDARD_OPERATION_NAMES = ["var", "min", "mean", "skew", "kurtosis", "abs", "square"]
 
     @staticmethod
