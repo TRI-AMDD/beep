@@ -849,8 +849,8 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         X = pd.DataFrame(np.zeros((1, 42)))
 
         # Determine beginning and end of investigated cycle type
-        index_pos_list = np.where(
-            diagnostic_interpolated.cycle_type == params_dict["diagnostic_cycle_type"])[0]
+        index_pos_list = np.asarray(
+            diagnostic_interpolated.cycle_type == params_dict["diagnostic_cycle_type"]).nonzero()[0]
 
         ipl_diff = np.diff(index_pos_list)
 
@@ -858,6 +858,9 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         start_list = np.insert(start_list, 0, index_pos_list[0])
 
         # Create features
+        # TODO: Q_seg is the number of interpolated datapoints for these
+        #  diagnostic cycles so if we ever change that, this value will
+        #  also need to be changed
 
         # Charging Capacity features
         Qc100_1 = diagnostic_interpolated.charge_capacity[
