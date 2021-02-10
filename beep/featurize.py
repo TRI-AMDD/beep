@@ -665,10 +665,10 @@ class CycleSummaryStats(BeepFeatures):
 
         return True
 
-    STANDARD_OPERATION_NAMES = ["var", "min", "mean", "skew", "kurtosis", "abs", "square"]
+    SUMMARY_STATISTIC_NAMES = ["var", "min", "mean", "skew", "kurtosis", "abs", "square"]
 
     @staticmethod
-    def get_standard_operation_values(array):
+    def get_summary_statistics(array):
         """
         Static method for getting values corresponding
         to standard 7 operations that many beep features
@@ -713,6 +713,8 @@ class CycleSummaryStats(BeepFeatures):
         if params_dict is None:
             params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
 
+        # TODO: extend this dataframe and uncomment energy features when
+        #   structuring is refactored
         X = pd.DataFrame(np.zeros((1, 14)))
 
         reg_cycle_comp_num = params_dict.get("cycle_comp_num")
@@ -727,23 +729,22 @@ class CycleSummaryStats(BeepFeatures):
         QcDiff = Qc100_1.values - Qc10_1.values
         QcDiff = QcDiff[~np.isnan(QcDiff)]
 
-        X.loc[0, 0:6] = cls.get_standard_operation_values(QcDiff)
+        X.loc[0, 0:6] = cls.get_summary_statistics(QcDiff)
 
         Qd100_1 = cycle_comp_1[cycle_comp_1.step_type == "discharge"].discharge_capacity
         Qd10_1 = cycle_comp_0[cycle_comp_0.step_type == "discharge"].discharge_capacity
         QdDiff = Qd100_1.values - Qd10_1.values
         QdDiff = QdDiff[~np.isnan(QdDiff)]
 
-        X.loc[0, 7:13] = cls.get_standard_operation_values(QdDiff)
+        X.loc[0, 7:13] = cls.get_summary_statistics(QdDiff)
 
-        # TODO: should these be here?
         # # Charging Energy features
         # Ec100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].charge_energy
         # Ec10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].charge_energy
         # EcDiff = Ec100_1.values - Ec10_1.values
         # EcDiff = EcDiff[~np.isnan(EcDiff)]
 
-        # X.loc[0, 14:20] = cls.get_standard_operation_values(EcDiff)
+        # X.loc[0, 14:20] = cls.get_summary_statistics(EcDiff)
 
         # # Discharging Energy features
         # Ed100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].discharge_energy
@@ -751,7 +752,7 @@ class CycleSummaryStats(BeepFeatures):
         # EdDiff = Ed100_1.values - Ed10_1.values
         # EdDiff = EdDiff[~np.isnan(EdDiff)]
 
-        # X.loc[0, 21:27] = cls.get_standard_operation_values(EdDiff)
+        # X.loc[0, 21:27] = cls.get_summary_statistics(EdDiff)
 
         quantities = [
             "charging_capacity",
@@ -760,7 +761,7 @@ class CycleSummaryStats(BeepFeatures):
             # "discharging_energy",
         ]
 
-        X.columns = [y + "_" + x for x in quantities for y in cls.STANDARD_OPERATION_NAMES]
+        X.columns = [y + "_" + x for x in quantities for y in cls.SUMMARY_STATISTIC_NAMES]
 
         return X
 
@@ -868,7 +869,7 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         QcDiff = Qc100_1.values - Qc10_1.values
         QcDiff = QcDiff[~np.isnan(QcDiff)]
 
-        X.loc[0, 0:6] = cls.get_standard_operation_values(QcDiff)
+        X.loc[0, 0:6] = cls.get_summary_statistics(QcDiff)
 
         # Discharging Capacity features
         Qd100_1 = diagnostic_interpolated.discharge_capacity[
@@ -886,7 +887,7 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         QdDiff = Qd100_1.values - Qd10_1.values
         QdDiff = QdDiff[~np.isnan(QdDiff)]
 
-        X.loc[0, 7:13] = cls.get_standard_operation_values(QdDiff)
+        X.loc[0, 7:13] = cls.get_summary_statistics(QdDiff)
 
         # Charging Energy features
         Ec100_1 = processed_cycler_run.diagnostic_interpolated.charge_energy[
@@ -898,7 +899,7 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         EcDiff = Ec100_1.values - Ec10_1.values
         EcDiff = EcDiff[~np.isnan(EcDiff)]
 
-        X.loc[0, 14:20] = cls.get_standard_operation_values(EcDiff)
+        X.loc[0, 14:20] = cls.get_summary_statistics(EcDiff)
 
         # Discharging Energy features
         Ed100_1 = diagnostic_interpolated.discharge_energy[
@@ -916,7 +917,7 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         EdDiff = Ed100_1.values - Ed10_1.values
         EdDiff = EdDiff[~np.isnan(EdDiff)]
 
-        X.loc[0, 21:27] = cls.get_standard_operation_values(EdDiff)
+        X.loc[0, 21:27] = cls.get_summary_statistics(EdDiff)
 
         # Charging dQdV features
         dQdVc100_1 = processed_cycler_run.diagnostic_interpolated.charge_dQdV[
@@ -928,7 +929,7 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         dQdVcDiff = dQdVc100_1.values - dQdVc10_1.values
         dQdVcDiff = dQdVcDiff[~np.isnan(dQdVcDiff)]
 
-        X.loc[0, 28:34] = cls.get_standard_operation_values(dQdVcDiff)
+        X.loc[0, 28:34] = cls.get_summary_statistics(dQdVcDiff)
 
         # Discharging Capacity features
         dQdVd100_1 = diagnostic_interpolated.discharge_dQdV[
@@ -946,7 +947,7 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         dQdVdDiff = dQdVd100_1.values - dQdVd10_1.values
         dQdVdDiff = dQdVdDiff[~np.isnan(dQdVdDiff)]
 
-        X.loc[0, 35:41] = cls.get_standard_operation_values(dQdVdDiff)
+        X.loc[0, 35:41] = cls.get_summary_statistics(dQdVdDiff)
 
         operations = ["var", "min", "mean", "skew", "kurtosis", "abs", "square"]
         quantities = [

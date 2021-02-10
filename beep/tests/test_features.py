@@ -462,7 +462,6 @@ class TestFeaturizer(unittest.TestCase):
             )
             self.assertAlmostEqual(features.X['square_discharging_capacity'].iloc[0], 0.7519596, 6)
 
-
     def test_DiagnosticProperties_class(self):
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
