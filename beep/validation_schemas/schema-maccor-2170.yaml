@@ -9,6 +9,7 @@ cyc#:
     min_is_below: 2
     max_at_least: 1
     type: integer
+    monotonic: 'increasing'
   type: list
 state:
   schema:
@@ -16,8 +17,8 @@ state:
   type: list
 volts:
   schema:
-    max: 4.45
-    min: 1.2
+    max: 5.0
+    min: 0
     type: float
   type: list
 amps:

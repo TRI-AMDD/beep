@@ -1,0 +1,2 @@
+project_name,seq_num,template,cutoff_voltage,time at upper voltage,charge_rate,discharge_rate,chamber temperature (C),cell type,nominal capacity (Ah),Cell IDs
+name,000000,EXP.sdu,4.2,hold until 0.5C,2,2,35,,,

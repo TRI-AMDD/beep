@@ -816,7 +816,10 @@ class RawCyclerRunTest(unittest.TestCase):
             diagnostic_available,
         ) = cycler_run.determine_structuring_parameters()
         self.assertEqual(nominal_capacity, 4.84)
-        self.assertEqual(v_range, [2.7, 4.2])
+        # self.assertEqual(v_range, [2.7, 4.2]) # This is an older assertion, value changed when
+        # different cell types were added
+
+        self.assertEqual(v_range, [2.5, 4.2])
         self.assertEqual(
             diagnostic_available["cycle_type"],
             ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"],
@@ -1213,7 +1216,8 @@ class RawCyclerRunTest(unittest.TestCase):
 
         filepath = os.path.join(TEST_FILE_DIR, "PreDiag_000292_tztest.010")
         parameters, _ = parameters_lookup.get_protocol_parameters(filepath, parameters_path=test_path)
-        self.assertIsNone(parameters)
+        self.assertEqual(parameters["diagnostic_type"].iloc[0], "HPPC+RPT")
+        self.assertEqual(parameters["seq_num"].iloc[0], 292)
 
     def test_determine_structering_parameters(self):
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR

@@ -394,6 +394,7 @@ class SimpleValidator(object):
             max_rule = column_schema.get("max")
             min_rule = column_schema.get("min")
             type_rule = column_schema.get("type")
+            monotonic_rule = column_schema.get("monotonic")
 
             # Check type
             if type_rule is not None:
@@ -449,6 +450,14 @@ class SimpleValidator(object):
                     reason = (
                         "{} needs to reach under {} for processing, instead found:"
                         "value={}".format(column_name, max_at_least_rule, value)
+                    )
+                    return False, reason
+
+            if monotonic_rule == 'increasing':
+                diff_series = dataframe[column_name].diff().dropna()
+                if len(diff_series[diff_series < 0]) > 0:
+                    reason = (
+                        "{} needs to be monotonically increasing for processing".format(column_name)
                     )
                     return False, reason
 

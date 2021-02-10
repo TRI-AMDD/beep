@@ -1,5 +1,43 @@
 
 
+v2021.2.8.10
+------------
+* Add comments to clarify logic behind template invocation
+* Adding test for raw file to features to make sure that changes are compatible between modules
+* Initial refactor of the protocol generation logic
+* Add test to catch problems in hppc ocv computation
+* add assert for validation fail reason
+* add monotonicity check - Thanks Chirru!
+
+v2021.1.11.15
+-------------
+* Change dtype to fix negative paused value
+* Change the validation voltage limits
+* Working version of the step finder
+
+v2020.12.22.14
+--------------
+* Update protocol generation for PreDiag project
+* Add threshold function
+* Add charging waveforms to protocol generation
+* Update requirements for package
+* Serialization and custom hyperparam tests for datasets
+
+v2020.11.19.17
+--------------
+* change key for dict
+
+v2020.11.19.16
+--------------
+* add index for list of dicts key comparison
+* Clean up comments and labels
+* Adding charging features to the diagnostic summary stats class
+
+v2020.11.19.15
+--------------
+* expose parameters_path in features and dataset classes - Thanks to Chirru Gopal
+* add seq_num to dataset.data attribute
+
 v2020.11.5.13
 -------------
 * Introduce fix for insufficient length in order to interpolate
