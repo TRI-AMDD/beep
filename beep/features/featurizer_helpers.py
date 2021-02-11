@@ -14,6 +14,7 @@ from scipy import signal
 from lmfit import models
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
+from scipy.stats import skew, kurtosis
 from beep.utils import parameters_lookup
 import os
 
@@ -677,7 +678,14 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window):
         print("weird voltage")
         return None
     else:
-        result["var(v_diff)"] = [np.var(v_diff)]
+        result["var(v_diff)"] = [np.var(v_diff)] 
+        result["min(v_diff)"] = [min(v_diff)]
+        result["mean(v_diff)"] = [np.mean(v_diff)]
+        result["skew(v_diff)"] = [skew(v_diff)]
+        result["kurtosis(v_diff)"] = [kurtosis(v_diff, fisher=False, bias=False)]
+        result["sum(v_diff)"] = [np.sum(np.absolute(v_diff))]
+        result["sum_square(v_diff)"] = [np.sum(np.square(v_diff))]
+
         return result
 
 

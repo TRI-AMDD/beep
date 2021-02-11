@@ -304,7 +304,7 @@ class TestFeaturizer(unittest.TestCase):
             folder = os.path.split(path)[-1]
             dumpfn(featurizer, featurizer.name)
             self.assertEqual(folder, "HPPCResistanceVoltageFeatures")
-            self.assertEqual(featurizer.X.shape[1], 64)
+            self.assertEqual(featurizer.X.shape[1], 70)
             self.assertListEqual(
                 [featurizer.X.columns[0], featurizer.X.columns[-1]],
                 ["ohmic_r_d0", "D_8"],
@@ -614,29 +614,54 @@ class TestFeaturizer(unittest.TestCase):
         )
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+
+            # processed_cycler_run_path_1
             pcycler_run = loadfn(processed_cycler_run_path_1)
             v_vars_df = featurizer_helpers.get_v_diff(pcycler_run, 1, 8)
             print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var(v_diff)'], decimals=8),
                              np.round(0.00472705, decimals=8))
+            self.assertListEqual(list(v_vars_df.columns), ["var(v_diff)", "min(v_diff)", "mean(v_diff)", "skew(v_diff)", "kurtosis(v_diff)", "sum(v_diff)", "sum_square(v_diff)"])
 
+            temp_list = v_vars_df.iloc[0,:].to_list()
+            temp_list = [np.round(np.float(x),8) for x in temp_list]
+            self.assertListEqual(temp_list, [0.00472705,0.0108896,0.13865059,0.59427689,2.36743208,176.50219843,30.4896637])
+            
+            # processed_cycler_run_path_2
             pcycler_run = loadfn(processed_cycler_run_path_2)
             v_vars_df = featurizer_helpers.get_v_diff(pcycler_run, 1, 8)
             print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var(v_diff)'], decimals=8),
                              np.round(2.664e-05, decimals=8))
+            self.assertListEqual(list(v_vars_df.columns), ["var(v_diff)", "min(v_diff)", "mean(v_diff)", "skew(v_diff)", "kurtosis(v_diff)", "sum(v_diff)", "sum_square(v_diff)"])
 
+            temp_list = v_vars_df.iloc[0,:].to_list()
+            temp_list = [np.round(np.float(x),8) for x in temp_list]
+            self.assertListEqual(temp_list, [2.664e-05,0.01481062,0.01993318,1.70458503,4.89453871,6.83708111,0.14542267])
+
+            # processed_cycler_run_path_3
             pcycler_run = loadfn(processed_cycler_run_path_3)
             v_vars_df = featurizer_helpers.get_v_diff(pcycler_run, 1, 8)
             print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var(v_diff)'], decimals=8),
                              np.round(4.82e-06, decimals=8))
+            self.assertListEqual(list(v_vars_df.columns), ["var(v_diff)", "min(v_diff)", "mean(v_diff)", "skew(v_diff)", "kurtosis(v_diff)", "sum(v_diff)", "sum_square(v_diff)"])
 
+            temp_list = v_vars_df.iloc[0,:].to_list()
+            temp_list = [np.round(np.float(x),8) for x in temp_list]
+            self.assertListEqual(temp_list, [4.82e-06,0.01134005,0.01569094,-0.01052989,3.25562527,4.07964428,0.06526675])
+
+            # processed_cycler_run_path_4
             pcycler_run = loadfn(processed_cycler_run_path_4)
             v_vars_df = featurizer_helpers.get_v_diff(pcycler_run, 1, 8)
             print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var(v_diff)'], decimals=8),
                              np.round(9.71e-06, decimals=8))
+            self.assertListEqual(list(v_vars_df.columns), ["var(v_diff)", "min(v_diff)", "mean(v_diff)", "skew(v_diff)", "kurtosis(v_diff)", "sum(v_diff)", "sum_square(v_diff)"])
+
+            temp_list = v_vars_df.iloc[0,:].to_list()
+            temp_list = [np.round(np.float(x),8) for x in temp_list]
+            self.assertListEqual(temp_list, [9.71e-06,-0.01138431,0.00490308,-3.09586327,13.72199015,2.16744705,0.01306312])
 
 
 class TestRawToFeatures(unittest.TestCase):
