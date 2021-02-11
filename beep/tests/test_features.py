@@ -29,6 +29,7 @@ from beep.featurize import (
     HPPCRelaxationFeatures,
     DiagnosticProperties,
     DiagnosticSummaryStats,
+    CycleSummaryStats
 )
 from beep.structure import RawCyclerRun
 from beep.features import featurizer_helpers
@@ -474,10 +475,10 @@ class TestFeaturizer(unittest.TestCase):
             x = [-3.622991274215596, -1.4948801528128568, -2.441732890889216, -0.794422489658189, 0.4889470327970021,
                  0.7562360890191123, -0.9122534588595697, -3.771727344982484, -1.6613278517299095, -3.9279757071656616,
                  0.1418911233780052, 0.7493913209640308, 0.6755655006191633, -1.0823827139302122, -2.484906394983077,
-                 -0.8949449222504844, -1.7523322777749897, -1.4575307327423712, 0.4889470327970021, 1.3265006178265961,
+                 -0.8949449222504844, -1.7523322777749897, -1.4575307327423712, 0.4467463228405364, 1.3265006178265961,
                  0.2422557417274141, -2.6373799375134594, -1.230847957965504, -2.046540216421213, 0.2334339752067063,
                  0.8239822694093881, 1.2085578295115413, 0.06687710057927358, -1.0135736732168983, 0.12101479889802537,
-                 -2.2735196264247866, 0.37844357940755063, 0.4889470327970021, 1.8786507359201035, 1.6731897281287798,
+                 -2.2735196264247866, 0.37844357940755063, 1.425189114118929, 1.8786507359201035, 1.6731897281287798,
                  -1.1875358619917917, 0.1361208058450041, -1.8275104616090456, -0.2665523054105704, 1.1375831683815445,
                  1.84972885518774, 1.5023615714170622]
             computed = featurizer.X.iloc[0].tolist()
@@ -487,6 +488,29 @@ class TestFeaturizer(unittest.TestCase):
 
             self.assertEqual(np.round(featurizer.X['var_discharging_capacity'].iloc[0], 3),
                              np.round(-3.771727344982484, 3))
+
+    def test_CycleSummaryStats_class(self):
+        with ScratchDir("."):
+            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+            pcycler_run_loc = os.path.join(
+                TEST_FILE_DIR, "PreDiag_000296_00270E_truncated_structure.json"
+            )
+
+            # Test diagnostic with regular cycles
+            pcycler_run = loadfn(pcycler_run_loc)
+            featurizer = CycleSummaryStats.from_run(
+                pcycler_run_loc, os.getcwd(), pcycler_run
+            )
+            self.assertAlmostEqual(featurizer.X['square_discharging_capacity'].iloc[0], 0.764316, 6)
+
+            # Test diagnostic with regular cycles with different index
+            params_dict = {
+                "cycle_comp_num": [11, 100]
+            }
+            features = CycleSummaryStats.from_run(
+                pcycler_run_loc, os.getcwd(), pcycler_run, params_dict
+            )
+            self.assertAlmostEqual(features.X['square_discharging_capacity'].iloc[0], 0.7519596, 6)
 
     def test_DiagnosticProperties_class(self):
         with ScratchDir("."):
