@@ -482,11 +482,11 @@ class TestFeaturizer(unittest.TestCase):
                  1.84972885518774, 1.5023615714170622]
             computed = featurizer.X.iloc[0].tolist()
             for indx, value in enumerate(x):
-                precision = 6
-                self.assertEqual(np.round(value, precision), np.round(computed[indx], precision))
+                precision = 5
+                self.assertEqual(np.around(np.float32(value), precision), np.around(np.float32(computed[indx]), precision))
 
-            self.assertEqual(np.round(featurizer.X['var_discharging_capacity'].iloc[0], 3),
-                             np.round(-3.771727344982484, 3))
+            self.assertEqual(np.around(featurizer.X['var_discharging_capacity'].iloc[0], 6),
+                             np.around(-3.771727344982484, 6))
 
     def test_DiagnosticProperties_class(self):
         with ScratchDir("."):

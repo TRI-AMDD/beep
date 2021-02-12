@@ -217,6 +217,8 @@ class RawCyclerRun(MSONable):
             "current",
             "charge_capacity",
             "discharge_capacity",
+            "charge_energy",
+            "discharge_energy",
             "internal_resistance",
             "temperature",
         ]
@@ -630,13 +632,13 @@ class RawCyclerRun(MSONable):
         diag_data = self.data[self.data["cycle_index"].isin(diag_cycles_at)]
 
         # Convert date_time_iso field into pd.datetime object
-        diag_data.loc[:, "date_time_iso"] = pd.to_datetime(diag_data["date_time_iso"])
+        # diag_data.loc[:, "date_time_iso"] = pd.to_datetime(diag_data["date_time_iso"])
 
         # Convert datetime into seconds to allow interpolation of time
-        diag_data.loc[:, "datetime_seconds"] = [
-            time.mktime(t.timetuple()) if t is not pd.NaT else float("nan")
-            for t in diag_data["date_time_iso"]
-        ]
+        # diag_data.loc[:, "datetime_seconds"] = [
+        #     time.mktime(t.timetuple()) if t is not pd.NaT else float("nan")
+        #     for t in diag_data["date_time_iso"]
+        # ]
 
         # Counter to ensure non-contiguous repeats of step_index
         # within same cycle_index are grouped separately
@@ -658,7 +660,6 @@ class RawCyclerRun(MSONable):
             "discharge_energy",
             "internal_resistance",
             "temperature",
-            "datetime_seconds",
             "test_time",
         ]
 
@@ -692,13 +693,6 @@ class RawCyclerRun(MSONable):
                     columns=incl_columns,
                     resolution=resolution,
                 )
-
-            # Convert interpolated time in seconds back to datetime
-            new_df["date_time_iso"] = [
-                datetime.utcfromtimestamp(t).isoformat() if ~np.isnan(t) else t
-                for t in new_df["datetime_seconds"]
-            ]
-            new_df = new_df.drop(columns="datetime_seconds")
 
             new_df["cycle_index"] = cycle_index
             new_df["cycle_type"] = diag_cycle_type[diag_cycles_at.index(cycle_index)]
@@ -1926,7 +1920,7 @@ def get_interpolated_data(
     columns = columns or dataframe.columns
     columns = list(set(columns) | {field_name})
 
-    df = dataframe.loc[:, columns]
+    df = dataframe.reindex(columns=columns)
     field_range = field_range or [df[field_name].iloc[0], df[field_name].iloc[-1]]
     # If interpolating on datetime, change column to datetime series and
     # use date_range to create interpolating vector
