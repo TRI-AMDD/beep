@@ -350,14 +350,16 @@ def get_hppc_ocv_helper(cycle_hppc_0, step_num):
 
 def get_hppc_ocv(processed_cycler_run, diag_pos):
     """
-    This function calculates the variance, min, mean, skew, kurtosis, sum and sum of squares of ocv changes between hppc cycle specified by and the first one.
+    This function calculates the variance, min, mean, skew, kurtosis, sum and sum of squares 
+    of ocv changes between hppc cycle specified by and the first one.
 
     Argument:
             processed_cycler_run (beep.structure.ProcessedCyclerRun)
             diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
             if rpt_0.2C, occurs at cycle_index = [2, 37, 142, 244 ...], <diag_pos>=0 would correspond to cycle_index 2.
     Returns:
-            a dataframe with seven entries ('var_ocv, min_ocv, mean_ocv, skew_ocv, kurtosis_ocv, sum_ocv, sum_square_ocv'):
+            a dataframe with seven entries 
+            ('var_ocv, min_ocv, mean_ocv, skew_ocv, kurtosis_ocv, sum_ocv, sum_square_ocv'):
     """
 
     hppc_ocv_features = pd.DataFrame()
