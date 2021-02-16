@@ -681,13 +681,13 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window):
         print("weird voltage")
         return None
     else:
-        result["var(v_diff)"] = [np.var(v_diff)] 
-        result["min(v_diff)"] = [min(v_diff)]
-        result["mean(v_diff)"] = [np.mean(v_diff)]
-        result["skew(v_diff)"] = [skew(v_diff)]
-        result["kurtosis(v_diff)"] = [kurtosis(v_diff, fisher=False, bias=False)]
-        result["sum(v_diff)"] = [np.sum(np.absolute(v_diff))]
-        result["sum_square(v_diff)"] = [np.sum(np.square(v_diff))]
+        result["var_v_diff"] = [np.var(v_diff)] 
+        result["min_v_diff"] = [min(v_diff)]
+        result["mean_v_diff"] = [np.mean(v_diff)]
+        result["skew_v_diff"] = [skew(v_diff)]
+        result["kurtosis_v_diff"] = [kurtosis(v_diff, fisher=False, bias=False)]
+        result["sum_v_diff"] = [np.sum(np.absolute(v_diff))]
+        result["sum_square_v_diff"] = [np.sum(np.square(v_diff))]
 
         return result
 
