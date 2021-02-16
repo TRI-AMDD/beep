@@ -304,7 +304,7 @@ class TestFeaturizer(unittest.TestCase):
             folder = os.path.split(path)[-1]
             dumpfn(featurizer, featurizer.name)
             self.assertEqual(folder, "HPPCResistanceVoltageFeatures")
-            self.assertEqual(featurizer.X.shape[1], 70)
+            self.assertEqual(featurizer.X.shape[1], 76)
             self.assertListEqual(
                 [featurizer.X.columns[0], featurizer.X.columns[-1]],
                 ["ohmic_r_d0", "D_8"],
@@ -317,7 +317,13 @@ class TestFeaturizer(unittest.TestCase):
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
         pcycler_run = loadfn(pcycler_run_loc)
         hppc_ocv_features = featurizer_helpers.get_hppc_ocv(pcycler_run, 1)
-        self.assertEqual(np.round(hppc_ocv_features['variance of ocv'].iloc[0], 6), 0.000016)
+        self.assertEqual(np.round(hppc_ocv_features['var_ocv'].iloc[0], 6), 0.000016)
+        self.assertEqual(np.round(hppc_ocv_features['min_ocv'].iloc[0], 6), -0.001291)
+        self.assertEqual(np.round(hppc_ocv_features['mean_ocv'].iloc[0], 6), 0.002221)
+        self.assertEqual(np.round(hppc_ocv_features['skew_ocv'].iloc[0], 6), 1.589392)
+        self.assertEqual(np.round(hppc_ocv_features['kurtosis_ocv'].iloc[0], 6), 7.041016)
+        self.assertEqual(np.round(hppc_ocv_features['sum_ocv'].iloc[0], 6), 0.025126)
+        self.assertEqual(np.round(hppc_ocv_features['sum_square_ocv'].iloc[0], 6), 0.000188)
 
     def test_get_step_index(self):
         pcycler_run_loc = os.path.join(

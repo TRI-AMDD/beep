@@ -350,15 +350,14 @@ def get_hppc_ocv_helper(cycle_hppc_0, step_num):
 
 def get_hppc_ocv(processed_cycler_run, diag_pos):
     """
-    This function calculates the variance of ocv changes between hppc cycle specified by and the first one.
+    This function calculates the variance, min, mean, skew, kurtosis, sum and sum of squares of ocv changes between hppc cycle specified by and the first one.
 
     Argument:
             processed_cycler_run (beep.structure.ProcessedCyclerRun)
             diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
             if rpt_0.2C, occurs at cycle_index = [2, 37, 142, 244 ...], <diag_pos>=0 would correspond to cycle_index 2.
     Returns:
-            a dataframe with one entry('variance of ocv'):
-                the variance of the diag_num minus cycle 2 for OCV.
+            a dataframe with seven entries ('var_ocv, min_ocv, mean_ocv, skew_ocv, kurtosis_ocv, sum_ocv, sum_square_ocv'):
     """
 
     hppc_ocv_features = pd.DataFrame()
@@ -384,11 +383,15 @@ def get_hppc_ocv(processed_cycler_run, diag_pos):
     selected_diag_df = cycle_hppc.loc[cycle_hppc.cycle_index == cycles[diag_pos]]
     voltage_2 = get_hppc_ocv_helper(selected_diag_df, step_later)
 
-    dv = list_minus(voltage_1, voltage_2)
+    ocv = list_minus(voltage_1, voltage_2)
 
-    var_dv = np.var(dv)
-
-    hppc_ocv_features["variance of ocv"] = [var_dv]
+    hppc_ocv_features["var_ocv"] = [np.var(ocv)]
+    hppc_ocv_features["min_ocv"] = [min(ocv)]
+    hppc_ocv_features["mean_ocv"] = [np.mean(ocv)]
+    hppc_ocv_features["skew_ocv"] = [skew(ocv)]
+    hppc_ocv_features["kurtosis_ocv"] = [kurtosis(ocv, fisher=False, bias=False)]
+    hppc_ocv_features["sum_ocv"] = [np.sum(np.absolute(ocv))]
+    hppc_ocv_features["sum_square_ocv"] = [np.sum(np.square(ocv))]
 
     return hppc_ocv_features
 
