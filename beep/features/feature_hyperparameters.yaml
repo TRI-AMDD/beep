@@ -12,6 +12,8 @@ HPPCRelaxationFeatures:
   soc_list: [90, 80, 70, 60, 50, 40, 30, 20, 10]
   percentage_list: [50, 80, 99]
   hppc_list: [0, 1]
+CycleSummaryStats:
+  cycle_comp_num: [10, 100]
 DiagnosticSummaryStats:
   diagnostic_cycle_type: 'rpt_0.2C'
   cycle_comp_num: [0, 1]

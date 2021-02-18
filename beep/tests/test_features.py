@@ -29,6 +29,7 @@ from beep.featurize import (
     HPPCRelaxationFeatures,
     DiagnosticProperties,
     DiagnosticSummaryStats,
+    CycleSummaryStats
 )
 from beep.structure import RawCyclerRun
 from beep.features import featurizer_helpers
@@ -303,7 +304,7 @@ class TestFeaturizer(unittest.TestCase):
             folder = os.path.split(path)[-1]
             dumpfn(featurizer, featurizer.name)
             self.assertEqual(folder, "HPPCResistanceVoltageFeatures")
-            self.assertEqual(featurizer.X.shape[1], 64)
+            self.assertEqual(featurizer.X.shape[1], 76)
             self.assertListEqual(
                 [featurizer.X.columns[0], featurizer.X.columns[-1]],
                 ["ohmic_r_d0", "D_8"],
@@ -316,7 +317,13 @@ class TestFeaturizer(unittest.TestCase):
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
         pcycler_run = loadfn(pcycler_run_loc)
         hppc_ocv_features = featurizer_helpers.get_hppc_ocv(pcycler_run, 1)
-        self.assertEqual(np.round(hppc_ocv_features['variance of ocv'].iloc[0], 6), 0.000016)
+        self.assertEqual(np.round(hppc_ocv_features['var_ocv'].iloc[0], 6), 0.000016)
+        self.assertEqual(np.round(hppc_ocv_features['min_ocv'].iloc[0], 6), -0.001291)
+        self.assertEqual(np.round(hppc_ocv_features['mean_ocv'].iloc[0], 6), 0.002221)
+        self.assertEqual(np.round(hppc_ocv_features['skew_ocv'].iloc[0], 6), 1.589392)
+        self.assertEqual(np.round(hppc_ocv_features['kurtosis_ocv'].iloc[0], 6), 7.041016)
+        self.assertEqual(np.round(hppc_ocv_features['sum_ocv'].iloc[0], 6), 0.025126)
+        self.assertEqual(np.round(hppc_ocv_features['sum_square_ocv'].iloc[0], 6), 0.000188)
 
     def test_get_step_index(self):
         pcycler_run_loc = os.path.join(
@@ -474,10 +481,10 @@ class TestFeaturizer(unittest.TestCase):
             x = [-3.622991274215596, -1.4948801528128568, -2.441732890889216, -0.794422489658189, 0.4889470327970021,
                  0.7562360890191123, -0.9122534588595697, -3.771727344982484, -1.6613278517299095, -3.9279757071656616,
                  0.1418911233780052, 0.7493913209640308, 0.6755655006191633, -1.0823827139302122, -2.484906394983077,
-                 -0.8949449222504844, -1.7523322777749897, -1.4575307327423712, 0.4889470327970021, 1.3265006178265961,
+                 -0.8949449222504844, -1.7523322777749897, -1.4575307327423712, 0.4467463228405364, 1.3265006178265961,
                  0.2422557417274141, -2.6373799375134594, -1.230847957965504, -2.046540216421213, 0.2334339752067063,
                  0.8239822694093881, 1.2085578295115413, 0.06687710057927358, -1.0135736732168983, 0.12101479889802537,
-                 -2.2735196264247866, 0.37844357940755063, 0.4889470327970021, 1.8786507359201035, 1.6731897281287798,
+                 -2.2735196264247866, 0.37844357940755063, 1.425189114118929, 1.8786507359201035, 1.6731897281287798,
                  -1.1875358619917917, 0.1361208058450041, -1.8275104616090456, -0.2665523054105704, 1.1375831683815445,
                  1.84972885518774, 1.5023615714170622]
             computed = featurizer.X.iloc[0].tolist()
@@ -487,6 +494,29 @@ class TestFeaturizer(unittest.TestCase):
 
             self.assertEqual(np.round(featurizer.X['var_discharging_capacity'].iloc[0], 3),
                              np.round(-3.771727344982484, 3))
+
+    def test_CycleSummaryStats_class(self):
+        with ScratchDir("."):
+            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+            pcycler_run_loc = os.path.join(
+                TEST_FILE_DIR, "PreDiag_000296_00270E_truncated_structure.json"
+            )
+
+            # Test diagnostic with regular cycles
+            pcycler_run = loadfn(pcycler_run_loc)
+            featurizer = CycleSummaryStats.from_run(
+                pcycler_run_loc, os.getcwd(), pcycler_run
+            )
+            self.assertAlmostEqual(featurizer.X['square_discharging_capacity'].iloc[0], 0.764316, 6)
+
+            # Test diagnostic with regular cycles with different index
+            params_dict = {
+                "cycle_comp_num": [11, 100]
+            }
+            features = CycleSummaryStats.from_run(
+                pcycler_run_loc, os.getcwd(), pcycler_run, params_dict
+            )
+            self.assertAlmostEqual(features.X['square_discharging_capacity'].iloc[0], 0.7519596, 6)
 
     def test_DiagnosticProperties_class(self):
         with ScratchDir("."):
@@ -590,29 +620,54 @@ class TestFeaturizer(unittest.TestCase):
         )
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+
+            # processed_cycler_run_path_1
             pcycler_run = loadfn(processed_cycler_run_path_1)
             v_vars_df = featurizer_helpers.get_v_diff(pcycler_run, 1, 8)
             print(v_vars_df)
-            self.assertEqual(np.round(v_vars_df.iloc[0]['var(v_diff)'], decimals=8),
+            self.assertEqual(np.round(v_vars_df.iloc[0]['var_v_diff'], decimals=8),
                              np.round(0.00472705, decimals=8))
+            self.assertListEqual(list(v_vars_df.columns), ["var_v_diff", "min_v_diff", "mean_v_diff", "skew_v_diff", "kurtosis_v_diff", "sum_v_diff", "sum_square_v_diff"])
 
+            temp_list = v_vars_df.iloc[0,:].to_list()
+            temp_list = [np.round(np.float(x),8) for x in temp_list]
+            self.assertListEqual(temp_list, [0.00472705,0.0108896,0.13865059,0.59427689,2.36743208,176.50219843,30.4896637])
+            
+            # processed_cycler_run_path_2
             pcycler_run = loadfn(processed_cycler_run_path_2)
             v_vars_df = featurizer_helpers.get_v_diff(pcycler_run, 1, 8)
             print(v_vars_df)
-            self.assertEqual(np.round(v_vars_df.iloc[0]['var(v_diff)'], decimals=8),
+            self.assertEqual(np.round(v_vars_df.iloc[0]['var_v_diff'], decimals=8),
                              np.round(2.664e-05, decimals=8))
+            self.assertListEqual(list(v_vars_df.columns), ["var_v_diff", "min_v_diff", "mean_v_diff", "skew_v_diff", "kurtosis_v_diff", "sum_v_diff", "sum_square_v_diff"])
 
+            temp_list = v_vars_df.iloc[0,:].to_list()
+            temp_list = [np.round(np.float(x),8) for x in temp_list]
+            self.assertListEqual(temp_list, [2.664e-05,0.01481062,0.01993318,1.70458503,4.89453871,6.83708111,0.14542267])
+
+            # processed_cycler_run_path_3
             pcycler_run = loadfn(processed_cycler_run_path_3)
             v_vars_df = featurizer_helpers.get_v_diff(pcycler_run, 1, 8)
             print(v_vars_df)
-            self.assertEqual(np.round(v_vars_df.iloc[0]['var(v_diff)'], decimals=8),
+            self.assertEqual(np.round(v_vars_df.iloc[0]['var_v_diff'], decimals=8),
                              np.round(4.82e-06, decimals=8))
+            self.assertListEqual(list(v_vars_df.columns), ["var_v_diff", "min_v_diff", "mean_v_diff", "skew_v_diff", "kurtosis_v_diff", "sum_v_diff", "sum_square_v_diff"])
 
+            temp_list = v_vars_df.iloc[0,:].to_list()
+            temp_list = [np.round(np.float(x),8) for x in temp_list]
+            self.assertListEqual(temp_list, [4.82e-06,0.01134005,0.01569094,-0.01052989,3.25562527,4.07964428,0.06526675])
+
+            # processed_cycler_run_path_4
             pcycler_run = loadfn(processed_cycler_run_path_4)
             v_vars_df = featurizer_helpers.get_v_diff(pcycler_run, 1, 8)
             print(v_vars_df)
-            self.assertEqual(np.round(v_vars_df.iloc[0]['var(v_diff)'], decimals=8),
+            self.assertEqual(np.round(v_vars_df.iloc[0]['var_v_diff'], decimals=8),
                              np.round(9.71e-06, decimals=8))
+            self.assertListEqual(list(v_vars_df.columns), ["var_v_diff", "min_v_diff", "mean_v_diff", "skew_v_diff", "kurtosis_v_diff", "sum_v_diff", "sum_square_v_diff"])
+
+            temp_list = v_vars_df.iloc[0,:].to_list()
+            temp_list = [np.round(np.float(x),8) for x in temp_list]
+            self.assertListEqual(temp_list, [9.71e-06,-0.01138431,0.00490308,-3.09586327,13.72199015,2.16744705,0.01306312])
 
 
 class TestRawToFeatures(unittest.TestCase):
