@@ -1,5 +1,15 @@
 
 
+v2021.2.22.9
+------------
+* Add statistics to get_hppc_ocv - Thanks Chirru!
+* Fix additional tests
+* Fix linting
+* Standardize v_diff key naming
+* Increment dataset shape to match 6 additional statistics
+* features: Add additional statistics to get_v_diff - Thanks Patrick Moore
+* Adding regular cycle stats (delta Q) features- Thanks Joseph Montoya 
+
 v2021.2.8.10
 ------------
 * Add comments to clarify logic behind template invocation
