@@ -94,6 +94,12 @@ class TestBEEPDatapath(unittest.TestCase):
         self.data_diag = pd.read_csv(maccor_fname, index_col=0)
         self.metadata_diag = loadfn(maccor_meta_fname)
 
+        # Use maccor memloaded inputs as source of paused run truth
+        maccor_paused_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_paused_memloaded.csv")
+        maccor_paused_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_paused_metadata_memloaded.json")
+        self.data_paused = pd.read_csv(maccor_paused_fname)
+        self.metadata_paused = loadfn(maccor_paused_meta_fname)
+
         self.datapath_nodiag = BEEPDatapathChildTest(
             raw_data=self.data_nodiag,
             metadata=self.metadata_nodiag,
@@ -107,6 +113,12 @@ class TestBEEPDatapath(unittest.TestCase):
 
         )
 
+        self.datapath_paused = BEEPDatapathChildTest(
+            raw_data=self.data_paused,
+            metadata=self.metadata_paused,
+            paths={"raw": maccor_paused_fname, "raw_metadata": maccor_paused_meta_fname}
+        )
+
 
         self.diagnostic_available = {
             "type": "HPPC",
@@ -114,6 +126,13 @@ class TestBEEPDatapath(unittest.TestCase):
             "length": 1,
             "diagnostic_starts_at": [1],
         }
+
+    def run_dtypes_check(self, summary):
+        reg_dyptes = summary.dtypes.tolist()
+        reg_columns = summary.columns.tolist()
+        reg_dyptes = [str(dtyp) for dtyp in reg_dyptes]
+        for indx, col in enumerate(reg_columns):
+            self.assertEqual(reg_dyptes[indx], STRUCTURE_DTYPES["summary"][col])
 
     # based on RCRT.test_serialization
     def test_serialization(self):
@@ -255,8 +274,11 @@ class TestBEEPDatapath(unittest.TestCase):
         pass
 
     # based on RCRT.test_get_summary
+    # based on RCRT.test_get_energy
+    # based on RCRT.test_get_charge_throughput
+    # based on RCRT.test_summary_dtypes
     def test_summarize_cycles(self):
-        summary = self.datapath_diag.summarize_cycles(nominal_capacity=4.7, full_fast_charge=0.8)
+        summary_diag = self.datapath_diag.summarize_cycles(nominal_capacity=4.7, full_fast_charge=0.8)
         self.assertTrue(
             set.issubset(
                 {
@@ -273,20 +295,24 @@ class TestBEEPDatapath(unittest.TestCase):
                     "discharge_energy",
                     "energy_efficiency",
                 },
-                set(summary.columns),
+                set(summary_diag.columns),
             )
         )
-        self.assertEqual(summary["cycle_index"].tolist(), list(range(0, 13)))
-        self.assertEqual(len(summary.index), len(summary["date_time_iso"]))
-        self.assertEqual(summary["paused"].max(), 0)
+        self.assertEqual(summary_diag["cycle_index"].tolist(), list(range(0, 13)))
+        self.assertEqual(len(summary_diag.index), len(summary_diag["date_time_iso"]))
+        self.assertEqual(summary_diag["paused"].max(), 0)
 
-    # based on RCRT.test_get_energy
-    def test_get_energy(self):
-        pass
+        # incorporates test_get_energy and get_charge_throughput
+        summary = self.datapath_nodiag.summarize_cycles(nominal_capacity=4.7, full_fast_charge=0.8)
+        self.assertEqual(summary["charge_energy"][5], 3.7134638)
+        self.assertEqual(summary["energy_efficiency"][5], 0.872866405753033)
+        self.assertEqual(summary["charge_throughput"][5], np.float32(6.7614093))
+        self.assertEqual(summary["energy_throughput"][5], np.float32(23.2752363))
 
-    # based on RCRT.test_get_charge_throughput
-    def test_get_charge_throughput(self):
-        pass
+        # test datatypes of both diag and nondiag capable datapaths
+        self.run_dtypes_check(summary)
+        self.run_dtypes_check(summary_diag)
+
 
     # based on RCRT.test_determine_structering_parameters
     def test_determine_structering_parameters(self):
@@ -318,8 +344,13 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertEqual(diag_summary["paused"].max(), 0)
 
     # based on RCRT.test_determine_paused
-    def test_determine_paused(self):
-        pass
+    def test_paused_intervals(self):
+        paused = self.datapath_paused.paused_intervals
+        self.assertEqual(paused.max(), 7201.0)
+
+        not_paused = self.datapath_diag.paused_intervals
+        self.assertEqual(not_paused.max(), 0.0)
+
 
     # based on PCRT.test_from_raw_cycler_run_parameters
     def test_from_raw_cycler_run_parameters(self):

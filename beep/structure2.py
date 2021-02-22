@@ -712,6 +712,12 @@ class BEEPDatapath(abc.ABC):
         return diag_summary
 
 
+    @property
+    def paused_intervals(self):
+        # a method to use get_max_paused_over_threshold
+        return self.raw_data.groupby("cycle_index").apply(get_max_paused_over_threshold)
+
+
 
 class ArbinDatapath(BEEPDatapath):
 
@@ -1159,10 +1165,19 @@ if __name__ == "__main__":
     from beep.structure import RawCyclerRun as rcrv1, \
         ProcessedCyclerRun as pcrv1
 
-    rcr = rcrv1.from_arbin_file(test_arbin_path)
-    rcr.data.to_csv("BEEPDatapath_arbin_memloaded.csv")
-    with open("tests/test_files/BEEPDatapath_arbin_metadata_memloaded.json", "w") as f:
-        json.dump(rcr.metadata, f)
+    # rcr = rcrv1.from_arbin_file(test_arbin_path)
+    # rcr.data.to_csv("BEEPDatapath_arbin_memloaded.csv")
+    # with open("tests/test_files/BEEPDatapath_arbin_metadata_memloaded.json", "w") as f:
+    #     json.dump(rcr.metadata, f)
+
+
+
+
+    test_maccor_paused_path = "/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/PredictionDiagnostics_000151_paused.052"
+    rcr = rcrv1.from_maccor_file(test_maccor_paused_path, include_eis=False)
+    rcr.data.to_csv("BEEPDatapath_maccor_paused_memloaded.csv")
+    # with open("tests/test_files/BEEPDatapath_maccor_paused_metadata_memloaded.json", "w") as f:
+    #     json.dump(rcr.metadata, f)
 
 
     # rcr = rcrv1.from_maccor_file(filename=test_maccor_path_w_diagnostics, include_eis=False)
