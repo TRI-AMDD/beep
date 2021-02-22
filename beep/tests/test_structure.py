@@ -96,12 +96,15 @@ class TestBEEPDatapath(unittest.TestCase):
 
         self.datapath_nodiag = BEEPDatapathChildTest(
             raw_data=self.data_nodiag,
-            metadata=self.metadata_nodiag
+            metadata=self.metadata_nodiag,
+            paths={"raw": arbin_fname, "raw_metadata": arbin_meta_fname}
         )
 
         self.datapath_diag = BEEPDatapathChildTest(
             raw_data=self.data_diag,
-            metadata=self.metadata_nodiag
+            metadata=self.metadata_diag,
+            paths={"raw": maccor_fname, "raw_metadata": maccor_meta_fname}
+
         )
 
 
