@@ -104,6 +104,14 @@ class TestBEEPDatapath(unittest.TestCase):
             metadata=self.metadata_nodiag
         )
 
+
+        self.diagnostic_available = {
+            "type": "HPPC",
+            "cycle_type": ["hppc"],
+            "length": 1,
+            "diagnostic_starts_at": [1],
+        }
+
     # based on RCRT.test_serialization
     def test_serialization(self):
         pass
@@ -283,11 +291,28 @@ class TestBEEPDatapath(unittest.TestCase):
 
     # based on RCRT.test_get_interpolated_diagnostic_cycles
     def test_get_interpolated_diagnostic_cycles(self):
-        pass
+        d_interp = self.datapath_diag.interpolate_diagnostic_cycles(
+            self.diagnostic_available, resolution=500
+        )
+        self.assertGreaterEqual(len(d_interp.cycle_index.unique()), 1)
+
+        # Ensure step indices are partitioned and processed separately
+        self.assertEqual(len(d_interp.step_index.unique()), 9)
+        first_step = d_interp[
+            (d_interp.step_index == 7) & (d_interp.step_index_counter == 1)
+        ]
+        second_step = d_interp[
+            (d_interp.step_index == 7) & (d_interp.step_index_counter == 4)
+        ]
+        self.assertLess(first_step.voltage.diff().max(), 0.001)
+        self.assertLess(second_step.voltage.diff().max(), 0.001)
+        self.assertTrue("date_time_iso" in d_interp.columns)
+        self.assertFalse(d_interp.date_time_iso.isna().all())
 
     # based on RCRT.test_get_diagnostic_summary
-    def test_get_diagnostic_summary(self):
-        pass
+    def test_summarize_diagnostic(self):
+        diag_summary = self.datapath_diag.summarize_diagnostic(self.diagnostic_available)
+        self.assertEqual(diag_summary["paused"].max(), 0)
 
     # based on RCRT.test_determine_paused
     def test_determine_paused(self):
