@@ -81,26 +81,27 @@ class TestBEEPDatapath(unittest.TestCase):
     Tests common to all datapaths.
     """
 
-    def setUp(self) -> None:
+    @classmethod
+    def setUpClass(cls) -> None:
         # Use arbin memloaded inputs as source of non-diagnostic truth
         arbin_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_arbin_memloaded.csv")
         arbin_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_arbin_metadata_memloaded.json")
-        self.data_nodiag = pd.read_csv(arbin_fname, index_col=0)
-        self.metadata_nodiag = loadfn(arbin_meta_fname)
-        self.datapath_nodiag = BEEPDatapathChildTest(
-            raw_data=self.data_nodiag,
-            metadata=self.metadata_nodiag,
+        cls.data_nodiag = pd.read_csv(arbin_fname, index_col=0)
+        cls.metadata_nodiag = loadfn(arbin_meta_fname)
+        cls.datapath_nodiag = BEEPDatapathChildTest(
+            raw_data=cls.data_nodiag,
+            metadata=cls.metadata_nodiag,
             paths={"raw": arbin_fname, "raw_metadata": arbin_meta_fname}
         )
 
         # Use maccor memloaded inputs as source of diagnostic truth
         maccor_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_w_diagnostic_memloaded.csv")
         maccor_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_w_diagnostic_metadata_memloaded.json")
-        self.data_diag = pd.read_csv(maccor_fname, index_col=0)
-        self.metadata_diag = loadfn(maccor_meta_fname)
-        self.datapath_diag = BEEPDatapathChildTest(
-            raw_data=self.data_diag,
-            metadata=self.metadata_diag,
+        cls.data_diag = pd.read_csv(maccor_fname, index_col=0)
+        cls.metadata_diag = loadfn(maccor_meta_fname)
+        cls.datapath_diag = BEEPDatapathChildTest(
+            raw_data=cls.data_diag,
+            metadata=cls.metadata_diag,
             paths={"raw": maccor_fname, "raw_metadata": maccor_meta_fname}
 
         )
@@ -108,11 +109,11 @@ class TestBEEPDatapath(unittest.TestCase):
         # Use maccor paused memloaded inputs as source of paused run truth
         maccor_paused_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_paused_memloaded.csv")
         maccor_paused_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_paused_metadata_memloaded.json")
-        self.data_paused = pd.read_csv(maccor_paused_fname, index_col=0)
-        self.metadata_paused = loadfn(maccor_paused_meta_fname)
-        self.datapath_paused = BEEPDatapathChildTest(
-            raw_data=self.data_paused,
-            metadata=self.metadata_paused,
+        cls.data_paused = pd.read_csv(maccor_paused_fname, index_col=0)
+        cls.metadata_paused = loadfn(maccor_paused_meta_fname)
+        cls.datapath_paused = BEEPDatapathChildTest(
+            raw_data=cls.data_paused,
+            metadata=cls.metadata_paused,
             paths={"raw": maccor_paused_fname, "raw_metadata": maccor_paused_meta_fname}
         )
 
@@ -122,15 +123,15 @@ class TestBEEPDatapath(unittest.TestCase):
         maccor_timestamp_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_timestamp_memloaded.csv")
         maccor_timestamp_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_timestamp_metadata_memloaded.json")
         maccor_timestamp_original_fname = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000151_test.052")
-        self.data_timestamp = pd.read_csv(maccor_timestamp_fname)
-        self.metadata_timestamp = loadfn(maccor_timestamp_meta_fname)
-        self.datapath_timestamp = BEEPDatapathChildTest(
-            raw_data=self.data_timestamp,
-            metadata=self.metadata_timestamp,
+        cls.data_timestamp = pd.read_csv(maccor_timestamp_fname)
+        cls.metadata_timestamp = loadfn(maccor_timestamp_meta_fname)
+        cls.datapath_timestamp = BEEPDatapathChildTest(
+            raw_data=cls.data_timestamp,
+            metadata=cls.metadata_timestamp,
             paths={"raw": maccor_timestamp_original_fname, "raw_metadata": maccor_timestamp_meta_fname}
         )
 
-        self.diagnostic_available = {
+        cls.diagnostic_available = {
             "type": "HPPC",
             "cycle_type": ["hppc"],
             "length": 1,
@@ -474,8 +475,15 @@ class TestBEEPDatapath(unittest.TestCase):
 
 
     # based on PCRT.test_from_raw_cycler_run_parameters
-    def test_from_raw_cycler_run_parameters(self):
-        pass
+    def test_autostructure(self):
+        rcycler_run = RawCyclerRun.from_file(self.maccor_file_w_parameters)
+        pcycler_run = ProcessedCyclerRun.from_raw_cycler_run(rcycler_run)
+        self.assertIsInstance(pcycler_run, ProcessedCyclerRun)
+        # Ensure barcode/protocol are passed
+        self.assertEqual(pcycler_run.barcode, "0001BC")
+        self.assertEqual(pcycler_run.protocol, "PredictionDiagnostics_000109.000")
+        self.assertEqual(pcycler_run.channel_id, 10)
+
 
     # based on PCRT.test_get_cycle_life
     def test_get_cycle_life(self):

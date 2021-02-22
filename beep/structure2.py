@@ -110,8 +110,25 @@ class BEEPDatapath(abc.ABC):
         np.savez_compressed(name, float_array=float_array, int_array=int_array)
         dumpfn(self.metadata, "{}.json".format(name))
 
+    # todo: ALEXTODO needs validation
     def validate(self):
         pass
+
+    def autostructure(self):
+        """
+        Automatically run structuring based on automatically determined structuring parameters.
+        The parameters are determined from the raw input file, so ensure the raw input file paths
+        are in the 'paths' attribute.
+
+        Returns:
+            None
+        """
+        params = self.determine_structuring_parameters()
+        logger.info(f"Autostructuring determined parameters of v_range={params[0]}, "
+                    f"resolution={params[1]}, diagnostic_resolution={params[2]}, "
+                    f"nominal_capacity={params[3]}, full_fast_charge={params[4]}, "
+                    f"diagnostic_available={params[5]}")
+        return self.structure(*params)
 
     def structure(self,
         v_range=None,
@@ -137,7 +154,7 @@ class BEEPDatapath(abc.ABC):
         pass
         """
 
-        logger.info("Beginning structuring...")
+        logger.info(f"Beginning structuring along charge axis '{charge_axis}' and discharge axis '{discharge_axis}'.")
 
         if diagnostic_available:
             self.diagnostic_summary = self.summarize_diagnostic(
