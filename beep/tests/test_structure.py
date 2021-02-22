@@ -87,25 +87,17 @@ class TestBEEPDatapath(unittest.TestCase):
         arbin_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_arbin_metadata_memloaded.json")
         self.data_nodiag = pd.read_csv(arbin_fname, index_col=0)
         self.metadata_nodiag = loadfn(arbin_meta_fname)
-
-        # Use maccor memloaded inputs as source of diagnostic truth
-        maccor_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_w_diagnostic_memloaded.csv")
-        maccor_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_w_diagnostic_metadata_memloaded.json")
-        self.data_diag = pd.read_csv(maccor_fname, index_col=0)
-        self.metadata_diag = loadfn(maccor_meta_fname)
-
-        # Use maccor memloaded inputs as source of paused run truth
-        maccor_paused_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_paused_memloaded.csv")
-        maccor_paused_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_paused_metadata_memloaded.json")
-        self.data_paused = pd.read_csv(maccor_paused_fname)
-        self.metadata_paused = loadfn(maccor_paused_meta_fname)
-
         self.datapath_nodiag = BEEPDatapathChildTest(
             raw_data=self.data_nodiag,
             metadata=self.metadata_nodiag,
             paths={"raw": arbin_fname, "raw_metadata": arbin_meta_fname}
         )
 
+        # Use maccor memloaded inputs as source of diagnostic truth
+        maccor_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_w_diagnostic_memloaded.csv")
+        maccor_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_w_diagnostic_metadata_memloaded.json")
+        self.data_diag = pd.read_csv(maccor_fname, index_col=0)
+        self.metadata_diag = loadfn(maccor_meta_fname)
         self.datapath_diag = BEEPDatapathChildTest(
             raw_data=self.data_diag,
             metadata=self.metadata_diag,
@@ -113,12 +105,30 @@ class TestBEEPDatapath(unittest.TestCase):
 
         )
 
+        # Use maccor paused memloaded inputs as source of paused run truth
+        maccor_paused_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_paused_memloaded.csv")
+        maccor_paused_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_paused_metadata_memloaded.json")
+        self.data_paused = pd.read_csv(maccor_paused_fname, index_col=0)
+        self.metadata_paused = loadfn(maccor_paused_meta_fname)
         self.datapath_paused = BEEPDatapathChildTest(
             raw_data=self.data_paused,
             metadata=self.metadata_paused,
             paths={"raw": maccor_paused_fname, "raw_metadata": maccor_paused_meta_fname}
         )
 
+
+        # Use maccor timestamp memloaded inputs as a source of timestamped run truth
+        # Except for structuring, where the raw file is actually required, we cannot avoid ingestion
+        maccor_timestamp_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_timestamp_memloaded.csv")
+        maccor_timestamp_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_timestamp_metadata_memloaded.json")
+        maccor_timestamp_original_fname = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000151_test.052")
+        self.data_timestamp = pd.read_csv(maccor_timestamp_fname)
+        self.metadata_timestamp = loadfn(maccor_timestamp_meta_fname)
+        self.datapath_timestamp = BEEPDatapathChildTest(
+            raw_data=self.data_timestamp,
+            metadata=self.metadata_timestamp,
+            paths={"raw": maccor_timestamp_original_fname, "raw_metadata": maccor_timestamp_meta_fname}
+        )
 
         self.diagnostic_available = {
             "type": "HPPC",
@@ -134,6 +144,7 @@ class TestBEEPDatapath(unittest.TestCase):
         for indx, col in enumerate(reg_columns):
             self.assertEqual(reg_dyptes[indx], STRUCTURE_DTYPES["summary"][col])
 
+    # todo: ALEXTODO
     # based on RCRT.test_serialization
     def test_serialization(self):
         pass
@@ -264,15 +275,6 @@ class TestBEEPDatapath(unittest.TestCase):
                 STRUCTURE_DTYPES["cycles_interpolated"][col],
             )
 
-    # based on RCRT.test_summary_dtypes
-    def test_summary_dtypes(self):
-        pass
-
-    # based on RCRT.test_get_diagnostic
-    # though it is based on maccor files
-    def test_get_diagnostic(self):
-        pass
-
     # based on RCRT.test_get_summary
     # based on RCRT.test_get_energy
     # based on RCRT.test_get_charge_throughput
@@ -313,10 +315,129 @@ class TestBEEPDatapath(unittest.TestCase):
         self.run_dtypes_check(summary)
         self.run_dtypes_check(summary_diag)
 
-
     # based on RCRT.test_determine_structering_parameters
-    def test_determine_structering_parameters(self):
-        pass
+    def test_determine_structuring_parameters(self):
+        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+        (
+            v_range,
+            resolution,
+            nominal_capacity,
+            full_fast_charge,
+            diagnostic_available,
+        ) = self.datapath_timestamp.determine_structuring_parameters()
+        diagnostic_available_test = {
+            "parameter_set": "Tesla21700",
+            "cycle_type": ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"],
+            "length": 5,
+            "diagnostic_starts_at": [
+                1,
+                36,
+                141,
+                246,
+                351,
+                456,
+                561,
+                666,
+                771,
+                876,
+                981,
+                1086,
+                1191,
+                1296,
+                1401,
+                1506,
+                1611,
+                1716,
+                1821,
+                1926,
+                2031,
+                2136,
+                2241,
+                2346,
+                2451,
+                2556,
+                2661,
+                2766,
+                2871,
+                2976,
+                3081,
+                3186,
+                3291,
+                3396,
+                3501,
+                3606,
+                3711,
+                3816,
+                3921,
+                4026,
+                4131,
+                4236,
+                4341,
+                4446,
+                4551,
+                4656,
+                4761,
+                4866,
+                4971,
+                5076,
+                5181,
+                5286,
+                5391,
+                5496,
+                5601,
+                5706,
+                5811,
+                5916,
+                6021,
+                6126,
+                6231,
+                6336,
+                6441,
+                6546,
+                6651,
+                6756,
+                6861,
+                6966,
+                7071,
+                7176,
+                7281,
+                7386,
+                7491,
+                7596,
+                7701,
+                7806,
+                7911,
+                8016,
+                8121,
+                8226,
+                8331,
+                8436,
+                8541,
+                8646,
+                8751,
+                8856,
+                8961,
+                9066,
+                9171,
+                9276,
+                9381,
+                9486,
+                9591,
+                9696,
+                9801,
+                9906,
+                10011,
+                10116,
+                10221,
+                10326,
+                10431,
+            ],
+        }
+        self.assertEqual(v_range, [2.7, 4.2])
+        self.assertEqual(resolution, 1000)
+        self.assertEqual(nominal_capacity, 4.84)
+        self.assertEqual(full_fast_charge, 0.8)
+        self.assertEqual(diagnostic_available, diagnostic_available_test)
 
     # based on RCRT.test_get_interpolated_diagnostic_cycles
     def test_get_interpolated_diagnostic_cycles(self):
@@ -433,6 +554,11 @@ class TestMaccorDatapath(unittest.TestCase):
 
     # based on PCRT.test_from_maccor_insufficient_interpolation_length
     def test_from_maccor_insufficient_interpolation_length(self):
+        pass
+
+    # based on RCRT.test_get_diagnostic
+    # though it is based on maccor files
+    def test_get_diagnostic(self):
         pass
 
     # todo: test EIS methods

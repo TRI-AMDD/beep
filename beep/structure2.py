@@ -711,11 +711,96 @@ class BEEPDatapath(abc.ABC):
 
         return diag_summary
 
+    def determine_structuring_parameters(
+        self,
+        v_range=None,
+        resolution=1000,
+        nominal_capacity=1.1,
+        full_fast_charge=0.8,
+        parameters_path="data-share/raw/parameters",
+    ):
+        """
+        Method for determining what values to use to convert raw run into processed run
+
+        Args:
+            v_range ([float, float]): voltage range for interpolation
+            resolution (int): resolution for interpolation
+            nominal_capacity (float): nominal capacity for summary stats
+            full_fast_charge (float): full fast charge for summary stats
+            parameters_path (str): path to parameters file
+
+        Returns:
+            v_range ([float, float]): voltage range for interpolation
+            resolution (int): resolution for interpolation
+            nominal_capacity (float): nominal capacity for summary stats
+            full_fast_charge (float): full fast charge for summary stats
+            diagnostic_available (dict): dictionary of values to use for
+                finding and using the diagnostic cycles
+
+        """
+        run_parameter, all_parameters = parameters_lookup.get_protocol_parameters(
+            self.paths["raw"], parameters_path
+        )
+        # Logic for interpolation variables and diagnostic cycles
+        diagnostic_available = False
+        if run_parameter is not None:
+            if {"capacity_nominal"}.issubset(run_parameter.columns.tolist()):
+                nominal_capacity = run_parameter["capacity_nominal"].iloc[0]
+            if {"discharge_cutoff_voltage", "charge_cutoff_voltage"}.issubset(
+                run_parameter.columns
+            ):
+                v_range = [
+                    all_parameters["discharge_cutoff_voltage"].min(),
+                    all_parameters["charge_cutoff_voltage"].max(),
+                ]
+            if {
+                "diagnostic_type",
+                "diagnostic_start_cycle",
+                "diagnostic_interval",
+            }.issubset(run_parameter.columns):
+                if run_parameter["diagnostic_type"].iloc[0] == "HPPC+RPT":
+                    hppc_rpt = ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"]
+                    hppc_rpt_len = 5
+                    diagnostic_starts_at = [
+                        1,
+                        1
+                        + run_parameter["diagnostic_start_cycle"].iloc[0]
+                        + 1 * hppc_rpt_len,
+                    ]
+                    for i in range(1, 100):
+                        diag_cycle_num = (
+                            i
+                            * (
+                                run_parameter["diagnostic_interval"].iloc[0]
+                                + hppc_rpt_len
+                            )
+                            + 1
+                            + run_parameter["diagnostic_start_cycle"].iloc[0]
+                            + 1 * hppc_rpt_len
+                        )
+                        diagnostic_starts_at.append(diag_cycle_num)
+                    diagnostic_available = {
+                        "parameter_set": run_parameter["diagnostic_parameter_set"].iloc[0],
+                        "cycle_type": hppc_rpt,
+                        "length": hppc_rpt_len,
+                        "diagnostic_starts_at": diagnostic_starts_at,
+                    }
+
+        return (
+            v_range,
+            resolution,
+            nominal_capacity,
+            full_fast_charge,
+            diagnostic_available,
+        )
 
     @property
     def paused_intervals(self):
         # a method to use get_max_paused_over_threshold
         return self.raw_data.groupby("cycle_index").apply(get_max_paused_over_threshold)
+
+
+
 
 
 
@@ -1173,11 +1258,18 @@ if __name__ == "__main__":
 
 
 
-    test_maccor_paused_path = "/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/PredictionDiagnostics_000151_paused.052"
-    rcr = rcrv1.from_maccor_file(test_maccor_paused_path, include_eis=False)
-    rcr.data.to_csv("BEEPDatapath_maccor_paused_memloaded.csv")
+    # test_maccor_paused_path = "/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/PredictionDiagnostics_000151_paused.052"
+    # rcr = rcrv1.from_maccor_file(test_maccor_paused_path, include_eis=False)
+    # rcr.data.to_csv("BEEPDatapath_maccor_paused_memloaded.csv")
     # with open("tests/test_files/BEEPDatapath_maccor_paused_metadata_memloaded.json", "w") as f:
     #     json.dump(rcr.metadata, f)
+
+
+    test_maccor_paused_path = "/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/PredictionDiagnostics_000151_test.052"
+    rcr = rcrv1.from_maccor_file(test_maccor_paused_path, include_eis=False)
+    rcr.data.to_csv("tests/test_files/BEEPDatapath_maccor_timestamp_memloaded.csv")
+    with open("tests/test_files/BEEPDatapath_maccor_timestamp_metadata_memloaded.json", "w") as f:
+        json.dump(rcr.metadata, f)
 
 
     # rcr = rcrv1.from_maccor_file(filename=test_maccor_path_w_diagnostics, include_eis=False)
