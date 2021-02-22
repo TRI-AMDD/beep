@@ -42,6 +42,9 @@ from beep import logger, __version__
 VOLTAGE_RESOLUTION = 3
 
 
+
+# todo: ALEXTODO add more logging operations
+
 class BEEPDatapath(abc.ABC):
 
     FLOAT_COLUMNS = [
@@ -59,6 +62,30 @@ class BEEPDatapath(abc.ABC):
 
     IMPUTABLE_COLUMNS = ["temperature", "internal_resistance"]
 
+
+    class StructuringDecorators:
+        @classmethod
+        def must_be_structured(cls, func):
+            """
+            Decorator to check if the datapath has been structured.
+            Args:
+                func: A function or method.
+            Returns:
+                A wrapper function for the input function/method.
+            """
+
+            def wrapper(*args, **kwargs):
+                if not args[0].is_structured:
+                    raise RuntimeError(
+                        "{} has not been structured! Run .structure(*args)." "".format(
+                            args[0].__class__.__name__)
+                    )
+                else:
+                    return func(*args, **kwargs)
+
+            return wrapper
+
+
     def __init__(self, raw_data, metadata, paths=None):
         self.raw_data = raw_data
         self.metadata = metadata
@@ -69,10 +96,13 @@ class BEEPDatapath(abc.ABC):
         self.diagnostic_data = None        # equivalent of PCR.diagnostic_interpolated
         self.diagnostic_summary = None     # same name as in PCR
 
+        self.is_structured = False
+
     # @property
     # @abc.abstractmethod
     # def schema(self):
     #     raise NotImplementedError
+
 
     @classmethod
     @abc.abstractmethod
@@ -177,6 +207,8 @@ class BEEPDatapath(abc.ABC):
             full_fast_charge=full_fast_charge,
             diagnostic_available=diagnostic_available
         )
+
+        self.is_structured = True
 
     # todo: ALEXTODO check docstring
     def interpolate_step(
@@ -349,7 +381,10 @@ class BEEPDatapath(abc.ABC):
             [interpolated_discharge, interpolated_charge], ignore_index=True
         )
 
-        return result.astype(STRUCTURE_DTYPES["cycles_interpolated"])
+        print(result)
+
+        available_dtypes = {k: v for k, v in STRUCTURE_DTYPES["cycles_interpolated"].items() if k in result.columns}
+        return result.astype(available_dtypes)
 
     # equivalent of get_summary
     def summarize_cycles(
@@ -397,6 +432,7 @@ class BEEPDatapath(abc.ABC):
             ]
         else:
             reg_cycles_at = [i for i in self.raw_data.cycle_index.unique()]
+
 
         summary = self.raw_data.groupby("cycle_index").agg(
             {
@@ -811,10 +847,49 @@ class BEEPDatapath(abc.ABC):
             diagnostic_available,
         )
 
+    @StructuringDecorators.must_be_structured
+    def get_cycle_life(self, n_cycles_cutoff=40, threshold=0.8):
+        """
+        Calculate cycle life for capacity loss below a certain threshold
+
+        Args:
+            n_cycles_cutoff (int): cutoff for number of cycles to sample
+                for the cycle life in order to use median method.
+            threshold (float): fraction of capacity loss for which
+                to find the cycle index.
+
+        Returns:
+            float: cycle life.
+        """
+        # discharge_capacity has a spike and  then increases slightly between \
+        # 1-40 cycles, so let us use take median of 1st 40 cycles for max.
+
+        # If n_cycles <  n_cycles_cutoff, do not use median method
+        if len(self.structured_summary) > n_cycles_cutoff:
+            max_capacity = np.median(
+                self.structured_summary.discharge_capacity.iloc[0:n_cycles_cutoff]
+            )
+        else:
+            max_capacity = 1.1
+
+        # If capacity falls below 80% of initial capacity by end of run
+        if self.structured_summary.discharge_capacity.iloc[-1] / max_capacity <= threshold:
+            cycle_life = self.structured_summary[
+                self.structured_summary.discharge_capacity < threshold * max_capacity
+            ].index[0]
+        else:
+            # Some cells do not degrade below the threshold (low degradation rate)
+            cycle_life = len(self.structured_summary) + 1
+
+        return cycle_life
+
     @property
     def paused_intervals(self):
         # a method to use get_max_paused_over_threshold
         return self.raw_data.groupby("cycle_index").apply(get_max_paused_over_threshold)
+
+
+
 
 
 
@@ -1125,7 +1200,7 @@ def interpolate_df(
     columns = columns or dataframe.columns
     columns = list(set(columns) | {field_name})
 
-    df = dataframe.loc[:, columns]
+    df = dataframe.loc[:, dataframe.columns.intersection(columns)]
     field_range = field_range or [df[field_name].iloc[0],
                                   df[field_name].iloc[-1]]
     # If interpolating on datetime, change column to datetime series and
@@ -1256,49 +1331,57 @@ def get_max_paused_over_threshold(group, paused_threshold=3600):
     return max_paused_duration
 
 
+
+
 if __name__ == "__main__":
     pd.set_option('display.max_rows', 500)
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
 
-    test_arbin_path = "/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/2017-12-04_4_65C-69per_6C_CH29.csv"
-    test_maccor_path_w_diagnostics = "/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/xTESLADIAG_000020_CH71.071"
-
-    from beep.structure import RawCyclerRun as rcrv1, \
-        ProcessedCyclerRun as pcrv1
-
-    # rcr = rcrv1.from_arbin_file(test_arbin_path)
-    # rcr.data.to_csv("BEEPDatapath_arbin_memloaded.csv")
-    # with open("tests/test_files/BEEPDatapath_arbin_metadata_memloaded.json", "w") as f:
-    #     json.dump(rcr.metadata, f)
-
-
-
-
-    # test_maccor_paused_path = "/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/PredictionDiagnostics_000151_paused.052"
-    # rcr = rcrv1.from_maccor_file(test_maccor_paused_path, include_eis=False)
-    # rcr.data.to_csv("BEEPDatapath_maccor_paused_memloaded.csv")
-    # with open("tests/test_files/BEEPDatapath_maccor_paused_metadata_memloaded.json", "w") as f:
-    #     json.dump(rcr.metadata, f)
-
-
-    test_maccor_paused_path = "/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/PredictionDiagnostics_000151_test.052"
-    rcr = rcrv1.from_maccor_file(test_maccor_paused_path, include_eis=False)
-    rcr.data.to_csv("tests/test_files/BEEPDatapath_maccor_timestamp_memloaded.csv")
-    with open("tests/test_files/BEEPDatapath_maccor_timestamp_metadata_memloaded.json", "w") as f:
-        json.dump(rcr.metadata, f)
-
-
-    # rcr = rcrv1.from_maccor_file(filename=test_maccor_path_w_diagnostics, include_eis=False)
-    # rcr.data.to_csv("BEEPDatapath_maccor_w_diagnostic_memloaded.csv")
+    # test_arbin_path = "/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/2017-12-04_4_65C-69per_6C_CH29.csv"
+    # test_maccor_path_w_diagnostics = "/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/xTESLADIAG_000020_CH71.071"
     #
-    # with open("BEEPDatapath_maccor_with_diagnostic_metadata_memloaded.json", "w") as f:
+    # from beep.structure import RawCyclerRun as rcrv1, \
+    #     ProcessedCyclerRun as pcrv1
+    #
+    # # rcr = rcrv1.from_arbin_file(test_arbin_path)
+    # # rcr.data.to_csv("BEEPDatapath_arbin_memloaded.csv")
+    # # with open("tests/test_files/BEEPDatapath_arbin_metadata_memloaded.json", "w") as f:
+    # #     json.dump(rcr.metadata, f)
+    #
+    #
+    #
+    #
+    # # test_maccor_paused_path = "/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/PredictionDiagnostics_000151_paused.052"
+    # # rcr = rcrv1.from_maccor_file(test_maccor_paused_path, include_eis=False)
+    # # rcr.data.to_csv("BEEPDatapath_maccor_paused_memloaded.csv")
+    # # with open("tests/test_files/BEEPDatapath_maccor_paused_metadata_memloaded.json", "w") as f:
+    # #     json.dump(rcr.metadata, f)
+    #
+    #
+    # test_maccor_paused_path = "/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/PredictionDiagnostics_000151_test.052"
+    # rcr = rcrv1.from_maccor_file(test_maccor_paused_path, include_eis=False)
+    # rcr.data.to_csv("tests/test_files/BEEPDatapath_maccor_timestamp_memloaded.csv")
+    # with open("tests/test_files/BEEPDatapath_maccor_timestamp_metadata_memloaded.json", "w") as f:
     #     json.dump(rcr.metadata, f)
+    #
+    #
+    # # rcr = rcrv1.from_maccor_file(filename=test_maccor_path_w_diagnostics, include_eis=False)
+    # # rcr.data.to_csv("BEEPDatapath_maccor_w_diagnostic_memloaded.csv")
+    # #
+    # # with open("BEEPDatapath_maccor_with_diagnostic_metadata_memloaded.json", "w") as f:
+    # #     json.dump(rcr.metadata, f)
+    #
+    #
+    # print(rcr.metadata)
+    #
+    # print(rcr.data)
 
 
-    print(rcr.metadata)
 
-    print(rcr.data)
+    maccor = MaccorDatapath.from_file("/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/PredictionDiagnostics_000109_tztest.010")
+    maccor.structure()
+    print(maccor.get_cycle_life())
 
 
 
