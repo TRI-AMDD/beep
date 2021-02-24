@@ -1101,8 +1101,19 @@ def get_step_index(pcycler_run, cycle_type="hppc", diag_pos=0):
             elif median_crate > 0 and median_duration > pulse_time:
                 step_indices_annotated["hppc_charge_to_soc"] = step
 
-        assert len(cycle.step_index.unique()) == len(step_indices_annotated.values())
+    elif cycle_type == "rpt_0.2C" or cycle_type == "rpt_1C" or cycle_type == "rpt_2C" or cycle_type == "reset":
+        for step in cycle.step_index.unique():
+            cycle_step = cycle[(cycle.step_index == step)]
+            median_crate = np.round(cycle_step.current.median() / parameter_row["capacity_nominal"].iloc[0], 2)
+            if median_crate > 0:
+                step_indices_annotated[cycle_type + "_charge"] = step
+            elif median_crate < 0:
+                step_indices_annotated[cycle_type + "_discharge"] = step
+            else:
+                raise ValueError
     else:
         raise NotImplementedError
+
+    assert len(cycle.step_index.unique()) == len(step_indices_annotated.values())
 
     return step_indices_annotated
