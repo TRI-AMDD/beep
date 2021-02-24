@@ -655,9 +655,9 @@ class CycleSummaryStats(BeepFeatures):
         # TODO: check whether this is good
         # Check for relevant data
         required_columns = ['charge_capacity',
-                            'discharge_capacity'
+                            'discharge_capacity',
                             # 'charge_energy',
-                            # 'discharge_energy'
+                            # 'discharge_energy',
                             ]
         pcycler_run_columns = processed_cycler_run.cycles_interpolated.columns
         if not all([column in pcycler_run_columns for column in required_columns]):
@@ -743,15 +743,15 @@ class CycleSummaryStats(BeepFeatures):
         # Ec10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].charge_energy
         # EcDiff = Ec100_1.values - Ec10_1.values
         # EcDiff = EcDiff[~np.isnan(EcDiff)]
-
+        #
         # X.loc[0, 14:20] = cls.get_summary_statistics(EcDiff)
-
+        #
         # # Discharging Energy features
         # Ed100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].discharge_energy
         # Ed10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].discharge_energy
         # EdDiff = Ed100_1.values - Ed10_1.values
         # EdDiff = EdDiff[~np.isnan(EdDiff)]
-
+        #
         # X.loc[0, 21:27] = cls.get_summary_statistics(EdDiff)
 
         quantities = [
@@ -844,7 +844,13 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         """
         if params_dict is None:
             params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
-        diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated
+
+        # Filter out "final" diagnostic cycles that have been appended to the end of the file with the wrong
+        # cycle number(test time is monotonic)
+        diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated[
+            ~((processed_cycler_run.diagnostic_interpolated.test_time > params_dict['test_time_filter_sec']) &
+              (processed_cycler_run.diagnostic_interpolated.cycle_index < params_dict['cycle_index_filter']))
+            ]
 
         X = pd.DataFrame(np.zeros((1, 42)))
 
@@ -856,6 +862,7 @@ class DiagnosticSummaryStats(CycleSummaryStats):
 
         start_list = index_pos_list[1:][ipl_diff != 1]
         start_list = np.insert(start_list, 0, index_pos_list[0])
+        print(start_list)
 
         # Create features
         # TODO: Q_seg is the number of interpolated datapoints for these
@@ -863,13 +870,13 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         #  also need to be changed
 
         # Charging Capacity features
-        Qc100_1 = diagnostic_interpolated.charge_capacity[
+        Qc_two_1 = diagnostic_interpolated.charge_capacity[
                   start_list[params_dict["cycle_comp_num"][1]]:
                   start_list[params_dict["cycle_comp_num"][1]] + params_dict["Q_seg"]]
-        Qc10_1 = diagnostic_interpolated.charge_capacity[
+        Qc_one_1 = diagnostic_interpolated.charge_capacity[
                  start_list[params_dict["cycle_comp_num"][0]]:
                  start_list[params_dict["cycle_comp_num"][0]] + params_dict["Q_seg"]]
-        QcDiff = Qc100_1.values - Qc10_1.values
+        QcDiff = Qc_two_1.values - Qc_one_1.values
         QcDiff = QcDiff[~np.isnan(QcDiff)]
 
         X.loc[0, 0:6] = cls.get_summary_statistics(QcDiff)

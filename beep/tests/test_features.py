@@ -481,9 +481,7 @@ class TestFeaturizer(unittest.TestCase):
     def test_DiagnosticSummaryStats_class(self):
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-            pcycler_run_loc = os.path.join(
-                TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
-            )
+            pcycler_run_loc = os.path.join(TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json")
             pcycler_run = loadfn(pcycler_run_loc)
             featurizer = DiagnosticSummaryStats.from_run(
                 pcycler_run_loc, os.getcwd(), pcycler_run
@@ -509,10 +507,31 @@ class TestFeaturizer(unittest.TestCase):
             computed = featurizer.X.iloc[0].tolist()
             for indx, value in enumerate(x):
                 precision = 5
-                self.assertEqual(np.around(np.float32(value), precision), np.around(np.float32(computed[indx]), precision))
+                self.assertEqual(np.around(np.float32(value), precision),
+                                 np.around(np.float32(computed[indx]), precision))
 
             self.assertEqual(np.around(featurizer.X['var_discharging_capacity'].iloc[0], 6),
                              np.around(-3.771727344982484, 6))
+
+            pcycler_run_loc = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000136_00002D_structure.json")
+            pcycler_run = loadfn(pcycler_run_loc)
+            featurizer = DiagnosticSummaryStats.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
+            x = [-0.7894387143496827, -4.695156298860428, -0.36940336693234876, -0.525792943090891, 0.16361004717712269,
+               2.3172329023299447, 2.2242809859816766, -1.0387792358432624, -3.959305494650505, -0.1385089669297069,
+               -0.26806114595673314, 0.37193071189537663, 2.5499108550730036, 2.4807283105013394, 0.3181051214824664,
+               -4.257497528973106, 0.1753920249899275, -0.4565282729984944, 0.18577348196819649, 2.862028294252221,
+               3.322418148058917, 0.0675968134359632, -3.339198443145111, 0.444334588285544, -0.14613719564393982,
+               0.4336491025493973, 3.1327544102882547, 3.6381578534742856, 0.003256176831200719, 0.6987969875335693,
+               -0.08770100772380829, -0.04701879929227852, 0.7905930403403003, 2.6102428436279297, 2.9098217487335205,
+               0.3357366919517517, 0.9993749260902405, -0.11902472376823425, 0.5494628775495746, 1.3028960660500388,
+               2.658266544342041, 3.1259796619415283]
+            computed = featurizer.X.iloc[0].tolist()
+            # print(computed)
+            for indx, value in enumerate(x):
+                precision = 5
+                self.assertEqual(np.around(np.float32(value), precision),
+                                 np.around(np.float32(computed[indx]), precision))
+
 
     def test_CycleSummaryStats_class(self):
         with ScratchDir("."):
