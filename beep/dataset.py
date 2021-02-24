@@ -416,11 +416,6 @@ def get_threshold_targets(dataset_diagnostic_properties,
         cycle_crossing_array = abs(f_cycle(x_cycle_linspace) - threshold)
         throughput_to_threshold = x_throughput_linspace[np.argmin(throughput_crossing_array)]
         cycles_to_threshold = x_cycle_linspace[np.argmin(cycle_crossing_array)]
-
-        if ~(throughput_to_threshold > 0) or ~(cycles_to_threshold > 0):
-            print(run)
-            continue
-
         real_throughput_to_threshold = throughput_to_threshold * run_target_df['initial_regular_throughput'].values[0]
 
         threshold_dict = {
