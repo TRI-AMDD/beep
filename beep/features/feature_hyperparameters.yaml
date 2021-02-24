@@ -1,13 +1,19 @@
 RPTdQdVFeatures:
+  test_time_filter_sec: 1000000
+  cycle_index_filter: 6
   diag_ref: 0
   diag_nr: 1
   charge_y_n: 1
   rpt_type: 'rpt_0.2C'
   plotting_y_n: 0
 HPPCResistanceVoltageFeatures:
+  test_time_filter_sec: 1000000
+  cycle_index_filter: 6
   diag_pos: 1
   soc_window: 8
 HPPCRelaxationFeatures:
+  test_time_filter_sec: 1000000
+  cycle_index_filter: 6
   n_soc_windows: 8
   soc_list: [90, 80, 70, 60, 50, 40, 30, 20, 10]
   percentage_list: [50, 80, 99]

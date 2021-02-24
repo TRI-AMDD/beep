@@ -322,6 +322,12 @@ class RPTdQdVFeatures(BeepFeatures):
                 params_dict['rpt_type'], params_dict['charge_y_n']
             ))
 
+        # Filter out low cycle numbers at the end of the test, corresponding to the "final" diagnostic
+        processed_cycler_run.diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated[
+                ~((processed_cycler_run.diagnostic_interpolated.test_time > params_dict['test_time_filter_sec']) &
+                  (processed_cycler_run.diagnostic_interpolated.cycle_index < params_dict['cycle_index_filter']))
+            ]
+
         peak_fit_df_ref = featurizer_helpers.generate_dQdV_peak_fits(
             processed_cycler_run,
             diag_nr=params_dict["diag_ref"],
@@ -434,6 +440,11 @@ class HPPCResistanceVoltageFeatures(BeepFeatures):
         if params_dict is None:
             params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
 
+        # Filter out low cycle numbers at the end of the test, corresponding to the "final" diagnostic
+        processed_cycler_run.diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated[
+                ~((processed_cycler_run.diagnostic_interpolated.test_time > params_dict['test_time_filter_sec']) &
+                  (processed_cycler_run.diagnostic_interpolated.cycle_index < params_dict['cycle_index_filter']))
+            ]
         # diffusion features
         diffusion_features = featurizer_helpers.get_diffusion_features(
             processed_cycler_run, params_dict["diag_pos"]
@@ -581,6 +592,12 @@ class HPPCRelaxationFeatures(BeepFeatures):
         """
         if params_dict is None:
             params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
+
+        # Filter out low cycle numbers at the end of the test, corresponding to the "final" diagnostic
+        processed_cycler_run.diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated[
+                ~((processed_cycler_run.diagnostic_interpolated.test_time > params_dict['test_time_filter_sec']) &
+                  (processed_cycler_run.diagnostic_interpolated.cycle_index < params_dict['cycle_index_filter']))
+            ]
 
         relax_feature_array = featurizer_helpers.get_relaxation_features(
             processed_cycler_run, params_dict["hppc_list"]
@@ -862,7 +879,6 @@ class DiagnosticSummaryStats(CycleSummaryStats):
 
         start_list = index_pos_list[1:][ipl_diff != 1]
         start_list = np.insert(start_list, 0, index_pos_list[0])
-        print(start_list)
 
         # Create features
         # TODO: Q_seg is the number of interpolated datapoints for these
