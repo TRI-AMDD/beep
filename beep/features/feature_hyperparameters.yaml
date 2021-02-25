@@ -24,8 +24,7 @@ DiagnosticSummaryStats:
   test_time_filter_sec: 1000000
   cycle_index_filter: 6
   diagnostic_cycle_type: 'rpt_0.2C'
-  cycle_comp_num: [0, 1]
-  Q_seg: 500
+  diag_pos_list: [0, 1]
 DeltaQFastCharge:
   init_pred_cycle: 10
   mid_pred_cycle: 91

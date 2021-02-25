@@ -327,6 +327,9 @@ class RPTdQdVFeatures(BeepFeatures):
                 ~((processed_cycler_run.diagnostic_interpolated.test_time > params_dict['test_time_filter_sec']) &
                   (processed_cycler_run.diagnostic_interpolated.cycle_index < params_dict['cycle_index_filter']))
             ]
+        processed_cycler_run.diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated.groupby(
+            ["cycle_index", "step_index", "step_index_counter"]
+        ).filter(lambda x: ~x["test_time"].isnull().all())
 
         peak_fit_df_ref = featurizer_helpers.generate_dQdV_peak_fits(
             processed_cycler_run,
@@ -445,6 +448,10 @@ class HPPCResistanceVoltageFeatures(BeepFeatures):
                 ~((processed_cycler_run.diagnostic_interpolated.test_time > params_dict['test_time_filter_sec']) &
                   (processed_cycler_run.diagnostic_interpolated.cycle_index < params_dict['cycle_index_filter']))
             ]
+        processed_cycler_run.diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated.groupby(
+            ["cycle_index", "step_index", "step_index_counter"]
+        ).filter(lambda x: ~x["test_time"].isnull().all())
+
         # diffusion features
         diffusion_features = featurizer_helpers.get_diffusion_features(
             processed_cycler_run, params_dict["diag_pos"]
@@ -598,6 +605,9 @@ class HPPCRelaxationFeatures(BeepFeatures):
                 ~((processed_cycler_run.diagnostic_interpolated.test_time > params_dict['test_time_filter_sec']) &
                   (processed_cycler_run.diagnostic_interpolated.cycle_index < params_dict['cycle_index_filter']))
             ]
+        processed_cycler_run.diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated.groupby(
+            ["cycle_index", "step_index", "step_index_counter"]
+        ).filter(lambda x: ~x["test_time"].isnull().all())
 
         relax_feature_array = featurizer_helpers.get_relaxation_features(
             processed_cycler_run, params_dict["hppc_list"]
@@ -839,7 +849,7 @@ class DiagnosticSummaryStats(CycleSummaryStats):
             df = processed_cycler_run.diagnostic_summary
             df = df[df.cycle_type == params_dict["diagnostic_cycle_type"]]
             conditions.append(
-                df.cycle_index.nunique() >= max(params_dict["cycle_comp_num"]) + 1
+                df.cycle_index.nunique() >= max(params_dict["diag_pos_list"]) + 1
             )
 
         return all(conditions)
@@ -864,113 +874,85 @@ class DiagnosticSummaryStats(CycleSummaryStats):
 
         # Filter out "final" diagnostic cycles that have been appended to the end of the file with the wrong
         # cycle number(test time is monotonic)
-        diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated[
+        processed_cycler_run.diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated[
             ~((processed_cycler_run.diagnostic_interpolated.test_time > params_dict['test_time_filter_sec']) &
               (processed_cycler_run.diagnostic_interpolated.cycle_index < params_dict['cycle_index_filter']))
-            ]
+        ]
+        processed_cycler_run.diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated.groupby(
+            ["cycle_index", "step_index", "step_index_counter"]
+        ).filter(lambda x: ~x["test_time"].isnull().all())
+
+        diag_intrp = processed_cycler_run.diagnostic_interpolated
 
         X = pd.DataFrame(np.zeros((1, 42)))
 
-        # Determine beginning and end of investigated cycle type
-        index_pos_list = np.asarray(
-            diagnostic_interpolated.cycle_type == params_dict["diagnostic_cycle_type"]).nonzero()[0]
+        # Calculate the
+        cycles = diag_intrp.cycle_index[diag_intrp.cycle_type ==
+                                        params_dict["diagnostic_cycle_type"]].unique()
+        step_dict_0 = featurizer_helpers.get_step_index(processed_cycler_run,
+                                                        cycle_type=params_dict["diagnostic_cycle_type"],
+                                                        diag_pos=params_dict["diag_pos_list"][0])
+        step_dict_1 = featurizer_helpers.get_step_index(processed_cycler_run,
+                                                        cycle_type=params_dict["diagnostic_cycle_type"],
+                                                        diag_pos=params_dict["diag_pos_list"][1])
 
-        ipl_diff = np.diff(index_pos_list)
-
-        start_list = index_pos_list[1:][ipl_diff != 1]
-        start_list = np.insert(start_list, 0, index_pos_list[0])
-
-        # Create features
+        # Create masks for each position in the data
+        mask_pos_0_charge = ((diag_intrp.cycle_index == cycles[params_dict["diag_pos_list"][0]]) &
+                             (diag_intrp.step_index == step_dict_0[params_dict["diagnostic_cycle_type"] + '_charge']))
+        mask_pos_1_charge = ((diag_intrp.cycle_index == cycles[params_dict["diag_pos_list"][1]]) &
+                             (diag_intrp.step_index == step_dict_1[params_dict["diagnostic_cycle_type"] + '_charge']))
+        mask_pos_0_discharge = ((diag_intrp.cycle_index == cycles[params_dict["diag_pos_list"][0]]) &
+                                (diag_intrp.step_index == step_dict_0[params_dict["diagnostic_cycle_type"] + '_discharge']))
+        mask_pos_1_discharge = ((diag_intrp.cycle_index == cycles[params_dict["diag_pos_list"][1]]) &
+                                (diag_intrp.step_index == step_dict_1[params_dict["diagnostic_cycle_type"] + '_discharge']))
         # TODO: Q_seg is the number of interpolated datapoints for these
         #  diagnostic cycles so if we ever change that, this value will
         #  also need to be changed
 
         # Charging Capacity features
-        Qc_two_1 = diagnostic_interpolated.charge_capacity[
-                  start_list[params_dict["cycle_comp_num"][1]]:
-                  start_list[params_dict["cycle_comp_num"][1]] + params_dict["Q_seg"]]
-        Qc_one_1 = diagnostic_interpolated.charge_capacity[
-                 start_list[params_dict["cycle_comp_num"][0]]:
-                 start_list[params_dict["cycle_comp_num"][0]] + params_dict["Q_seg"]]
-        QcDiff = Qc_two_1.values - Qc_one_1.values
+        Qc_1 = diag_intrp.charge_capacity[mask_pos_1_charge]
+        Qc_0 = diag_intrp.charge_capacity[mask_pos_0_charge]
+        QcDiff = Qc_1.values - Qc_0.values
         QcDiff = QcDiff[~np.isnan(QcDiff)]
 
         X.loc[0, 0:6] = cls.get_summary_statistics(QcDiff)
 
         # Discharging Capacity features
-        Qd100_1 = diagnostic_interpolated.discharge_capacity[
-            start_list[params_dict["cycle_comp_num"][1]]
-            + params_dict["Q_seg"]
-            + 1: start_list[params_dict["cycle_comp_num"][1]]
-            + 2 * params_dict["Q_seg"]
-        ]
-        Qd10_1 = diagnostic_interpolated.discharge_capacity[
-            start_list[params_dict["cycle_comp_num"][0]]
-            + params_dict["Q_seg"]
-            + 1: start_list[params_dict["cycle_comp_num"][0]]
-            + 2 * params_dict["Q_seg"]
-        ]
-        QdDiff = Qd100_1.values - Qd10_1.values
+        Qd_1 = diag_intrp.discharge_capacity[mask_pos_1_discharge]
+        Qd_0 = diag_intrp.discharge_capacity[mask_pos_0_discharge]
+        QdDiff = Qd_1.values - Qd_0.values
         QdDiff = QdDiff[~np.isnan(QdDiff)]
 
         X.loc[0, 7:13] = cls.get_summary_statistics(QdDiff)
 
         # Charging Energy features
-        Ec100_1 = processed_cycler_run.diagnostic_interpolated.charge_energy[
-                  start_list[params_dict["cycle_comp_num"][1]]:
-                  start_list[params_dict["cycle_comp_num"][1]] + params_dict["Q_seg"]]
-        Ec10_1 = processed_cycler_run.diagnostic_interpolated.charge_energy[
-                 start_list[params_dict["cycle_comp_num"][0]]:
-                 start_list[params_dict["cycle_comp_num"][0]] + params_dict["Q_seg"]]
-        EcDiff = Ec100_1.values - Ec10_1.values
+        Ec_1 = diag_intrp.charge_energy[mask_pos_1_charge]
+        Ec_0 = diag_intrp.charge_energy[mask_pos_0_charge]
+        EcDiff = Ec_1.values - Ec_0.values
         EcDiff = EcDiff[~np.isnan(EcDiff)]
 
         X.loc[0, 14:20] = cls.get_summary_statistics(EcDiff)
 
         # Discharging Energy features
-        Ed100_1 = diagnostic_interpolated.discharge_energy[
-            start_list[params_dict["cycle_comp_num"][1]]
-            + params_dict["Q_seg"]
-            + 1: start_list[params_dict["cycle_comp_num"][1]]
-            + 2 * params_dict["Q_seg"]
-        ]
-        Ed10_1 = diagnostic_interpolated.discharge_energy[
-            start_list[params_dict["cycle_comp_num"][0]]
-            + params_dict["Q_seg"]
-            + 1: start_list[params_dict["cycle_comp_num"][0]]
-            + 2 * params_dict["Q_seg"]
-        ]
-        EdDiff = Ed100_1.values - Ed10_1.values
+        Ed_1 = diag_intrp.discharge_energy[mask_pos_1_discharge]
+        Ed_0 = diag_intrp.discharge_energy[mask_pos_0_discharge]
+        EdDiff = Ed_1.values - Ed_0.values
         EdDiff = EdDiff[~np.isnan(EdDiff)]
 
         X.loc[0, 21:27] = cls.get_summary_statistics(EdDiff)
 
         # Charging dQdV features
-        dQdVc100_1 = processed_cycler_run.diagnostic_interpolated.charge_dQdV[
-                     start_list[params_dict["cycle_comp_num"][1]]:
-                     start_list[params_dict["cycle_comp_num"][1]] + params_dict["Q_seg"]]
-        dQdVc10_1 = processed_cycler_run.diagnostic_interpolated.charge_dQdV[
-                    start_list[params_dict["cycle_comp_num"][0]]:
-                    start_list[params_dict["cycle_comp_num"][0]] + params_dict["Q_seg"]]
-        dQdVcDiff = dQdVc100_1.values - dQdVc10_1.values
+        dQdVc_1 = diag_intrp.charge_dQdV[mask_pos_1_charge]
+        dQdVc_0 = diag_intrp.charge_dQdV[mask_pos_0_charge]
+        dQdVcDiff = dQdVc_1.values - dQdVc_0.values
         dQdVcDiff = dQdVcDiff[~np.isnan(dQdVcDiff)]
 
         X.loc[0, 28:34] = cls.get_summary_statistics(dQdVcDiff)
 
         # Discharging Capacity features
-        dQdVd100_1 = diagnostic_interpolated.discharge_dQdV[
-            start_list[params_dict["cycle_comp_num"][1]]
-            + params_dict["Q_seg"]
-            + 1: start_list[params_dict["cycle_comp_num"][1]]
-            + 2 * params_dict["Q_seg"]
-        ]
-        dQdVd10_1 = diagnostic_interpolated.discharge_dQdV[
-            start_list[params_dict["cycle_comp_num"][0]]
-            + params_dict["Q_seg"]
-            + 1: start_list[params_dict["cycle_comp_num"][0]]
-            + 2 * params_dict["Q_seg"]
-        ]
-        dQdVdDiff = dQdVd100_1.values - dQdVd10_1.values
+        dQdVd_1 = diag_intrp.discharge_dQdV[mask_pos_1_discharge]
+        dQdVd_0 = diag_intrp.discharge_dQdV[mask_pos_0_discharge]
+        dQdVdDiff = dQdVd_1.values - dQdVd_0.values
         dQdVdDiff = dQdVdDiff[~np.isnan(dQdVdDiff)]
 
         X.loc[0, 35:41] = cls.get_summary_statistics(dQdVdDiff)
