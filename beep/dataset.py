@@ -165,7 +165,7 @@ class BeepDataset(MSONable):
                     for feature_json in feature_jsons:
                         obj = loadfn(feature_json)
                         df = obj.X
-                        df['file'] = obj.metadata['protocol'].split('.')[0]
+                        df['file'] = obj.raw_metadata['protocol'].split('.')[0]
                         # seq_num computation assumes file naming follows the convention:
                         # ProjectName_SeqNum_Channel_ObjectName.json
                         df['seq_num'] = int(os.path.basename(feature_json).split('_')[1])

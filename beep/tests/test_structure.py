@@ -83,6 +83,10 @@ class TestBEEPDatapath(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
+
+        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+
+
         # Use arbin memloaded inputs as source of non-diagnostic truth
         arbin_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_arbin_memloaded.csv")
         arbin_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_arbin_metadata_memloaded.json")
@@ -132,6 +136,10 @@ class TestBEEPDatapath(unittest.TestCase):
         )
 
 
+        # Small maccor file with parameters
+        cls.maccor_small_params = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010")
+
+
         # Use maccor bigfile, if tests are enabled for it
 
         maccor_file_w_parameters_s3 = {
@@ -140,14 +148,14 @@ class TestBEEPDatapath(unittest.TestCase):
         }
         if BIG_FILE_TESTS:
             download_s3_object(
-                bucket=self.maccor_file_w_parameters_s3["bucket"],
-                key=self.maccor_file_w_parameters_s3["key"],
+                bucket=maccor_file_w_parameters_s3["bucket"],
+                key=maccor_file_w_parameters_s3["key"],
                 destination_path=self.maccor_file_w_parameters)
-            self.maccor_file_w_parameters = os.path.join(
+            cls.maccor_file_w_parameters = os.path.join(
                 TEST_FILE_DIR, "PreDiag_000287_000128.092"
             )
         else:
-            self.maccor_file_w_parameters = None
+            cls.maccor_file_w_parameters = None
 
 
         cls.diagnostic_available = {
@@ -337,7 +345,6 @@ class TestBEEPDatapath(unittest.TestCase):
 
     # based on RCRT.test_determine_structering_parameters
     def test_determine_structuring_parameters(self):
-        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
         (
             v_range,
             resolution,
@@ -498,18 +505,26 @@ class TestBEEPDatapath(unittest.TestCase):
     @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_autostructure(self):
 
-        # rcycler_run = RawCyclerRun.from_file(self.maccor_file_w_parameters)
-        # pcycler_run = ProcessedCyclerRun.from_raw_cycler_run(rcycler_run)
-        # self.assertIsInstance(pcycler_run, ProcessedCyclerRun)
-        # # Ensure barcode/protocol are passed
-        # self.assertEqual(pcycler_run.barcode, "0001BC")
-        # self.assertEqual(pcycler_run.protocol, "PredictionDiagnostics_000109.000")
-        # self.assertEqual(pcycler_run.channel_id, 10)
+        rcycler_run = RawCyclerRun.from_file(self.maccor_file_w_parameters)
+        pcycler_run = ProcessedCyclerRun.from_raw_cycler_run(rcycler_run)
+        self.assertIsInstance(pcycler_run, ProcessedCyclerRun)
+        # Ensure barcode/protocol are passed
+        self.assertEqual(pcycler_run.barcode, "0001BC")
+        self.assertEqual(pcycler_run.protocol, "PredictionDiagnostics_000109.000")
+        self.assertEqual(pcycler_run.channel_id, 10)
+        pass
+
+
+
+    def test_structure(self):
         pass
 
 
     # based on PCRT.test_get_cycle_life
     def test_get_cycle_life(self):
+        # pcycler_run = loadfn(self.pcycler_run_file)
+        # self.assertEqual(pcycler_run.get_cycle_life(30, 0.99), 82)
+        # self.assertEqual(pcycler_run.get_cycle_life(), 189)
         pass
 
     # based on PCRT.test_cycles_to_reach_set_capacities
@@ -678,7 +693,7 @@ class RawCyclerRunTest(unittest.TestCase):
         )
         # Simple test of whether or not correct number of columns is parsed for data/metadata
         self.assertEqual(
-            set(raw_cycler_run.metadata.keys()),
+            set(raw_cycler_run.raw_metadata.keys()),
             {
                 "barcode",
                 "_today_datetime",
@@ -688,7 +703,7 @@ class RawCyclerRunTest(unittest.TestCase):
                 "channel_id",
             },
         )
-        self.assertEqual(70, raw_cycler_run.metadata["channel_id"])
+        self.assertEqual(70, raw_cycler_run.raw_metadata["channel_id"])
         # self.assertIsNotNone(raw_cycler_run.eis)
 
         # Test filename recognition
@@ -726,7 +741,7 @@ class RawCyclerRunTest(unittest.TestCase):
         )
         # Simple test of whether or not correct number of columns is parsed for data/metadata
         self.assertEqual(
-            set(raw_cycler_run.metadata.keys()),
+            set(raw_cycler_run.raw_metadata.keys()),
             {
                 "barcode",
                 "_today_datetime",
@@ -736,7 +751,7 @@ class RawCyclerRunTest(unittest.TestCase):
                 "channel_id",
             },
         )
-        self.assertEqual(10, raw_cycler_run.metadata["channel_id"])
+        self.assertEqual(10, raw_cycler_run.raw_metadata["channel_id"])
         # self.assertIsNotNone(raw_cycler_run.eis)
 
         # Test filename recognition
@@ -774,7 +789,7 @@ class RawCyclerRunTest(unittest.TestCase):
         )
         # Simple test of whether or not correct number of columns is parsed for data/metadata
         self.assertEqual(
-            set(raw_cycler_run.metadata.keys()),
+            set(raw_cycler_run.raw_metadata.keys()),
             {
                 "barcode",
                 "_today_datetime",
@@ -1321,7 +1336,7 @@ class RawCyclerRunTest(unittest.TestCase):
         )
 
         self.assertEqual(
-            set(raw_cycler_run.metadata.keys()),
+            set(raw_cycler_run.raw_metadata.keys()),
             set({"indigo_cell_id", "_today_datetime", "start_datetime", "filename"}),
         )
 
@@ -1368,7 +1383,7 @@ class RawCyclerRunTest(unittest.TestCase):
 
         self.assertEqual(
             set({"_today_datetime", "filename", "barcode", "protocol", "channel_id"}),
-            set(raw_cycler_run.metadata.keys()),
+            set(raw_cycler_run.raw_metadata.keys()),
         )
 
         # general

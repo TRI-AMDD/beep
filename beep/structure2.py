@@ -42,7 +42,6 @@ from beep import logger, __version__
 VOLTAGE_RESOLUTION = 3
 
 
-
 # todo: ALEXTODO add more logging operations
 
 class BEEPDatapath(abc.ABC):
@@ -86,15 +85,27 @@ class BEEPDatapath(abc.ABC):
             return wrapper
 
 
+    class Metadata:
+        def __init__(self, metadata_dict):
+            barcode = metadata_dict.get("barcode")
+            protocol = metadata_dict.get("protocol")
+            channel_id = metadata_dict.get("channel_id")
+            raw = metadata_dict
+
+
     def __init__(self, raw_data, metadata, paths=None):
         self.raw_data = raw_data
-        self.metadata = metadata
+        self.raw_metadata = metadata
         self.paths = paths if paths else {"raw": None}
 
         self.structured_summary = None     # equivalent of PCR.summary
         self.structured_data = None        # equivalent of PCR.cycles_interpolated
         self.diagnostic_data = None        # equivalent of PCR.diagnostic_interpolated
         self.diagnostic_summary = None     # same name as in PCR
+
+
+
+        self.metadata = self.Metadata()    # structured metadata
 
         self.is_structured = False
 
@@ -138,7 +149,7 @@ class BEEPDatapath(abc.ABC):
         float_array = np.array(self.raw_data[self.FLOAT_COLUMNS].astype(np.float64))
         int_array = np.array(self.raw_data[self.INT_COLUMNS].astype(np.int64))
         np.savez_compressed(name, float_array=float_array, int_array=int_array)
-        dumpfn(self.metadata, "{}.json".format(name))
+        dumpfn(self.raw_metadata, "{}.json".format(name))
 
     # todo: ALEXTODO needs validation
     def validate(self):
