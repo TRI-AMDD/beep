@@ -886,7 +886,7 @@ class DiagnosticSummaryStats(CycleSummaryStats):
 
         X = pd.DataFrame(np.zeros((1, 42)))
 
-        # Calculate the
+        # Calculate the cycles and the steps for the selected diagnostics
         cycles = diag_intrp.cycle_index[diag_intrp.cycle_type ==
                                         params_dict["diagnostic_cycle_type"]].unique()
         step_dict_0 = featurizer_helpers.get_step_index(processed_cycler_run,
@@ -907,9 +907,6 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         mask_pos_1_discharge = ((diag_intrp.cycle_index == cycles[params_dict["diag_pos_list"][1]]) &
                                 (diag_intrp.step_index ==
                                  step_dict_1[params_dict["diagnostic_cycle_type"] + '_discharge']))
-        # TODO: Q_seg is the number of interpolated datapoints for these
-        #  diagnostic cycles so if we ever change that, this value will
-        #  also need to be changed
 
         # Charging Capacity features
         Qc_1 = diag_intrp.charge_capacity[mask_pos_1_charge]
