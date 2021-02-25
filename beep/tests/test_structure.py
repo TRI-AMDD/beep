@@ -510,22 +510,12 @@ class TestBEEPDatapath(unittest.TestCase):
     # def test_metadata_ingestion(self):
 
 
-
     # based on PCRT.test_from_raw_cycler_run_parameters
     def test_autostructure(self):
-
-        # rcycler_run = RawCyclerRun.from_file(self.maccor_file_w_parameters)
-        # pcycler_run = ProcessedCyclerRun.from_raw_cycler_run(rcycler_run)
-
         self.datapath_small_params.structure()
-
-
-        # self.assertIsInstance(pcycler_run, ProcessedCyclerRun)
-        # Ensure barcode/protocol are passed
-        # self.assertEqual(pcycler_run.barcode, "0001BC")
-        # self.assertEqual(pcycler_run.protocol, "PredictionDiagnostics_000109.000")
-        # self.assertEqual(pcycler_run.channel_id, 10)
-        # pass
+        self.assertEqual(self.datapath_small_params.metadata.barcode, "0001BC")
+        self.assertEqual(self.datapath_small_params.metadata.protocol, "PredictionDiagnostics_000109.000")
+        self.assertEqual(self.datapath_small_params.metadata.channel_id, 10)
 
 
 
