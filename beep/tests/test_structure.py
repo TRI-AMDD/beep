@@ -127,7 +127,7 @@ class TestBEEPDatapath(unittest.TestCase):
         maccor_timestamp_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_timestamp_memloaded.csv")
         maccor_timestamp_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_timestamp_metadata_memloaded.json")
         maccor_timestamp_original_fname = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000151_test.052")
-        cls.data_timestamp = pd.read_csv(maccor_timestamp_fname)
+        cls.data_timestamp = pd.read_csv(maccor_timestamp_fname, index_col=0)
         cls.metadata_timestamp = loadfn(maccor_timestamp_meta_fname)
         cls.datapath_timestamp = BEEPDatapathChildTest(
             raw_data=cls.data_timestamp,
@@ -137,8 +137,15 @@ class TestBEEPDatapath(unittest.TestCase):
 
 
         # Small maccor file with parameters
-        cls.maccor_small_params = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010")
-
+        maccor_small_params_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_parameterized_memloaded.csv")
+        maccor_small_params_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_parameterized_metadata_memloaded.json")
+        cls.data_small_params = pd.read_csv(maccor_small_params_fname, index_col=0)
+        cls.metadata_small_params = loadfn(maccor_small_params_meta_fname)
+        cls.datapath_small_params = BEEPDatapathChildTest(
+            raw_data=cls.data_small_params,
+            metadata=cls.metadata_small_params,
+            paths={"raw": maccor_small_params_fname, "raw_metadata": maccor_small_params_meta_fname}
+        )
 
         # Use maccor bigfile, if tests are enabled for it
 
@@ -500,19 +507,25 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertEqual(not_paused.max(), 0.0)
 
 
+    # def test_metadata_ingestion(self):
+
+
+
     # based on PCRT.test_from_raw_cycler_run_parameters
-    # todo: ALEXTODO Should wait until determine_structuring_parameters can be done without the raw file?
-    @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_autostructure(self):
 
-        rcycler_run = RawCyclerRun.from_file(self.maccor_file_w_parameters)
-        pcycler_run = ProcessedCyclerRun.from_raw_cycler_run(rcycler_run)
-        self.assertIsInstance(pcycler_run, ProcessedCyclerRun)
+        # rcycler_run = RawCyclerRun.from_file(self.maccor_file_w_parameters)
+        # pcycler_run = ProcessedCyclerRun.from_raw_cycler_run(rcycler_run)
+
+        self.datapath_small_params.structure()
+
+
+        # self.assertIsInstance(pcycler_run, ProcessedCyclerRun)
         # Ensure barcode/protocol are passed
-        self.assertEqual(pcycler_run.barcode, "0001BC")
-        self.assertEqual(pcycler_run.protocol, "PredictionDiagnostics_000109.000")
-        self.assertEqual(pcycler_run.channel_id, 10)
-        pass
+        # self.assertEqual(pcycler_run.barcode, "0001BC")
+        # self.assertEqual(pcycler_run.protocol, "PredictionDiagnostics_000109.000")
+        # self.assertEqual(pcycler_run.channel_id, 10)
+        # pass
 
 
 

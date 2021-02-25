@@ -61,7 +61,6 @@ class BEEPDatapath(abc.ABC):
 
     IMPUTABLE_COLUMNS = ["temperature", "internal_resistance"]
 
-
     class StructuringDecorators:
         @classmethod
         def must_be_structured(cls, func):
@@ -84,18 +83,16 @@ class BEEPDatapath(abc.ABC):
 
             return wrapper
 
-
-    class Metadata:
+    class CyclerRunMetadata:
         def __init__(self, metadata_dict):
-            barcode = metadata_dict.get("barcode")
-            protocol = metadata_dict.get("protocol")
-            channel_id = metadata_dict.get("channel_id")
-            raw = metadata_dict
+            self.barcode = metadata_dict.get("barcode")
+            self.protocol = metadata_dict.get("protocol")
+            self.channel_id = metadata_dict.get("channel_id")
+            self.raw = metadata_dict
 
 
     def __init__(self, raw_data, metadata, paths=None):
         self.raw_data = raw_data
-        self.raw_metadata = metadata
         self.paths = paths if paths else {"raw": None}
 
         self.structured_summary = None     # equivalent of PCR.summary
@@ -103,9 +100,7 @@ class BEEPDatapath(abc.ABC):
         self.diagnostic_data = None        # equivalent of PCR.diagnostic_interpolated
         self.diagnostic_summary = None     # same name as in PCR
 
-
-
-        self.metadata = self.Metadata()    # structured metadata
+        self.metadata = self.CyclerRunMetadata(metadata)
 
         self.is_structured = False
 
@@ -149,7 +144,7 @@ class BEEPDatapath(abc.ABC):
         float_array = np.array(self.raw_data[self.FLOAT_COLUMNS].astype(np.float64))
         int_array = np.array(self.raw_data[self.INT_COLUMNS].astype(np.int64))
         np.savez_compressed(name, float_array=float_array, int_array=int_array)
-        dumpfn(self.raw_metadata, "{}.json".format(name))
+        dumpfn(self.metadata.raw, "{}.json".format(name))
 
     # todo: ALEXTODO needs validation
     def validate(self):
@@ -445,31 +440,46 @@ class BEEPDatapath(abc.ABC):
             reg_cycles_at = [i for i in self.raw_data.cycle_index.unique()]
 
 
-        summary = self.raw_data.groupby("cycle_index").agg(
-            {
+        aggregation = {
                 "cycle_index": "first",
                 "discharge_capacity": "max",
                 "charge_capacity": "max",
                 "discharge_energy": "max",
                 "charge_energy": "max",
                 "internal_resistance": "last",
-                "temperature": ["max", "mean", "min"],
                 "date_time_iso": "first",
             }
-        )
 
-        summary.columns = [
-            "cycle_index",
-            "discharge_capacity",
-            "charge_capacity",
-            "discharge_energy",
-            "charge_energy",
-            "dc_internal_resistance",
-            "temperature_maximum",
-            "temperature_average",
-            "temperature_minimum",
-            "date_time_iso",
-        ]
+        if "temperature" in self.raw_data.columns:
+            aggregation["temperature"] = ["max", "mean", "min"],
+
+        summary = self.raw_data.groupby("cycle_index").agg(aggregation)
+
+
+        if "temperature" in self.raw_data.columns:
+            summary.columns = [
+                "cycle_index",
+                "discharge_capacity",
+                "charge_capacity",
+                "discharge_energy",
+                "charge_energy",
+                "dc_internal_resistance",
+                "temperature_maximum",
+                "temperature_average",
+                "temperature_minimum",
+                "date_time_iso",
+            ]
+        else:
+            summary.columns = [
+                "cycle_index",
+                "discharge_capacity",
+                "charge_capacity",
+                "discharge_energy",
+                "charge_energy",
+                "dc_internal_resistance",
+                "date_time_iso",
+            ]
+
         summary = summary[summary.index.isin(reg_cycles_at)]
         summary["energy_efficiency"] = (
                 summary["discharge_energy"] / summary["charge_energy"]
@@ -522,10 +532,11 @@ class BEEPDatapath(abc.ABC):
 
         # Group by cycle index and integrate time-temperature
         # using a lambda function.
-        summary["time_temperature_integrated"] = self.raw_data.groupby(
-            "cycle_index").apply(
-            lambda g: integrate.trapz(g.temperature, x=g.time_since_cycle_start)
-        )
+        if "temperature" in self.raw_data.columns:
+            summary["time_temperature_integrated"] = self.raw_data.groupby(
+                "cycle_index").apply(
+                lambda g: integrate.trapz(g.temperature, x=g.time_since_cycle_start)
+            )
 
         # Drop the time since cycle start column
         self.raw_data.drop(columns=["time_since_cycle_start"])
@@ -534,7 +545,9 @@ class BEEPDatapath(abc.ABC):
         summary["paused"] = self.raw_data.groupby("cycle_index").apply(
             get_max_paused_over_threshold)
 
-        summary = summary.astype(STRUCTURE_DTYPES["summary"])
+
+        available_dtypes = {field: dtype for field, dtype in STRUCTURE_DTYPES["summary"].items() if field in summary.columns}
+        summary = summary.astype(available_dtypes)
 
         last_voltage = self.raw_data.loc[
             self.raw_data["cycle_index"] == self.raw_data["cycle_index"].max()
@@ -1391,8 +1404,15 @@ if __name__ == "__main__":
 
 
     maccor = MaccorDatapath.from_file("/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/PredictionDiagnostics_000109_tztest.010")
-    maccor.structure()
-    print(maccor.get_cycle_life())
+    maccor.raw_data.to_csv("tests/test_files/BEEPDatapath_maccor_parameterized.csv")
+    with open("tests/test_files/BEEPDatapath_maccor_parameterized_metadata_memloaded.json", "w") as f:
+        json.dump(maccor.metadata.raw, f)
+    # maccor.structure()
+    # print(maccor.get_cycle_life())
+
+
+
+
 
 
 
