@@ -370,8 +370,7 @@ def get_hppc_ocv(processed_cycler_run, diag_pos):
     cycles = cycle_hppc.cycle_index.unique()
 
     cycle_hppc_0 = cycle_hppc.loc[cycle_hppc.cycle_index == cycles[0]]
-    #     in case that cycle 2 correspond to two cycles one is real cycle 2, one is at the end
-    cycle_hppc_0 = cycle_hppc_0.loc[cycle_hppc_0.test_time < 250000]
+
     first_diagnostic_steps = get_step_index(processed_cycler_run,
                                             cycle_type="hppc",
                                             diag_pos=0)

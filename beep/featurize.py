@@ -902,9 +902,11 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         mask_pos_1_charge = ((diag_intrp.cycle_index == cycles[params_dict["diag_pos_list"][1]]) &
                              (diag_intrp.step_index == step_dict_1[params_dict["diagnostic_cycle_type"] + '_charge']))
         mask_pos_0_discharge = ((diag_intrp.cycle_index == cycles[params_dict["diag_pos_list"][0]]) &
-                                (diag_intrp.step_index == step_dict_0[params_dict["diagnostic_cycle_type"] + '_discharge']))
+                                (diag_intrp.step_index ==
+                                 step_dict_0[params_dict["diagnostic_cycle_type"] + '_discharge']))
         mask_pos_1_discharge = ((diag_intrp.cycle_index == cycles[params_dict["diag_pos_list"][1]]) &
-                                (diag_intrp.step_index == step_dict_1[params_dict["diagnostic_cycle_type"] + '_discharge']))
+                                (diag_intrp.step_index ==
+                                 step_dict_1[params_dict["diagnostic_cycle_type"] + '_discharge']))
         # TODO: Q_seg is the number of interpolated datapoints for these
         #  diagnostic cycles so if we ever change that, this value will
         #  also need to be changed
