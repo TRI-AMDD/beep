@@ -1245,10 +1245,6 @@ class RawCyclerRun(MSONable):
                     hppc_rpt = ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"]
                     hppc_rpt_len = 5
                     initial_diagnostic_at = [1, 1 + run_parameter["diagnostic_start_cycle"].iloc[0] + 1 * hppc_rpt_len]
-                    assert (np.diff(self.data[self.data.cycle_index == initial_diagnostic_at[0]].index) < 2).all(), \
-                        "Error: index is not contiguous for diagnostic cycle " + str(initial_diagnostic_at[0])
-                    assert (np.diff(self.data[self.data.cycle_index == initial_diagnostic_at[1]].index) < 2).all(), \
-                        "Error: index is not contiguous for diagnostic cycle " + str(initial_diagnostic_at[1])
                     diag_0_steps = set(self.data[self.data.cycle_index == initial_diagnostic_at[0]].step_index.unique())
                     diag_1_steps = set(self.data[self.data.cycle_index == initial_diagnostic_at[1]].step_index.unique())
                     diagnostic_starts_at = []
