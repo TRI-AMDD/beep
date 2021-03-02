@@ -1240,7 +1240,7 @@ class RawCyclerRun(MSONable):
                     all_parameters["discharge_cutoff_voltage"].min(),
                     all_parameters["charge_cutoff_voltage"].max(),
                 ]
-            if {"diagnostic_type", "diagnostic_start_cycle", "diagnostic_interval", }.issubset(run_parameter.columns):
+            if {"diagnostic_type", "diagnostic_start_cycle", "diagnostic_interval"}.issubset(run_parameter.columns):
                 if run_parameter["diagnostic_type"].iloc[0] == "HPPC+RPT":
                     hppc_rpt = ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"]
                     hppc_rpt_len = 5
