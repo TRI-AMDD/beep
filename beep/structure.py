@@ -1245,10 +1245,14 @@ class RawCyclerRun(MSONable):
                     hppc_rpt = ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"]
                     hppc_rpt_len = 5
                     initial_diagnostic_at = [1, 1 + run_parameter["diagnostic_start_cycle"].iloc[0] + 1 * hppc_rpt_len]
+                    # Calculate the number of steps present for each cycle in the diagnostic as the pattern for
+                    # the diagnostic. If this pattern of steps shows up at the end of the file, that indicates
+                    # the presence of a final diagnostic
                     diag_0_pattern = [len(self.data[self.data.cycle_index == x].step_index.unique()) for x in
                                       range(initial_diagnostic_at[0], initial_diagnostic_at[0] + hppc_rpt_len)]
                     diag_1_pattern = [len(self.data[self.data.cycle_index == x].step_index.unique()) for x in
                                       range(initial_diagnostic_at[1], initial_diagnostic_at[1] + hppc_rpt_len)]
+                    # Find the steps present in the reset cycles for the first and second diagnostic
                     diag_0_steps = set(self.data[self.data.cycle_index == initial_diagnostic_at[0]].step_index.unique())
                     diag_1_steps = set(self.data[self.data.cycle_index == initial_diagnostic_at[1]].step_index.unique())
                     diagnostic_starts_at = []
@@ -1259,8 +1263,8 @@ class RawCyclerRun(MSONable):
                         if steps_present == diag_0_steps or steps_present == diag_1_steps:
                             diagnostic_starts_at.append(cycle)
                         # Detect final diagnostic if present in the data
-                        elif cycle > (self.data.cycle_index.max() - 10) and (cycle_pattern == diag_0_pattern
-                                                                             or cycle_pattern == diag_1_pattern):
+                        elif cycle >= (self.data.cycle_index.max() - hppc_rpt_len - 1) and \
+                                (cycle_pattern == diag_0_pattern or cycle_pattern == diag_1_pattern):
                             diagnostic_starts_at.append(cycle)
 
                     diagnostic_available = {
