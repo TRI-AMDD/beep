@@ -255,7 +255,7 @@ class MaccorToBiologicMb:
                     "Step {} has more than 3 EndEntries, the max allowed"
                     " by Biologic. Either remove some limits from the source"
                     " loaded diagnostic file or filter by number using the"
-                    " remove_end_entries_with_target_gotos method"
+                    " remove_end_entries_by_pred method"
                 ).format(step_num)
             )
 
@@ -464,7 +464,7 @@ class MaccorToBiologicMb:
     and provide a [encoding-REPLACE] in the "initial state" field of the biologic file.
     """
 
-    def _create_biologic_seqs_from_maccor_ast(self, maccor_ast):
+    def maccor_ast_to_biologic_seqs(self, maccor_ast):
         steps = get(maccor_ast, "MaccorTestProcedure.ProcSteps.TestStep")
         if steps is None:
             print(
@@ -626,18 +626,20 @@ class MaccorToBiologicMb:
         return xmltodict.parse(text, process_namespaces=False, strip_whitespace=True)
 
     """
-    converts maccor AST to biologic protocol
+    converts biologic seqs to biologic protocol string
     resulting string assumes generated file will have
     LATIN-1 i.e. ISO-8859-1 encoding
     """
 
-    def maccor_ast_to_protocol_str(self, maccor_ast, col_width=20):
+    def biologic_seqs_to_protocol_str(self, seqs, col_width=20):
         # encoding is assumed due to superscript 2 here, as well as
         # micro sign elsewhere in code, they would presumably be
         # handled by their unicode alternatives in UTF-8 but we
         # haven't seen that fileformat so we're not sure
 
         # based on sample biologic mps file
+
+        # ordering from blank_seq template is _vital_ for this to work
         file_str = (
             "BT-LAB SETTING FILE\r\n"
             "\r\n"
@@ -666,9 +668,6 @@ class MaccorToBiologicMb:
             "Technique : 1\r\n"
             "Modulo Bat\r\n"
         )
-        # ordering from blank_seq template is _vital_ for this to work
-
-        seqs = self._create_biologic_seqs_from_maccor_ast(maccor_ast)
 
         for key in OrderedDict.keys(self.blank_seq):
             if len(key) > col_width:
@@ -697,6 +696,25 @@ class MaccorToBiologicMb:
         return file_str
 
     """
+    converts maccor AST to biologic protocol
+    resulting string assumes generated file will have
+    LATIN-1 i.e. ISO-8859-1 encoding
+    """
+
+    def maccor_ast_to_protocol_str(self, maccor_ast, col_width):
+        seqs = self.maccor_ast_to_biologic_seqs(maccor_ast)
+        return self.biologic_seqs_to_protocol_str(seqs, col_width)
+
+    """
+    converted loaded biologic seqs to a protocol file
+    """
+
+    def biologic_seqs_to_protocol_file(self, seqs, fp, col_width=20):
+        file_str = self.biologic_seqs_to_protocol_str(seqs, col_width)
+        with open(fp, "wb") as f:
+            f.write(file_str.encode("ISO-8859-1"))
+
+    """
     convert loaded maccor AST to biologic procedure file
     """
 
@@ -712,7 +730,9 @@ class MaccorToBiologicMb:
     file has LATIN-1 i.e. ISO-8859-1 encoding
     """
 
-    def convert(self, maccor_fp, biologic_fp, maccor_encoding="ISO-8859-1", col_width=20):
+    def convert(
+        self, maccor_fp, biologic_fp, maccor_encoding="ISO-8859-1", col_width=20
+    ):
         maccor_ast = self.load_maccor_ast(maccor_fp, maccor_encoding)
         self.maccor_ast_to_protocol_file(maccor_ast, biologic_fp, col_width)
 
@@ -753,14 +773,3 @@ class MaccorToBiologicMb:
                     unset(step, "Ends.EndEntry")
 
         return new_ast
-
-converter = MaccorToBiologicMb()
-ast = converter.load_maccor_ast("./procedure_templates/diagnosticV4.000")
-
-def pred(end_entry, step_num):
-    goto_step = int(end_entry["Step"])
-    # filter all goto step 70s, except when that is Next Step
-    return  goto_step != 70 or step_num == 69
-
-filtered = converter.remove_end_entries_by_pred(ast, pred)
-converter.maccor_ast_to_protocol_file(filtered, "./diagnosticV4_lims.mps")
