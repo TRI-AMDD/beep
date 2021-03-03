@@ -1245,13 +1245,24 @@ class RawCyclerRun(MSONable):
                     hppc_rpt = ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"]
                     hppc_rpt_len = 5
                     initial_diagnostic_at = [1, 1 + run_parameter["diagnostic_start_cycle"].iloc[0] + 1 * hppc_rpt_len]
+                    diag_0_pattern = [len(self.data[self.data.cycle_index == x].step_index.unique()) for x in
+                                      range(initial_diagnostic_at[0], initial_diagnostic_at[0] + hppc_rpt_len)]
+                    diag_1_pattern = [len(self.data[self.data.cycle_index == x].step_index.unique()) for x in
+                                      range(initial_diagnostic_at[1], initial_diagnostic_at[1] + hppc_rpt_len)]
                     diag_0_steps = set(self.data[self.data.cycle_index == initial_diagnostic_at[0]].step_index.unique())
                     diag_1_steps = set(self.data[self.data.cycle_index == initial_diagnostic_at[1]].step_index.unique())
                     diagnostic_starts_at = []
                     for cycle in self.data.cycle_index.unique():
                         steps_present = set(self.data[self.data.cycle_index == cycle].step_index.unique())
+                        cycle_pattern = [len(self.data[self.data.cycle_index == x].step_index.unique()) for x in
+                                         range(cycle, cycle + hppc_rpt_len)]
                         if steps_present == diag_0_steps or steps_present == diag_1_steps:
                             diagnostic_starts_at.append(cycle)
+                        # Detect final diagnostic if present in the data
+                        elif cycle > (self.data.cycle_index.max() - 10) and (cycle_pattern == diag_0_pattern
+                                                                             or cycle_pattern == diag_1_pattern):
+                            diagnostic_starts_at.append(cycle)
+
                     diagnostic_available = {
                         "parameter_set": run_parameter["diagnostic_parameter_set"].iloc[0],
                         "cycle_type": hppc_rpt,
