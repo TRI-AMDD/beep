@@ -175,7 +175,7 @@ class MaccorToBiologicMb:
         step_value = proc_step["StepValue"]
 
         if step_type == "Rest":
-            new_seq["type"] = "Rest"
+            new_seq["ctrl_type"] = "Rest"
             new_seq["Apply I/C"] = "I"
 
             # magic number
@@ -197,8 +197,8 @@ class MaccorToBiologicMb:
             new_seq["ctrl1_val"] = ctrl1_val
             new_seq["ctrl1_val_unit"] = ctrl1_val_unit
 
-            new_seq["type"] = "CC"
-            new_seq["Apply I/C"] = "C / N"
+            new_seq["ctrl_type"] = "CC"
+            new_seq["Apply I/C"] = "I"
             new_seq["ctrl1_val_vs"] = "<None>"
 
             # magic number, unsure what this does
@@ -220,8 +220,8 @@ class MaccorToBiologicMb:
             new_seq["ctrl1_val"] = ctrl1_val
             new_seq["ctrl1_val_unit"] = ctrl1_val_unit
 
-            new_seq["type"] = "CV"
-            new_seq["Apply I/C"] = "C / N"
+            new_seq["ctrl_type"] = "CV"
+            new_seq["Apply I/C"] = "I"
             new_seq["ctrl1_val_vs"] = "Ref"
 
             # magic number, unsure what this does
@@ -320,7 +320,7 @@ class MaccorToBiologicMb:
                 lim_value, lim_value_unit = self._convert_volts(end_value)
 
                 new_seq["lim{0}_comp".format(lim_num)] = operator_map[end_oper]
-                new_seq["lim{0}_type".format(lim_num)] = "Voltage"
+                new_seq["lim{0}_type".format(lim_num)] = "Ecell"
                 new_seq["lim{0}_value".format(lim_num)] = lim_value
                 new_seq["lim{0}_value_unit".format(lim_num)] = lim_value_unit
             elif end_type == "Current":
@@ -332,7 +332,7 @@ class MaccorToBiologicMb:
                 lim_value, lim_value_unit = self._convert_amps(end_value)
 
                 new_seq["lim{0}_comp".format(lim_num)] = operator_map[end_oper]
-                new_seq["lim{0}_type".format(lim_num)] = "Current"
+                new_seq["lim{0}_type".format(lim_num)] = "I"
                 new_seq["lim{0}_value".format(lim_num)] = lim_value
                 new_seq["lim{0}_value_unit".format(lim_num)] = lim_value_unit
             else:
@@ -377,13 +377,13 @@ class MaccorToBiologicMb:
             elif report_type == "Voltage":
                 rec_value, rec_value_unit = self._convert_volts(report_value)
 
-                new_seq["rec{0}_type".format(rec_num)] = "Voltage"
+                new_seq["rec{0}_type".format(rec_num)] = "Ecell"
                 new_seq["rec{0}_value".format(rec_num)] = rec_value
                 new_seq["rec{0}_value_unit".format(rec_num)] = rec_value_unit
             elif report_type == "Current":
                 rec_value, rec_value_unit = self._convert_amps(report_value)
 
-                new_seq["rec{0}_type".format(rec_num)] = "Current"
+                new_seq["rec{0}_type".format(rec_num)] = "I"
                 new_seq["rec{0}_value".format(rec_num)] = rec_value
                 new_seq["rec{0}_value_unit".format(rec_num)] = rec_value_unit
             else:
@@ -394,14 +394,14 @@ class MaccorToBiologicMb:
     def _create_loop_seq(self, seq_num, seq_num_to_loop_to, num_loops):
         loop_seq = self.blank_seq.copy()
         loop_seq["Ns"] = seq_num
-        loop_seq["type"] = "Loop"
+        loop_seq["ctrl_type"] = "Loop"
         loop_seq["loop_repeat"] = num_loops
         loop_seq["ctrl_seq"] = seq_num
         loop_seq["lim1_seq"] = seq_num + 1
         loop_seq["lim2_seq"] = seq_num + 1
         loop_seq["lim3_seq"] = seq_num + 1
         # automatically added to loops, semantically useless
-        loop_seq["Apply I/C"] = "C / N"
+        loop_seq["Apply I/C"] = "I"
         loop_seq["ctrl1_val"] = "100.000"
 
         return loop_seq
@@ -639,9 +639,11 @@ class MaccorToBiologicMb:
 
         # based on sample biologic mps file
         file_str = (
-            "BT-LAB SETTING FILE\r\n\r\n"
-            "Number of linked techniques : 1\r\n\r\n"
-            "Filename : C:\\dummy.mps\r\n\r\n"
+            "BT-LAB SETTING FILE\r\n"
+            "\r\n"
+            "Number of linked techniques : 1\r\n"
+            "\r\n"
+            "Filename : C:\\Users\\User\\Documents\\BT-Lab\\Data\\Grace\\BASF\\BCS - 171.64.160.115_Ja9_cOver70_CE3.mps\r\n\r\n"
             "Device : BCS-805\r\n"
             "Ecell ctrl range : min = 0.00 V, max = 10.00 V\r\n"
             "Electrode material : \r\n"
@@ -655,11 +657,12 @@ class MaccorToBiologicMb:
             "Acquisition started at : xo = 0.000\r\n"
             "Number of e- transfered per intercalated ion : 1\r\n"
             "for DX = 1, DQ = 26.802 mA.h\r\n"
-            "Battery capacity : 2.280 mA.h\r\n"
+            "Battery capacity : 1.000 A.h\r\n"
             "Electrode surface area : 0.001 cm\N{superscript two}\r\n"
-            "Characteristic mass : 9.130 mg\r\n"
-            "Cycle Definition : Loop\r\n"
-            "Turn to OCV between techniques\r\n\r\n"
+            "Characteristic mass : 8.624 mg\r\n"
+            "Cycle Definition : Charge/Discharge alternance\r\n"
+            "Do not turn to OCV between techniques\r\n"
+            "\r\n"
             "Technique : 1\r\n"
             "Modulo Bat\r\n"
         )
@@ -701,6 +704,7 @@ class MaccorToBiologicMb:
         file_str = self.maccor_ast_to_protocol_str(maccor_ast, col_width)
         with open(fp, "wb") as f:
             f.write(file_str.encode("ISO-8859-1"))
+            # f.write(file_str.encode("UTF-8"))
 
     """
     converts maccor AST to biologic protocol
@@ -708,7 +712,7 @@ class MaccorToBiologicMb:
     file has LATIN-1 i.e. ISO-8859-1 encoding
     """
 
-    def convert(self, maccor_fp, biologic_fp, maccor_encoding="utf-8", col_width=20):
+    def convert(self, maccor_fp, biologic_fp, maccor_encoding="ISO-8859-1", col_width=20):
         maccor_ast = self.load_maccor_ast(maccor_fp, maccor_encoding)
         self.maccor_ast_to_protocol_file(maccor_ast, biologic_fp, col_width)
 
@@ -749,3 +753,14 @@ class MaccorToBiologicMb:
                     unset(step, "Ends.EndEntry")
 
         return new_ast
+
+converter = MaccorToBiologicMb()
+ast = converter.load_maccor_ast("./procedure_templates/diagnosticV4.000")
+
+def pred(end_entry, step_num):
+    goto_step = int(end_entry["Step"])
+    # filter all goto step 70s, except when that is Next Step
+    return  goto_step != 70 or step_num == 69
+
+filtered = converter.remove_end_entries_by_pred(ast, pred)
+converter.maccor_ast_to_protocol_file(filtered, "./diagnosticV4_lims.mps")
