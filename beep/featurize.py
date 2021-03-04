@@ -1030,6 +1030,7 @@ class DeltaQFastCharge(BeepFeatures):
                 len(processed_cycler_run.summary.index)
                 > params_dict["final_pred_cycle"]
             )
+        conditions.append("cycle_index" in processed_cycler_run.cycles_interpolated.columns)
 
         return all(conditions)
 
