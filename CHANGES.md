@@ -1,5 +1,11 @@
 
 
+v2021.3.4.9
+-----------
+* BUGFIX Change diagnostic cycle detection and add detection for final diagnostic
+* BUGFIX Add filtering to features to remove appended cycles
+* Add rpt and reset to get_step_index
+
 v2021.2.22.9
 ------------
 * Add statistics to get_hppc_ocv - Thanks Chirru!
