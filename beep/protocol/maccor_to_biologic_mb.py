@@ -773,3 +773,33 @@ class MaccorToBiologicMb:
                     unset(step, "Ends.EndEntry")
 
         return new_ast
+
+
+"""
+helper function for converting diagnosticV5.000
+"""
+
+
+def convert_diagnostic_v5():
+    def pred(end_entry, step_num):
+        # remove end entries going to step 70 or 94 unless
+        # except when they are the next step
+        goto_step = int(end_entry["Step"])
+
+        goto_70_not_next = goto_step == 70 and step_num != 69
+        goto_94_not_next = goto_step == 94 and step_num != 93
+
+        return not (goto_70_not_next or goto_94_not_next)
+
+    converter = MaccorToBiologicMb()
+    ast = converter.load_maccor_ast("./procedure_templates/diagnosticV5.000")
+    filtered = converter.remove_end_entries_by_pred(ast, pred)
+
+    # gotos for step 94 were in case of unsafe Voltage levels
+    # we'll set them in the output seqs
+    seqs = converter.maccor_ast_to_biologic_seqs(filtered)
+    for seq in seqs:
+        seq["E range min (V)"] = "2.000"
+        seq["E range max (V)"] = "4.400"
+
+    converter.biologic_seqs_to_protocol_file(seqs, "./diagnosticV5_70.mps")
