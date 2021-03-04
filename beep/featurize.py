@@ -1074,26 +1074,26 @@ class DeltaQFastCharge(BeepFeatures):
         X = pd.DataFrame(np.zeros((1, 20)))
         labels = []
         # Discharge capacity, cycle 2 = Q(n=2)
-        X[0] = summary.discharge_capacity[1]
+        X[0] = summary.discharge_capacity.iloc[1]
         labels.append("discharge_capacity_cycle_2")
 
         # Max discharge capacity - discharge capacity, cycle 2 = max_n(Q(n)) - Q(n=2)
         X[1] = max(
-            summary.discharge_capacity[np.arange(i_final + 1)]
-            - summary.discharge_capacity[1]
+            summary.discharge_capacity.iloc[np.arange(i_final + 1)]
+            - summary.discharge_capacity.iloc[1]
         )
         labels.append("max_discharge_capacity_difference")
 
         # Discharge capacity, cycle 100 = Q(n=100)
-        X[2] = summary.discharge_capacity[i_final]
+        X[2] = summary.discharge_capacity.iloc[i_final]
         labels.append("discharge_capacity_cycle_100")
 
         # Feature representing time-temperature integral over cycles 2 to 100
-        X[3] = np.nansum(summary.time_temperature_integrated[np.arange(i_final + 1)])
+        X[3] = np.nansum(summary.time_temperature_integrated.iloc[np.arange(i_final + 1)])
         labels.append("integrated_time_temperature_cycles_1:100")
 
         # Mean of charge times of first 5 cycles
-        X[4] = np.nanmean(summary.charge_duration[1:6])
+        X[4] = np.nanmean(summary.charge_duration.iloc[1:6])
         labels.append("charge_time_cycles_1:5")
 
         # Descriptors based on capacity loss between cycles 10 and 100.
@@ -1123,17 +1123,17 @@ class DeltaQFastCharge(BeepFeatures):
         labels.append("abs_kurtosis_discharge_capacity_difference_cycles_2:100")
         labels.append("abs_first_discharge_capacity_difference_cycles_2:100")
 
-        X[11] = max(summary.temperature_maximum[list(range(1, i_final + 1))])  # Max T
+        X[11] = np.max(summary.temperature_maximum.iloc[list(range(1, i_final + 1))])  # Max T
         labels.append("max_temperature_cycles_1:100")
 
-        X[12] = min(summary.temperature_minimum[list(range(1, i_final + 1))])  # Min T
+        X[12] = np.min(summary.temperature_minimum.iloc[list(range(1, i_final + 1))])  # Min T
         labels.append("min_temperature_cycles_1:100")
 
         # Slope and intercept of linear fit to discharge capacity as a fn of cycle #, cycles 2 to 100
 
         X[13], X[14] = np.polyfit(
             list(range(1, i_final + 1)),
-            summary.discharge_capacity[list(range(1, i_final + 1))],
+            summary.discharge_capacity.iloc[list(range(1, i_final + 1))],
             1,
         )
 
@@ -1143,13 +1143,13 @@ class DeltaQFastCharge(BeepFeatures):
         # Slope and intercept of linear fit to discharge capacity as a fn of cycle #, cycles 91 to 100
         X[15], X[16] = np.polyfit(
             list(range(i_mid, i_final + 1)),
-            summary.discharge_capacity[list(range(i_mid, i_final + 1))],
+            summary.discharge_capacity.iloc[list(range(i_mid, i_final + 1))],
             1,
         )
         labels.append("slope_discharge_capacity_cycle_number_91:100")
         labels.append("intercept_discharge_capacity_cycle_number_91:100")
 
-        IR_trend = summary.dc_internal_resistance[list(range(1, i_final + 1))]
+        IR_trend = summary.dc_internal_resistance.iloc[list(range(1, i_final + 1))]
         if any(v == 0 for v in IR_trend):
             IR_trend[IR_trend == 0] = np.nan
 
@@ -1158,12 +1158,12 @@ class DeltaQFastCharge(BeepFeatures):
         labels.append("min_internal_resistance_cycles_2:100")
 
         # Internal resistance at cycle 2
-        X[18] = summary.dc_internal_resistance[1]
+        X[18] = summary.dc_internal_resistance.iloc[1]
         labels.append("internal_resistance_cycle_2")
 
         # Internal resistance at cycle 100 - cycle 2
         X[19] = (
-            summary.dc_internal_resistance[i_final] - summary.dc_internal_resistance[1]
+            summary.dc_internal_resistance.iloc[i_final] - summary.dc_internal_resistance.iloc[1]
         )
         labels.append("internal_resistance_difference_cycles_2:100")
 
