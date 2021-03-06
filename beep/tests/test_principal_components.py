@@ -80,7 +80,7 @@ class PrincipalComponentsTest(unittest.TestCase):
         reconstruction_errors, outliers = self.pc.get_reconstruction_error_outliers(
             df_to_pca, threshold=1.5
         )
-        self.assertAlmostEqual(reconstruction_errors[0], 0.0025532895, places=8)
+        self.assertAlmostEqual(reconstruction_errors[0], 0.0025532774, places=7)
         self.assertTrue(outliers[0])
 
 

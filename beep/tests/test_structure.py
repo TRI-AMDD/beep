@@ -639,7 +639,7 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertTrue(interp3.current.mean() > 0)
         self.assertEqual(len(interp3.voltage), 10000)
         self.assertEqual(interp3.voltage.max(), np.float32(4.100838))
-        self.assertEqual(interp3.voltage.min(), np.float32(3.437705))
+        self.assertEqual(interp3.voltage.min(), np.float32(3.3334765))
         np.testing.assert_almost_equal(
             interp3[
                 interp3.charge_capacity <= interp3.charge_capacity.median()
