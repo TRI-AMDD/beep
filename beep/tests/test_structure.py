@@ -634,8 +634,7 @@ class RawCyclerRunTest(unittest.TestCase):
             (all_interpolated.cycle_index == 1)
             & (all_interpolated.step_type == "charge")
         ].sort_values("charge_capacity")
-        print(interp3.columns)
-        print(cycler_run.data.voltage.min())
+
         self.assertTrue(interp3.current.mean() > 0)
         self.assertEqual(len(interp3.voltage), 10000)
         self.assertEqual(interp3.voltage.max(), np.float32(4.100838))
