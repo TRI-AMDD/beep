@@ -656,13 +656,13 @@ class BEEPDatapath(abc.ABC):
         diag_data = self.raw_data[self.raw_data["cycle_index"].isin(diag_cycles_at)]
 
         # Convert date_time_iso field into pd.datetime object
-        diag_data.loc[:, "date_time_iso"] = pd.to_datetime(diag_data["date_time_iso"])
+        # diag_data.loc[:, "date_time_iso"] = pd.to_datetime(diag_data["date_time_iso"])
 
         # Convert datetime into seconds to allow interpolation of time
-        diag_data.loc[:, "datetime_seconds"] = [
-            time.mktime(t.timetuple()) if t is not pd.NaT else float("nan")
-            for t in diag_data["date_time_iso"]
-        ]
+        # diag_data.loc[:, "datetime_seconds"] = [
+        #     time.mktime(t.timetuple()) if t is not pd.NaT else float("nan")
+        #     for t in diag_data["date_time_iso"]
+        # ]
 
         # Counter to ensure non-contiguous repeats of step_index
         # within same cycle_index are grouped separately
