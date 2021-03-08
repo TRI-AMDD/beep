@@ -468,6 +468,7 @@ class BEEPDatapath(abc.ABC):
             cycle_complete_discharge_ratio=0.97,
             cycle_complete_vmin=3.3,
             cycle_complete_vmax=3.3,
+            error_threshold=1e6
     ):
         """
         Gets summary statistics for data according to cycle number. Summary data
@@ -483,6 +484,9 @@ class BEEPDatapath(abc.ABC):
                 in any complete cycle
             cycle_complete_vmax (float): expected voltage maximum achieved
                 in any complete cycle
+            error_threshold (float): threshold to consider the summary value
+                an error (applied only to specific columns that should reset
+                each cycle)
 
         Returns:
             pandas.DataFrame: summary statistics by cycle.
@@ -521,6 +525,9 @@ class BEEPDatapath(abc.ABC):
         summary.loc[
             ~np.isfinite(summary["energy_efficiency"]), "energy_efficiency"
         ] = np.NaN
+        # This code is designed to remove erroneous energy values
+        for col in ["discharge_energy", "charge_energy"]:
+            summary.loc[summary[col].abs() > error_threshold, col] = np.NaN
         summary["charge_throughput"] = summary.charge_capacity.cumsum()
         summary["energy_throughput"] = summary.charge_energy.cumsum()
 
