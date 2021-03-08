@@ -853,35 +853,21 @@ class BEEPDatapath(abc.ABC):
                     all_parameters["discharge_cutoff_voltage"].min(),
                     all_parameters["charge_cutoff_voltage"].max(),
                 ]
-            if {"diagnostic_type", "diagnostic_start_cycle",
-                "diagnostic_interval"}.issubset(run_parameter.columns):
+            if {"diagnostic_type", "diagnostic_start_cycle", "diagnostic_interval"}.issubset(run_parameter.columns):
                 if run_parameter["diagnostic_type"].iloc[0] == "HPPC+RPT":
                     hppc_rpt = ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"]
                     hppc_rpt_len = 5
-                    initial_diagnostic_at = [1, 1 + run_parameter[
-                        "diagnostic_start_cycle"].iloc[0] + 1 * hppc_rpt_len]
+                    initial_diagnostic_at = [1, 1 + run_parameter["diagnostic_start_cycle"].iloc[0] + 1 * hppc_rpt_len]
                     # Calculate the number of steps present for each cycle in the diagnostic as the pattern for
                     # the diagnostic. If this pattern of steps shows up at the end of the file, that indicates
                     # the presence of a final diagnostic
-                    diag_0_pattern = [len(self.raw_data[
-                                              self.raw_data.cycle_index == x].step_index.unique())
-                                      for x in
-                                      range(initial_diagnostic_at[0],
-                                            initial_diagnostic_at[
-                                                0] + hppc_rpt_len)]
-                    diag_1_pattern = [len(self.raw_data[
-                                              self.raw_data.cycle_index == x].step_index.unique())
-                                      for x in
-                                      range(initial_diagnostic_at[1],
-                                            initial_diagnostic_at[
-                                                1] + hppc_rpt_len)]
+                    diag_0_pattern = [len(self.raw_data[self.raw_data.cycle_index == x].step_index.unique())
+                                      for x in range(initial_diagnostic_at[0], initial_diagnostic_at[0] + hppc_rpt_len)]
+                    diag_1_pattern = [len(self.raw_data[self.raw_data.cycle_index == x].step_index.unique())
+                                      for x in range(initial_diagnostic_at[1], initial_diagnostic_at[1] + hppc_rpt_len)]
                     # Find the steps present in the reset cycles for the first and second diagnostic
-                    diag_0_steps = set(self.raw_data[self.raw_data.cycle_index ==
-                                                 initial_diagnostic_at[
-                                                     0]].step_index.unique())
-                    diag_1_steps = set(self.raw_data[self.raw_data.cycle_index ==
-                                                 initial_diagnostic_at[
-                                                     1]].step_index.unique())
+                    diag_0_steps = set(self.raw_data[self.raw_data.cycle_index == initial_diagnostic_at[0]].step_index.unique())
+                    diag_1_steps = set(self.raw_data[self.raw_data.cycle_index == initial_diagnostic_at[1]].step_index.unique())
                     diagnostic_starts_at = []
                     for cycle in self.raw_data.cycle_index.unique():
                         steps_present = set(self.raw_data[
@@ -895,8 +881,7 @@ class BEEPDatapath(abc.ABC):
                         # Detect final diagnostic if present in the data
                         elif cycle >= (
                                 self.raw_data.cycle_index.max() - hppc_rpt_len - 1) and \
-                                (
-                                        cycle_pattern == diag_0_pattern or cycle_pattern == diag_1_pattern):
+                                (cycle_pattern == diag_0_pattern or cycle_pattern == diag_1_pattern):
                             diagnostic_starts_at.append(cycle)
 
                     diagnostic_available = {
