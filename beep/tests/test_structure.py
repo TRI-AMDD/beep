@@ -665,6 +665,12 @@ class RawCyclerRunTest(unittest.TestCase):
         self.maccor_file_w_parameters = os.path.join(
             TEST_FILE_DIR, "PreDiag_000287_000128.092"
         )
+        self.maccor_file_diagnostic_normal = os.path.join(
+            TEST_FILE_DIR, "PreDiag_000287_000128short.092"
+        )
+        self.maccor_file_diagnostic_misplaced = os.path.join(
+            TEST_FILE_DIR, "PreDiag_000412_00008Fshort.022"
+        )
         self.maccor_file_timezone = os.path.join(
             TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010"
         )
@@ -1167,7 +1173,7 @@ class RawCyclerRunTest(unittest.TestCase):
         # Dump to the structured file and check the file size
         dumpfn(processed_cycler_run, processed_cycler_run_loc)
         proc_size = os.path.getsize(processed_cycler_run_loc)
-        self.assertLess(proc_size, 47000000)
+        self.assertLess(proc_size, 54000000)
 
         # Reload the structured file and check for errors
         test = loadfn(processed_cycler_run_loc)
@@ -1215,9 +1221,11 @@ class RawCyclerRunTest(unittest.TestCase):
                             {'voltage',
                              'test_time',
                              'discharge_capacity',
+                             'discharge_energy',
                              'current',
                              'temperature',
                              'charge_capacity',
+                             'charge_energy',
                              'internal_resistance',
                              'cycle_index',
                              'step_type'}
@@ -1315,8 +1323,8 @@ class RawCyclerRunTest(unittest.TestCase):
     def test_get_energy(self):
         cycler_run = RawCyclerRun.from_file(self.arbin_file)
         summary = cycler_run.get_summary(nominal_capacity=4.7, full_fast_charge=0.8)
-        self.assertEqual(summary["charge_energy"][5], 3.7134638)
-        self.assertEqual(summary["energy_efficiency"][5], 0.872866405753033)
+        self.assertEqual(np.around(summary["charge_energy"][5], 6), np.around(3.7134638, 6))
+        self.assertEqual(np.around(summary["energy_efficiency"][5], 7), np.around(np.float32(0.872866405753033), 7))
 
     def test_get_charge_throughput(self):
         cycler_run = RawCyclerRun.from_file(self.arbin_file)
@@ -1457,9 +1465,9 @@ class RawCyclerRunTest(unittest.TestCase):
         self.assertEqual(parameters["diagnostic_type"].iloc[0], "HPPC+RPT")
         self.assertEqual(parameters["seq_num"].iloc[0], 292)
 
-    def test_determine_structering_parameters(self):
+    def test_determine_structuring_parameters(self):
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-        raw_cycler_run = RawCyclerRun.from_file(self.maccor_file_timestamp)
+        raw_cycler_run = RawCyclerRun.from_file(self.maccor_file_diagnostic_normal)
         (
             v_range,
             resolution,
@@ -1472,110 +1480,33 @@ class RawCyclerRunTest(unittest.TestCase):
             "cycle_type": ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"],
             "length": 5,
             "diagnostic_starts_at": [
-                1,
-                36,
-                141,
-                246,
-                351,
-                456,
-                561,
-                666,
-                771,
-                876,
-                981,
-                1086,
-                1191,
-                1296,
-                1401,
-                1506,
-                1611,
-                1716,
-                1821,
-                1926,
-                2031,
-                2136,
-                2241,
-                2346,
-                2451,
-                2556,
-                2661,
-                2766,
-                2871,
-                2976,
-                3081,
-                3186,
-                3291,
-                3396,
-                3501,
-                3606,
-                3711,
-                3816,
-                3921,
-                4026,
-                4131,
-                4236,
-                4341,
-                4446,
-                4551,
-                4656,
-                4761,
-                4866,
-                4971,
-                5076,
-                5181,
-                5286,
-                5391,
-                5496,
-                5601,
-                5706,
-                5811,
-                5916,
-                6021,
-                6126,
-                6231,
-                6336,
-                6441,
-                6546,
-                6651,
-                6756,
-                6861,
-                6966,
-                7071,
-                7176,
-                7281,
-                7386,
-                7491,
-                7596,
-                7701,
-                7806,
-                7911,
-                8016,
-                8121,
-                8226,
-                8331,
-                8436,
-                8541,
-                8646,
-                8751,
-                8856,
-                8961,
-                9066,
-                9171,
-                9276,
-                9381,
-                9486,
-                9591,
-                9696,
-                9801,
-                9906,
-                10011,
-                10116,
-                10221,
-                10326,
-                10431,
-            ],
+                1, 36, 141, 246, 351, 456, 561, 666, 771, 876, 981, 1086, 1191,
+                1296, 1401, 1506, 1611, 1716, 1821, 1926, 2031, 2136, 2241, 2346,
+                2451, 2556, 2661, 2766, 2871, 2976, 3081, 3186, 3291, 3396, 3501,
+                3606, 3628
+            ]
         }
-        self.assertEqual(v_range, [2.7, 4.2])
+        self.assertEqual(v_range, [2.5, 4.2])
+        self.assertEqual(resolution, 1000)
+        self.assertEqual(nominal_capacity, 4.84)
+        self.assertEqual(full_fast_charge, 0.8)
+        self.assertEqual(diagnostic_available, diagnostic_available_test)
+
+        raw_cycler_run = RawCyclerRun.from_file(self.maccor_file_diagnostic_misplaced)
+        (
+            v_range,
+            resolution,
+            nominal_capacity,
+            full_fast_charge,
+            diagnostic_available,
+        ) = raw_cycler_run.determine_structuring_parameters()
+        diagnostic_available_test = {
+            "parameter_set": "Tesla21700",
+            "cycle_type": ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"],
+            "length": 5,
+            "diagnostic_starts_at": [1, 36, 141, 220, 255]
+        }
+        self.assertEqual(v_range, [2.5, 4.2])
         self.assertEqual(resolution, 1000)
         self.assertEqual(nominal_capacity, 4.84)
         self.assertEqual(full_fast_charge, 0.8)
@@ -1619,8 +1550,6 @@ class RawCyclerRunTest(unittest.TestCase):
         ]
         self.assertLess(first_step.voltage.diff().max(), 0.001)
         self.assertLess(second_step.voltage.diff().max(), 0.001)
-        self.assertTrue("date_time_iso" in d_interp.columns)
-        self.assertFalse(d_interp.date_time_iso.isna().all())
 
     def test_get_diagnostic_summary(self):
         cycler_run = RawCyclerRun.from_file(self.maccor_file_w_diagnostics)
@@ -1728,8 +1657,8 @@ class ProcessedCyclerRunTest(unittest.TestCase):
         self.assertEqual(diag['parameter_set'], 'NCR18650-618')
         diag_interp = rcycler_run.get_interpolated_diagnostic_cycles(diag, resolution=1000, v_resolution=0.0005)
         print(diag_interp[diag_interp.cycle_index == 1].charge_capacity.median())
-        self.assertEqual(np.round(diag_interp[diag_interp.cycle_index == 1].charge_capacity.median(), 3),
-                         np.round(3.428818545441403, 3))
+        self.assertEqual(np.around(diag_interp[diag_interp.cycle_index == 1].charge_capacity.median(), 3),
+                         np.around(3.428818545441403, 3))
 
     def test_from_maccor_insufficient_interpolation_length(self):
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
@@ -1738,8 +1667,8 @@ class ProcessedCyclerRunTest(unittest.TestCase):
         print(diag['parameter_set'])
         self.assertEqual(diag['parameter_set'], 'Tesla21700')
         diag_interp = rcycler_run.get_interpolated_diagnostic_cycles(diag, resolution=1000, v_resolution=0.0005)
-        self.assertEqual(np.round(diag_interp[diag_interp.cycle_index == 1].charge_capacity.median(), 3),
-                         np.round(0.6371558214610992, 3))
+        self.assertEqual(np.around(diag_interp[diag_interp.cycle_index == 1].charge_capacity.median(), 3),
+                         np.around(0.6371558214610992, 3))
 
     def test_from_raw_cycler_run_maccor(self):
         rcycler_run = RawCyclerRun.from_file(self.maccor_file_w_diagnostics)

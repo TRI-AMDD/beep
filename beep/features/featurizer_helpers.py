@@ -370,8 +370,7 @@ def get_hppc_ocv(processed_cycler_run, diag_pos):
     cycles = cycle_hppc.cycle_index.unique()
 
     cycle_hppc_0 = cycle_hppc.loc[cycle_hppc.cycle_index == cycles[0]]
-    #     in case that cycle 2 correspond to two cycles one is real cycle 2, one is at the end
-    cycle_hppc_0 = cycle_hppc_0.loc[cycle_hppc_0.test_time < 250000]
+
     first_diagnostic_steps = get_step_index(processed_cycler_run,
                                             cycle_type="hppc",
                                             diag_pos=0)
@@ -1101,8 +1100,19 @@ def get_step_index(pcycler_run, cycle_type="hppc", diag_pos=0):
             elif median_crate > 0 and median_duration > pulse_time:
                 step_indices_annotated["hppc_charge_to_soc"] = step
 
-        assert len(cycle.step_index.unique()) == len(step_indices_annotated.values())
+    elif cycle_type == "rpt_0.2C" or cycle_type == "rpt_1C" or cycle_type == "rpt_2C" or cycle_type == "reset":
+        for step in cycle.step_index.unique():
+            cycle_step = cycle[(cycle.step_index == step)]
+            median_crate = np.round(cycle_step.current.median() / parameter_row["capacity_nominal"].iloc[0], 2)
+            if median_crate > 0:
+                step_indices_annotated[cycle_type + "_charge"] = step
+            elif median_crate < 0:
+                step_indices_annotated[cycle_type + "_discharge"] = step
+            else:
+                raise ValueError
     else:
         raise NotImplementedError
+
+    assert len(cycle.step_index.unique()) == len(step_indices_annotated.values())
 
     return step_indices_annotated

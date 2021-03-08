@@ -110,9 +110,12 @@ class TestDataset(unittest.TestCase):
                 shutil.copy(os.path.join(TEST_FILE_DIR, "data-share", "raw", "parameters", file),
                             os.path.join(os.getcwd(), "data-share", "raw", "parameters"))
             hyperparameter_dict = {'RPTdQdVFeatures': [
-                {'diag_ref': 0, 'diag_nr': 1, 'charge_y_n': 0, 'rpt_type': 'rpt_0.2C', 'plotting_y_n': 0},
-                {'diag_ref': 0, 'diag_nr': 1, 'charge_y_n': 0, 'rpt_type': 'rpt_1C', 'plotting_y_n': 0},
-                {'diag_ref': 0, 'diag_nr': 1, 'charge_y_n': 0, 'rpt_type': 'rpt_2C', 'plotting_y_n': 0}],
+                {'test_time_filter_sec': 1000000, 'cycle_index_filter': 6,
+                 'diag_ref': 0, 'diag_nr': 1, 'charge_y_n': 0, 'rpt_type': 'rpt_0.2C', 'plotting_y_n': 0},
+                {'test_time_filter_sec': 1000000, 'cycle_index_filter': 6,
+                 'diag_ref': 0, 'diag_nr': 1, 'charge_y_n': 0, 'rpt_type': 'rpt_1C', 'plotting_y_n': 0},
+                {'test_time_filter_sec': 1000000, 'cycle_index_filter': 6,
+                 'diag_ref': 0, 'diag_nr': 1, 'charge_y_n': 0, 'rpt_type': 'rpt_2C', 'plotting_y_n': 0}],
                                    'HPPCResistanceVoltageFeatures': [
                                        FEATURE_HYPERPARAMS['HPPCResistanceVoltageFeatures']],
                                    'DiagnosticSummaryStats': [FEATURE_HYPERPARAMS['DiagnosticSummaryStats']]

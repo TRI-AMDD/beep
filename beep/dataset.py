@@ -394,7 +394,7 @@ def get_threshold_targets(dataset_diagnostic_properties,
 
         # Logic around how to deal with cells that have not crossed the threshold
         if run_target_df['fractional_metric'].min() > threshold and not extrapolate_threshold:
-            print(run)
+            print(run, " has not crossed threshold and extrapolation is off")
             continue
         elif run_target_df['fractional_metric'].min() > threshold and extrapolate_threshold:
             fill_value = "extrapolate"
@@ -418,7 +418,7 @@ def get_threshold_targets(dataset_diagnostic_properties,
         cycles_to_threshold = x_cycle_linspace[np.argmin(cycle_crossing_array)]
 
         if ~(throughput_to_threshold > 0) or ~(cycles_to_threshold > 0):
-            print(run)
+            print(run, " does not have a positive value to threshold")
             continue
 
         real_throughput_to_threshold = throughput_to_threshold * run_target_df['initial_regular_throughput'].values[0]
