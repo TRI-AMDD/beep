@@ -326,6 +326,8 @@ class BEEPDatapath(abc.ABC):
             "current",
             "charge_capacity",
             "discharge_capacity",
+            "charge_energy",
+            "discharge_energy",
             "internal_resistance",
             "temperature",
         ]
@@ -647,8 +649,7 @@ class BEEPDatapath(abc.ABC):
         diag_data = self.raw_data[self.raw_data["cycle_index"].isin(diag_cycles_at)]
 
         # Convert date_time_iso field into pd.datetime object
-        diag_data.loc[:, "date_time_iso"] = pd.to_datetime(
-            diag_data["date_time_iso"])
+        diag_data.loc[:, "date_time_iso"] = pd.to_datetime(diag_data["date_time_iso"])
 
         # Convert datetime into seconds to allow interpolation of time
         diag_data.loc[:, "datetime_seconds"] = [
@@ -1211,7 +1212,7 @@ class MaccorDatapath(BEEPDatapath):
         substrings.append(leftovers)
         return substrings
 
-
+# based on get_interpolated_data
 def interpolate_df(
         dataframe,
         field_name="voltage",
