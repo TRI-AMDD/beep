@@ -2,6 +2,7 @@ import abc
 import json
 import re
 from datetime import datetime
+import copy
 
 import pandas as pd
 import numpy as np
@@ -104,6 +105,51 @@ class BEEPDatapath(abc.ABC):
 
         self.is_structured = False
 
+
+        # Setting aggregation/column ordering based on whether columns are present
+        self._aggregation = {
+            "cycle_index": "first",
+            "discharge_capacity": "max",
+            "charge_capacity": "max",
+            "discharge_energy": "max",
+            "charge_energy": "max",
+            "internal_resistance": "last",
+        }
+
+        if "temperature" in self.raw_data.columns:
+            self._aggregation["temperature"] = ["max", "mean", "min"]
+
+            self._summary_cols = [
+                "cycle_index",
+                "discharge_capacity",
+                "charge_capacity",
+                "discharge_energy",
+                "charge_energy",
+                "dc_internal_resistance",
+                "temperature_maximum",
+                "temperature_average",
+                "temperature_minimum",
+                "date_time_iso",
+            ]
+        else:
+            self._summary_cols = [
+                "cycle_index",
+                "discharge_capacity",
+                "charge_capacity",
+                "discharge_energy",
+                "charge_energy",
+                "dc_internal_resistance",
+                "date_time_iso",
+            ]
+
+        # Ensure this step of the aggregation is placed last
+        self._aggregation["date_time_iso"] = "first"
+
+        self._diag_aggregation = copy.deepcopy(self._aggregation)
+        self._diag_aggregation.pop("internal_resistance")
+        self._diag_summary_cols = copy.deepcopy(self._summary_cols)
+        self._diag_summary_cols.pop(5) # internal_resistance
+
     # @property
     # @abc.abstractmethod
     # def schema(self):
@@ -134,6 +180,19 @@ class BEEPDatapath(abc.ABC):
         metadata = loadfn("{}.json".format(name))
         return cls(data, metadata)
 
+    def _cast_dtypes(self, result, structure_dtypes_key):
+        pd.set_option('display.max_rows', 500)
+        pd.set_option('display.max_columns', 500)
+        pd.set_option('display.width', 1000)
+        print(result)
+
+        available_dtypes = {}
+        for field, dtype in STRUCTURE_DTYPES[structure_dtypes_key].items():
+            if field in result.columns:
+                if not result[field].isna().all():
+                    available_dtypes[field] = dtype
+        return result.astype(available_dtypes)
+
     def to_numpy(self, name):
         """
         Save RawCyclerRun as a numeric array and metadata json
@@ -159,12 +218,20 @@ class BEEPDatapath(abc.ABC):
         Returns:
             None
         """
-        params = self.determine_structuring_parameters()
-        logger.info(f"Autostructuring determined parameters of v_range={params[0]}, "
-                    f"resolution={params[1]}, diagnostic_resolution={params[2]}, "
-                    f"nominal_capacity={params[3]}, full_fast_charge={params[4]}, "
-                    f"diagnostic_available={params[5]}")
-        return self.structure(*params)
+        v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \
+            self.determine_structuring_parameters()
+        logger.info(f"Autostructuring determined parameters of v_range={v_range}, "
+                    f"resolution={resolution}, "
+                    f"nominal_capacity={nominal_capacity}, "
+                    f"full_fast_charge={full_fast_charge}, "
+                    f"diagnostic_available={diagnostic_available}")
+        return self.structure(
+            v_range=v_range,
+            resolution=resolution,
+            nominal_capacity=nominal_capacity,
+            full_fast_charge=full_fast_charge,
+            diagnostic_available=diagnostic_available
+        )
 
     def structure(self,
         v_range=None,
@@ -191,6 +258,7 @@ class BEEPDatapath(abc.ABC):
         """
 
         logger.info(f"Beginning structuring along charge axis '{charge_axis}' and discharge axis '{discharge_axis}'.")
+
 
         if diagnostic_available:
             self.diagnostic_summary = self.summarize_diagnostic(
@@ -387,10 +455,7 @@ class BEEPDatapath(abc.ABC):
             [interpolated_discharge, interpolated_charge], ignore_index=True
         )
 
-        print(result)
-
-        available_dtypes = {k: v for k, v in STRUCTURE_DTYPES["cycles_interpolated"].items() if k in result.columns}
-        return result.astype(available_dtypes)
+        return self._cast_dtypes(result, "cycles_interpolated")
 
     # equivalent of get_summary
     def summarize_cycles(
@@ -439,46 +504,13 @@ class BEEPDatapath(abc.ABC):
         else:
             reg_cycles_at = [i for i in self.raw_data.cycle_index.unique()]
 
+        summary = self.raw_data.groupby("cycle_index").agg(self._aggregation)
 
-        aggregation = {
-                "cycle_index": "first",
-                "discharge_capacity": "max",
-                "charge_capacity": "max",
-                "discharge_energy": "max",
-                "charge_energy": "max",
-                "internal_resistance": "last",
-                "date_time_iso": "first",
-            }
+        # pd.set_option('display.max_rows', 500)
+        # pd.set_option('display.max_columns', 500)
+        # pd.set_option('display.width', 1000)
 
-        if "temperature" in self.raw_data.columns:
-            aggregation["temperature"] = ["max", "mean", "min"],
-
-        summary = self.raw_data.groupby("cycle_index").agg(aggregation)
-
-
-        if "temperature" in self.raw_data.columns:
-            summary.columns = [
-                "cycle_index",
-                "discharge_capacity",
-                "charge_capacity",
-                "discharge_energy",
-                "charge_energy",
-                "dc_internal_resistance",
-                "temperature_maximum",
-                "temperature_average",
-                "temperature_minimum",
-                "date_time_iso",
-            ]
-        else:
-            summary.columns = [
-                "cycle_index",
-                "discharge_capacity",
-                "charge_capacity",
-                "discharge_energy",
-                "charge_energy",
-                "dc_internal_resistance",
-                "date_time_iso",
-            ]
+        summary.columns = self._summary_cols
 
         summary = summary[summary.index.isin(reg_cycles_at)]
         summary["energy_efficiency"] = (
@@ -497,6 +529,7 @@ class BEEPDatapath(abc.ABC):
             self.raw_data.groupby("cycle_index", as_index=False)[
                 "date_time_iso"
             ].agg("first")
+
         charge_finish_time = (
             self.raw_data[
                 self.raw_data.charge_capacity >= nominal_capacity * full_fast_charge]
@@ -545,9 +578,7 @@ class BEEPDatapath(abc.ABC):
         summary["paused"] = self.raw_data.groupby("cycle_index").apply(
             get_max_paused_over_threshold)
 
-
-        available_dtypes = {field: dtype for field, dtype in STRUCTURE_DTYPES["summary"].items() if field in summary.columns}
-        summary = summary.astype(available_dtypes)
+        summary = self._cast_dtypes(summary, "summary")
 
         last_voltage = self.raw_data.loc[
             self.raw_data["cycle_index"] == self.raw_data["cycle_index"].max()
@@ -746,29 +777,10 @@ class BEEPDatapath(abc.ABC):
                 [list(range(i, i + diagnostic_available["length"])) for i in starts_at]
             )
         )
-        diag_summary = self.raw_data.groupby("cycle_index").agg(
-            {
-                "discharge_capacity": "max",
-                "charge_capacity": "max",
-                "discharge_energy": "max",
-                "charge_energy": "max",
-                "temperature": ["max", "mean", "min"],
-                "date_time_iso": "first",
-                "cycle_index": "first",
-            },
-        )
+        diag_summary = self.raw_data.groupby("cycle_index").agg(self._diag_aggregation)
 
-        diag_summary.columns = [
-            "discharge_capacity",
-            "charge_capacity",
-            "discharge_energy",
-            "charge_energy",
-            "temperature_maximum",
-            "temperature_average",
-            "temperature_minimum",
-            "date_time_iso",
-            "cycle_index",
-        ]
+        diag_summary.columns = self._diag_summary_cols
+
         diag_summary = diag_summary[diag_summary.index.isin(diag_cycles_at)]
 
         diag_summary["coulombic_efficiency"] = (
@@ -784,10 +796,14 @@ class BEEPDatapath(abc.ABC):
             diagnostic_available["cycle_type"] * len(starts_at)
         )
 
-        diag_summary = diag_summary.astype(STRUCTURE_DTYPES["diagnostic_summary"])
+        diag_summary = self._cast_dtypes(diag_summary, "diagnostic_summary")
 
         return diag_summary
 
+
+    # locate diagnostic cycles
+    # determine voltage range to interpolate on
+    # this is a function that TRI is using mostly for themselves
     def determine_structuring_parameters(
         self,
         v_range=None,

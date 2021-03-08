@@ -139,12 +139,13 @@ class TestBEEPDatapath(unittest.TestCase):
         # Small maccor file with parameters
         maccor_small_params_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_parameterized_memloaded.csv")
         maccor_small_params_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_parameterized_metadata_memloaded.json")
+        maccor_small_params_original_fname = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010")
         cls.data_small_params = pd.read_csv(maccor_small_params_fname, index_col=0)
         cls.metadata_small_params = loadfn(maccor_small_params_meta_fname)
         cls.datapath_small_params = BEEPDatapathChildTest(
             raw_data=cls.data_small_params,
             metadata=cls.metadata_small_params,
-            paths={"raw": maccor_small_params_fname, "raw_metadata": maccor_small_params_meta_fname}
+            paths={"raw": maccor_small_params_original_fname, "raw_metadata": maccor_small_params_meta_fname}
         )
 
         # Use maccor bigfile, if tests are enabled for it
@@ -177,6 +178,7 @@ class TestBEEPDatapath(unittest.TestCase):
         reg_columns = summary.columns.tolist()
         reg_dyptes = [str(dtyp) for dtyp in reg_dyptes]
         for indx, col in enumerate(reg_columns):
+            print(col)
             self.assertEqual(reg_dyptes[indx], STRUCTURE_DTYPES["summary"][col])
 
     # todo: ALEXTODO
@@ -338,6 +340,8 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertEqual(summary_diag["cycle_index"].tolist(), list(range(0, 13)))
         self.assertEqual(len(summary_diag.index), len(summary_diag["date_time_iso"]))
         self.assertEqual(summary_diag["paused"].max(), 0)
+        self.run_dtypes_check(summary_diag)
+        print("diag ok")
 
         # incorporates test_get_energy and get_charge_throughput
         summary = self.datapath_nodiag.summarize_cycles(nominal_capacity=4.7, full_fast_charge=0.8)
@@ -348,7 +352,7 @@ class TestBEEPDatapath(unittest.TestCase):
 
         # test datatypes of both diag and nondiag capable datapaths
         self.run_dtypes_check(summary)
-        self.run_dtypes_check(summary_diag)
+        print("nodiag ok")
 
     # based on RCRT.test_determine_structering_parameters
     def test_determine_structuring_parameters(self):
@@ -511,15 +515,15 @@ class TestBEEPDatapath(unittest.TestCase):
 
 
     # based on PCRT.test_from_raw_cycler_run_parameters
-    def test_autostructure(self):
+    def test_structure(self):
         self.datapath_small_params.structure()
         self.assertEqual(self.datapath_small_params.metadata.barcode, "0001BC")
         self.assertEqual(self.datapath_small_params.metadata.protocol, "PredictionDiagnostics_000109.000")
         self.assertEqual(self.datapath_small_params.metadata.channel_id, 10)
+        self.assertTrue(self.datapath_small_params.is_structured)
 
-
-
-    def test_structure(self):
+    # todo: ALEXTODO
+    def test_autostructure(self):
         pass
 
 
