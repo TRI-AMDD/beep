@@ -148,6 +148,31 @@ class TestBEEPDatapath(unittest.TestCase):
             paths={"raw": maccor_small_params_original_fname, "raw_metadata": maccor_small_params_meta_fname}
         )
 
+
+        # Maccor with various diagnostics from memory
+        # For testing determine_structuring_parameters
+        maccor_diag_normal_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_diagnostic_normal_memloaded.csv")
+        maccor_diag_normal_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_diagnostic_normal_metadata_memloaded.json")
+        maccor_diag_normal_original_fname = os.path.join(TEST_FILE_DIR, "PreDiag_000287_000128short.092")
+        cls.data_diag_normal = pd.read_csv(maccor_diag_normal_fname, index_col=0)
+        cls.metadata_diag_normal = loadfn(maccor_diag_normal_meta_fname)
+        cls.datapath_diag_normal = BEEPDatapathChildTest(
+            raw_data=cls.data_diag_normal,
+            metadata=cls.metadata_diag_normal,
+            paths={"raw": maccor_diag_normal_original_fname, "raw_metadata": maccor_diag_normal_meta_fname}
+        )
+        maccor_diag_misplaced_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_diagnostic_misplaced_memloaded.csv")
+        maccor_diag_misplaced_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_diagnostic_misplaced_metadata_memloaded.json")
+        maccor_diag_misplaced_original_fname = os.path.join(TEST_FILE_DIR, "PreDiag_000412_00008Fshort.022")
+        cls.data_diag_misplaced = pd.read_csv(maccor_diag_misplaced_fname, index_col=0)
+        cls.metadata_diag_misplaced = loadfn(maccor_diag_misplaced_meta_fname)
+        cls.datapath_diag_misplaced = BEEPDatapathChildTest(
+            raw_data=cls.data_diag_misplaced,
+            metadata=cls.metadata_diag_misplaced,
+            paths={"raw": maccor_diag_misplaced_original_fname, "raw_metadata": maccor_diag_misplaced_meta_fname}
+        )
+
+
         # Use maccor bigfile, if tests are enabled for it
 
         maccor_file_w_parameters_s3 = {
@@ -345,133 +370,56 @@ class TestBEEPDatapath(unittest.TestCase):
 
         # incorporates test_get_energy and get_charge_throughput
         summary = self.datapath_nodiag.summarize_cycles(nominal_capacity=4.7, full_fast_charge=0.8)
-        self.assertEqual(summary["charge_energy"][5], 3.7134638)
-        self.assertEqual(summary["energy_efficiency"][5], 0.872866405753033)
+        self.assertEqual(np.around(summary["charge_energy"][5], 6), np.around(3.7134638, 6))
+        self.assertEqual(np.around(summary["energy_efficiency"][5], 7), np.around(np.float32(0.872866405753033), 7))
         self.assertEqual(summary["charge_throughput"][5], np.float32(6.7614093))
         self.assertEqual(summary["energy_throughput"][5], np.float32(23.2752363))
+
 
         # test datatypes of both diag and nondiag capable datapaths
         self.run_dtypes_check(summary)
         print("nodiag ok")
 
-    # based on RCRT.test_determine_structering_parameters
+    # based on RCRT.test_determine_structuring_parameters
     def test_determine_structuring_parameters(self):
+
+        (v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available) = self.datapath_diag_normal.determine_structuring_parameters()
+        diagnostic_available_test = {
+            "parameter_set": "Tesla21700",
+            "cycle_type": ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"],
+            "length": 5,
+            "diagnostic_starts_at": [
+                1, 36, 141, 246, 351, 456, 561, 666, 771, 876, 981, 1086,
+                1191,
+                1296, 1401, 1506, 1611, 1716, 1821, 1926, 2031, 2136, 2241,
+                2346,
+                2451, 2556, 2661, 2766, 2871, 2976, 3081, 3186, 3291, 3396,
+                3501,
+                3606, 3628
+            ]
+        }
+
+        print(v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available)
+        self.assertEqual(v_range, [2.5, 4.2])
+        self.assertEqual(resolution, 1000)
+        self.assertEqual(nominal_capacity, 4.84)
+        self.assertEqual(full_fast_charge, 0.8)
+        self.assertEqual(diagnostic_available, diagnostic_available_test)
+
         (
             v_range,
             resolution,
             nominal_capacity,
             full_fast_charge,
             diagnostic_available,
-        ) = self.datapath_timestamp.determine_structuring_parameters()
+        ) = self.datapath_diag_misplaced.determine_structuring_parameters()
         diagnostic_available_test = {
             "parameter_set": "Tesla21700",
             "cycle_type": ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"],
             "length": 5,
-            "diagnostic_starts_at": [
-                1,
-                36,
-                141,
-                246,
-                351,
-                456,
-                561,
-                666,
-                771,
-                876,
-                981,
-                1086,
-                1191,
-                1296,
-                1401,
-                1506,
-                1611,
-                1716,
-                1821,
-                1926,
-                2031,
-                2136,
-                2241,
-                2346,
-                2451,
-                2556,
-                2661,
-                2766,
-                2871,
-                2976,
-                3081,
-                3186,
-                3291,
-                3396,
-                3501,
-                3606,
-                3711,
-                3816,
-                3921,
-                4026,
-                4131,
-                4236,
-                4341,
-                4446,
-                4551,
-                4656,
-                4761,
-                4866,
-                4971,
-                5076,
-                5181,
-                5286,
-                5391,
-                5496,
-                5601,
-                5706,
-                5811,
-                5916,
-                6021,
-                6126,
-                6231,
-                6336,
-                6441,
-                6546,
-                6651,
-                6756,
-                6861,
-                6966,
-                7071,
-                7176,
-                7281,
-                7386,
-                7491,
-                7596,
-                7701,
-                7806,
-                7911,
-                8016,
-                8121,
-                8226,
-                8331,
-                8436,
-                8541,
-                8646,
-                8751,
-                8856,
-                8961,
-                9066,
-                9171,
-                9276,
-                9381,
-                9486,
-                9591,
-                9696,
-                9801,
-                9906,
-                10011,
-                10116,
-                10221,
-                10326,
-                10431,
-            ],
+            "diagnostic_starts_at": [1, 36, 141, 220, 255]
         }
-        self.assertEqual(v_range, [2.7, 4.2])
+        self.assertEqual(v_range, [2.5, 4.2])
         self.assertEqual(resolution, 1000)
         self.assertEqual(nominal_capacity, 4.84)
         self.assertEqual(full_fast_charge, 0.8)

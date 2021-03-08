@@ -1432,13 +1432,24 @@ if __name__ == "__main__":
 
 
 
-    maccor = MaccorDatapath.from_file("/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/PredictionDiagnostics_000109_tztest.010")
-    maccor.raw_data.to_csv("tests/test_files/BEEPDatapath_maccor_parameterized.csv")
-    with open("tests/test_files/BEEPDatapath_maccor_parameterized_metadata_memloaded.json", "w") as f:
-        json.dump(maccor.metadata.raw, f)
+    # maccor = MaccorDatapath.from_file("/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/PredictionDiagnostics_000109_tztest.010")
+    # maccor.raw_data.to_csv("tests/test_files/BEEPDatapath_maccor_parameterized.csv")
+    # with open("tests/test_files/BEEPDatapath_maccor_parameterized_metadata_memloaded.json", "w") as f:
+    #     json.dump(maccor.metadata.raw, f)
     # maccor.structure()
     # print(maccor.get_cycle_life())
 
+    # self.maccor_file_diagnostic_normal = os.path.join(
+    #     TEST_FILE_DIR, "PreDiag_000287_000128short.092"
+    # )
+    # self.maccor_file_diagnostic_misplaced = os.path.join(
+    #     TEST_FILE_DIR, "PreDiag_000412_00008Fshort.022"
+
+    for d, f in {"diagnostic_normal":"PreDiag_000287_000128short.092", "diagnostic_misplaced":"PreDiag_000412_00008Fshort.022"}.items():
+        maccor = MaccorDatapath.from_file(os.path.join("/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/", f))
+        maccor.raw_data.to_csv(f"tests/test_files/BEEPDatapath_maccor_{d}_memloaded.csv")
+        with open(f"tests/test_files/BEEPDatapath_maccor_{d}_metadata_memloaded.json", "w") as fi:
+            json.dump(maccor.metadata.raw, fi)
 
 
 
