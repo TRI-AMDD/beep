@@ -112,16 +112,12 @@ class BEEPDatapath(abc.ABC, MSONable):
         else:
             self.paths = {"raw": None}
 
-
         self.structured_summary = None     # equivalent of PCR.summary
         self.structured_data = None        # equivalent of PCR.cycles_interpolated
         self.diagnostic_data = None        # equivalent of PCR.diagnostic_interpolated
         self.diagnostic_summary = None     # same name as in PCR
 
         self.metadata = self.CyclerRunMetadata(metadata)
-
-        self.is_structured = False
-
 
         # Setting aggregation/column ordering based on whether columns are present
         self._aggregation = {
@@ -235,18 +231,43 @@ class BEEPDatapath(abc.ABC, MSONable):
         return {
             "@module": self.__class__.__module__,
             "@class": self.__class__.__name__,
+
+            # Vital things needed for BEEPDatapath
+            "raw_data": self.raw_data,
+            "metadata": self.metadata,
+            "paths": self.paths,
+
+
+            # For backwards compatibility
             "barcode": self.metadata.barcode,
             "protocol": self.metadata.protocol,
             "channel_id": self.metadata.channel_id,
-            "metadata": self.metadata
+
+            # Structured data, expensively obtained
             "summary": self.structured_summary.to_dict("list"),
             "cycles_interpolated": self.structured_data.to_dict("list"),
             "diagnostic_summary": self.diagnostic_summary.to_dict("list")
             if self.diagnostic_summary is not None else None,
             "diagnostic_interpolated": self.diagnostic_data.to_dict("list")
-            if self.diagnostic_data is not None else None,
-            "paths": self.paths
+            if self.diagnostic_data is not None else None
         }
+
+    def to_file(self, filename):
+        with open(filename, "w") as f:
+            json.dump(self.as_dict(), f)
+
+    def unstructure(self):
+        """
+        Cleanly remove all structuring data, to restructure using different parameters.
+
+        Returns:
+            None
+        """
+        self.structured_data = None
+        self.diagnostic_data = None
+        self.structured_summary = None
+        self.diagnostic_summary = None
+        # todo: print logging statement saying structuring has been reset
 
     @classmethod
     def from_dict(cls, d):
@@ -263,16 +284,18 @@ class BEEPDatapath(abc.ABC, MSONable):
                     if d[obj].get(column) is not None:
                         d[obj][column] = pd.Series(d[obj][column], dtype=dtype)
 
-        cycles_interpolated = pd.DataFrame(d["cycles_interpolated"])
-        summary = pd.DataFrame(d["summary"])
-        diagnostic_summary = pd.DataFrame(d.get("diagnostic_summary"))
-        diagnostic_interpolated = pd.DataFrame(d.get("diagnostic_interpolated"))
+        paths = d.get("paths", None)
+        raw_data = pd.Dataframe(d["raw_data"])
+        metadata = d["metadata"]
 
+        datapath = cls(raw_data=raw_data, metadata=metadata, paths=paths)
 
-        bd = cls()
+        datapath.structured_data = pd.DataFrame(d["cycles_interpolated"])
+        datapath.summary = pd.DataFrame(d["summary"])
+        datapath.diagnostic_summary = pd.DataFrame(d.get("diagnostic_summary"))
+        datapath.diagnostic_data = pd.DataFrame(d.get("diagnostic_interpolated"))
+        return datapath
 
-
-        return cls(**d)
 
     # todo: ALEXTODO needs validation
     def validate(self):
@@ -350,8 +373,6 @@ class BEEPDatapath(abc.ABC, MSONable):
             full_fast_charge=full_fast_charge,
             diagnostic_available=diagnostic_available
         )
-
-        self.is_structured = True
 
     # todo: ALEXTODO check docstring
     def interpolate_step(
@@ -987,6 +1008,14 @@ class BEEPDatapath(abc.ABC, MSONable):
         # a method to use get_max_paused_over_threshold
         return self.raw_data.groupby("cycle_index").apply(get_max_paused_over_threshold)
 
+    @property
+    def is_structured(self):
+        required = [self.structured_summary, self.structured_data, self.diagnostic_summary, self.diagnostic_data]
+        if any([df is not None for df in required]):
+            return True
+        else:
+            return False
+
 
 
 
@@ -1318,9 +1347,9 @@ def interpolate_df(
     df["interpolated"] = False
 
     # Merge interpolated and uninterpolated DFs to use pandas interpolation
-    interpolated_df = interpolated_df.merge(df, how="outer", on=field_name,
-                                            sort=True)
+    interpolated_df = interpolated_df.merge(df, how="outer", on=field_name, sort=True)
     interpolated_df = interpolated_df.set_index(field_name)
+
     interpolated_df = interpolated_df.interpolate("slinear")
 
     # Filter for only interpolated values

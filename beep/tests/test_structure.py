@@ -197,6 +197,20 @@ class TestBEEPDatapath(unittest.TestCase):
             "diagnostic_starts_at": [1],
         }
 
+    def setUp(self) -> None:
+        # Reset all datapaths after each run, avoiding colliions between tests
+        # and avoiding reloading files
+        for dp in [
+            self.datapath_diag,
+            self.datapath_nodiag,
+            self.datapath_timestamp,
+            self.datapath_diag_normal,
+            self.datapath_diag_misplaced,
+            self.datapath_paused,
+            self.datapath_small_params
+        ]:
+            dp.unstructure()
+
     def run_dtypes_check(self, summary):
         reg_dyptes = summary.dtypes.tolist()
         reg_columns = summary.columns.tolist()
@@ -205,9 +219,20 @@ class TestBEEPDatapath(unittest.TestCase):
             self.assertEqual(reg_dyptes[indx], STRUCTURE_DTYPES["summary"][col])
 
     # todo: ALEXTODO
+    def test_unstructure(self):
+        pass
+
+    # todo: ALEXTODO
     # based on RCRT.test_serialization
     def test_serialization(self):
-        pass
+
+        with self.assertRaises(RuntimeError):
+            self.datapath_diag.as_dict()
+
+        self.datapath_diag.structure()
+
+        import pprint
+        pprint.pprint(self.datapath_diag.as_dict())
 
     # based on RCRT.test_binary_save
     def test_tofrom_numpy(self):
