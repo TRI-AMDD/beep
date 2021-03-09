@@ -91,7 +91,7 @@ class BEEPDatapath(abc.ABC, MSONable):
 
             return wrapper
 
-    class CyclerRunMetadata:
+    class CyclerRunMetadata(dict):
         def __init__(self, metadata_dict):
             self.barcode = metadata_dict.get("barcode")
             self.protocol = metadata_dict.get("protocol")
@@ -252,7 +252,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             if self.diagnostic_data is not None else None
         }
 
-    def to_file(self, filename):
+    def to_json(self, filename):
         with open(filename, "w") as f:
             json.dump(self.as_dict(), f)
 
@@ -285,13 +285,13 @@ class BEEPDatapath(abc.ABC, MSONable):
                         d[obj][column] = pd.Series(d[obj][column], dtype=dtype)
 
         paths = d.get("paths", None)
-        raw_data = pd.Dataframe(d["raw_data"])
+        raw_data = pd.DataFrame(d["raw_data"])
         metadata = d["metadata"]
 
         datapath = cls(raw_data=raw_data, metadata=metadata, paths=paths)
 
         datapath.structured_data = pd.DataFrame(d["cycles_interpolated"])
-        datapath.summary = pd.DataFrame(d["summary"])
+        datapath.structured_summary = pd.DataFrame(d["summary"])
         datapath.diagnostic_summary = pd.DataFrame(d.get("diagnostic_summary"))
         datapath.diagnostic_data = pd.DataFrame(d.get("diagnostic_interpolated"))
         return datapath

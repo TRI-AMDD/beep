@@ -226,13 +226,26 @@ class TestBEEPDatapath(unittest.TestCase):
     # based on RCRT.test_serialization
     def test_serialization(self):
 
+        # test as/from_dict
         with self.assertRaises(RuntimeError):
             self.datapath_diag.as_dict()
 
         self.datapath_diag.structure()
+        d = self.datapath_diag.as_dict()
+        datapath_diag_fd = BEEPDatapathChildTest.from_dict(d)
 
-        import pprint
-        pprint.pprint(self.datapath_diag.as_dict())
+        from pandas import DataFrame
+
+        print("Type testing")
+        for df in ("structured_data", "structured_summary", "diagnostic_data", "diagnostic_summary"):
+            print(isinstance(getattr(datapath_diag_fd, df), DataFrame))
+
+        # test to/from_json
+
+
+
+
+
 
     # based on RCRT.test_binary_save
     def test_tofrom_numpy(self):
