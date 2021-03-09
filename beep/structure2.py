@@ -46,6 +46,13 @@ VOLTAGE_RESOLUTION = 3
 # todo: ALEXTODO add more logging operations
 
 class BEEPDatapath(abc.ABC, MSONable):
+    """
+    Each BEEPDatapath will have a maximum of four *very important* structured attributes dataframes:
+        - structured_summary: A summary of the cycles
+        - structured_data: The interpolated cycles
+        - diagnostic_data: The interpolated diagnostic cycles
+        - diagnostic_summary: A summary of diagnostic cycles
+    """
 
     FLOAT_COLUMNS = [
         "test_time",
@@ -94,7 +101,17 @@ class BEEPDatapath(abc.ABC, MSONable):
 
     def __init__(self, raw_data, metadata, paths=None):
         self.raw_data = raw_data
-        self.paths = paths if paths else {"raw": None}
+
+
+        # paths may include "raw", "metadata", and "structured", as well as others.
+        if paths:
+            for path_ref, path in paths.items():
+                if not os.path.isabs(path):
+                    raise ValueError(f"{path_ref}: '{path}' is not absolute! All paths must be absolute.")
+            self.paths = paths
+        else:
+            self.paths = {"raw": None}
+
 
         self.structured_summary = None     # equivalent of PCR.summary
         self.structured_data = None        # equivalent of PCR.cycles_interpolated
@@ -198,7 +215,6 @@ class BEEPDatapath(abc.ABC, MSONable):
         dumpfn(self.metadata.raw, "{}.json".format(name))
 
     def _cast_dtypes(self, result, structure_dtypes_key):
-
         available_dtypes = {}
         for field, dtype in STRUCTURE_DTYPES[structure_dtypes_key].items():
             if field in result.columns:
@@ -229,6 +245,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             if self.diagnostic_summary is not None else None,
             "diagnostic_interpolated": self.diagnostic_data.to_dict("list")
             if self.diagnostic_data is not None else None,
+            "paths": self.paths
         }
 
     @classmethod
@@ -246,10 +263,15 @@ class BEEPDatapath(abc.ABC, MSONable):
                     if d[obj].get(column) is not None:
                         d[obj][column] = pd.Series(d[obj][column], dtype=dtype)
 
-        d["cycles_interpolated"] = pd.DataFrame(d["cycles_interpolated"])
-        d["summary"] = pd.DataFrame(d["summary"])
-        d["diagnostic_summary"] = pd.DataFrame(d.get("diagnostic_summary"))
-        d["diagnostic_interpolated"] = pd.DataFrame(d.get("diagnostic_interpolated"))
+        cycles_interpolated = pd.DataFrame(d["cycles_interpolated"])
+        summary = pd.DataFrame(d["summary"])
+        diagnostic_summary = pd.DataFrame(d.get("diagnostic_summary"))
+        diagnostic_interpolated = pd.DataFrame(d.get("diagnostic_interpolated"))
+
+
+        bd = cls()
+
+
         return cls(**d)
 
     # todo: ALEXTODO needs validation
