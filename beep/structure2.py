@@ -296,6 +296,12 @@ class BEEPDatapath(abc.ABC, MSONable):
         datapath.diagnostic_data = pd.DataFrame(d.get("diagnostic_interpolated"))
         return datapath
 
+    @classmethod
+    def from_json(cls, filename):
+        with open(filename, "r") as f:
+            d = json.load(f)
+        return cls.from_dict(d)
+
 
     # todo: ALEXTODO needs validation
     def validate(self):
