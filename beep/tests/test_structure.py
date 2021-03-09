@@ -441,8 +441,6 @@ class TestBEEPDatapath(unittest.TestCase):
         ]
         self.assertLess(first_step.voltage.diff().max(), 0.001)
         self.assertLess(second_step.voltage.diff().max(), 0.001)
-        self.assertTrue("date_time_iso" in d_interp.columns)
-        self.assertFalse(d_interp.date_time_iso.isna().all())
 
     # based on RCRT.test_get_diagnostic_summary
     def test_summarize_diagnostic(self):

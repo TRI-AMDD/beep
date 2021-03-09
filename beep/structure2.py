@@ -634,13 +634,11 @@ class BEEPDatapath(abc.ABC):
         # Determine the cycles and types of the diagnostic cycles
         max_cycle = self.raw_data.cycle_index.max()
         starts_at = [
-            i for i in diagnostic_available["diagnostic_starts_at"] if
-            i <= max_cycle
+            i for i in diagnostic_available["diagnostic_starts_at"] if i <= max_cycle
         ]
         diag_cycles_at = list(
             itertools.chain.from_iterable(
-                [range(i, i + diagnostic_available["length"]) for i in
-                 starts_at]
+                [range(i, i + diagnostic_available["length"]) for i in starts_at]
             )
         )
         # Duplicate cycle type list end to end for each starting index
@@ -648,21 +646,11 @@ class BEEPDatapath(abc.ABC):
         if not len(diag_cycles_at) == len(diag_cycle_type):
             errmsg = (
                 "Diagnostic cycles, {}, and diagnostic cycle types, "
-                "{}, are unequal lengths".format(diag_cycles_at,
-                                                 diag_cycle_type)
+                "{}, are unequal lengths".format(diag_cycles_at, diag_cycle_type)
             )
             raise ValueError(errmsg)
 
         diag_data = self.raw_data[self.raw_data["cycle_index"].isin(diag_cycles_at)]
-
-        # Convert date_time_iso field into pd.datetime object
-        # diag_data.loc[:, "date_time_iso"] = pd.to_datetime(diag_data["date_time_iso"])
-
-        # Convert datetime into seconds to allow interpolation of time
-        # diag_data.loc[:, "datetime_seconds"] = [
-        #     time.mktime(t.timetuple()) if t is not pd.NaT else float("nan")
-        #     for t in diag_data["date_time_iso"]
-        # ]
 
         # Counter to ensure non-contiguous repeats of step_index
         # within same cycle_index are grouped separately
@@ -675,8 +663,7 @@ class BEEPDatapath(abc.ABC):
                 step_index_list.shift()
             ).cumsum()
 
-        group = diag_data.groupby(
-            ["cycle_index", "step_index", "step_index_counter"])
+        group = diag_data.groupby(["cycle_index", "step_index", "step_index_counter"])
         incl_columns = [
             "current",
             "charge_capacity",
@@ -685,15 +672,13 @@ class BEEPDatapath(abc.ABC):
             "discharge_energy",
             "internal_resistance",
             "temperature",
-            "datetime_seconds",
             "test_time",
         ]
 
         diag_dict = {}
         for cycle in diag_data.cycle_index.unique():
             diag_dict.update({cycle: None})
-            steps = diag_data[
-                diag_data.cycle_index == cycle].step_index.unique()
+            steps = diag_data[diag_data.cycle_index == cycle].step_index.unique()
             diag_dict[cycle] = list(steps)
 
         all_dfs = []
@@ -721,16 +706,8 @@ class BEEPDatapath(abc.ABC):
                     resolution=resolution,
                 )
 
-            # Convert interpolated time in seconds back to datetime
-            new_df["date_time_iso"] = [
-                datetime.utcfromtimestamp(t).isoformat() if ~np.isnan(t) else t
-                for t in new_df["datetime_seconds"]
-            ]
-            new_df = new_df.drop(columns="datetime_seconds")
-
             new_df["cycle_index"] = cycle_index
-            new_df["cycle_type"] = diag_cycle_type[
-                diag_cycles_at.index(cycle_index)]
+            new_df["cycle_type"] = diag_cycle_type[diag_cycles_at.index(cycle_index)]
             new_df["step_index"] = step_index
             new_df["step_index_counter"] = step_index_counter
             new_df["step_type"] = diag_dict[cycle_index].index(step_index)
@@ -744,10 +721,10 @@ class BEEPDatapath(abc.ABC):
                 }
             )
             new_df["discharge_dQdV"] = (
-                    new_df.discharge_capacity.diff() / new_df.voltage.diff()
+                new_df.discharge_capacity.diff() / new_df.voltage.diff()
             )
             new_df["charge_dQdV"] = (
-                    new_df.charge_capacity.diff() / new_df.voltage.diff()
+                new_df.charge_capacity.diff() / new_df.voltage.diff()
             )
             all_dfs.append(new_df)
 
