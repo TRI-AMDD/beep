@@ -76,6 +76,7 @@ class BEEPDatapathChildTest(BEEPDatapath):
     def from_file(cls, path, index_col=0, **kwargs):
         return pd.read_csv(path, index_col=0, **kwargs)
 
+
 class TestBEEPDatapath(unittest.TestCase):
     """
     Tests common to all datapaths.
@@ -218,9 +219,11 @@ class TestBEEPDatapath(unittest.TestCase):
         for indx, col in enumerate(reg_columns):
             self.assertEqual(reg_dyptes[indx], STRUCTURE_DTYPES["summary"][col])
 
-    # todo: ALEXTODO
     def test_unstructure(self):
-        pass
+        self.datapath_nodiag.structure()
+        self.assertTrue(self.datapath_nodiag.is_structured)
+        self.datapath_nodiag.unstructure()
+        self.assertFalse(self.datapath_nodiag.is_structured)
 
     # todo: ALEXTODO expand to also use some small file with diagnostic data and summary
     def test_serialization(self):
@@ -235,8 +238,8 @@ class TestBEEPDatapath(unittest.TestCase):
         datapath_from_dict = BEEPDatapathChildTest.from_dict(d)
 
         fname = os.path.join(TEST_FILE_DIR, "test_serialization.json")
-        truth_datapath.to_json(fname)
-        datapath_from_json = BEEPDatapathChildTest.from_json(fname)
+        truth_datapath.to_json_file(fname)
+        datapath_from_json = BEEPDatapathChildTest.from_json_file(fname)
 
         for df_name in ("structured_data", "structured_summary", "diagnostic_data", "diagnostic_summary"):
             df_truth = getattr(truth_datapath, df_name)
@@ -257,7 +260,7 @@ class TestBEEPDatapath(unittest.TestCase):
             TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_processed.json"
         )
 
-        datapath = BEEPDatapathChildTest.from_json(test_file)
+        datapath = BEEPDatapathChildTest.from_json_file(test_file)
         self.assertTrue(isinstance(datapath.structured_summary, pd.DataFrame))
         self.assertTrue(isinstance(datapath.structured_data, pd.DataFrame))
         self.assertIsNone(datapath.metadata.barcode)

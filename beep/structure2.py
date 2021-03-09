@@ -282,7 +282,16 @@ class BEEPDatapath(abc.ABC, MSONable):
             if self.diagnostic_data is not None else None
         }
 
-    def to_json(self, filename):
+    def to_json_file(self, filename):
+        """
+        Not named from_json to avoid conflict with MSONable.from_json(*)
+
+        Args:
+            filename:
+
+        Returns:
+
+        """
         with open(filename, "w") as f:
             json.dump(self.as_dict(), f)
 
@@ -342,7 +351,15 @@ class BEEPDatapath(abc.ABC, MSONable):
         return datapath
 
     @classmethod
-    def from_json(cls, filename):
+    def from_json_file(cls, filename):
+        """
+
+        Args:
+            filename:
+
+        Returns:
+
+        """
         with open(filename, "r") as f:
             d = json.load(f)
         return cls.from_dict(d)
