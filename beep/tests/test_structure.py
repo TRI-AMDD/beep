@@ -272,7 +272,8 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertEqual(datapath.structured_data.shape[1], 7)
         self.assertAlmostEqual(datapath.structured_data["voltage"].loc[0], 2.8, places=5)
         self.assertAlmostEqual(datapath.structured_data["discharge_capacity"].loc[187999], 0.000083, places=6)
-
+        self.assertEqual(datapath.paths.get("structured"), test_file)
+        self.assertEqual(datapath.paths.get("raw"), None)
 
     # based on RCRT.test_binary_save
     def test_tofrom_numpy(self):

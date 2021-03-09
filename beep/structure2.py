@@ -328,10 +328,8 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         # support legacy operations
         if any([k not in d for k in ("raw_data", "metadata")]):
-            print("IS LEGACY!")
             raw_data = None
             metadata = {k: d.get(k) for k in ("barcode", "protocol", "channel_id")}
-            print(metadata)
             is_legacy = True
         else:
             raw_data = pd.DataFrame(d["raw_data"])
@@ -362,6 +360,12 @@ class BEEPDatapath(abc.ABC, MSONable):
         """
         with open(filename, "r") as f:
             d = json.load(f)
+
+        # Add this structured file path to the paths dict
+        paths = d.get("paths", {})
+        paths["structured"] = os.path.abspath(filename)
+        d["paths"] = paths
+
         return cls.from_dict(d)
 
 
