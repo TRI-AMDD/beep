@@ -425,7 +425,7 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertEqual(diagnostic_available, diagnostic_available_test)
 
     # based on RCRT.test_get_interpolated_diagnostic_cycles
-    def test_get_interpolated_diagnostic_cycles(self):
+    def test_interpolate_diagnostic_cycles(self):
         d_interp = self.datapath_diag.interpolate_diagnostic_cycles(
             self.diagnostic_available, resolution=500
         )
