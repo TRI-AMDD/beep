@@ -181,16 +181,13 @@ class BEEPDatapath(abc.ABC):
         return cls(data, metadata)
 
     def _cast_dtypes(self, result, structure_dtypes_key):
-        pd.set_option('display.max_rows', 500)
-        pd.set_option('display.max_columns', 500)
-        pd.set_option('display.width', 1000)
-        print(result)
 
         available_dtypes = {}
         for field, dtype in STRUCTURE_DTYPES[structure_dtypes_key].items():
             if field in result.columns:
-                if not result[field].isna().all():
-                    available_dtypes[field] = dtype
+                # if not result[field].isna().all():
+                available_dtypes[field] = dtype
+
         return result.astype(available_dtypes)
 
     def to_numpy(self, name):

@@ -456,9 +456,6 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertEqual(not_paused.max(), 0.0)
 
 
-    # def test_metadata_ingestion(self):
-
-
     # based on PCRT.test_from_raw_cycler_run_parameters
     def test_structure(self):
         self.datapath_small_params.structure()
