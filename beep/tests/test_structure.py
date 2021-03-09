@@ -174,20 +174,20 @@ class TestBEEPDatapath(unittest.TestCase):
 
         # Use maccor bigfile, if tests are enabled for it
 
-        maccor_file_w_parameters_s3 = {
-            "bucket": "beep-sync-test-stage",
-            "key": "big_file_tests/PreDiag_000287_000128.092"
-        }
-        if BIG_FILE_TESTS:
-            download_s3_object(
-                bucket=maccor_file_w_parameters_s3["bucket"],
-                key=maccor_file_w_parameters_s3["key"],
-                destination_path=self.maccor_file_w_parameters)
-            cls.maccor_file_w_parameters = os.path.join(
-                TEST_FILE_DIR, "PreDiag_000287_000128.092"
-            )
-        else:
-            cls.maccor_file_w_parameters = None
+        # maccor_file_w_parameters_s3 = {
+        #     "bucket": "beep-sync-test-stage",
+        #     "key": "big_file_tests/PreDiag_000287_000128.092"
+        # }
+        # if BIG_FILE_TESTS:
+        #     download_s3_object(
+        #         bucket=maccor_file_w_parameters_s3["bucket"],
+        #         key=maccor_file_w_parameters_s3["key"],
+        #         destination_path=self.maccor_file_w_parameters)
+        #     cls.maccor_file_w_parameters = os.path.join(
+        #         TEST_FILE_DIR, "PreDiag_000287_000128.092"
+        #     )
+        # else:
+        #     cls.maccor_file_w_parameters = None
 
 
         cls.diagnostic_available = {
@@ -257,6 +257,18 @@ class TestBEEPDatapath(unittest.TestCase):
             TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_processed.json"
         )
 
+        datapath = BEEPDatapathChildTest.from_json(test_file)
+        self.assertTrue(isinstance(datapath.structured_summary, pd.DataFrame))
+        self.assertTrue(isinstance(datapath.structured_data, pd.DataFrame))
+        self.assertIsNone(datapath.metadata.barcode)
+        self.assertIsNone(datapath.metadata.protocol)
+        self.assertEqual(datapath.metadata.channel_id, 28)
+        self.assertEqual(datapath.structured_summary.shape[0], 188)
+        self.assertEqual(datapath.structured_summary.shape[1], 7)
+        self.assertEqual(datapath.structured_data.shape[0], 188000),
+        self.assertEqual(datapath.structured_data.shape[1], 7)
+        self.assertAlmostEqual(datapath.structured_data["voltage"].loc[0], 2.8, places=5)
+        self.assertAlmostEqual(datapath.structured_data["discharge_capacity"].loc[187999], 0.000083, places=6)
 
 
     # based on RCRT.test_binary_save

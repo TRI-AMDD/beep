@@ -70,6 +70,7 @@ class BEEPDatapath(abc.ABC, MSONable):
     IMPUTABLE_COLUMNS = ["temperature", "internal_resistance"]
 
     class StructuringDecorators:
+
         @classmethod
         def must_be_structured(cls, func):
             """
@@ -83,15 +84,40 @@ class BEEPDatapath(abc.ABC, MSONable):
             def wrapper(*args, **kwargs):
                 if not args[0].is_structured:
                     raise RuntimeError(
-                        "{} has not been structured! Run .structure(*args)." "".format(
-                            args[0].__class__.__name__)
+                        f"{args[0].__class__.__name__} has not been structured! Run .structure(*args)."
                     )
                 else:
                     return func(*args, **kwargs)
 
             return wrapper
 
-    class CyclerRunMetadata(dict):
+
+        @classmethod
+        def must_not_be_legacy(cls, func):
+            """
+            Decorator to check if datapath has been serialized from legacy,
+            as some operations depend on data which is not in (or not is not easily accessed from)
+            legacy serialized files.
+
+            Args:
+                func: A function or method
+
+            Returns:
+                A wrapper function for the input function/method.
+
+            """
+
+            def wrapper(*args, **kwargs):
+                if args[0]._is_legacy:
+                    raise ValueError(
+                        f"{args[0].__class__.__name__} is deserialized from a legacy file! Operation not allowed."
+                    )
+                else:
+                    return func(*args, **kwargs)
+
+            return wrapper
+
+    class CyclerRunMetadata:
         def __init__(self, metadata_dict):
             self.barcode = metadata_dict.get("barcode")
             self.protocol = metadata_dict.get("protocol")
@@ -99,7 +125,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             self.raw = metadata_dict
 
 
-    def __init__(self, raw_data, metadata, paths=None, is_legacy=False):
+    def __init__(self, raw_data, metadata, paths=None):
         self.raw_data = raw_data
 
 
@@ -119,7 +145,7 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         self.metadata = self.CyclerRunMetadata(metadata)
 
-        self.is_legacy = is_legacy
+        self._is_legacy = False
 
         # Setting aggregation/column ordering based on whether columns are present
         self._aggregation = {
@@ -131,7 +157,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             "internal_resistance": "last",
         }
 
-        if "temperature" in self.raw_data.columns:
+        if self.raw_data is not None and "temperature" in self.raw_data.columns:
             self._aggregation["temperature"] = ["max", "mean", "min"]
 
             self._summary_cols = [
@@ -222,6 +248,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         return result.astype(available_dtypes)
 
     @StructuringDecorators.must_be_structured
+    @StructuringDecorators.must_not_be_legacy
     def as_dict(self):
         """
         Method for dictionary serialization.
@@ -241,7 +268,7 @@ class BEEPDatapath(abc.ABC, MSONable):
 
 
             # For backwards compatibility
-            # All this data is in the "metadata" key, this is just for redudancy
+            # All this data is in the "metadata" key, this is just for redundancy
             "barcode": self.metadata.barcode,
             "protocol": self.metadata.protocol,
             "channel_id": self.metadata.channel_id,
@@ -256,11 +283,10 @@ class BEEPDatapath(abc.ABC, MSONable):
         }
 
     def to_json(self, filename):
-
-        print({k: type(d) for k, d in self.as_dict().items()})
         with open(filename, "w") as f:
             json.dump(self.as_dict(), f)
 
+    @StructuringDecorators.must_not_be_legacy
     def unstructure(self):
         """
         Cleanly remove all structuring data, to restructure using different parameters.
@@ -268,8 +294,6 @@ class BEEPDatapath(abc.ABC, MSONable):
         Returns:
             None
         """
-        if self.is_legacy:
-            raise ValueError("Cannot unstructure legacy BEEP ProcessedCyclerRun, as it does not contain raw data.")
         self.structured_data = None
         self.diagnostic_data = None
         self.structured_summary = None
@@ -295,21 +319,24 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         # support legacy operations
         if any([k not in d for k in ("raw_data", "metadata")]):
+            print("IS LEGACY!")
+            raw_data = None
+            metadata = {k: d.get(k) for k in ("barcode", "protocol", "channel_id")}
+            print(metadata)
             is_legacy = True
-        else
-
-
-        raw_data = pd.DataFrame(d["raw_data"])
-        metadata = d.get("metadata")
+        else:
+            raw_data = pd.DataFrame(d["raw_data"])
+            metadata = d.get("metadata")
+            is_legacy = False
 
         datapath = cls(raw_data=raw_data, metadata=metadata, paths=paths)
+        datapath._is_legacy = is_legacy
 
         datapath.structured_data = pd.DataFrame(d["cycles_interpolated"])
         datapath.structured_summary = pd.DataFrame(d["summary"])
 
         diagnostic_summary = d.get("diagnostic_summary")
         diagnostic_data = d.get("diagnostic_interpolated")
-
         datapath.diagnostic_summary = diagnostic_summary if diagnostic_summary is None else pd.DataFrame(diagnostic_summary)
         datapath.diagnostic_data = diagnostic_data if diagnostic_data is None else pd.DataFrame(diagnostic_data)
         return datapath
@@ -349,6 +376,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             diagnostic_available=diagnostic_available
         )
 
+    @StructuringDecorators.must_not_be_legacy
     def structure(self,
         v_range=None,
         resolution=1000,
@@ -370,12 +398,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             full_fast_charge (float): full fast charge for summary stats.
             diagnostic_available (dict): project metadata for processing
                 diagnostic cycles correctly.
-        pass
         """
-
-        if self.is_legacy:
-            raise ValueError("Cannot structure legacy BEEP ProcessedCyclerRun, as it does not contain raw data.")
-
         logger.info(f"Beginning structuring along charge axis '{charge_axis}' and discharge axis '{discharge_axis}'.")
 
 
