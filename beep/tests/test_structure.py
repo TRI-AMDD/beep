@@ -139,13 +139,12 @@ class TestBEEPDatapath(unittest.TestCase):
         # Small maccor file with parameters
         maccor_small_params_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_parameterized_memloaded.csv")
         maccor_small_params_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_parameterized_metadata_memloaded.json")
-        maccor_small_params_original_fname = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010")
         cls.data_small_params = pd.read_csv(maccor_small_params_fname, index_col=0)
         cls.metadata_small_params = loadfn(maccor_small_params_meta_fname)
         cls.datapath_small_params = BEEPDatapathChildTest(
             raw_data=cls.data_small_params,
             metadata=cls.metadata_small_params,
-            paths={"raw": maccor_small_params_original_fname, "raw_metadata": maccor_small_params_meta_fname}
+            paths={"raw": maccor_small_params_fname, "raw_metadata": maccor_small_params_meta_fname}
         )
 
 
