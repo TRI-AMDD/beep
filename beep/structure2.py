@@ -45,7 +45,7 @@ VOLTAGE_RESOLUTION = 3
 
 # todo: ALEXTODO add more logging operations
 
-class BEEPDatapath(abc.ABC):
+class BEEPDatapath(abc.ABC, MSONable):
 
     FLOAT_COLUMNS = [
         "test_time",
@@ -161,6 +161,9 @@ class BEEPDatapath(abc.ABC):
     def from_file(cls, path):
         raise NotImplementedError
 
+
+    # adapted from RCR.load_numpy_binary
+    # todo: adapted from PCR.load_numpy_binary
     @classmethod
     def from_numpy(cls, name):
         """
@@ -180,16 +183,8 @@ class BEEPDatapath(abc.ABC):
         metadata = loadfn("{}.json".format(name))
         return cls(data, metadata)
 
-    def _cast_dtypes(self, result, structure_dtypes_key):
-
-        available_dtypes = {}
-        for field, dtype in STRUCTURE_DTYPES[structure_dtypes_key].items():
-            if field in result.columns:
-                # if not result[field].isna().all():
-                available_dtypes[field] = dtype
-
-        return result.astype(available_dtypes)
-
+    # adapted from RCR.save_numpy_binary
+    # todo: adapted from PCR.save_numpy_binary
     def to_numpy(self, name):
         """
         Save RawCyclerRun as a numeric array and metadata json
@@ -201,6 +196,61 @@ class BEEPDatapath(abc.ABC):
         int_array = np.array(self.raw_data[self.INT_COLUMNS].astype(np.int64))
         np.savez_compressed(name, float_array=float_array, int_array=int_array)
         dumpfn(self.metadata.raw, "{}.json".format(name))
+
+    def _cast_dtypes(self, result, structure_dtypes_key):
+
+        available_dtypes = {}
+        for field, dtype in STRUCTURE_DTYPES[structure_dtypes_key].items():
+            if field in result.columns:
+                # if not result[field].isna().all():
+                available_dtypes[field] = dtype
+
+        return result.astype(available_dtypes)
+
+    @StructuringDecorators.must_be_structured
+    def as_dict(self):
+        """
+        Method for dictionary serialization.
+
+        Returns:
+            dict: corresponding to dictionary for serialization.
+
+        """
+        return {
+            "@module": self.__class__.__module__,
+            "@class": self.__class__.__name__,
+            "barcode": self.metadata.barcode,
+            "protocol": self.metadata.protocol,
+            "channel_id": self.metadata.channel_id,
+            "metadata": self.metadata
+            "summary": self.structured_summary.to_dict("list"),
+            "cycles_interpolated": self.structured_data.to_dict("list"),
+            "diagnostic_summary": self.diagnostic_summary.to_dict("list")
+            if self.diagnostic_summary is not None else None,
+            "diagnostic_interpolated": self.diagnostic_data.to_dict("list")
+            if self.diagnostic_data is not None else None,
+        }
+
+    @classmethod
+    def from_dict(cls, d):
+        """
+        Args:
+            d (dict): dictionary represenation.
+
+        Returns:
+            beep.structure.ProcessedCyclerRun: deserialized ProcessedCyclerRun.
+        """
+        for obj, dtype_dict in STRUCTURE_DTYPES.items():
+            for column, dtype in dtype_dict.items():
+                if d.get(obj) is not None:
+                    if d[obj].get(column) is not None:
+                        d[obj][column] = pd.Series(d[obj][column], dtype=dtype)
+
+        d["cycles_interpolated"] = pd.DataFrame(d["cycles_interpolated"])
+        d["summary"] = pd.DataFrame(d["summary"])
+        d["diagnostic_summary"] = pd.DataFrame(d.get("diagnostic_summary"))
+        d["diagnostic_interpolated"] = pd.DataFrame(d.get("diagnostic_interpolated"))
+        return cls(**d)
 
     # todo: ALEXTODO needs validation
     def validate(self):

@@ -202,7 +202,6 @@ class TestBEEPDatapath(unittest.TestCase):
         reg_columns = summary.columns.tolist()
         reg_dyptes = [str(dtyp) for dtyp in reg_dyptes]
         for indx, col in enumerate(reg_columns):
-            print(col)
             self.assertEqual(reg_dyptes[indx], STRUCTURE_DTYPES["summary"][col])
 
     # todo: ALEXTODO
@@ -454,7 +453,6 @@ class TestBEEPDatapath(unittest.TestCase):
 
         not_paused = self.datapath_diag.paused_intervals
         self.assertEqual(not_paused.max(), 0.0)
-
 
     # based on PCRT.test_from_raw_cycler_run_parameters
     def test_structure(self):
