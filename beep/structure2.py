@@ -99,7 +99,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             self.raw = metadata_dict
 
 
-    def __init__(self, raw_data, metadata, paths=None):
+    def __init__(self, raw_data, metadata, paths=None, is_legacy=False):
         self.raw_data = raw_data
 
 
@@ -118,6 +118,8 @@ class BEEPDatapath(abc.ABC, MSONable):
         self.diagnostic_summary = None     # same name as in PCR
 
         self.metadata = self.CyclerRunMetadata(metadata)
+
+        self.is_legacy = is_legacy
 
         # Setting aggregation/column ordering based on whether columns are present
         self._aggregation = {
@@ -239,6 +241,7 @@ class BEEPDatapath(abc.ABC, MSONable):
 
 
             # For backwards compatibility
+            # All this data is in the "metadata" key, this is just for redudancy
             "barcode": self.metadata.barcode,
             "protocol": self.metadata.protocol,
             "channel_id": self.metadata.channel_id,
@@ -265,6 +268,8 @@ class BEEPDatapath(abc.ABC, MSONable):
         Returns:
             None
         """
+        if self.is_legacy:
+            raise ValueError("Cannot unstructure legacy BEEP ProcessedCyclerRun, as it does not contain raw data.")
         self.structured_data = None
         self.diagnostic_data = None
         self.structured_summary = None
@@ -287,8 +292,15 @@ class BEEPDatapath(abc.ABC, MSONable):
                         d[obj][column] = pd.Series(d[obj][column], dtype=dtype)
 
         paths = d.get("paths", None)
+
+        # support legacy operations
+        if any([k not in d for k in ("raw_data", "metadata")]):
+            is_legacy = True
+        else
+
+
         raw_data = pd.DataFrame(d["raw_data"])
-        metadata = d["metadata"]
+        metadata = d.get("metadata")
 
         datapath = cls(raw_data=raw_data, metadata=metadata, paths=paths)
 
@@ -360,6 +372,9 @@ class BEEPDatapath(abc.ABC, MSONable):
                 diagnostic cycles correctly.
         pass
         """
+
+        if self.is_legacy:
+            raise ValueError("Cannot structure legacy BEEP ProcessedCyclerRun, as it does not contain raw data.")
 
         logger.info(f"Beginning structuring along charge axis '{charge_axis}' and discharge axis '{discharge_axis}'.")
 

@@ -252,7 +252,12 @@ class TestBEEPDatapath(unittest.TestCase):
 
     # based on RCRT.test_serialization
     def test_serialization_legacy(self):
-        pass
+
+        test_file = os.path.join(
+            TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_processed.json"
+        )
+
+
 
     # based on RCRT.test_binary_save
     def test_tofrom_numpy(self):
