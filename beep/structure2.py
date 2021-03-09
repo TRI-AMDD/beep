@@ -233,8 +233,8 @@ class BEEPDatapath(abc.ABC, MSONable):
             "@class": self.__class__.__name__,
 
             # Vital things needed for BEEPDatapath
-            "raw_data": self.raw_data,
-            "metadata": self.metadata,
+            "raw_data": self.raw_data.to_dict("list"),
+            "metadata": self.metadata.raw,
             "paths": self.paths,
 
 
@@ -253,6 +253,8 @@ class BEEPDatapath(abc.ABC, MSONable):
         }
 
     def to_json(self, filename):
+
+        print({k: type(d) for k, d in self.as_dict().items()})
         with open(filename, "w") as f:
             json.dump(self.as_dict(), f)
 
@@ -292,8 +294,12 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         datapath.structured_data = pd.DataFrame(d["cycles_interpolated"])
         datapath.structured_summary = pd.DataFrame(d["summary"])
-        datapath.diagnostic_summary = pd.DataFrame(d.get("diagnostic_summary"))
-        datapath.diagnostic_data = pd.DataFrame(d.get("diagnostic_interpolated"))
+
+        diagnostic_summary = d.get("diagnostic_summary")
+        diagnostic_data = d.get("diagnostic_interpolated")
+
+        datapath.diagnostic_summary = diagnostic_summary if diagnostic_summary is None else pd.DataFrame(diagnostic_summary)
+        datapath.diagnostic_data = diagnostic_data if diagnostic_data is None else pd.DataFrame(diagnostic_data)
         return datapath
 
     @classmethod

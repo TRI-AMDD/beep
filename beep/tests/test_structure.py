@@ -222,30 +222,37 @@ class TestBEEPDatapath(unittest.TestCase):
     def test_unstructure(self):
         pass
 
-    # todo: ALEXTODO
-    # based on RCRT.test_serialization
+    # todo: ALEXTODO expand to also use some small file with diagnostic data and summary
     def test_serialization(self):
+        truth_datapath = self.datapath_diag
 
         # test as/from_dict
         with self.assertRaises(RuntimeError):
-            self.datapath_diag.as_dict()
+            truth_datapath.as_dict()
 
-        self.datapath_diag.structure()
-        d = self.datapath_diag.as_dict()
-        datapath_diag_fd = BEEPDatapathChildTest.from_dict(d)
+        truth_datapath.structure()
+        d = truth_datapath.as_dict()
+        datapath_from_dict = BEEPDatapathChildTest.from_dict(d)
 
-        from pandas import DataFrame
+        fname = os.path.join(TEST_FILE_DIR, "test_serialization.json")
+        truth_datapath.to_json(fname)
+        datapath_from_json = BEEPDatapathChildTest.from_json(fname)
 
-        print("Type testing")
-        for df in ("structured_data", "structured_summary", "diagnostic_data", "diagnostic_summary"):
-            print(isinstance(getattr(datapath_diag_fd, df), DataFrame))
+        for df_name in ("structured_data", "structured_summary", "diagnostic_data", "diagnostic_summary"):
+            df_truth = getattr(truth_datapath, df_name)
+            for datapath_test in (datapath_from_dict, datapath_from_json):
+                df_test = getattr(datapath_test, df_name)
 
-        # test to/from_json
+                if df_truth is None:
+                    self.assertEqual(df_truth, df_test)
+                else:
+                    self.assertTrue(isinstance(df_test, pd.DataFrame))
+                    self.assertTrue(df_truth.equals(df_test))
 
 
-
-
-
+    # based on RCRT.test_serialization
+    def test_serialization_legacy(self):
+        pass
 
     # based on RCRT.test_binary_save
     def test_tofrom_numpy(self):
@@ -435,7 +442,6 @@ class TestBEEPDatapath(unittest.TestCase):
             ]
         }
 
-        print(v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available)
         self.assertEqual(v_range, [2.5, 4.2])
         self.assertEqual(resolution, 1000)
         self.assertEqual(nominal_capacity, 4.84)
