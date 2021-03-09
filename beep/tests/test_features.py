@@ -40,8 +40,6 @@ from beep.utils.s3 import download_s3_object
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
-PROCESSED_CYCLER_FILE = "2017-06-30_2C-10per_6C_CH10_structure.json"
-PROCESSED_CYCLER_FILE_INSUF = "structure_insufficient.json"
 MACCOR_FILE_W_DIAGNOSTICS = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000020_CH71.071")
 MACCOR_FILE_W_PARAMETERS = os.path.join(
     TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010"
@@ -53,10 +51,12 @@ SKIP_MSG = "Tests requiring large files with diagnostic cycles are disabled, set
 
 class TestFeaturizer(unittest.TestCase):
     def setUp(self):
+        self.processed_cycler_file = "2017-06-30_2C-10per_6C_CH10_structure.json"
+        self.processed_cycler_file_insuf = "structure_insufficient.json"
         pass
 
     def test_feature_generation_full_model(self):
-        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
+        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.processed_cycler_file)
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
             pcycler_run = loadfn(processed_cycler_run_path)
@@ -66,10 +66,13 @@ class TestFeaturizer(unittest.TestCase):
 
             self.assertEqual(len(featurizer.X), 1)  # just test if works for now
             # Ensure no NaN values
+            print(featurizer.X.to_dict())
             self.assertFalse(np.any(featurizer.X.isnull()))
+            self.assertEqual(np.round(featurizer.X.loc[0, 'intercept_discharge_capacity_cycle_number_91:100'], 6),
+                             np.round(1.1050065801818196, 6))
 
     def test_feature_old_class(self):
-        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
+        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.processed_cycler_file)
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
             predictor = DegradationPredictor.from_processed_cycler_run_file(
@@ -78,7 +81,7 @@ class TestFeaturizer(unittest.TestCase):
             self.assertEqual(predictor.feature_labels[4], "charge_time_cycles_1:5")
 
     def test_feature_label_full_model(self):
-        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
+        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.processed_cycler_file)
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
             pcycler_run = loadfn(processed_cycler_run_path)
@@ -89,7 +92,7 @@ class TestFeaturizer(unittest.TestCase):
             self.assertEqual(featurizer.X.columns.tolist()[4], "charge_time_cycles_1:5")
 
     def test_feature_serialization(self):
-        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
+        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.processed_cycler_file)
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
             pcycler_run = loadfn(processed_cycler_run_path)
@@ -107,7 +110,7 @@ class TestFeaturizer(unittest.TestCase):
             )
 
     def test_feature_serialization_for_training(self):
-        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
+        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.processed_cycler_file)
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
             pcycler_run = loadfn(processed_cycler_run_path)
@@ -232,7 +235,7 @@ class TestFeaturizer(unittest.TestCase):
 
     def test_insufficient_data_file(self):
         processed_cycler_run_path = os.path.join(
-            TEST_FILE_DIR, PROCESSED_CYCLER_FILE_INSUF
+            TEST_FILE_DIR, self.processed_cycler_file_insuf
         )
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
