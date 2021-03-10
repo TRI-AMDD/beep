@@ -399,7 +399,7 @@ class MaccorToBiologicMb:
         loop_seq = self.blank_seq.copy()
         loop_seq["Ns"] = seq_num
         loop_seq["ctrl_type"] = "Loop"
-        loop_seq["loop_repeat"] = num_loops
+        loop_seq["ctrl_repeat"] = num_loops
         loop_seq["ctrl_seq"] = seq_num_to_loop_to
         loop_seq["lim1_seq"] = seq_num + 1
         loop_seq["lim2_seq"] = seq_num + 1
@@ -705,7 +705,7 @@ class MaccorToBiologicMb:
     LATIN-1 i.e. ISO-8859-1 encoding
     """
 
-    def maccor_ast_to_protocol_str(self, maccor_ast, col_width):
+    def maccor_ast_to_protocol_str(self, maccor_ast, col_width=20):
         seqs = self.maccor_ast_to_biologic_seqs(maccor_ast)
         return self.biologic_seqs_to_protocol_str(seqs, col_width)
 
