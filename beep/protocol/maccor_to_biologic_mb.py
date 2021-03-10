@@ -17,9 +17,9 @@ import os
 import re
 import copy
 import xmltodict
-from beep.protocol import PROTOCOL_SCHEMA_DIR
+from beep.protocol import PROTOCOL_SCHEMA_DIR, BIOLOGIC_TEMPLATE_DIR, PROCEDURE_TEMPLATE_DIR
 from monty.serialization import loadfn
-from collections import OrderedDict
+from collections import OrderedDict, deque
 from pydash import get, unset, set_
 
 # magic number for biologic
@@ -238,7 +238,7 @@ class MaccorToBiologicMb:
         else:
             raise Exception("Unsupported Charge/Discharge StepMode", step_mode)
 
-        end_entries = proc_step["Ends"]["EndEntry"]
+        end_entries = get(proc_step, "Ends.EndEntry")
         end_entries_list = (
             end_entries
             if isinstance(end_entries, list)
@@ -338,7 +338,7 @@ class MaccorToBiologicMb:
             else:
                 raise Exception("Unsupported EndType", end_type)
 
-        report_entries = proc_step["Reports"]["ReportEntry"]
+        report_entries = get(proc_step, "Reports.ReportEntry")
         report_entries_list = (
             report_entries
             if isinstance(report_entries, list)
@@ -779,7 +779,6 @@ class MaccorToBiologicMb:
 helper function for converting diagnosticV5.000
 """
 
-
 def convert_diagnostic_v5():
     def pred(end_entry, step_num):
         # remove end entries going to step 70 or 94 unless
@@ -791,9 +790,15 @@ def convert_diagnostic_v5():
 
         return not (goto_70_not_next or goto_94_not_next)
 
+
+    
     converter = MaccorToBiologicMb()
-    ast = converter.load_maccor_ast("./procedure_templates/diagnosticV5.000")
+    ast = converter.load_maccor_ast(os.path.join(PROCEDURE_TEMPLATE_DIR, "diagnosticV5.000"))
+    
+    # set main looping value to 20
+    set_(ast, 'MaccorTestProcedure.ProcSteps.TestStep.68.Ends.EndEntry.Value', "20")
     filtered = converter.remove_end_entries_by_pred(ast, pred)
+
 
     # gotos for step 94 were in case of unsafe Voltage levels
     # we'll set them in the output seqs
@@ -802,4 +807,94 @@ def convert_diagnostic_v5():
         seq["E range min (V)"] = "2.000"
         seq["E range max (V)"] = "4.400"
 
-    converter.biologic_seqs_to_protocol_file(seqs, "./diagnosticV5_70.mps")
+    converter.biologic_seqs_to_protocol_file(
+        seqs,
+        os.path.join(BIOLOGIC_TEMPLATE_DIR, "diagnosticV5_70.mps")
+    )
+
+def convert_diagnostic_v5_segment_files():
+    def is_acceptable_goto(end_entry, step_num):
+        # remove end entries going to step 70 or 94 unless
+        # except when they are the next step
+        goto_step = int(end_entry["Step"])
+
+        goto_70_not_next = goto_step == 70 and step_num != 69
+        goto_94_not_next = goto_step == 94 and step_num != 93
+
+        return not (goto_70_not_next or goto_94_not_next)
+    
+
+    converter = MaccorToBiologicMb()
+    ast = converter.remove_end_entries_by_pred(
+        converter.load_maccor_ast(os.path.join(PROCEDURE_TEMPLATE_DIR, "diagnosticV5.000")),
+        is_acceptable_goto,
+    )
+
+    closing_loop_step_by_index = dict()
+    open_loop_start_indices = []
+    original_steps = get(ast, 'MaccorTestProcedure.ProcSteps.TestStep')
+    for i, step in enumerate(original_steps):
+        step_type = get(step, 'StepType')
+        if (step_type[0:2] == 'Do'):
+            open_loop_start_indices.append(i)
+        elif (step_type[0:4] == 'Loop'):
+            set_(step, "Ends.EndEntry.Value", "1")
+
+            open_loop_start = open_loop_start_indices.pop()
+            closing_loop_step_by_index[open_loop_start] = step
+    
+
+    end_step = original_steps[-1]
+    steps = []
+    open_loop_starts = deque()
+    loop_lens = [0]
+    segment_count = 0
+    segment_filename_template = "diagnosticV5segment{}.mps"
+    for i, step in enumerate(get(ast, 'MaccorTestProcedure.ProcSteps.TestStep')):
+        step_type = get(step, 'StepType')
+        
+
+        if (step_type[0:2] == 'Do' or step_type[0:4] == 'Loop') and loop_lens[-1] > 0:
+            segment = copy.deepcopy(steps)
+            segment_count += 1
+
+            for loop_start_index in open_loop_starts:
+                loop_close_step = copy.deepcopy(closing_loop_step_by_index[loop_start_index])
+                
+                next_step = len(segment) + 2
+                set_(loop_close_step, "Ends.EndEntry.Step", "{:03d}".format(next_step))
+                
+                segment.append(loop_close_step)
+            segment.append(end_step)
+
+            max_step_num = len(segment) + 1
+            def is_less_than_max_step_num(end_entry, step_num):
+                goto_step = int(end_entry["Step"])
+                end_type = end_entry["EndType"]
+                return goto_step <= max_step_num
+
+            filtered = converter.remove_end_entries_by_pred(
+                set_(ast, 'MaccorTestProcedure.ProcSteps.TestStep', segment),
+                is_less_than_max_step_num,
+            )
+
+            filename = segment_filename_template.format(segment_count)
+
+            converter.maccor_ast_to_protocol_file(
+                filtered,
+                os.path.join(BIOLOGIC_TEMPLATE_DIR, filename)
+            )
+            print('created {}'.format(filename))
+
+        steps.append(step)
+        if (step_type[0:2] == 'Do'):
+            open_loop_starts.appendleft(i)
+            loop_lens.append(0)
+        elif (step_type[0:4] == 'Loop'):
+            open_loop_starts.popleft()
+            loop_lens.pop()
+        else:
+            loop_lens[-1] += 1 
+
+    
+ 
