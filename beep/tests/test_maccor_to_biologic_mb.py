@@ -171,21 +171,21 @@ class ConversionTest(unittest.TestCase):
             "</MaccorTestProcedure>"
         )
         diff_dict = {
-            "type": "Rest",
+            "ctrl_type": "Rest",
             "Apply I/C": "I",
             "N": "1.00",
             "charge/discharge": "Charge",
             "lim_nb": 2,
-            "lim1_type": "Voltage",
+            "lim1_type": "Ecell",
             "lim1_comp": ">",
             "lim1_value": "4.400",
             "lim1_value_unit": "V",
-            "lim2_type": "Voltage",
+            "lim2_type": "Ecell",
             "lim2_comp": "<",
             "lim2_value": "2.500",
             "lim2_value_unit": "V",
             "rec_nb": 1,
-            "rec1_type": "Voltage",
+            "rec1_type": "Ecell",
             "rec1_value": "2.200",
             "rec1_value_unit": "V",
         }
@@ -248,8 +248,8 @@ class ConversionTest(unittest.TestCase):
             "</MaccorTestProcedure>"
         )
         diff_dict = {
-            "type": "CC",
-            "Apply I/C": "C / N",
+            "ctrl_type": "CC",
+            "Apply I/C": "I",
             "ctrl1_val": "1.000",
             "ctrl1_val_unit": "A",
             "ctrl1_val_vs": "<None>",
@@ -260,16 +260,16 @@ class ConversionTest(unittest.TestCase):
             "lim1_comp": ">",
             "lim1_value": "30.000",
             "lim1_value_unit": "s",
-            "lim2_type": "Voltage",
+            "lim2_type": "Ecell",
             "lim2_comp": "<",
             "lim2_value": "2.700",
             "lim2_value_unit": "V",
-            "lim3_type": "Voltage",
+            "lim3_type": "Ecell",
             "lim3_comp": ">",
             "lim3_value": "4.400",
             "lim3_value_unit": "V",
             "rec_nb": 2,
-            "rec1_type": "Voltage",
+            "rec1_type": "Ecell",
             "rec1_value": "1.000",
             "rec1_value_unit": "mV",
             "rec2_type": "Time",
@@ -534,8 +534,7 @@ class ConversionTest(unittest.TestCase):
             "\r\n"
             "Number of linked techniques : 1\r\n"
             "\r\n"
-            "Filename : C:\dummy.mps\r\n"
-            "\r\n"
+            "Filename : C:\\Users\\User\\Documents\\BT-Lab\\Data\\Grace\\BASF\\BCS - 171.64.160.115_Ja9_cOver70_CE3.mps\r\n\r\n"  # noqa
             "Device : BCS-805\r\n"
             "Ecell ctrl range : min = 0.00 V, max = 10.00 V\r\n"
             "Electrode material : \r\n"
@@ -543,23 +542,23 @@ class ConversionTest(unittest.TestCase):
             "Electrolyte : \r\n"
             "Comments : \r\n"
             "Mass of active material : 0.001 mg\r\n"
-            " at x = 0.000\r\n"
+            " at x = 0.000\r\n"  # leading space intentional
             "Molecular weight of active material (at x = 0) : 0.001 g/mol\r\n"
             "Atomic weight of intercalated ion : 0.001 g/mol\r\n"
             "Acquisition started at : xo = 0.000\r\n"
             "Number of e- transfered per intercalated ion : 1\r\n"
             "for DX = 1, DQ = 26.802 mA.h\r\n"
-            "Battery capacity : 2.280 mA.h\r\n"
+            "Battery capacity : 1.000 A.h\r\n"
             "Electrode surface area : 0.001 cm\N{superscript two}\r\n"
-            "Characteristic mass : 9.130 mg\r\n"
-            "Cycle Definition : Loop\r\n"
-            "Turn to OCV between techniques\r\n"
+            "Characteristic mass : 8.624 mg\r\n"
+            "Cycle Definition : Charge/Discharge alternance\r\n"
+            "Do not turn to OCV between techniques\r\n"
             "\r\n"
             "Technique : 1\r\n"
             "Modulo Bat\r\n"
             "Ns                  0                   1                   2                   3                   4                   5                   6                   7                   8                   \r\n"
-            "type                Rest                CC                  CV                  CV                  CV                  CC                  Loop                Loop                Loop                \r\n"
-            "Apply I/C           I                   C / N               C / N               C / N               C / N               C / N               C / N               C / N               C / N               \r\n"
+            "ctrl_type           Rest                CC                  CV                  CV                  CV                  CC                  Loop                Loop                Loop                \r\n"
+            "Apply I/C           I                   I                   I                   I                   I                   I                   I                   I                   I                   \r\n"
             "ctrl1_val                               1.000               3.300               3.300               3.300               142.900             100.000             100.000             100.000             \r\n"
             "ctrl1_val_unit                          A                   A                   A                   A                   mA                                                                              \r\n"
             "ctrl1_val_vs                            <None>              Ref                 Ref                 Ref                 <None>                                                                          \r\n"
@@ -571,16 +570,16 @@ class ConversionTest(unittest.TestCase):
             "ctrl3_val_vs                                                                                                                                                                                            \r\n"
             "N                   1.00                15.00               15.00               15.00               15.00               15.00                                                                           \r\n"
             "charge/discharge    Charge              Charge              Charge              Charge              Charge              Charge                                                                          \r\n"
-            "ctrl_seq            0                   0                   0                   0                   0                   0                   6                   7                   8                   \r\n"
-            "ctrl_repeat         0                   0                   0                   0                   0                   0                   0                   0                   0                   \r\n"
+            "ctrl_seq            0                   0                   0                   0                   0                   0                   5                   0                   7                   \r\n"
+            "ctrl_repeat         0                   0                   0                   0                   0                   0                   2                   0                   1                   \r\n"
             "ctrl_trigger        Falling Edge        Falling Edge        Falling Edge        Falling Edge        Falling Edge        Falling Edge        Falling Edge        Falling Edge        Falling Edge        \r\n"
-            "ctrl_TO_t           0                   0                   0                   0                   0                   0                   0                   0                   0                   \r\n"
+            "ctrl_TO_t           0.000               0.000               0.000               0.000               0.000               0.000               0.000               0.000               0.000               \r\n"
             "ctrl_TO_t_unit      d                   d                   d                   d                   d                   d                   d                   d                   d                   \r\n"
             "ctrl_Nd             6                   6                   6                   6                   6                   6                   6                   6                   6                   \r\n"
             "ctrl_Na             1                   1                   1                   1                   1                   1                   1                   1                   1                   \r\n"
             "ctrl_corr           1                   1                   1                   1                   1                   1                   1                   1                   1                   \r\n"
             "lim_nb              1                   1                   1                   1                   1                   1                   0                   0                   0                   \r\n"
-            "lim1_type           Time                Time                Current             Current             Current             Current             Time                Time                Time                \r\n"
+            "lim1_type           Time                Time                I                   I                   I                   I                   Time                Time                Time                \r\n"
             "lim1_comp           >                   >                   <                   <                   <                   <                   <                   <                   <                   \r\n"
             "lim1_Q              Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             \r\n"
             "lim1_value          3.000               1.000               28.600              28.600              28.600              28.600              0.000               0.000               0.000               \r\n"
@@ -602,7 +601,7 @@ class ConversionTest(unittest.TestCase):
             "lim3_action         Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       \r\n"
             "lim3_seq            1                   2                   3                   4                   5                   6                   7                   8                   9                   \r\n"
             "rec_nb              1                   1                   2                   2                   2                   2                   0                   0                   0                   \r\n"
-            "rec1_type           Time                Time                Voltage             Voltage             Voltage             Voltage             Time                Time                Time                \r\n"
+            "rec1_type           Time                Time                Ecell               Ecell               Ecell               Ecell               Time                Time                Time                \r\n"
             "rec1_value          30.000              10.000              1.000               1.000               1.000               1.000               10.000              10.000              10.000              \r\n"
             "rec1_value_unit     s                   ms                  mV                  mV                  mV                  mV                  s                   s                   s                   \r\n"
             "rec2_type           Time                Time                Time                Time                Time                Time                Time                Time                Time                \r\n"
@@ -614,17 +613,17 @@ class ConversionTest(unittest.TestCase):
             "E range min (V)     0.000               0.000               0.000               0.000               0.000               0.000               0.000               0.000               0.000               \r\n"
             "E range max (V)     10.000              10.000              10.000              10.000              10.000              10.000              10.000              10.000              10.000              \r\n"
             "I Range             1 mA                1 mA                1 mA                1 mA                1 mA                1 mA                1 mA                1 mA                1 mA                \r\n"
-            "I Range min (V)     Unset               Unset               Unset               Unset               Unset               Unset               Unset               Unset               Unset               \r\n"
-            "I Range max (V)     Unset               Unset               Unset               Unset               Unset               Unset               Unset               Unset               Unset               \r\n"
+            "I Range min         Unset               Unset               Unset               Unset               Unset               Unset               Unset               Unset               Unset               \r\n"
+            "I Range max         Unset               Unset               Unset               Unset               Unset               Unset               Unset               Unset               Unset               \r\n"
             "I Range init        Unset               Unset               Unset               Unset               Unset               Unset               Unset               Unset               Unset               \r\n"
-            "auto rest           1                   1                   1                   1                   1                   1                   1                   1                   1                   \r\n"
+            "auto rest           0                   0                   0                   0                   0                   0                   0                   0                   0                   \r\n"
             "Bandwidth           4                   4                   4                   4                   4                   4                   4                   4                   4                   \r\n"
         )
 
         expected_lines = expected_output.split("\r\n")
 
         converter = MaccorToBiologicMb()
-        actual_output = converter.maccor_ast_to_protocol_str(maccor_ast)
+        actual_output = converter.maccor_ast_to_protocol_str(maccor_ast, 20)
         actual_lines = actual_output.split("\r\n")
 
         self.assertEqual(
@@ -632,11 +631,14 @@ class ConversionTest(unittest.TestCase):
            len(actual_lines),
         )    
         for i in range(0, len(expected_lines)):
+            msg="At line {} expected:\n\"{}\"\ngot:\n\"{}\"".format(i + 1, expected_lines[i], actual_lines[i])
+
             self.assertEqual(
                expected_lines[i],
                actual_lines[i],
-               msg="At line {} expected:\n\"{}\"\ngot:\n\"{}\"".format(i + 1, expected_lines[i], actual_lines[i])
+               msg
             )
+        pass
 
     def test_remove_end_entries_by_pred(self):
         converter = MaccorToBiologicMb()
@@ -670,4 +672,5 @@ class ConversionTest(unittest.TestCase):
             step_68_filtered_end_entry["Step"],
             "070"
         )
+        pass
         
