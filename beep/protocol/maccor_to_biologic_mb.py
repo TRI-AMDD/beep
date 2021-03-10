@@ -649,7 +649,7 @@ class MaccorToBiologicMb:
             "\r\n"
             "Number of linked techniques : 1\r\n"
             "\r\n"
-            "Filename : C:\\Users\\User\\Documents\\BT-Lab\\Data\\Grace\\BASF\\BCS - 171.64.160.115_Ja9_cOver70_CE3.mps\r\n\r\n"
+            "Filename : C:\\Users\\User\\Documents\\BT-Lab\\Data\\Grace\\BASF\\BCS - 171.64.160.115_Ja9_cOver70_CE3.mps\r\n\r\n"  # noqa
             "Device : BCS-805\r\n"
             "Ecell ctrl range : min = 0.00 V, max = 10.00 V\r\n"
             "Electrode material : \r\n"
@@ -876,7 +876,6 @@ def convert_diagnostic_v5_segment_files():
 
             def is_less_than_max_step_num(end_entry, step_num):
                 goto_step = int(end_entry["Step"])
-                end_type = end_entry["EndType"]
                 return goto_step <= max_step_num
 
             filtered = converter.remove_end_entries_by_pred(
@@ -904,4 +903,3 @@ def convert_diagnostic_v5_segment_files():
             loop_lens.pop()
         else:
             loop_lens[-1] += 1
-
