@@ -2,7 +2,7 @@ blank_seq:
   # sequence number
   Ns: "0"
   # step to apply e.g. a rest
-  type: ""
+  ctrl_type: ""
   Apply I/C: ""
   ctrl1_val: ""
   ctrl1_val_unit: ""
@@ -22,7 +22,7 @@ blank_seq:
   ctrl_seq: "0"
   ctrl_repeat: "0"
   ctrl_trigger: "Falling Edge"
-  ctrl_TO_t: "0"
+  ctrl_TO_t: "0.000"
   ctrl_TO_t_unit: "d"
   ctrl_Nd: "6"
   ctrl_Na: "1"
@@ -77,9 +77,9 @@ blank_seq:
   # not sure how to determine how to set this
   I Range: "1 mA"
   # custom step limits on I range I think
-  I Range min (V): "Unset"
-  I Range max (V): "Unset"
+  I Range min: "Unset"
+  I Range max: "Unset"
   I Range init: "Unset"
   # not sure what this is or how to think about it
-  auto rest: "1"
+  auto rest: "0"
   Bandwidth: "4"
