@@ -560,7 +560,6 @@ class MaccorToBiologicMb:
         pre_computed_seq_count = loop_seq_count_stack.pop()
         assert pre_computed_seq_count == curr_seq_num
 
-
         # now that we've finished our pre-computations
         # we build the seqs
         seq_loop_stack = [[]]
