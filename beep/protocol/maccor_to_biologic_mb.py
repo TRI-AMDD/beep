@@ -401,10 +401,10 @@ class MaccorToBiologicMb:
         loop_seq["ctrl_type"] = "Loop"
         loop_seq["ctrl_repeat"] = num_loops
         loop_seq["ctrl_seq"] = seq_num_to_loop_to
+        # automatically added to loops, semantically useless
         loop_seq["lim1_seq"] = seq_num + 1
         loop_seq["lim2_seq"] = seq_num + 1
         loop_seq["lim3_seq"] = seq_num + 1
-        # automatically added to loops, semantically useless
         loop_seq["Apply I/C"] = "I"
         loop_seq["ctrl1_val"] = "100.000"
 
@@ -416,7 +416,7 @@ class MaccorToBiologicMb:
     """
 
     def _create_advance_cyle_seqs(self, seq_num):
-        # Biologic Maccord Bat does not support real Advance Cycle sequences
+        # Biologic Modulo Bat does not support real Advance Cycle sequences
         # however we can simulate them if the cycle definition is set to Loop
         # which means that for every successful loop the cycle num advances
         #
@@ -463,9 +463,10 @@ class MaccorToBiologicMb:
         return unrolled_loop
 
     """
-    Converts Maccor protcol file to biologic file
-    if loops do not advance a step immediately before looping, will attempt to unroll the loop
-    and provide a [encoding-REPLACE] in the "initial state" field of the biologic file.
+    Converts a Maccor AST to a list of equivlanet Biologic MB seqs assuming
+    cycles advance only during a loop (Cycle Definition: Loop)
+
+    Loops that are not representable in Biologic MB format will be unrolled
     """
 
     def maccor_ast_to_biologic_seqs(self, maccor_ast):
@@ -476,8 +477,17 @@ class MaccorToBiologicMb:
             )
             return
 
+        # To build our seqs we need to be able to handle GOTOs
+        # in order to do that we a mapping between Step Numbers
+        # and seq numbers. This will require us to pre-compute
+        # what loops will be unrolled and what terms will be
+        # re-written and use that to create a mapping of of step numbers
+        # to seq numbers. Actual loop unrolling is also simplified
+        # by pre-computing whether each loop meets an unroll condition
         curr_seq_num = 0
         loop_seq_count_stack = [0]
+        # first entry is the base sequence, the value is never used
+        # but having it improves book keeping
         loop_will_unroll_stack = [False]
 
         num_steps = len(steps)
@@ -505,6 +515,7 @@ class MaccorToBiologicMb:
                 and is_last_step_in_loop
                 and not curr_loop_will_unroll
             ):
+                # adv cycle will occur with loop
                 adv_cycle_ignore_status_by_idx[idx] = {"ignore": True}
             elif step_type == "AdvCycle":
                 loop_will_unroll_stack[-1] = True
@@ -518,8 +529,8 @@ class MaccorToBiologicMb:
                 num_loops = int(step["Ends"]["EndEntry"]["Value"])
                 curr_loop_seq_count = loop_seq_count_stack.pop()
 
-                loop_will_unroll_stack.pop()
                 loop_unroll_status_by_idx[idx] = {"will_unroll": curr_loop_will_unroll}
+                loop_will_unroll_stack.pop()
 
                 if curr_loop_will_unroll:
                     # add unrolled loop seqs
@@ -549,6 +560,9 @@ class MaccorToBiologicMb:
         pre_computed_seq_count = loop_seq_count_stack.pop()
         assert pre_computed_seq_count == curr_seq_num
 
+
+        # now that we've finished our pre-computations
+        # we build the seqs
         seq_loop_stack = [[]]
         loop_start_seq_num_stack = []
         step_num_goto_lower_bound = 0
@@ -732,6 +746,10 @@ class MaccorToBiologicMb:
     converts maccor AST to biologic protocol
     biologic fp should include a .mps extension
     file has LATIN-1 i.e. ISO-8859-1 encoding
+        str - maccor filepath to load
+        str - biologic filepath to output
+        str - maccor encoding
+        int - col-width for seqs, defaults to Biologic standard
     """
 
     def convert(
@@ -742,9 +760,9 @@ class MaccorToBiologicMb:
 
     """
     accepts a maccor AST and a predicate to filter EndEntries in each step
-    predicate accepts arguments:
-      OrderedDict() - EndEntry from maccor
-      int - step number derived from test step index
+    by a predicate, does not mutate input AST
+      OrderedDict() - maccor AST
+      (OrderedDtict(), int) -> bool - Maccor EndEntry AST and step number
     """
 
     def remove_end_entries_by_pred(self, maccor_ast, pred):
