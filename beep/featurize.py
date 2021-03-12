@@ -855,6 +855,23 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         return all(conditions)
 
     @classmethod
+    def get_summary_diff(cls, processed_cycler_run,
+                         pos=[0, 1],
+                         cycle_types=["rpt_0.2C", "rpt_1C", "rpt_2C"],
+                         metrics=["discharge_capacity", "discharge_energy", "charge_capacity", "charge_energy"]):
+        values = []
+        names = []
+        for cycle_type in cycle_types:
+            diag_type_summary = processed_cycler_run.diagnostic_summary[
+                processed_cycler_run.diagnostic_summary.cycle_type == cycle_type]
+            for metric in metrics:
+                diff = (diag_type_summary.iloc[pos[1]][metric] - diag_type_summary.iloc[pos[0]][metric]) \
+                       / diag_type_summary.iloc[pos[0]][metric]
+                values.append(diff)
+                names.append("diag_sum_diff_" + str(pos[0]) + "_" + str(pos[1]) + "_" + cycle_type + metric)
+        return values, names
+
+    @classmethod
     def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
                                            parameters_path="data-share/raw/parameters"):
         """
@@ -884,7 +901,7 @@ class DiagnosticSummaryStats(CycleSummaryStats):
 
         diag_intrp = processed_cycler_run.diagnostic_interpolated
 
-        X = pd.DataFrame(np.zeros((1, 42)))
+        X = pd.DataFrame(np.zeros((1, 54)))
 
         # Calculate the cycles and the steps for the selected diagnostics
         cycles = diag_intrp.cycle_index[diag_intrp.cycle_type ==
@@ -956,6 +973,8 @@ class DiagnosticSummaryStats(CycleSummaryStats):
 
         X.loc[0, 35:41] = cls.get_summary_statistics(dQdVdDiff)
 
+        X.loc[0, 42:53], names = cls.get_summary_diff(processed_cycler_run, params_dict["diag_pos_list"])
+
         operations = ["var", "min", "mean", "skew", "kurtosis", "abs", "square"]
         quantities = [
             "charging_capacity",
@@ -966,7 +985,7 @@ class DiagnosticSummaryStats(CycleSummaryStats):
             "discharging_dQdV",
         ]
 
-        X.columns = [y + "_" + x for x in quantities for y in operations]
+        X.columns = [y + "_" + x for x in quantities for y in operations] + names
         return X
 
 
