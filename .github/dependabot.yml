@@ -12,3 +12,4 @@ updates:
     # Check the pip registry for updates once a week
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 10
