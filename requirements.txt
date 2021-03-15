@@ -1,6 +1,6 @@
 # Base requirements
 numpy==1.20.1
-monty[yaml]==3.0.2
+monty[yaml]==2021.3.3
 scipy==1.6.1
 scikit-learn==0.24.1
 pandas==1.2.3
