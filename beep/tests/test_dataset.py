@@ -93,7 +93,7 @@ class TestDataset(unittest.TestCase):
                                                              processed_dir=TEST_FILE_DIR,
                                                              feature_dir='data-share/features')
             self.assertEqual(dataset.name, 'test_dataset')
-            self.assertEqual(dataset.data.shape, (1, 131))
+            self.assertEqual(dataset.data.shape, (1, 143))
             self.assertEqual(dataset.data.seq_num.iloc[0], 240)
             self.assertIsNone(dataset.X_test)
 
@@ -129,7 +129,7 @@ class TestDataset(unittest.TestCase):
                                                              hyperparameter_dict=hyperparameter_dict,
                                                              feature_dir='data-share/features')
             self.assertEqual(dataset.name, 'test_dataset')
-            self.assertEqual(dataset.data.shape, (1, 147))
+            self.assertEqual(dataset.data.shape, (1, 159))
             self.assertEqual(dataset.data.seq_num.iloc[0], 240)
             self.assertIsNone(dataset.X_test)
 
