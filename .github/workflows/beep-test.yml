@@ -3,7 +3,7 @@ name: Testing - main
 on:
   push:
     branches-ignore:
-    - dependabot*
+    - dependabot**
 jobs:
   test:
     strategy:
