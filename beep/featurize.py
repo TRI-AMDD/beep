@@ -683,8 +683,8 @@ class CycleSummaryStats(BeepFeatures):
         # Check for relevant data
         required_columns = ['charge_capacity',
                             'discharge_capacity',
-                            # 'charge_energy',
-                            # 'discharge_energy',
+                            'charge_energy',
+                            'discharge_energy',
                             ]
         pcycler_run_columns = processed_cycler_run.cycles_interpolated.columns
         if not all([column in pcycler_run_columns for column in required_columns]):
@@ -742,7 +742,7 @@ class CycleSummaryStats(BeepFeatures):
 
         # TODO: extend this dataframe and uncomment energy features when
         #   structuring is refactored
-        X = pd.DataFrame(np.zeros((1, 14)))
+        X = pd.DataFrame(np.zeros((1, 28)))
 
         reg_cycle_comp_num = params_dict.get("cycle_comp_num")
         cycle_comp_1 = processed_cycler_run.cycles_interpolated[
@@ -766,26 +766,26 @@ class CycleSummaryStats(BeepFeatures):
         X.loc[0, 7:13] = cls.get_summary_statistics(QdDiff)
 
         # # Charging Energy features
-        # Ec100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].charge_energy
-        # Ec10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].charge_energy
-        # EcDiff = Ec100_1.values - Ec10_1.values
-        # EcDiff = EcDiff[~np.isnan(EcDiff)]
-        #
-        # X.loc[0, 14:20] = cls.get_summary_statistics(EcDiff)
-        #
+        Ec100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].charge_energy
+        Ec10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].charge_energy
+        EcDiff = Ec100_1.values - Ec10_1.values
+        EcDiff = EcDiff[~np.isnan(EcDiff)]
+
+        X.loc[0, 14:20] = cls.get_summary_statistics(EcDiff)
+
         # # Discharging Energy features
-        # Ed100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].discharge_energy
-        # Ed10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].discharge_energy
-        # EdDiff = Ed100_1.values - Ed10_1.values
-        # EdDiff = EdDiff[~np.isnan(EdDiff)]
-        #
-        # X.loc[0, 21:27] = cls.get_summary_statistics(EdDiff)
+        Ed100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].discharge_energy
+        Ed10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].discharge_energy
+        EdDiff = Ed100_1.values - Ed10_1.values
+        EdDiff = EdDiff[~np.isnan(EdDiff)]
+
+        X.loc[0, 21:27] = cls.get_summary_statistics(EdDiff)
 
         quantities = [
             "charging_capacity",
             "discharging_capacity",
-            # "charging_energy",
-            # "discharging_energy",
+            "charging_energy",
+            "discharging_energy",
         ]
 
         X.columns = [y + "_" + x for x in quantities for y in cls.SUMMARY_STATISTIC_NAMES]
@@ -855,6 +855,43 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         return all(conditions)
 
     @classmethod
+    def get_summary_diff(cls, processed_cycler_run,
+                         pos=None,
+                         cycle_types=None,
+                         metrics=None):
+        """
+        Helper function to calculate difference between summary values in the diagnostic cycles
+
+                Args:
+                    processed_cycler_run (beep.structure.ProcessedCyclerRun)
+                    pos (list): position of the diagnostics to use in the calculation
+                    cycle_types (list): calculate difference for these diagnostic types
+                    metrics (str): Calculate difference for these metrics
+
+                Returns:
+                    values (list): List of difference values to insert into the dataframe
+                    names (list): List of column headers to use in the creation of the dataframe
+                """
+        if pos is None:
+            pos = [0, 1]
+        if cycle_types is None:
+            cycle_types = ["rpt_0.2C", "rpt_1C", "rpt_2C"]
+        if metrics is None:
+            metrics = ["discharge_capacity", "discharge_energy", "charge_capacity", "charge_energy"]
+
+        values = []
+        names = []
+        for cycle_type in cycle_types:
+            diag_type_summary = processed_cycler_run.diagnostic_summary[
+                processed_cycler_run.diagnostic_summary.cycle_type == cycle_type]
+            for metric in metrics:
+                diff = (diag_type_summary.iloc[pos[1]][metric] - diag_type_summary.iloc[pos[0]][metric]) \
+                       / diag_type_summary.iloc[pos[0]][metric]
+                values.append(diff)
+                names.append("diag_sum_diff_" + str(pos[0]) + "_" + str(pos[1]) + "_" + cycle_type + metric)
+        return values, names
+
+    @classmethod
     def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
                                            parameters_path="data-share/raw/parameters"):
         """
@@ -884,7 +921,7 @@ class DiagnosticSummaryStats(CycleSummaryStats):
 
         diag_intrp = processed_cycler_run.diagnostic_interpolated
 
-        X = pd.DataFrame(np.zeros((1, 42)))
+        X = pd.DataFrame(np.zeros((1, 54)))
 
         # Calculate the cycles and the steps for the selected diagnostics
         cycles = diag_intrp.cycle_index[diag_intrp.cycle_type ==
@@ -956,6 +993,8 @@ class DiagnosticSummaryStats(CycleSummaryStats):
 
         X.loc[0, 35:41] = cls.get_summary_statistics(dQdVdDiff)
 
+        X.loc[0, 42:53], names = cls.get_summary_diff(processed_cycler_run, params_dict["diag_pos_list"])
+
         operations = ["var", "min", "mean", "skew", "kurtosis", "abs", "square"]
         quantities = [
             "charging_capacity",
@@ -966,7 +1005,7 @@ class DiagnosticSummaryStats(CycleSummaryStats):
             "discharging_dQdV",
         ]
 
-        X.columns = [y + "_" + x for x in quantities for y in operations]
+        X.columns = [y + "_" + x for x in quantities for y in operations] + names
         return X
 
 
