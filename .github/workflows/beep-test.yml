@@ -2,8 +2,8 @@ name: Testing - main
 
 on:
   push:
-    branch: [master]
-
+    branches:
+    - master
 jobs:
   test:
     strategy:
@@ -46,4 +46,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          coveralls
+          coveralls --service=github
