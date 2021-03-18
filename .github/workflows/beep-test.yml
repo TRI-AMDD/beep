@@ -2,8 +2,8 @@ name: Testing - main
 
 on:
   push:
-    branches:
-    - master
+    branches-ignore:
+    - dependabot*
 jobs:
   test:
     strategy:
