@@ -62,12 +62,6 @@ from beep.structure2 import ArbinDatapath, BEEPDatapath
 
 
 
-# todo: methods of BDP that need explicit tests
-#  - structure
-#  - validate
-
-
-
 class BEEPDatapathChildTest(BEEPDatapath):
     """
     A test class representing any child of BEEPDatapath.
@@ -475,6 +469,7 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertLess(first_step.voltage.diff().max(), 0.001)
         self.assertLess(second_step.voltage.diff().max(), 0.001)
 
+
     # based on RCRT.test_get_diagnostic_summary
     def test_summarize_diagnostic(self):
         diag_summary = self.datapath_diag.summarize_diagnostic(self.diagnostic_available)
@@ -520,8 +515,6 @@ class TestBEEPDatapath(unittest.TestCase):
 
 
 
-
-
 class TestArbinDatapath(unittest.TestCase):
     """
     Tests specific to Arbin cyclers.
@@ -535,12 +528,42 @@ class TestArbinDatapath(unittest.TestCase):
             TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29.csv"
         )
 
+        self.broken_file = os.path.join(
+            TEST_FILE_DIR, "Talos_001385_NCR18650618003_CH33_truncated.csv"
+        )
+
+
+    # from RCRT.test_serialization
+    def test_serialization(self):
+        smaller_run = ArbinDatapath.from_file(self.bad_file)
+        with ScratchDir("."):
+            dumpfn(smaller_run, "smaller_cycler_run.json")
+            resurrected = loadfn("smaller_cycler_run.json")
+            self.assertIsInstance(resurrected, BEEPDatapath)
+            self.assertIsInstance(resurrected.raw_data, pd.DataFrame)
+            self.assertEqual(
+                smaller_run.raw_data.voltage.to_list(), resurrected.raw_data.voltage.to_list()
+            )
+            self.assertEqual(
+                smaller_run.raw_data.current.to_list(), resurrected.raw_data.current.to_list()
+            )
+
     def test_from_file(self):
         ad = ArbinDatapath.from_file(self.good_file)
 
+        ad = ArbinDatapath.from_file(self.bad_file)
+
+
     # based on PCRT.test_from_arbin_insufficient_interpolation_length
     def test_from_arbin_insufficient_interpolation_length(self):
-        pass
+        rcycler_run = RawCyclerRun.from_file(self.arbin_broken_file)
+        vrange, num_points, nominal_capacity, fast_charge, diag = rcycler_run.determine_structuring_parameters()
+        print(diag['parameter_set'])
+        self.assertEqual(diag['parameter_set'], 'NCR18650-618')
+        diag_interp = rcycler_run.get_interpolated_diagnostic_cycles(diag, resolution=1000, v_resolution=0.0005)
+        print(diag_interp[diag_interp.cycle_index == 1].charge_capacity.median())
+        self.assertEqual(np.around(diag_interp[diag_interp.cycle_index == 1].charge_capacity.median(), 3),
+                         np.around(3.428818545441403, 3))
 
 
 class TestMaccorDatapath(unittest.TestCase):
@@ -548,6 +571,8 @@ class TestMaccorDatapath(unittest.TestCase):
     Tests specific to Maccor cyclers.
     """
 
+    def test_from_file(self):
+        pass
 
     # based on RCRT.test_waveform_charge_discharge_capacity
     def test_waveform_charge_discharge_capacity(self):

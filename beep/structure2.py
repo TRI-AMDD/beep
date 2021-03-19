@@ -212,7 +212,6 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         return result.astype(available_dtypes)
 
-    @StructuringDecorators.must_be_structured
     @StructuringDecorators.must_not_be_legacy
     def as_dict(self):
         """
@@ -222,6 +221,18 @@ class BEEPDatapath(abc.ABC, MSONable):
             dict: corresponding to dictionary for serialization.
 
         """
+
+        if not self.is_structured:
+            summary = None
+            cycles_interpolated = None
+            diagnostic_summary = None
+            diagnostic_interpolated = None
+        else:
+            summary = self.structured_summary.to_dict("list")
+            cycles_interpolated = self.structured_data.to_dict("list")
+            diagnostic_summary = self.diagnostic_summary.to_dict("list")
+            diagnostic_interpolated = self.diagnostic_data.to_dict("list")
+
         return {
             "@module": self.__class__.__module__,
             "@class": self.__class__.__name__,
@@ -239,11 +250,11 @@ class BEEPDatapath(abc.ABC, MSONable):
             "channel_id": self.metadata.channel_id,
 
             # Structured data, expensively obtained
-            "summary": self.structured_summary.to_dict("list"),
-            "cycles_interpolated": self.structured_data.to_dict("list"),
-            "diagnostic_summary": self.diagnostic_summary.to_dict("list")
+            "summary": summary,
+            "cycles_interpolated": cycles_interpolated,
+            "diagnostic_summary": diagnostic_summary
             if self.diagnostic_summary is not None else None,
-            "diagnostic_interpolated": self.diagnostic_data.to_dict("list")
+            "diagnostic_interpolated": diagnostic_interpolated
             if self.diagnostic_data is not None else None
         }
 
@@ -555,6 +566,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         v_range = v_range or [2.8, 3.5]
 
         # If any regular cycle contains a waveform step, interpolate on test_time.
+
         if self.raw_data[self.raw_data.cycle_index.isin(reg_cycles)]. \
                 groupby(["cycle_index", "step_index"]). \
                 apply(step_is_waveform_dchg).any():
@@ -1112,11 +1124,6 @@ class BEEPDatapath(abc.ABC, MSONable):
             return True
         else:
             return False
-
-
-
-
-
 
 
 
