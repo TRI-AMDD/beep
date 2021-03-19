@@ -65,6 +65,7 @@ from beep.structure2 import (
 #  - test_get_diagnostic_parameters (move to beep.utils)
 #  - test_json_processing
 #  - test_auto_load
+#  - automatic file name recognition (i.e., which datapath is this kind of file?)
 
 
 
@@ -582,31 +583,59 @@ class TestMaccorDatapath(unittest.TestCase):
         self.diagnostics_file = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000020_CH71.071")
         self.waveform_file = os.path.join(TEST_FILE_DIR, "test_drive_071620.095")
         self.broken_file= os.path.join(TEST_FILE_DIR, "PreDiag_000229_000229_truncated.034")
+        self.timezone_file = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010")
+        self.timestamp_file = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000151_test.052")
+
+        # Note: this is a legacy file
+        self.diagnostic_interpolation_file = os.path.join(TEST_FILE_DIR,"PredictionDiagnostics_000132_00004C_structure.json")
+
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
 
-
-    def test_from_file(self):
-        md = MaccorDatapath.from_file(self.good_file)
-        self.assertEqual(md.paths.get("raw"), self.good_file)
-        self.assertEqual(md.paths.get("metadata"), self.good_file.replace(".csv", "_Metadata.csv"))
-        self.assertTupleEqual(md.raw_data.shape, (11669, 39))
-
-
-    # based on RCRT.test_waveform_charge_discharge_capacity
-    def test_waveform_charge_discharge_capacity(self):
-        pass
-
     # based on RCRT.test_ingestion_maccor
-    def test_ingestion_maccor(self):
-        pass
-
     # based on RCRT.test_timezone_maccor
-    def test_timezone_maccor(self):
-        pass
-
     # based on RCRT.test_timestamp_maccor
-    def test_timestamp_maccor(self):
-        pass
+    def test_from_file(self):
+
+        for file in (self.good_file, self.timestamp_file, self.timezone_file):
+            md = MaccorDatapath.from_file(file)
+            self.assertEqual(md.paths.get("raw"), file)
+            self.assertEqual(md.paths.get("metadata"), file)
+
+            if file == self.good_file:
+                self.assertTupleEqual(md.raw_data.shape, (11669, 39))
+                self.assertEqual(70, md.metadata.channel_id)
+            elif file == self.timestamp_file:
+                self.assertTupleEqual(md.raw_data.shape, (333, 43))
+                self.assertEqual(52, md.metadata.channel_id)
+            else:
+                self.assertTupleEqual(md.raw_data.shape, (2165, 43))
+                self.assertEqual(10, md.metadata.channel_id)
+
+            self.assertEqual(
+                set(md.metadata.raw.keys()),
+                {
+                    "barcode",
+                    "_today_datetime",
+                    "start_datetime",
+                    "filename",
+                    "protocol",
+                    "channel_id",
+                },
+            )
+
+            # Quick test to see whether columns get recasted
+            self.assertTrue(
+                {
+                    "data_point",
+                    "cycle_index",
+                    "step_index",
+                    "voltage",
+                    "current",
+                    "charge_capacity",
+                    "discharge_capacity",
+                }
+                < set(md.raw_data.columns)
+            )
 
     # based on RCRT.test_quantity_sum_maccor
     def test_get_quantity_sum(self):
@@ -646,6 +675,20 @@ class TestMaccorDatapath(unittest.TestCase):
                          df.loc[(df.cycle_index == 6) &
                                 (df.step_index == 33)].test_time.min())
         self.assertEqual(subset_interpolated[subset_interpolated.cycle_index == 6].shape[0], 1000)
+
+    # based on RCRT.test_waveform_charge_discharge_capacity
+    def test_waveform_charge_discharge_capacity(self):
+        md = MaccorDatapath.from_file(self.waveform_file)
+        df = md.raw_data
+        cycle_sign = np.sign(np.diff(df["cycle_index"]))
+        capacity_sign = np.sign(np.diff(df["charge_capacity"]))
+        self.assertTrue(
+            np.all(capacity_sign >= -cycle_sign)
+        )  # Capacity increases throughout cycle
+        capacity_sign = np.sign(np.diff(df["discharge_capacity"]))
+        self.assertTrue(
+            np.all(capacity_sign >= -cycle_sign)
+        )
 
     # based on RCRT.test_get_interpolated_cycles_maccor
     def test_interpolate_cycles(self):
@@ -731,10 +774,185 @@ class TestMaccorDatapath(unittest.TestCase):
         self.assertEqual(np.around(diag_interp[diag_interp.cycle_index == 1].charge_capacity.median(), 3),
                          np.around(0.6371558214610992, 3))
 
+    # todo: get working test with S3 file
     # based on RCRT.test_get_diagnostic
     # though it is based on maccor files
+    @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_get_diagnostic(self):
-        pass
+        md = MaccorDatapath.from_json_file(self.diagnostic_interpolation_file)
+        # md.paths["raw"] = self.
+
+        # print(md.diagnostic_summary)
+        # download_s3_object(bucket=self.maccor_file_w_parameters_s3["bucket"],
+        #                    key=self.maccor_file_w_parameters_s3["key"],
+        #                    destination_path=self.maccor_file_w_parameters)
+
+        # (
+        #     v_range,
+        #     resolution,
+        #     nominal_capacity,
+        #     full_fast_charge,
+        #     diagnostic_available,
+        # ) = md.determine_structuring_parameters()
+        #
+        # print(v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available)
+        # self.assertEqual(nominal_capacity, 4.84)
+        # # self.assertEqual(v_range, [2.7, 4.2]) # This is an older assertion, value changed when
+        # # different cell types were added
+        #
+        # self.assertEqual(v_range, [2.5, 4.2])
+        # self.assertEqual(
+        #     diagnostic_available["cycle_type"],
+        #     ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"],
+        # )
+        # diag_summary = cycler_run.get_diagnostic_summary(diagnostic_available)
+        #
+        # reg_summary = cycler_run.get_summary(diagnostic_available)
+        # self.assertEqual(len(reg_summary.cycle_index.tolist()), 230)
+        # self.assertEqual(reg_summary.cycle_index.tolist()[:10],
+        #                  [0, 6, 7, 8, 9, 10, 11, 12, 13, 14])
+        #
+        # # Check data types are being set correctly for diagnostic summary
+        # diag_dyptes = diag_summary.dtypes.tolist()
+        # diag_columns = diag_summary.columns.tolist()
+        # diag_dyptes = [str(dtyp) for dtyp in diag_dyptes]
+        # for indx, col in enumerate(diag_columns):
+        #     self.assertEqual(
+        #         diag_dyptes[indx], STRUCTURE_DTYPES["diagnostic_summary"][col]
+        #     )
+        #
+        # self.assertEqual(
+        #     diag_summary.cycle_index.tolist(),
+        #     [1, 2, 3, 4, 5, 36, 37, 38, 39, 40, 141, 142, 143, 144, 145, 246,
+        #      247],
+        # )
+        # self.assertEqual(
+        #     diag_summary.cycle_type.tolist(),
+        #     [
+        #         "reset",
+        #         "hppc",
+        #         "rpt_0.2C",
+        #         "rpt_1C",
+        #         "rpt_2C",
+        #         "reset",
+        #         "hppc",
+        #         "rpt_0.2C",
+        #         "rpt_1C",
+        #         "rpt_2C",
+        #         "reset",
+        #         "hppc",
+        #         "rpt_0.2C",
+        #         "rpt_1C",
+        #         "rpt_2C",
+        #         "reset",
+        #         "hppc",
+        #     ],
+        # )
+        # self.assertEqual(diag_summary.paused.max(), 0)
+        # diag_interpolated = cycler_run.get_interpolated_diagnostic_cycles(
+        #     diagnostic_available, resolution=1000
+        # )
+        #
+        # # Check data types are being set correctly for interpolated data
+        # diag_dyptes = diag_interpolated.dtypes.tolist()
+        # diag_columns = diag_interpolated.columns.tolist()
+        # diag_dyptes = [str(dtyp) for dtyp in diag_dyptes]
+        # for indx, col in enumerate(diag_columns):
+        #     self.assertEqual(
+        #         diag_dyptes[indx],
+        #         STRUCTURE_DTYPES["diagnostic_interpolated"][col]
+        #     )
+        #
+        # # Provide visual inspection to ensure that diagnostic interpolation is being done correctly
+        # diag_cycle = diag_interpolated[
+        #     (diag_interpolated.cycle_type == "rpt_0.2C")
+        #     & (diag_interpolated.step_type == 1)
+        #     ]
+        # self.assertEqual(diag_cycle.cycle_index.unique().tolist(), [3, 38, 143])
+        # plt.figure()
+        # plt.plot(diag_cycle.discharge_capacity, diag_cycle.voltage)
+        # plt.savefig(
+        #     os.path.join(TEST_FILE_DIR, "discharge_capacity_interpolation.png"))
+        # plt.figure()
+        # plt.plot(diag_cycle.voltage, diag_cycle.discharge_dQdV)
+        # plt.savefig(
+        #     os.path.join(TEST_FILE_DIR, "discharge_dQdV_interpolation.png"))
+        #
+        # self.assertEqual(len(diag_cycle.index), 3000)
+        #
+        # hppcs = diag_interpolated[
+        #     (diag_interpolated.cycle_type == "hppc")
+        #     & pd.isnull(diag_interpolated.current)
+        #     ]
+        # self.assertEqual(len(hppcs), 0)
+        #
+        # hppc_dischg1 = diag_interpolated[
+        #     (diag_interpolated.cycle_index == 37)
+        #     & (diag_interpolated.step_type == 2)
+        #     & (diag_interpolated.step_index_counter == 3)
+        #     & ~pd.isnull(diag_interpolated.current)
+        #     ]
+        #
+        # plt.figure()
+        # plt.plot(hppc_dischg1.test_time, hppc_dischg1.voltage)
+        # plt.savefig(os.path.join(TEST_FILE_DIR, "hppc_discharge_pulse_1.png"))
+        # self.assertEqual(len(hppc_dischg1), 176)
+        #
+        # processed_cycler_run = cycler_run.to_processed_cycler_run()
+        # self.assertNotIn(
+        #     diag_summary.cycle_index.tolist(),
+        #     processed_cycler_run.cycles_interpolated.cycle_index.unique(),
+        # )
+        # self.assertEqual(
+        #     reg_summary.cycle_index.tolist(),
+        #     processed_cycler_run.summary.cycle_index.tolist(),
+        # )
+        #
+        # processed_cycler_run_loc = os.path.join(
+        #     TEST_FILE_DIR, "processed_diagnostic.json"
+        # )
+        # # Dump to the structured file and check the file size
+        # dumpfn(processed_cycler_run, processed_cycler_run_loc)
+        # proc_size = os.path.getsize(processed_cycler_run_loc)
+        # self.assertLess(proc_size, 54000000)
+        #
+        # # Reload the structured file and check for errors
+        # test = loadfn(processed_cycler_run_loc)
+        # self.assertIsInstance(test.diagnostic_summary, pd.DataFrame)
+        # diag_dyptes = test.diagnostic_summary.dtypes.tolist()
+        # diag_columns = test.diagnostic_summary.columns.tolist()
+        # diag_dyptes = [str(dtyp) for dtyp in diag_dyptes]
+        # for indx, col in enumerate(diag_columns):
+        #     self.assertEqual(
+        #         diag_dyptes[indx], STRUCTURE_DTYPES["diagnostic_summary"][col]
+        #     )
+        #
+        # diag_dyptes = test.diagnostic_interpolated.dtypes.tolist()
+        # diag_columns = test.diagnostic_interpolated.columns.tolist()
+        # diag_dyptes = [str(dtyp) for dtyp in diag_dyptes]
+        # for indx, col in enumerate(diag_columns):
+        #     self.assertEqual(
+        #         diag_dyptes[indx],
+        #         STRUCTURE_DTYPES["diagnostic_interpolated"][col]
+        #     )
+        #
+        # self.assertEqual(test.summary.cycle_index.tolist()[:10],
+        #                  [0, 6, 7, 8, 9, 10, 11, 12, 13, 14])
+        #
+        # plt.figure()
+        # single_charge = test.cycles_interpolated[
+        #     (test.cycles_interpolated.step_type == "charge")
+        #     & (test.cycles_interpolated.cycle_index == 25)
+        #     ]
+        # self.assertEqual(len(single_charge.index), 1000)
+        # plt.plot(single_charge.charge_capacity, single_charge.voltage)
+        # plt.savefig(
+        #     os.path.join(
+        #         TEST_FILE_DIR, "charge_capacity_interpolation_regular_cycle.png"
+        #     )
+        # )
+        #
+        # os.remove(processed_cycler_run_loc)
 
     # todo: test EIS methods
 
@@ -1164,7 +1382,7 @@ class RawCyclerRunTest(unittest.TestCase):
         for indx, col in enumerate(reg_columns):
             self.assertEqual(reg_dyptes[indx], STRUCTURE_DTYPES["summary"][col])
 
-    # @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
+    @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_get_diagnostic(self):
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
 

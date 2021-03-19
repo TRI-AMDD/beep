@@ -119,11 +119,14 @@ class BEEPDatapath(abc.ABC, MSONable):
 
     class CyclerRunMetadata:
         def __init__(self, metadata_dict):
+
+            # Keep all the common metadata attr-accessible
             self.barcode = metadata_dict.get("barcode")
             self.protocol = metadata_dict.get("protocol")
             self.channel_id = metadata_dict.get("channel_id")
-            self.raw = metadata_dict
 
+            # Extra metadata will always be in .raw
+            self.raw = metadata_dict
 
     def __init__(self, raw_data, metadata, paths=None):
         self.raw_data = raw_data
@@ -868,7 +871,6 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         return result
 
-
     def summarize_diagnostic(self, diagnostic_available):
         """
         Gets summary statistics for data according to location of
@@ -920,6 +922,7 @@ class BEEPDatapath(abc.ABC, MSONable):
     # locate diagnostic cycles
     # determine voltage range to interpolate on
     # this is a function that TRI is using mostly for themselves
+    @StructuringDecorators.must_not_be_legacy
     def determine_structuring_parameters(
         self,
         v_range=None,
