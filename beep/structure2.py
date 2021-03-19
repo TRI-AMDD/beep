@@ -194,11 +194,6 @@ class BEEPDatapath(abc.ABC, MSONable):
         self._diag_summary_cols = copy.deepcopy(self._summary_cols)
         self._diag_summary_cols.pop(5) # internal_resistance
 
-    # @property
-    # @abc.abstractmethod
-    # def schema(self):
-    #     raise NotImplementedError
-
 
     @classmethod
     @abc.abstractmethod
@@ -1400,6 +1395,7 @@ class MaccorDatapath(BEEPDatapath):
         substrings.append(leftovers)
         return substrings
 
+
 # based on get_interpolated_data
 def interpolate_df(
         dataframe,
@@ -1495,8 +1491,6 @@ def step_is_chg(step_df):
     return step_is_chg_state(step_df, True)
 
 
-# todo: ALEXTODO: needs tests
-# todo: Also, may only be applicable to maccor
 def step_is_waveform(step_df, chg_filter):
     """
     Helper function for driving profiles to determine whether a given dataframe corresponding

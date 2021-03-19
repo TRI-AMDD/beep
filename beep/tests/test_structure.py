@@ -230,6 +230,17 @@ class TestBEEPDatapath(unittest.TestCase):
         for indx, col in enumerate(reg_columns):
             self.assertEqual(reg_dyptes[indx], STRUCTURE_DTYPES["summary"][col])
 
+    def test_abc(self):
+
+        class BEEPDatapathChildBad(BEEPDatapath):
+            def some_extra_method(self):
+                return True
+
+        # Ensure this bad child class has ABC error
+        with self.assertRaises(TypeError):
+            BEEPDatapathChildBad(raw_data=pd.DataFrame({}), metadata={"some": "metadata"})
+
+
     def test_unstructure(self):
         self.datapath_nodiag.structure()
         self.assertTrue(self.datapath_nodiag.is_structured)
