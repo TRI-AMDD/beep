@@ -47,7 +47,13 @@ TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 
 
-from beep.structure2 import BEEPDatapath, ArbinDatapath, MaccorDatapath
+from beep.structure2 import (
+    BEEPDatapath,
+    ArbinDatapath,
+    MaccorDatapath,
+    step_is_waveform_chg,
+    step_is_waveform_dchg,
+)
 
 
 # todo: Dont fit anywhere/ need to be integrated list
@@ -573,8 +579,8 @@ class TestMaccorDatapath(unittest.TestCase):
 
     def setUp(self) -> None:
         self.good_file = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000019_CH70.070")
-
-        self.w_diagnostics = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000020_CH71.071")
+        self.diagnostics = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000020_CH71.071")
+        self.waveform = os.path.join(TEST_FILE_DIR, "test_drive_071620.095")
 
     def test_from_file(self):
         md = MaccorDatapath.from_file(self.good_file)
@@ -601,7 +607,7 @@ class TestMaccorDatapath(unittest.TestCase):
 
     # based on RCRT.test_quantity_sum_maccor
     def test_get_quantity_sum(self):
-        md = MaccorDatapath.from_file(self.w_diagnostics)
+        md = MaccorDatapath.from_file(self.diagnostics)
 
         cycle_sign = np.sign(np.diff(md.raw_data["cycle_index"]))
         capacity_sign = np.sign(np.diff(md.raw_data["charge_capacity"]))
@@ -615,8 +621,15 @@ class TestMaccorDatapath(unittest.TestCase):
 
 
     # based on RCRT.test_whether_step_is_waveform
-    def test_whether_step_is_waveform(self):
-        pass
+    def test_step_is_waveform(self):
+        md = MaccorDatapath.from_file(self.waveform)
+        df = md.raw_data
+        self.assertTrue(df.loc[df.cycle_index == 6].
+                        groupby("step_index").apply(step_is_waveform_dchg).any())
+        self.assertFalse(df.loc[df.cycle_index == 6].
+                        groupby("step_index").apply(step_is_waveform_chg).any())
+        self.assertFalse(df.loc[df.cycle_index == 3].
+                        groupby("step_index").apply(step_is_waveform_dchg).any())
 
     # based on RCRT.test_get_interpolated_waveform_discharge_cycles
     def test_get_interpolated_waveform_discharge_cycles(self):
