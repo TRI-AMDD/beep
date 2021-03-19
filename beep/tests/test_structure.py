@@ -211,6 +211,11 @@ class TestBEEPDatapath(unittest.TestCase):
         ]:
             dp.unstructure()
 
+    def tearDown(self) -> None:
+        path = os.path.join(TEST_FILE_DIR, "test_serialization.json")
+        if os.path.exists(path):
+            os.remove(path)
+
     def run_dtypes_check(self, summary):
         reg_dyptes = summary.dtypes.tolist()
         reg_columns = summary.columns.tolist()
@@ -227,10 +232,6 @@ class TestBEEPDatapath(unittest.TestCase):
     # todo: ALEXTODO expand to also use some small file with diagnostic data and summary
     def test_serialization(self):
         truth_datapath = self.datapath_diag
-
-        # test as/from_dict
-        with self.assertRaises(RuntimeError):
-            truth_datapath.as_dict()
 
         truth_datapath.structure()
         d = truth_datapath.as_dict()
@@ -531,7 +532,6 @@ class TestArbinDatapath(unittest.TestCase):
         self.broken_file = os.path.join(
             TEST_FILE_DIR, "Talos_001385_NCR18650618003_CH33_truncated.csv"
         )
-
 
     # from RCRT.test_serialization
     def test_serialization(self):

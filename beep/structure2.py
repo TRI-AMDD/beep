@@ -230,8 +230,9 @@ class BEEPDatapath(abc.ABC, MSONable):
         else:
             summary = self.structured_summary.to_dict("list")
             cycles_interpolated = self.structured_data.to_dict("list")
-            diagnostic_summary = self.diagnostic_summary.to_dict("list")
-            diagnostic_interpolated = self.diagnostic_data.to_dict("list")
+            diagnostic_summary = self.diagnostic_summary.to_dict("list") if self.diagnostic_summary is not None else None
+            diagnostic_interpolated = self.diagnostic_data.to_dict("list") if self.diagnostic_data is not None else None
+
 
         return {
             "@module": self.__class__.__module__,
@@ -252,10 +253,8 @@ class BEEPDatapath(abc.ABC, MSONable):
             # Structured data, expensively obtained
             "summary": summary,
             "cycles_interpolated": cycles_interpolated,
-            "diagnostic_summary": diagnostic_summary
-            if self.diagnostic_summary is not None else None,
+            "diagnostic_summary": diagnostic_summary,
             "diagnostic_interpolated": diagnostic_interpolated
-            if self.diagnostic_data is not None else None
         }
 
     def to_json_file(self, filename):
