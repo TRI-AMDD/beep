@@ -619,7 +619,6 @@ class TestMaccorDatapath(unittest.TestCase):
             np.all(capacity_sign >= -cycle_sign)
         )  # Capacity increases throughout cycle
 
-
     # based on RCRT.test_whether_step_is_waveform
     def test_step_is_waveform(self):
         md = MaccorDatapath.from_file(self.waveform)
@@ -633,7 +632,17 @@ class TestMaccorDatapath(unittest.TestCase):
 
     # based on RCRT.test_get_interpolated_waveform_discharge_cycles
     def test_get_interpolated_waveform_discharge_cycles(self):
-        pass
+        md = MaccorDatapath.from_file(self.waveform)
+        all_interpolated = md.interpolate_cycles()
+        all_interpolated = all_interpolated[(all_interpolated.step_type == "discharge")]
+        self.assertTrue(all_interpolated.columns[0] == 'test_time')
+        subset_interpolated = all_interpolated[all_interpolated.cycle_index==6]
+
+        df = md.raw_data
+        self.assertEqual(subset_interpolated.test_time.min(),
+                         df.loc[(df.cycle_index == 6) &
+                                (df.step_index == 33)].test_time.min())
+        self.assertEqual(subset_interpolated[subset_interpolated.cycle_index == 6].shape[0], 1000)
 
     # based on RCRT.test_get_interpolated_cycles_maccor
     def test_get_interpolated_cycles_maccor(self):
