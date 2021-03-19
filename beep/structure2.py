@@ -1166,7 +1166,7 @@ class ArbinDatapath(BEEPDatapath):
         )
 
         paths = {
-            "raw_data": path,
+            "raw": path,
             "metadata": metadata_path if metadata else None
         }
 

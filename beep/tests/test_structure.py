@@ -252,6 +252,8 @@ class TestBEEPDatapath(unittest.TestCase):
                     self.assertTrue(isinstance(df_test, pd.DataFrame))
                     self.assertTrue(df_truth.equals(df_test))
 
+        self.assertEqual(datapath_from_json.paths.get("structured"), fname)
+        self.assertEqual(datapath_from_json.paths.get("raw"), self.datapath_diag.paths.get("raw"))
 
     # based on RCRT.test_serialization
     def test_serialization_legacy(self):
@@ -531,7 +533,11 @@ class TestArbinDatapath(unittest.TestCase):
 
         self.broken_file = os.path.join(
             TEST_FILE_DIR, "Talos_001385_NCR18650618003_CH33_truncated.csv"
+
         )
+
+        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+
 
     # from RCRT.test_serialization
     def test_serialization(self):
@@ -551,17 +557,20 @@ class TestArbinDatapath(unittest.TestCase):
     def test_from_file(self):
         ad = ArbinDatapath.from_file(self.good_file)
 
+        print(ad.raw_data)
+        print(ad["paths"])
+
         ad = ArbinDatapath.from_file(self.bad_file)
 
 
     # based on PCRT.test_from_arbin_insufficient_interpolation_length
     def test_from_arbin_insufficient_interpolation_length(self):
-        rcycler_run = RawCyclerRun.from_file(self.arbin_broken_file)
+        rcycler_run = ArbinDatapath.from_file(self.broken_file)
         vrange, num_points, nominal_capacity, fast_charge, diag = rcycler_run.determine_structuring_parameters()
-        print(diag['parameter_set'])
+        # print(diag['parameter_set'])
         self.assertEqual(diag['parameter_set'], 'NCR18650-618')
-        diag_interp = rcycler_run.get_interpolated_diagnostic_cycles(diag, resolution=1000, v_resolution=0.0005)
-        print(diag_interp[diag_interp.cycle_index == 1].charge_capacity.median())
+        diag_interp = rcycler_run.interpolate_diagnostic_cycles(diag, resolution=1000, v_resolution=0.0005)
+        # print(diag_interp[diag_interp.cycle_index == 1].charge_capacity.median())
         self.assertEqual(np.around(diag_interp[diag_interp.cycle_index == 1].charge_capacity.median(), 3),
                          np.around(3.428818545441403, 3))
 
@@ -1655,6 +1664,7 @@ class ProcessedCyclerRunTest(unittest.TestCase):
         rcycler_run = RawCyclerRun.from_file(self.arbin_broken_file)
         vrange, num_points, nominal_capacity, fast_charge, diag = rcycler_run.determine_structuring_parameters()
         print(diag['parameter_set'])
+        print(diag)
         self.assertEqual(diag['parameter_set'], 'NCR18650-618')
         diag_interp = rcycler_run.get_interpolated_diagnostic_cycles(diag, resolution=1000, v_resolution=0.0005)
         print(diag_interp[diag_interp.cycle_index == 1].charge_capacity.median())
