@@ -255,7 +255,6 @@ class TestBEEPDatapath(unittest.TestCase):
 
     # based on RCRT.test_serialization
     def test_serialization_legacy(self):
-
         test_file = os.path.join(
             TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_processed.json"
         )
@@ -496,17 +495,17 @@ class TestBEEPDatapath(unittest.TestCase):
     def test_autostructure(self):
         pass
 
-
     # based on PCRT.test_get_cycle_life
     def test_get_cycle_life(self):
         # pcycler_run = loadfn(self.pcycler_run_file)
-        # self.assertEqual(pcycler_run.get_cycle_life(30, 0.99), 82)
-        # self.assertEqual(pcycler_run.get_cycle_life(), 189)
 
-        pcycler_run_file = os.path.join(
+        run_file = os.path.join(
             TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_processed.json"
         )
-        pass
+
+        datapath = BEEPDatapathChildTest.from_json_file(run_file)
+        self.assertEqual(datapath.get_cycle_life(30, 0.99), 82)
+        self.assertEqual(datapath.get_cycle_life(40, 0.0), 189)
 
     # based on PCRT.test_cycles_to_reach_set_capacities
     def test_cycles_to_reach_set_capacities(self):
