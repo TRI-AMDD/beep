@@ -34,6 +34,7 @@ from beep.conversion_schemas import (
     BIOLOGIC_CONFIG,
     STRUCTURE_DTYPES,
 )
+from beep.eis import EISpectrum
 
 from beep.utils import WorkflowOutputs, parameters_lookup
 from beep import logger, __version__
@@ -1165,6 +1166,49 @@ class ArbinDatapath(BEEPDatapath):
 
 class MaccorDatapath(BEEPDatapath):
 
+    class MaccorEIS(EISpectrum):
+        def from_file(cls, filename):
+            """
+            EISpectrum from Maccor file.
+
+            Args:
+                filename (str): file path to data.
+
+            Returns:
+                beep.strucure.EISpectrum: EISpectrum object representation of
+                    data.
+            """
+            with open(filename) as f:
+                lines = f.readlines()
+            # Parse freq sweep, method, and output filename
+            freq_sweep = lines[1].split("Frequency Sweep:")[1].strip()
+            freq_sweep = freq_sweep.replace("Circut", "Circuit")
+            method = lines[2]
+            filename = lines[3]
+
+            # Parse start datetime and reformat in isoformat
+            start = lines[6].split("Start Date:")[1].strip()
+            date, time = start.split("Start Time:")
+            start = ",".join([date.strip(), time.strip()])
+            start = datetime.strptime(start, "%A, %B %d, %Y,%H:%M")
+            start = start.isoformat()
+
+            line_8 = lines[8].split()
+
+            # Construct metadata dictionary
+            metadata = {
+                "frequency_sweep": freq_sweep,
+                "method": method,
+                "filename": filename,
+                "start": start,
+                "line_8": line_8,
+            }
+
+            data = "\n".join(lines[10:])
+            data = pd.read_csv(StringIO(data), delimiter="\t")
+            return cls(data=data, metadata=metadata)
+
+
     @classmethod
     def from_file(cls, path):
         """
@@ -1217,16 +1261,23 @@ class MaccorDatapath(BEEPDatapath):
         return cls(data, metadata, paths=paths)
 
 
-    def load_eis(self, path):
+    def load_eis(self, path=None):
+
+        # will automatically look for EIS files based on the raw filename, if available
+
         # todo: ALEXTODO: move this to load_eis method or similar
         # # Check for EIS files
         # if include_eis:
-        #     eis_pattern = ".*.".join(filename.rsplit(".", 1))
-        #     all_eis_files = glob(eis_pattern)
-        #     eis = EISpectrum.from_maccor_file(all_eis_files[0])
+
         # else:
         #     eis = None
-        pass
+
+
+        if path=None:
+            eis_pattern = ".*.".join(filename.rsplit(".", 1))
+            all_eis_files = glob(eis_pattern)
+            eis = EISpectrum.from_maccor_file(all_eis_files[0])
+
 
 
     @staticmethod

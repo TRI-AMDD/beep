@@ -3,7 +3,6 @@ import abc
 from monty.json import MSONable
 
 
-
 class EISpectrum(MSONable):
     """
     Class describing an Electrochemical Impedance Spectrum
@@ -21,9 +20,8 @@ class EISpectrum(MSONable):
 
 
     @classmethod
-    def from_file(cls):
+    def from_file(cls, filename):
         raise NotImplementedError
-
 
     def as_dict(self):
         """

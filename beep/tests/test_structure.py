@@ -124,20 +124,6 @@ class TestBEEPDatapath(unittest.TestCase):
         )
 
 
-        # Use maccor timestamp memloaded inputs as a source of timestamped run truth
-        # Except for structuring, where the raw file is actually required, we cannot avoid ingestion
-        maccor_timestamp_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_timestamp_memloaded.csv")
-        maccor_timestamp_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_timestamp_metadata_memloaded.json")
-        maccor_timestamp_original_fname = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000151_test.052")
-        cls.data_timestamp = pd.read_csv(maccor_timestamp_fname, index_col=0)
-        cls.metadata_timestamp = loadfn(maccor_timestamp_meta_fname)
-        cls.datapath_timestamp = BEEPDatapathChildTest(
-            raw_data=cls.data_timestamp,
-            metadata=cls.metadata_timestamp,
-            paths={"raw": maccor_timestamp_original_fname, "raw_metadata": maccor_timestamp_meta_fname}
-        )
-
-
         # Small maccor file with parameters
         maccor_small_params_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_parameterized_memloaded.csv")
         maccor_small_params_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_parameterized_metadata_memloaded.json")
@@ -210,7 +196,6 @@ class TestBEEPDatapath(unittest.TestCase):
         for dp in [
             self.datapath_diag,
             self.datapath_nodiag,
-            self.datapath_timestamp,
             self.datapath_diag_normal,
             self.datapath_diag_misplaced,
             self.datapath_paused,
