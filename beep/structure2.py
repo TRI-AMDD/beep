@@ -1118,6 +1118,18 @@ class BEEPDatapath(abc.ABC, MSONable):
             return False
 
 
+
+class BEEPDatapathWithEIS(abc.ABC, BEEPDatapath):
+
+    def __init__(self, *args, **kwargs):
+        self.eis = None
+        super(BEEPDatapathWithEIS, self).__init__()
+
+    def load_eis(self):
+        raise NotImplementedError("EIS containing datapath must implement 'load_eis' method.")
+
+
+
 class ArbinDatapath(BEEPDatapath):
 
     @classmethod
@@ -1164,7 +1176,9 @@ class ArbinDatapath(BEEPDatapath):
         return cls(data, metadata, paths)
 
 
-class MaccorDatapath(BEEPDatapath):
+
+# todo: ALEXTODO needs its own tests
+class MaccorDatapath(BEEPDatapathWithEIS):
 
     class MaccorEIS(EISpectrum):
         def from_file(cls, filename):
@@ -1266,15 +1280,9 @@ class MaccorDatapath(BEEPDatapath):
         # will automatically look for EIS files based on the raw filename, if available
 
         # todo: ALEXTODO: move this to load_eis method or similar
-        # # Check for EIS files
-        # if include_eis:
 
-        # else:
-        #     eis = None
-
-
-        if path=None:
-            eis_pattern = ".*.".join(filename.rsplit(".", 1))
+        if path:
+            eis_pattern = ".*.".join(path.rsplit(".", 1))
             all_eis_files = glob(eis_pattern)
             eis = EISpectrum.from_maccor_file(all_eis_files[0])
 
