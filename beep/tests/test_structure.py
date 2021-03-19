@@ -574,6 +574,8 @@ class TestMaccorDatapath(unittest.TestCase):
     def setUp(self) -> None:
         self.good_file = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000019_CH70.070")
 
+        self.w_diagnostics = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000020_CH71.071")
+
     def test_from_file(self):
         md = MaccorDatapath.from_file(self.good_file)
         self.assertEqual(md.paths.get("raw"), self.good_file)
@@ -598,8 +600,19 @@ class TestMaccorDatapath(unittest.TestCase):
         pass
 
     # based on RCRT.test_quantity_sum_maccor
-    def test_quantity_sum_maccor(self):
-        pass
+    def test_get_quantity_sum(self):
+        md = MaccorDatapath.from_file(self.w_diagnostics)
+
+        cycle_sign = np.sign(np.diff(md.raw_data["cycle_index"]))
+        capacity_sign = np.sign(np.diff(md.raw_data["charge_capacity"]))
+        self.assertTrue(
+            np.all(capacity_sign >= -cycle_sign)
+        )  # Capacity increases throughout cycle
+        capacity_sign = np.sign(np.diff(md.raw_data["discharge_capacity"]))
+        self.assertTrue(
+            np.all(capacity_sign >= -cycle_sign)
+        )  # Capacity increases throughout cycle
+
 
     # based on RCRT.test_whether_step_is_waveform
     def test_whether_step_is_waveform(self):

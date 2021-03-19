@@ -1187,14 +1187,14 @@ class MaccorDatapath(BEEPDatapath):
         data.rename(str.lower, axis="columns", inplace=True)
         data = data.astype(MACCOR_CONFIG["data_types"])
         data.rename(MACCOR_CONFIG["data_columns"], axis="columns", inplace=True)
-        data["charge_capacity"] = cls.get_maccor_quantity_sum(
+        data["charge_capacity"] = cls.quantity_sum(
             data, "capacity", "charge"
         )
-        data["discharge_capacity"] = cls.get_maccor_quantity_sum(
+        data["discharge_capacity"] = cls.quantity_sum(
             data, "capacity", "discharge"
         )
-        data["charge_energy"] = cls.get_maccor_quantity_sum(data, "energy", "charge")
-        data["discharge_energy"] = cls.get_maccor_quantity_sum(
+        data["charge_energy"] = cls.quantity_sum(data, "energy", "charge")
+        data["discharge_energy"] = cls.quantity_sum(
             data, "energy", "discharge"
         )
 
@@ -1233,7 +1233,7 @@ class MaccorDatapath(BEEPDatapath):
 
 
     @staticmethod
-    def get_maccor_quantity_sum(data, quantity, state_type):
+    def quantity_sum(data, quantity, state_type):
         """
         Computes non-decreasing capacity or energy (either charge or discharge)
         through multiple steps of a single cycle and resets capacity at the
