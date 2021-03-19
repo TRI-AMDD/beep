@@ -396,7 +396,6 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertEqual(len(summary_diag.index), len(summary_diag["date_time_iso"]))
         self.assertEqual(summary_diag["paused"].max(), 0)
         self.run_dtypes_check(summary_diag)
-        print("diag ok")
 
         # incorporates test_get_energy and get_charge_throughput
         summary = self.datapath_nodiag.summarize_cycles(nominal_capacity=4.7, full_fast_charge=0.8)
@@ -404,11 +403,7 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertEqual(np.around(summary["energy_efficiency"][5], 7), np.around(np.float32(0.872866405753033), 7))
         self.assertEqual(summary["charge_throughput"][5], np.float32(6.7614093))
         self.assertEqual(summary["energy_throughput"][5], np.float32(23.2752363))
-
-
-        # test datatypes of both diag and nondiag capable datapaths
         self.run_dtypes_check(summary)
-        print("nodiag ok")
 
     # based on RCRT.test_determine_structuring_parameters
     def test_determine_structuring_parameters(self):
@@ -556,12 +551,9 @@ class TestArbinDatapath(unittest.TestCase):
 
     def test_from_file(self):
         ad = ArbinDatapath.from_file(self.good_file)
-
-        print(ad.raw_data)
-        print(ad["paths"])
-
-        ad = ArbinDatapath.from_file(self.bad_file)
-
+        self.assertEqual(ad.paths.get("raw"), self.good_file)
+        self.assertEqual(ad.paths.get("metadata"), self.good_file.replace(".csv", "_Metadata.csv"))
+        self.assertTupleEqual(ad.raw_data.shape, (251263, 16))
 
     # based on PCRT.test_from_arbin_insufficient_interpolation_length
     def test_from_arbin_insufficient_interpolation_length(self):
