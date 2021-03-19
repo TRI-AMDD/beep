@@ -579,8 +579,11 @@ class TestMaccorDatapath(unittest.TestCase):
 
     def setUp(self) -> None:
         self.good_file = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000019_CH70.070")
-        self.diagnostics = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000020_CH71.071")
-        self.waveform = os.path.join(TEST_FILE_DIR, "test_drive_071620.095")
+        self.diagnostics_file = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000020_CH71.071")
+        self.waveform_file = os.path.join(TEST_FILE_DIR, "test_drive_071620.095")
+        self.broken_file= os.path.join(TEST_FILE_DIR, "PreDiag_000229_000229_truncated.034")
+        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+
 
     def test_from_file(self):
         md = MaccorDatapath.from_file(self.good_file)
@@ -607,7 +610,7 @@ class TestMaccorDatapath(unittest.TestCase):
 
     # based on RCRT.test_quantity_sum_maccor
     def test_get_quantity_sum(self):
-        md = MaccorDatapath.from_file(self.diagnostics)
+        md = MaccorDatapath.from_file(self.diagnostics_file)
 
         cycle_sign = np.sign(np.diff(md.raw_data["cycle_index"]))
         capacity_sign = np.sign(np.diff(md.raw_data["charge_capacity"]))
@@ -621,7 +624,7 @@ class TestMaccorDatapath(unittest.TestCase):
 
     # based on RCRT.test_whether_step_is_waveform
     def test_step_is_waveform(self):
-        md = MaccorDatapath.from_file(self.waveform)
+        md = MaccorDatapath.from_file(self.waveform_file)
         df = md.raw_data
         self.assertTrue(df.loc[df.cycle_index == 6].
                         groupby("step_index").apply(step_is_waveform_dchg).any())
@@ -632,7 +635,7 @@ class TestMaccorDatapath(unittest.TestCase):
 
     # based on RCRT.test_get_interpolated_waveform_discharge_cycles
     def test_interpolate_waveform_discharge_cycles(self):
-        md = MaccorDatapath.from_file(self.waveform)
+        md = MaccorDatapath.from_file(self.waveform_file)
         all_interpolated = md.interpolate_cycles()
         all_interpolated = all_interpolated[(all_interpolated.step_type == "discharge")]
         self.assertTrue(all_interpolated.columns[0] == 'test_time')
@@ -721,7 +724,12 @@ class TestMaccorDatapath(unittest.TestCase):
 
     # based on PCRT.test_from_maccor_insufficient_interpolation_length
     def test_from_maccor_insufficient_interpolation_length(self):
-        pass
+        md = MaccorDatapath.from_file(self.broken_file)
+        vrange, num_points, nominal_capacity, fast_charge, diag = md.determine_structuring_parameters()
+        self.assertEqual(diag['parameter_set'], 'Tesla21700')
+        diag_interp = md.interpolate_diagnostic_cycles(diag, resolution=1000, v_resolution=0.0005)
+        self.assertEqual(np.around(diag_interp[diag_interp.cycle_index == 1].charge_capacity.median(), 3),
+                         np.around(0.6371558214610992, 3))
 
     # based on RCRT.test_get_diagnostic
     # though it is based on maccor files

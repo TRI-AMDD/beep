@@ -864,8 +864,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         result = pd.concat(all_dfs, ignore_index=True)
         # Cycle_index gets a little weird about typing, so round it here
         result.cycle_index = result.cycle_index.round()
-
-        result = result.astype(STRUCTURE_DTYPES["diagnostic_interpolated"])
+        result = self._cast_dtypes(result, "diagnostic_interpolated")
 
         return result
 
