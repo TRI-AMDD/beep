@@ -704,29 +704,20 @@ class TestMaccorDatapath(unittest.TestCase):
                 == (interp2["voltage"] - voltage_check).abs()
                 ]
             closest_interp2_match = interp2.loc[closest_interp2_index]
-            # print(closest_interp2_match)
             closest_discharge_index = discharge.index[
                 (discharge["voltage"] - voltage_check).abs().min()
                 == (discharge["voltage"] - voltage_check).abs()
                 ]
             closest_discharge_match = discharge.loc[closest_discharge_index]
-            # print(closest_discharge_match)
             for column_check in columns_to_check:
                 off_by = (
                         closest_interp2_match.iloc[0][column_check]
                         - closest_discharge_match.iloc[0][column_check]
                 )
-                # print(column_check)
-                # print(np.abs(off_by))
-                # print(
-                #     np.abs(closest_interp2_match.iloc[0][column_check])
-                #     * acceptable_error
-                # )
-                assert np.abs(off_by) <= (
+                self.assertLessEqual(np.abs(off_by),
                         np.abs(closest_interp2_match.iloc[0][column_check])
                         * acceptable_error
-                        + acceptable_error_offest
-                )
+                        + acceptable_error_offest)
 
     # based on PCRT.test_from_maccor_insufficient_interpolation_length
     def test_from_maccor_insufficient_interpolation_length(self):
