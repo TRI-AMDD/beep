@@ -631,7 +631,7 @@ class TestMaccorDatapath(unittest.TestCase):
                         groupby("step_index").apply(step_is_waveform_dchg).any())
 
     # based on RCRT.test_get_interpolated_waveform_discharge_cycles
-    def test_get_interpolated_waveform_discharge_cycles(self):
+    def test_interpolate_waveform_discharge_cycles(self):
         md = MaccorDatapath.from_file(self.waveform)
         all_interpolated = md.interpolate_cycles()
         all_interpolated = all_interpolated[(all_interpolated.step_type == "discharge")]
@@ -645,8 +645,88 @@ class TestMaccorDatapath(unittest.TestCase):
         self.assertEqual(subset_interpolated[subset_interpolated.cycle_index == 6].shape[0], 1000)
 
     # based on RCRT.test_get_interpolated_cycles_maccor
-    def test_get_interpolated_cycles_maccor(self):
-        pass
+    def test_interpolate_cycles(self):
+        md = MaccorDatapath.from_file(self.good_file)
+        all_interpolated = md.interpolate_cycles(
+            v_range=[3.0, 4.2], resolution=10000
+        )
+
+        self.assertSetEqual(set(all_interpolated.columns.tolist()),
+                            {'voltage',
+                             'test_time',
+                             'discharge_capacity',
+                             'discharge_energy',
+                             'current',
+                             'charge_capacity',
+                             'charge_energy',
+                             'internal_resistance',
+                             'cycle_index',
+                             'step_type'}
+                            )
+        interp2 = all_interpolated[
+            (all_interpolated.cycle_index == 2)
+            & (all_interpolated.step_type == "discharge")
+            ].sort_values("discharge_capacity")
+        interp3 = all_interpolated[
+            (all_interpolated.cycle_index == 1)
+            & (all_interpolated.step_type == "charge")
+            ].sort_values("charge_capacity")
+
+        self.assertTrue(interp3.current.mean() > 0)
+        self.assertEqual(len(interp3.voltage), 10000)
+        self.assertEqual(interp3.voltage.max(), np.float32(4.100838))
+        self.assertEqual(interp3.voltage.min(), np.float32(3.3334765))
+        np.testing.assert_almost_equal(
+            interp3[
+                interp3.charge_capacity <= interp3.charge_capacity.median()
+                ].current.iloc[0],
+            2.423209,
+            decimal=6,
+        )
+
+        df = md.raw_data
+        cycle_2 = df[df["cycle_index"] == 2]
+        discharge = cycle_2[cycle_2.step_index == 12]
+        discharge = discharge.sort_values("discharge_capacity")
+
+        acceptable_error = 0.01
+        acceptable_error_offest = 0.001
+        voltages_to_check = [3.3, 3.2, 3.1]
+        columns_to_check = [
+            "voltage",
+            "current",
+            "discharge_capacity",
+            "charge_capacity",
+        ]
+        for voltage_check in voltages_to_check:
+            closest_interp2_index = interp2.index[
+                (interp2["voltage"] - voltage_check).abs().min()
+                == (interp2["voltage"] - voltage_check).abs()
+                ]
+            closest_interp2_match = interp2.loc[closest_interp2_index]
+            # print(closest_interp2_match)
+            closest_discharge_index = discharge.index[
+                (discharge["voltage"] - voltage_check).abs().min()
+                == (discharge["voltage"] - voltage_check).abs()
+                ]
+            closest_discharge_match = discharge.loc[closest_discharge_index]
+            # print(closest_discharge_match)
+            for column_check in columns_to_check:
+                off_by = (
+                        closest_interp2_match.iloc[0][column_check]
+                        - closest_discharge_match.iloc[0][column_check]
+                )
+                # print(column_check)
+                # print(np.abs(off_by))
+                # print(
+                #     np.abs(closest_interp2_match.iloc[0][column_check])
+                #     * acceptable_error
+                # )
+                assert np.abs(off_by) <= (
+                        np.abs(closest_interp2_match.iloc[0][column_check])
+                        * acceptable_error
+                        + acceptable_error_offest
+                )
 
     # based on PCRT.test_from_maccor_insufficient_interpolation_length
     def test_from_maccor_insufficient_interpolation_length(self):
