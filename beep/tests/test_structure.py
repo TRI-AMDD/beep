@@ -47,7 +47,7 @@ TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 
 
-from beep.structure2 import ArbinDatapath, BEEPDatapath
+from beep.structure2 import BEEPDatapath, ArbinDatapath, MaccorDatapath
 
 
 # todo: Dont fit anywhere/ need to be integrated list
@@ -512,7 +512,6 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertLessEqual(capacities.iloc[0, 0], 1.1)
 
 
-
 class TestArbinDatapath(unittest.TestCase):
     """
     Tests specific to Arbin cyclers.
@@ -572,8 +571,15 @@ class TestMaccorDatapath(unittest.TestCase):
     Tests specific to Maccor cyclers.
     """
 
+    def setUp(self) -> None:
+        self.good_file = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000019_CH70.070")
+
     def test_from_file(self):
-        pass
+        md = MaccorDatapath.from_file(self.good_file)
+        self.assertEqual(md.paths.get("raw"), self.good_file)
+        self.assertEqual(md.paths.get("metadata"), self.good_file.replace(".csv", "_Metadata.csv"))
+        self.assertTupleEqual(md.raw_data.shape, (11669, 39))
+
 
     # based on RCRT.test_waveform_charge_discharge_capacity
     def test_waveform_charge_discharge_capacity(self):

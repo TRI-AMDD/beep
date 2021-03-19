@@ -343,11 +343,6 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         return cls.from_dict(d)
 
-
-    # todo: ALEXTODO needs validation
-    def validate(self):
-        pass
-
     def autostructure(self):
         """
         Automatically run structuring based on automatically determined structuring parameters.
@@ -1125,8 +1120,6 @@ class BEEPDatapath(abc.ABC, MSONable):
             return False
 
 
-
-
 class ArbinDatapath(BEEPDatapath):
 
     @classmethod
@@ -1216,6 +1209,18 @@ class MaccorDatapath(BEEPDatapath):
         metadata = {col: item[0] for col, item in metadata.to_dict("list").items()}
 
 
+        # standardizing time format
+        data["date_time_iso"] = data["date_time"].apply(cls.correct_timestamp)
+
+        paths = {
+            "raw": path,
+            "metadata": path
+        }
+
+        return cls(data, metadata, paths=paths)
+
+
+    def load_eis(self, path):
         # todo: ALEXTODO: move this to load_eis method or similar
         # # Check for EIS files
         # if include_eis:
@@ -1224,16 +1229,7 @@ class MaccorDatapath(BEEPDatapath):
         #     eis = EISpectrum.from_maccor_file(all_eis_files[0])
         # else:
         #     eis = None
-
-        # standardizing time format
-        data["date_time_iso"] = data["date_time"].apply(cls.correct_timestamp)
-
-        paths = {
-            "raw_data": path,
-            "metadata": path
-        }
-
-        return cls(data, metadata, paths=paths)
+        pass
 
 
     @staticmethod
