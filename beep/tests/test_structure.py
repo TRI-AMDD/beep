@@ -275,41 +275,6 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertEqual(datapath.paths.get("structured"), test_file)
         self.assertEqual(datapath.paths.get("raw"), None)
 
-    # based on RCRT.test_binary_save
-    def test_tofrom_numpy(self):
-        with ScratchDir("."):
-            self.datapath_nodiag.to_numpy("test")
-            loaded = BEEPDatapathChildTest.from_numpy("test")
-
-        # Test equivalence of columns
-        # More strict test
-        self.assertTrue(
-            np.all(
-                loaded.raw_data[BEEPDatapathChildTest.FLOAT_COLUMNS]
-                == self.datapath_nodiag.raw_data[BEEPDatapathChildTest.FLOAT_COLUMNS]
-            )
-        )
-        self.assertTrue(
-            np.all(
-                loaded.raw_data[BEEPDatapathChildTest.INT_COLUMNS]
-                == self.datapath_nodiag.raw_data[BEEPDatapathChildTest.INT_COLUMNS]
-            )
-        )
-
-        # Looser test (for future size testing)
-        self.assertTrue(
-            np.allclose(
-                loaded.raw_data[BEEPDatapathChildTest.FLOAT_COLUMNS],
-                self.datapath_nodiag.raw_data[BEEPDatapathChildTest.FLOAT_COLUMNS],
-            )
-        )
-        self.assertTrue(
-            np.all(
-                loaded.raw_data[BEEPDatapathChildTest.INT_COLUMNS]
-                == self.datapath_nodiag.raw_data[BEEPDatapathChildTest.INT_COLUMNS]
-            )
-        )
-
     # based on RCRT.test_get_interpolated_charge_step
     def test_interpolate_step(self):
         reg_cycles = [i for i in self.datapath_nodiag.raw_data.cycle_index.unique()]
@@ -537,6 +502,10 @@ class TestBEEPDatapath(unittest.TestCase):
         # pcycler_run = loadfn(self.pcycler_run_file)
         # self.assertEqual(pcycler_run.get_cycle_life(30, 0.99), 82)
         # self.assertEqual(pcycler_run.get_cycle_life(), 189)
+
+        pcycler_run_file = os.path.join(
+            TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_processed.json"
+        )
         pass
 
     # based on PCRT.test_cycles_to_reach_set_capacities

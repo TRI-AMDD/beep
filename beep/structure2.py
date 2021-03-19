@@ -203,41 +203,6 @@ class BEEPDatapath(abc.ABC, MSONable):
         raise NotImplementedError
 
 
-    # adapted from RCR.load_numpy_binary
-    # todo: adapted from PCR.load_numpy_binary
-    @classmethod
-    def from_numpy(cls, name):
-        """
-        Load RawCyclerRun from numeric binary file
-
-        Args:
-            name (str): str prefix for numeric and metadata files
-
-        Returns:
-            beep_structure.RawCyclerRun loaded from binary files
-
-        """
-        loaded = np.load("{}.npz".format(name))
-        data = dict(zip(cls.FLOAT_COLUMNS, np.transpose(loaded["float_array"])))
-        data.update(dict(zip(cls.INT_COLUMNS, np.transpose(loaded["int_array"]))))
-        data = pd.DataFrame(data)
-        metadata = loadfn("{}.json".format(name))
-        return cls(data, metadata)
-
-    # adapted from RCR.save_numpy_binary
-    # todo: adapted from PCR.save_numpy_binary
-    def to_numpy(self, name):
-        """
-        Save RawCyclerRun as a numeric array and metadata json
-
-        Args:
-            name (str): file prefix, saves to a .npz and .json file
-        """
-        float_array = np.array(self.raw_data[self.FLOAT_COLUMNS].astype(np.float64))
-        int_array = np.array(self.raw_data[self.INT_COLUMNS].astype(np.int64))
-        np.savez_compressed(name, float_array=float_array, int_array=int_array)
-        dumpfn(self.metadata.raw, "{}.json".format(name))
-
     def _cast_dtypes(self, result, structure_dtypes_key):
         available_dtypes = {}
         for field, dtype in STRUCTURE_DTYPES[structure_dtypes_key].items():
