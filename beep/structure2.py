@@ -1039,6 +1039,67 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         return cycle_life
 
+
+    @StructuringDecorators.must_be_structured
+    def cycles_to_capacities(self, cycle_min=200, cycle_max=1800, cycle_interval=200):
+        """
+        Get discharge capacity at constant intervals of 200 cycles
+
+        Args:
+            cycle_min (int): Cycle number to being forecasting capacity at
+            cycle_max (int): Cycle number to end forecasting capacity at
+            cycle_interval (int): Intervals for forecasts
+
+        Returns:
+            pandas.DataFrame:
+        """
+        discharge_capacities = pd.DataFrame(
+            np.zeros((1, int((cycle_max - cycle_min) / cycle_interval)))
+        )
+        counter = 0
+        cycle_indices = np.arange(cycle_min, cycle_max, cycle_interval)
+        for cycle_index in cycle_indices:
+            try:
+                discharge_capacities[counter] = self.structured_summary.discharge_capacity.iloc[
+                    cycle_index
+                ]
+            except IndexError:
+                pass
+            counter = counter + 1
+        discharge_capacities.columns = np.core.defchararray.add(
+            "cycle_", cycle_indices.astype(str)
+        )
+        return discharge_capacities
+
+
+    @StructuringDecorators.must_be_structured
+    def capacities_to_cycles(
+        self, thresh_max_cap=0.98, thresh_min_cap=0.78, interval_cap=0.03
+    ):
+        """
+        Get cycles to reach set threshold capacities.
+
+        Args:
+            thresh_max_cap (float): Upper bound on capacity to compute cycles at.
+            thresh_min_cap (float): Lower bound on capacity to compute cycles at.
+            interval_cap (float): Interval/step size.
+
+        Returns:
+            pandas.DataFrame:
+        """
+        threshold_list = np.around(
+            np.arange(thresh_max_cap, thresh_min_cap, -interval_cap), 2
+        )
+        counter = 0
+        cycles = pd.DataFrame(np.zeros((1, len(threshold_list))))
+        for threshold in threshold_list:
+            cycles[counter] = self.get_cycle_life(threshold=threshold)
+            counter = counter + 1
+        cycles.columns = np.core.defchararray.add(
+            "capacity_", threshold_list.astype(str)
+        )
+        return cycles
+
     @property
     def paused_intervals(self):
         # a method to use get_max_paused_over_threshold

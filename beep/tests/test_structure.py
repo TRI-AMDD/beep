@@ -173,6 +173,11 @@ class TestBEEPDatapath(unittest.TestCase):
         )
 
 
+        cls.cycle_run_file = os.path.join(
+            TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_processed.json"
+        )
+
+
         # Use maccor bigfile, if tests are enabled for it
 
         # maccor_file_w_parameters_s3 = {
@@ -497,23 +502,21 @@ class TestBEEPDatapath(unittest.TestCase):
 
     # based on PCRT.test_get_cycle_life
     def test_get_cycle_life(self):
-        # pcycler_run = loadfn(self.pcycler_run_file)
-
-        run_file = os.path.join(
-            TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_processed.json"
-        )
-
-        datapath = BEEPDatapathChildTest.from_json_file(run_file)
+        datapath = BEEPDatapathChildTest.from_json_file(self.cycle_run_file)
         self.assertEqual(datapath.get_cycle_life(30, 0.99), 82)
         self.assertEqual(datapath.get_cycle_life(40, 0.0), 189)
 
     # based on PCRT.test_cycles_to_reach_set_capacities
-    def test_cycles_to_reach_set_capacities(self):
-        pass
+    def test_capacities_to_cycles(self):
+        datapath = BEEPDatapathChildTest.from_json_file(self.cycle_run_file)
+        cycles = datapath.capacities_to_cycles()
+        self.assertGreaterEqual(cycles.iloc[0, 0], 100)
 
     # based on PCRT.test_capacities_at_set_cycles
-    def test_capacities_at_set_cycles(self):
-        pass
+    def test_cycles_to_capacities(self):
+        datapath = BEEPDatapathChildTest.from_json_file(self.cycle_run_file)
+        capacities = datapath.cycles_to_capacities()
+        self.assertLessEqual(capacities.iloc[0, 0], 1.1)
 
 
 
