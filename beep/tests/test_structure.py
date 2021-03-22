@@ -23,7 +23,7 @@ import pandas as pd
 
 from pathlib import Path
 from beep import MODULE_DIR
-from beep.structure import (
+from beep.structure_old import (
     RawCyclerRun,
     ProcessedCyclerRun,
     process_file_list_from_json,
@@ -45,15 +45,9 @@ SKIP_MSG = "Tests requiring large files with diagnostic cycles are disabled, set
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
-
-
-from beep.structure2 import (
-    BEEPDatapath,
-    ArbinDatapath,
-    MaccorDatapath,
-    step_is_waveform_chg,
-    step_is_waveform_dchg,
-)
+from beep.structure.base import BEEPDatapath, step_is_waveform_dchg, step_is_waveform_chg
+from beep.structure.arbin import ArbinDatapath
+from beep.structure.maccor import MaccorDatapath
 
 
 # todo: Dont fit anywhere/ need to be integrated list
@@ -965,6 +959,131 @@ class TestMaccorDatapath(unittest.TestCase):
 
         os.remove(processed_cycler_run_loc)
     # todo: ALEXTODO test EIS methods
+
+
+class TestCLI(unittest.TestCase):
+
+    def setUp(self):
+        self.arbin_file = os.path.join(
+            TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29.csv"
+        )
+
+    # based on CliTest.test_simple_conversion
+    def test_simple_conversion(self):
+        with ScratchDir("."):
+            # Set root env
+            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
+            # Make necessary directories
+            os.mkdir("data-share")
+            os.mkdir(os.path.join("data-share", "structure"))
+            # Create dummy json obj
+            json_obj = {
+                "file_list": [self.arbin_file],
+                "run_list": [0],
+                "validity": ["valid"],
+            }
+            json_string = json.dumps(json_obj)
+
+            command = "structure {}".format(os_format(json_string))
+            result = subprocess.check_call(command, shell=True)
+            self.assertEqual(result, 0)
+            print(os.listdir(os.path.join("data-share", "structure")))
+            processed = loadfn(
+                os.path.join(
+                    "data-share",
+                    "structure",
+                    "2017-12-04_4_65C-69per_6C_CH29_structure.json",
+                )
+            )
+
+        self.assertIsInstance(processed, ProcessedCyclerRun)
+
+    # based on PCRT.test_json_processing
+    def test_json_processing(self):
+
+        with ScratchDir("."):
+            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
+            os.mkdir("data-share")
+            os.mkdir(os.path.join("data-share", "structure"))
+
+            # Create dummy json obj
+            json_obj = {
+                "file_list": [self.arbin_file, "garbage_file"],
+                "run_list": [0, 1],
+                "validity": ["valid", "invalid"],
+            }
+            json_string = json.dumps(json_obj)
+            # Get json output from method
+            json_output = process_file_list_from_json(json_string)
+            reloaded = json.loads(json_output)
+
+            # Actual tests here
+            # Ensure garbage file doesn't have output string
+            self.assertEqual(reloaded["invalid_file_list"][0], "garbage_file")
+
+            # Ensure first is correct
+            loaded_processed_cycler_run = loadfn(reloaded["file_list"][0])
+            loaded_from_raw = RawCyclerRun.from_file(
+                json_obj["file_list"][0]
+            ).to_processed_cycler_run()
+            self.assertTrue(
+                np.all(loaded_processed_cycler_run.summary == loaded_from_raw.summary),
+                "Loaded processed cycler_run is not equal to that loaded from raw file",
+            )
+
+            # Workflow output
+            output_file_path = Path(tempfile.gettempdir()) / "results.json"
+            self.assertTrue(output_file_path.exists())
+
+            output_json = json.loads(output_file_path.read_text())
+
+            self.assertEqual(reloaded["file_list"][0], output_json["filename"])
+            self.assertEqual(os.path.getsize(output_json["filename"]), output_json["size"])
+            self.assertEqual(0, output_json["run_id"])
+            self.assertEqual("structuring", output_json["action"])
+            self.assertEqual("success", output_json["status"])
+
+        # Test same functionality with json file
+        with ScratchDir("."):
+            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
+            os.mkdir("data-share")
+            os.mkdir(os.path.join("data-share", "structure"))
+
+            json_obj = {
+                "file_list": [self.arbin_file, "garbage_file"],
+                "run_list": [0, 1],
+                "validity": ["valid", "invalid"],
+            }
+            dumpfn(json_obj, "test.json")
+            # Get json output from method
+            json_output = process_file_list_from_json("test.json")
+            reloaded = json.loads(json_output)
+
+            # Actual tests here
+            # Ensure garbage file doesn't have output string
+            self.assertEqual(reloaded["invalid_file_list"][0], "garbage_file")
+
+            # Ensure first is correct
+            loaded_processed_cycler_run = loadfn(reloaded["file_list"][0])
+            loaded_from_raw = RawCyclerRun.from_file(
+                json_obj["file_list"][0]
+            ).to_processed_cycler_run()
+            self.assertTrue(
+                np.all(loaded_processed_cycler_run.summary == loaded_from_raw.summary),
+                "Loaded processed cycler_run is not equal to that loaded from raw file",
+            )
+
+            # Workflow output
+            output_file_path = Path(tempfile.gettempdir()) / "results.json"
+            self.assertTrue(output_file_path.exists())
+
+            output_json = json.loads(output_file_path.read_text())
+
+            self.assertEqual(reloaded["file_list"][0], output_json["filename"])
+            self.assertEqual(os.path.getsize(output_json["filename"]), output_json["size"])
+            self.assertEqual(0, output_json["run_id"])
+            self.assertEqual("structuring", output_json["action"])
+            self.assertEqual("success", output_json["status"])
 
 
 class TestIndigoDatapath(unittest.TestCase):
