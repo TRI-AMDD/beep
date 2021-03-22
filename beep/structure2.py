@@ -7,6 +7,7 @@ import copy
 import pandas as pd
 import numpy as np
 import os
+import tqdm
 import pytz
 import time
 from scipy import integrate
@@ -1125,7 +1126,7 @@ class BEEPDatapathWithEIS(abc.ABC, BEEPDatapath):
         self.eis = None
         super(BEEPDatapathWithEIS, self).__init__()
 
-    def load_eis(self):
+    def load_eis(self, *args, **kwargs):
         raise NotImplementedError("EIS containing datapath must implement 'load_eis' method.")
 
 
@@ -1179,8 +1180,20 @@ class ArbinDatapath(BEEPDatapath):
 
 # todo: ALEXTODO needs its own tests
 class MaccorDatapath(BEEPDatapathWithEIS):
+    """
+
+
+    Attributes:
+        - eis [MaccorEIS]: List of MaccorEIS objects, each representing an electrochemical
+            impedance spectrum complete with data and metadata.
+    """
 
     class MaccorEIS(EISpectrum):
+        """
+        One EIS run for Maccor files.
+        """
+
+        @classmethod
         def from_file(cls, filename):
             """
             EISpectrum from Maccor file.
@@ -1221,6 +1234,8 @@ class MaccorDatapath(BEEPDatapathWithEIS):
             data = "\n".join(lines[10:])
             data = pd.read_csv(StringIO(data), delimiter="\t")
             return cls(data=data, metadata=metadata)
+
+
 
 
     @classmethod
@@ -1275,16 +1290,32 @@ class MaccorDatapath(BEEPDatapathWithEIS):
         return cls(data, metadata, paths=paths)
 
 
-    def load_eis(self, path=None):
+    def load_eis(self, paths=None):
+        """
+        Load eis from specified paths to EIS files, or automatically detect them from
+        the directory where the raw maccor data file is located.
 
-        # will automatically look for EIS files based on the raw filename, if available
+        Args:
+            paths:
 
-        # todo: ALEXTODO: move this to load_eis method or similar
+        Returns:
 
-        if path:
-            eis_pattern = ".*.".join(path.rsplit(".", 1))
-            all_eis_files = glob(eis_pattern)
-            eis = EISpectrum.from_maccor_file(all_eis_files[0])
+        """
+
+        # Automatically find EIS from directory
+
+        if not paths:
+            # todo: ALEXTODO replace with logging
+            print(f"Looking in directory {self.paths['raw']} for EIS runs, as no paths specified to `load_eis`.")
+            eis_pattern = ".*.".join(self.paths["raw"].rsplit(".", 1))
+            paths = glob(eis_pattern)
+
+        eis_runs = []
+        for path in tqdm.tqdm(paths, desc="Loading EIS files..."):
+            eis = EISpectrum.from_maccor_file(path)
+            eis_runs.append(eis)
+
+        self.eis = eis_runs
 
 
 

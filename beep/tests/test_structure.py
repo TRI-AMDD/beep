@@ -221,6 +221,9 @@ class TestBEEPDatapath(unittest.TestCase):
             def some_extra_method(self):
                 return True
 
+            # missing required method!
+            # should fail
+
         # Ensure this bad child class has ABC error
         with self.assertRaises(TypeError):
             BEEPDatapathChildBad(raw_data=pd.DataFrame({}), metadata={"some": "metadata"})
