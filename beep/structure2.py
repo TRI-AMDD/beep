@@ -1119,12 +1119,11 @@ class BEEPDatapath(abc.ABC, MSONable):
             return False
 
 
-
-class BEEPDatapathWithEIS(abc.ABC, BEEPDatapath):
+class BEEPDatapathWithEIS(BEEPDatapath):
 
     def __init__(self, *args, **kwargs):
         self.eis = None
-        super(BEEPDatapathWithEIS, self).__init__()
+        super(BEEPDatapathWithEIS, self).__init__(*args, **kwargs)
 
     def load_eis(self, *args, **kwargs):
         raise NotImplementedError("EIS containing datapath must implement 'load_eis' method.")
@@ -1236,8 +1235,6 @@ class MaccorDatapath(BEEPDatapathWithEIS):
             return cls(data=data, metadata=metadata)
 
 
-
-
     @classmethod
     def from_file(cls, path):
         """
@@ -1312,7 +1309,7 @@ class MaccorDatapath(BEEPDatapathWithEIS):
 
         eis_runs = []
         for path in tqdm.tqdm(paths, desc="Loading EIS files..."):
-            eis = EISpectrum.from_maccor_file(path)
+            eis = self.MaccorEIS.from_file(path)
             eis_runs.append(eis)
 
         self.eis = eis_runs
