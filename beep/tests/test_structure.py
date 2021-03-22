@@ -46,6 +46,7 @@ TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 from beep.structure.base import BEEPDatapath, step_is_waveform_dchg, step_is_waveform_chg
+from beep.structure.base_eis import EISpectrum, BEEPDatapathWithEIS
 from beep.structure.arbin import ArbinDatapath
 from beep.structure.maccor import MaccorDatapath
 
@@ -63,19 +64,22 @@ from beep.structure.maccor import MaccorDatapath
 
 
 
-class BEEPDatapathChildTest(BEEPDatapath):
-    """
-    A test class representing any child of BEEPDatapath.
-    """
-    @classmethod
-    def from_file(cls, path, index_col=0, **kwargs):
-        return pd.read_csv(path, index_col=0, **kwargs)
+
 
 
 class TestBEEPDatapath(unittest.TestCase):
     """
     Tests common to all datapaths.
     """
+
+    class BEEPDatapathChildTest(BEEPDatapath):
+        """
+        A test class representing any child of BEEPDatapath.
+        """
+
+        @classmethod
+        def from_file(cls, path, index_col=0, **kwargs):
+            return pd.read_csv(path, index_col=0, **kwargs)
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -88,7 +92,7 @@ class TestBEEPDatapath(unittest.TestCase):
         arbin_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_arbin_metadata_memloaded.json")
         cls.data_nodiag = pd.read_csv(arbin_fname, index_col=0)
         cls.metadata_nodiag = loadfn(arbin_meta_fname)
-        cls.datapath_nodiag = BEEPDatapathChildTest(
+        cls.datapath_nodiag = cls.BEEPDatapathChildTest(
             raw_data=cls.data_nodiag,
             metadata=cls.metadata_nodiag,
             paths={"raw": arbin_fname, "raw_metadata": arbin_meta_fname}
@@ -99,7 +103,7 @@ class TestBEEPDatapath(unittest.TestCase):
         maccor_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_w_diagnostic_metadata_memloaded.json")
         cls.data_diag = pd.read_csv(maccor_fname, index_col=0)
         cls.metadata_diag = loadfn(maccor_meta_fname)
-        cls.datapath_diag = BEEPDatapathChildTest(
+        cls.datapath_diag = cls.BEEPDatapathChildTest(
             raw_data=cls.data_diag,
             metadata=cls.metadata_diag,
             paths={"raw": maccor_fname, "raw_metadata": maccor_meta_fname}
@@ -111,7 +115,7 @@ class TestBEEPDatapath(unittest.TestCase):
         maccor_paused_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_paused_metadata_memloaded.json")
         cls.data_paused = pd.read_csv(maccor_paused_fname, index_col=0)
         cls.metadata_paused = loadfn(maccor_paused_meta_fname)
-        cls.datapath_paused = BEEPDatapathChildTest(
+        cls.datapath_paused = cls.BEEPDatapathChildTest(
             raw_data=cls.data_paused,
             metadata=cls.metadata_paused,
             paths={"raw": maccor_paused_fname, "raw_metadata": maccor_paused_meta_fname}
@@ -123,7 +127,7 @@ class TestBEEPDatapath(unittest.TestCase):
         maccor_small_params_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_parameterized_metadata_memloaded.json")
         cls.data_small_params = pd.read_csv(maccor_small_params_fname, index_col=0)
         cls.metadata_small_params = loadfn(maccor_small_params_meta_fname)
-        cls.datapath_small_params = BEEPDatapathChildTest(
+        cls.datapath_small_params = cls.BEEPDatapathChildTest(
             raw_data=cls.data_small_params,
             metadata=cls.metadata_small_params,
             paths={"raw": maccor_small_params_fname, "raw_metadata": maccor_small_params_meta_fname}
@@ -137,7 +141,7 @@ class TestBEEPDatapath(unittest.TestCase):
         maccor_diag_normal_original_fname = os.path.join(TEST_FILE_DIR, "PreDiag_000287_000128short.092")
         cls.data_diag_normal = pd.read_csv(maccor_diag_normal_fname, index_col=0)
         cls.metadata_diag_normal = loadfn(maccor_diag_normal_meta_fname)
-        cls.datapath_diag_normal = BEEPDatapathChildTest(
+        cls.datapath_diag_normal = cls.BEEPDatapathChildTest(
             raw_data=cls.data_diag_normal,
             metadata=cls.metadata_diag_normal,
             paths={"raw": maccor_diag_normal_original_fname, "raw_metadata": maccor_diag_normal_meta_fname}
@@ -147,7 +151,7 @@ class TestBEEPDatapath(unittest.TestCase):
         maccor_diag_misplaced_original_fname = os.path.join(TEST_FILE_DIR, "PreDiag_000412_00008Fshort.022")
         cls.data_diag_misplaced = pd.read_csv(maccor_diag_misplaced_fname, index_col=0)
         cls.metadata_diag_misplaced = loadfn(maccor_diag_misplaced_meta_fname)
-        cls.datapath_diag_misplaced = BEEPDatapathChildTest(
+        cls.datapath_diag_misplaced = cls.BEEPDatapathChildTest(
             raw_data=cls.data_diag_misplaced,
             metadata=cls.metadata_diag_misplaced,
             paths={"raw": maccor_diag_misplaced_original_fname, "raw_metadata": maccor_diag_misplaced_meta_fname}
@@ -235,11 +239,11 @@ class TestBEEPDatapath(unittest.TestCase):
 
         truth_datapath.structure()
         d = truth_datapath.as_dict()
-        datapath_from_dict = BEEPDatapathChildTest.from_dict(d)
+        datapath_from_dict = self.BEEPDatapathChildTest.from_dict(d)
 
         fname = os.path.join(TEST_FILE_DIR, "test_serialization.json")
         truth_datapath.to_json_file(fname)
-        datapath_from_json = BEEPDatapathChildTest.from_json_file(fname)
+        datapath_from_json = self.BEEPDatapathChildTest.from_json_file(fname)
 
         for df_name in ("structured_data", "structured_summary", "diagnostic_data", "diagnostic_summary"):
             df_truth = getattr(truth_datapath, df_name)
@@ -261,7 +265,7 @@ class TestBEEPDatapath(unittest.TestCase):
             TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_processed.json"
         )
 
-        datapath = BEEPDatapathChildTest.from_json_file(test_file)
+        datapath = self.BEEPDatapathChildTest.from_json_file(test_file)
         self.assertTrue(isinstance(datapath.structured_summary, pd.DataFrame))
         self.assertTrue(isinstance(datapath.structured_data, pd.DataFrame))
         self.assertIsNone(datapath.metadata.barcode)
@@ -495,21 +499,32 @@ class TestBEEPDatapath(unittest.TestCase):
 
     # based on PCRT.test_get_cycle_life
     def test_get_cycle_life(self):
-        datapath = BEEPDatapathChildTest.from_json_file(self.cycle_run_file)
+        datapath = self.BEEPDatapathChildTest.from_json_file(self.cycle_run_file)
         self.assertEqual(datapath.get_cycle_life(30, 0.99), 82)
         self.assertEqual(datapath.get_cycle_life(40, 0.0), 189)
 
     # based on PCRT.test_cycles_to_reach_set_capacities
     def test_capacities_to_cycles(self):
-        datapath = BEEPDatapathChildTest.from_json_file(self.cycle_run_file)
+        datapath = self.BEEPDatapathChildTest.from_json_file(self.cycle_run_file)
         cycles = datapath.capacities_to_cycles()
         self.assertGreaterEqual(cycles.iloc[0, 0], 100)
 
     # based on PCRT.test_capacities_at_set_cycles
     def test_cycles_to_capacities(self):
-        datapath = BEEPDatapathChildTest.from_json_file(self.cycle_run_file)
+        datapath = self.BEEPDatapathChildTest.from_json_file(self.cycle_run_file)
         capacities = datapath.cycles_to_capacities()
         self.assertLessEqual(capacities.iloc[0, 0], 1.1)
+
+
+class TestBaseEIS(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    # test
+    def test_from_maccor(self):
+        eispectrum = EISpectrum.from_maccor_file(
+            os.path.join(TEST_FILE_DIR, "maccor_test_file_4267-66-6519.EDA0001.041")
+        )
 
 
 class TestArbinDatapath(unittest.TestCase):
@@ -958,7 +973,12 @@ class TestMaccorDatapath(unittest.TestCase):
         )
 
         os.remove(processed_cycler_run_loc)
-    # todo: ALEXTODO test EIS methods
+
+    # based on EISpectrumTest.test_from_maccor
+    def test_eis(self):
+        path = os.path.join(TEST_FILE_DIR, "maccor_test_file_4267-66-6519.EDA0001.041")
+        MaccorDatapath.MaccorEIS.from_file(path)
+
 
 
 class TestCLI(unittest.TestCase):
