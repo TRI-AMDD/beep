@@ -8,7 +8,7 @@ from monty.json import MSONable
 from beep.structure.base import BEEPDatapath
 
 
-class EISpectrum(MSONable):
+class EIS(MSONable):
     """
     Class describing an Electrochemical Impedance Spectrum
     """
@@ -22,7 +22,6 @@ class EISpectrum(MSONable):
         """
         self.data = data
         self.metadata = metadata
-
 
     @classmethod
     def from_file(cls, filename):
@@ -61,7 +60,6 @@ class EISpectrum(MSONable):
         return cls(data, metadata)
 
 
-
 class BEEPDatapathWithEIS(BEEPDatapath):
 
     def __init__(self, *args, **kwargs):
@@ -69,4 +67,5 @@ class BEEPDatapathWithEIS(BEEPDatapath):
         super(BEEPDatapathWithEIS, self).__init__(*args, **kwargs)
 
     def load_eis(self, *args, **kwargs):
-        raise NotImplementedError("EIS containing datapath must implement 'load_eis' method.")
+        raise NotImplementedError(
+            "EIS containing datapath must implement 'load_eis' method.")

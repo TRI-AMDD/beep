@@ -16,7 +16,7 @@ from beep import tqdm
 from beep import StringIO
 from beep.conversion_schemas import MACCOR_CONFIG
 
-from beep.structure.base_eis import BEEPDatapathWithEIS, EISpectrum
+from beep.structure.base_eis import BEEPDatapathWithEIS, EIS
 
 
 # todo: ALEXTODO needs docstrings
@@ -27,7 +27,7 @@ class MaccorDatapath(BEEPDatapathWithEIS):
             impedance spectrum complete with data and metadata.
     """
 
-    class MaccorEIS(EISpectrum):
+    class MaccorEIS(EIS):
         """
         One EIS run for Maccor files.
         """

@@ -46,7 +46,7 @@ TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 from beep.structure.base import BEEPDatapath, step_is_waveform_dchg, step_is_waveform_chg
-from beep.structure.base_eis import EISpectrum, BEEPDatapathWithEIS
+from beep.structure.base_eis import EIS, BEEPDatapathWithEIS
 from beep.structure.arbin import ArbinDatapath
 from beep.structure.maccor import MaccorDatapath
 
@@ -517,14 +517,48 @@ class TestBEEPDatapath(unittest.TestCase):
 
 
 class TestBaseEIS(unittest.TestCase):
-    def setUp(self):
-        pass
+    def test_BEEPDatapathWithEIS(self):
 
-    # test
-    def test_from_maccor(self):
-        eispectrum = EISpectrum.from_maccor_file(
-            os.path.join(TEST_FILE_DIR, "maccor_test_file_4267-66-6519.EDA0001.041")
-        )
+        # Must implement load_eis and from_file
+        class BEEPDatapathWithEISChildTestGood(BEEPDatapathWithEIS):
+            def from_file(self, path):
+                print(f"{path}")
+
+            def load_eis(self, *arg, **kwargs):
+                print("success BEEPDatapathWithEISChildTestGood")
+
+        class BEEPDatapathWithEISChildTestBad(BEEPDatapathWithEIS):
+            def extra_method(self):
+                pass
+
+        raw_data = pd.DataFrame({"a": [1,2,3]})
+        metadata = {"example": "metadata"}
+
+        BEEPDatapathWithEISChildTestGood(raw_data=raw_data, metadata=metadata)
+
+        with self.assertRaises(TypeError):
+            BEEPDatapathWithEISChildTestBad(raw_data=raw_data, metadata=metadata)
+
+    def test_EIS(self):
+        # must implement a from_file method
+
+        data = pd.DataFrame({"a": [1,2,3]})
+        metadata = {"example": "metadata"}
+
+        class EISChildGood(EIS):
+            def from_file(self):
+                print("success EISChildGood")
+
+        class EISChildBad(EIS):
+            def extra_method(self):
+                pass
+
+        eis = EISChildGood(data=data, metadata=metadata)
+        self.assertTrue(hasattr(eis, "from_dict"))
+        self.assertTrue(hasattr(eis, "as_dict"))
+
+        with self.assertRaises(TypeError):
+            EISChildBad()
 
 
 class TestArbinDatapath(unittest.TestCase):
