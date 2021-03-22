@@ -1,42 +1,24 @@
 """
-Base classes for beep structuring datapaths.
+Base classes and assorted functions for beep structuring datapaths.
 """
 
 import abc
 import json
-import re
-from datetime import datetime
 import copy
 
 import pandas as pd
 import numpy as np
 import os
 import tqdm
-import pytz
 import time
 from scipy import integrate
 import itertools
-import hashlib
-from dataclasses import dataclass
 
 from monty.json import MSONable
-from docopt import docopt
-from monty.serialization import loadfn, dumpfn
-from monty.tempfile import ScratchDir
-from glob import glob
 from beep import tqdm
 
 from beep import StringIO, MODULE_DIR
-from beep.validate import ValidatorBeep, BeepValidationError
-from beep.collate import add_suffix_to_filename
 from beep.conversion_schemas import (
-    ARBIN_CONFIG,
-    MACCOR_CONFIG,
-    FastCharge_CONFIG,
-    xTesladiag_CONFIG,
-    INDIGO_CONFIG,
-    NEWARE_CONFIG,
-    BIOLOGIC_CONFIG,
     STRUCTURE_DTYPES,
 )
 
