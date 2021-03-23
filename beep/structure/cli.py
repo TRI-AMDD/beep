@@ -1,9 +1,12 @@
 import re
 
 from beep import logger
-from beep.conversion_schemas import FastCharge_CONFIG, xTesladiag_CONFIG
+from beep.conversion_schemas import FastCharge_CONFIG, xTesladiag_CONFIG, ARBIN_CONFIG, MACCOR_CONFIG, INDIGO_CONFIG, BIOLOGIC_CONFIG, NEWARE_CONFIG
 from beep.structure.arbin import ArbinDatapath
 from beep.structure.maccor import MaccorDatapath
+from beep.structure.neware import NewareDatapath
+from beep.structure.indigo import IndigoDatapath
+from beep.structure.biologic import BiologicDatapath
 
 
 def process_file_list_from_json(file_list_json, processed_dir="data-share/structure/"):
@@ -102,30 +105,30 @@ def process_file_list_from_json(file_list_json, processed_dir="data-share/struct
 
 
 
+
 # todo: ALEXTODO needs validation as an argument and to actually validate during load
-def auto_load(filename):
+def auto_load(path):
     """
-    Method for loading processed cycler run from raw cycler filename,
-    processing it according to prescribed logic corresponding to the
-    file name and or the file's contents.
+    Factory method to invoke RawCyclerRun from filename with recognition of
+    type from filename, using corresponding class method as constructor.
 
     Args:
-        filename (str): filename associated with the project
-        validate (bool): whether or not to validate file
+        path (str): string corresponding to file path.
+        validate (bool): whether or not to validate file.
 
     Returns:
-        beep.structure.ProcessedCyclerRun: ProcessedCyclerRun corresponding
-            to the read and processed data from the filename
+        beep.structure.RawCyclerRun: RawCyclerRun corresponding to parsed file(s).
 
     """
-    # Arbin files are via standard pipeline
-    if re.match(FastCharge_CONFIG["file_pattern"], filename):
-        dp = ArbinDatapath.from_file(filename)
-        return raw.to_processed_cycler_run()
-    elif re.match(xTesladiag_CONFIG["file_pattern"], filename):
-        dp = MaccorDatapath.from_file(filename)
+    if re.match(ARBIN_CONFIG["file_pattern"], path) or re.match(FastCharge_CONFIG["file_pattern"], filename):
+        return ArbinDatapath.from_file(path)
+    elif re.match(MACCOR_CONFIG["file_pattern"], path) or re.match(xTesladiag_CONFIG["file_pattern"], filename):
+        return MaccorDatapath.from_file(path)
+    elif re.match(INDIGO_CONFIG["file_pattern"], path):
+        return IndigoDatapath.from_file(path)
+    elif re.match(BIOLOGIC_CONFIG["file_pattern"], path):
+        return BiologicDatapath.from_file(path)
+    elif re.match(NEWARE_CONFIG["file_pattern"], path):
+        return NewareDatapath.from_file(path)
     else:
-        raise TypeError(f"File {filename} does not match any known file patterns!")
-
-    dp.structure()
-    return dp
+        raise ValueError("{} does not match any known file pattern".format(path))

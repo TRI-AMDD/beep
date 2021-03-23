@@ -40,21 +40,24 @@ from beep.utils import os_format
 from beep.utils.s3 import download_s3_object
 import matplotlib.pyplot as plt
 
-BIG_FILE_TESTS = os.environ.get("BIG_FILE_TESTS", None) == "True"
-SKIP_MSG = "Tests requiring large files with diagnostic cycles are disabled, set BIG_FILE_TESTS=True to run full tests"
-TEST_DIR = os.path.dirname(os.path.abspath(__file__))
-TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 from beep.structure.base import BEEPDatapath, step_is_waveform_dchg, step_is_waveform_chg
 from beep.structure.base_eis import EIS, BEEPDatapathWithEIS
 from beep.structure.arbin import ArbinDatapath
 from beep.structure.maccor import MaccorDatapath
+from beep.structure.neware import NewareDatapath
+# from beep.structure.indigo import IndigoDatapath
+# from beep.structure.biologic import BiologicDatapath
 
 
-# todo: Dont fit anywhere/ need to be integrated list
-#  - test_from_raw_cycler_run_arbin
-#  - test_from_raw_cycler_run_maccor
-#  - test_from_raw_cycler_run_neware
+BIG_FILE_TESTS = os.environ.get("BIG_FILE_TESTS", None) == "True"
+SKIP_MSG = "Tests requiring large files with diagnostic cycles are disabled, set BIG_FILE_TESTS=True to run full tests"
+TEST_DIR = os.path.dirname(os.path.abspath(__file__))
+TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
+
+
+
+# todo: ALEXTODO: to integrate list
 #  - test_get_protocol_parameters  (move to beep.utils)
 #  - test_get_project_name (move to beep.utils)
 #  - test_get_diagnostic_parameters (move to beep.utils)
@@ -998,6 +1001,38 @@ class TestMaccorDatapath(unittest.TestCase):
         d = MaccorDatapath.MaccorEIS.from_file(path)
 
 
+class TestIndigoDatapath(unittest.TestCase):
+    def setUp(self) -> None:
+        pass
+
+    # based on RCRT.test_ingestion_indigo
+    def test_ingestion_indigo(self):
+        pass
+
+
+class TestBioLogicDatapath(unittest.TestCase):
+    def setUp(self) -> None:
+        pass
+
+    # based on RCRT.test_ingestion_biologic
+    def test_ingestion_biologic(self):
+        pass
+
+
+class TestNewareDatapath(unittest.TestCase):
+    # based on RCRT.test_ingestion_neware
+    def test_from_file(self):
+        neware_file = os.path.join(TEST_FILE_DIR, "raw", "neware_test.csv")
+        md = NewareDatapath.from_file(neware_file)
+        self.assertEqual(md.raw_data.columns[22], "internal_resistance")
+        self.assertTrue(md.raw_data["test_time"].is_monotonic_increasing)
+        summary = md.summarize_cycles(nominal_capacity=4.7, full_fast_charge=0.8)
+        self.assertEqual(summary["discharge_capacity"].head(5).round(4).tolist(),
+                         [2.4393, 2.4343, 2.4255, 2.4221, 2.4210])
+        self.assertEqual(summary[summary["cycle_index"] == 55]["discharge_capacity"].round(4).tolist(),
+                         [2.3427])
+
+
 class TestCLI(unittest.TestCase):
 
     def setUp(self):
@@ -1121,33 +1156,6 @@ class TestCLI(unittest.TestCase):
             self.assertEqual(0, output_json["run_id"])
             self.assertEqual("structuring", output_json["action"])
             self.assertEqual("success", output_json["status"])
-
-
-class TestIndigoDatapath(unittest.TestCase):
-    def setUp(self) -> None:
-        pass
-
-    # based on RCRT.test_ingestion_indigo
-    def test_ingestion_indigo(self):
-        pass
-
-
-class TestBioLogicDatapath(unittest.TestCase):
-    def setUp(self) -> None:
-        pass
-
-    # based on RCRT.test_ingestion_biologic
-    def test_ingestion_biologic(self):
-        pass
-
-
-class TestNewareDatapath(unittest.TestCase):
-    def setUp(self) -> None:
-        pass
-
-    # based on RCRT.test_ingestion_neware
-    def test_ingestion_neware(self):
-        pass
 
 
 class RawCyclerRunTest(unittest.TestCase):
