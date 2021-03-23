@@ -974,7 +974,7 @@ def get_fractional_quantity_remaining_nx(
         normalize_qty = 'discharge' + '_capacity'
 
     normalize_qty_throughput = normalize_qty + '_throughput'
-    regular_summary = processed_cycler_run.summary.copy()
+    regular_summary = processed_cycler_run.structured_summary.copy()
     regular_summary = regular_summary[regular_summary.cycle_index != 0]
     diagnostic_summary = processed_cycler_run.diagnostic_summary.copy()
     # TODO the line below should become superfluous

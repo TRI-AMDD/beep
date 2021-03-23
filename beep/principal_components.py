@@ -232,7 +232,7 @@ def pivot_data(
     for file in file_list:
         processed_run = loadfn(file)
 
-        df = processed_run.cycles_interpolated
+        df = processed_run.structured_data
         df = df[df.cycle_index.isin(cycles_to_pca)]
         df_to_pca = df_to_pca.append(
             df.pivot(index="cycle_index", columns=pivot_column, values=qty_to_pca),

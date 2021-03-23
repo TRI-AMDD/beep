@@ -27,15 +27,15 @@ from pathlib import Path
 from monty.serialization import loadfn, dumpfn
 from monty.tempfile import ScratchDir
 
-from beep.structure_old import (
-    RawCyclerRun,
-    ProcessedCyclerRun,
-    process_file_list_from_json,
-    EISpectrum,
-    determine_whether_step_is_waveform_discharge,
-    determine_whether_step_is_waveform_charge,
-    get_max_paused_over_threshold
-)
+# from beep.structure_old import (
+#     RawCyclerRun,
+#     ProcessedCyclerRun,
+#     process_file_list_from_json,
+#     EISpectrum,
+#     determine_whether_step_is_waveform_discharge,
+#     determine_whether_step_is_waveform_charge,
+#     get_max_paused_over_threshold
+# )
 
 from beep import MODULE_DIR
 from beep.utils import parameters_lookup
