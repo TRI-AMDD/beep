@@ -41,7 +41,7 @@ class MaccorDatapath(BEEPDatapathWithEIS):
                 filename (str): file path to data.
 
             Returns:
-                beep.strucure.EISpectrum: EISpectrum object representation of
+                beep.structure.EISpectrum: EISpectrum object representation of
                     data.
             """
             with open(filename) as f:
