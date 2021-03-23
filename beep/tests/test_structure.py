@@ -807,7 +807,7 @@ class TestMaccorDatapath(unittest.TestCase):
 
     # based on RCRT.test_get_diagnostic
     # though it is based on maccor files
-    # @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
+    @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_get_diagnostic(self):
         # md = MaccorDatapath.from_json_file(self.diagnostic_interpolation_file)
         # md.paths["raw"] = self.

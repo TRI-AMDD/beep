@@ -736,7 +736,7 @@ class TestRawToFeatures(unittest.TestCase):
             TEST_FILE_DIR, "PreDiag_000287_000128.092"
         )
 
-    # @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
+    @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_raw_to_features(self):
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
 
