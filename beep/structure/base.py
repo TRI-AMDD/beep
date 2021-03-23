@@ -1,5 +1,4 @@
-"""
-Base classes and assorted functions for beep structuring datapaths.
+"""Base classes and assorted functions for beep structuring datapaths.
 """
 
 import abc
@@ -22,33 +21,20 @@ from beep.conversion_schemas import (
     STRUCTURE_DTYPES,
 )
 
-from beep.utils import WorkflowOutputs, parameters_lookup
-from beep import logger, __version__
+from beep.utils import parameters_lookup
+from beep import logger
 from beep.validate import BeepValidationError, ValidatorBeep
 
 
-# todo: ALEXTODO add more logging operations
 class BEEPDatapath(abc.ABC, MSONable):
-    """
+    """The base class for all beep datapaths.
+
     Each BEEPDatapath will have a maximum of four *very important* structured attributes dataframes:
         - structured_summary: A summary of the cycles
         - structured_data: The interpolated cycles
         - diagnostic_data: The interpolated diagnostic cycles
         - diagnostic_summary: A summary of diagnostic cycles
     """
-
-    FLOAT_COLUMNS = [
-        "test_time",
-        "current",
-        "voltage",
-        "charge_capacity",
-        "discharge_capacity",
-        "charge_energy",
-        "discharge_energy",
-        "internal_resistance",
-        "temperature",
-    ]
-    INT_COLUMNS = ["step_index", "cycle_index"]
 
     IMPUTABLE_COLUMNS = ["temperature", "internal_resistance"]
 
