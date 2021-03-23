@@ -2,15 +2,15 @@ name: Testing - main
 
 on:
   push:
-    branch: [master]
-
+    branches-ignore:
+    - dependabot**
 jobs:
   test:
     strategy:
       max-parallel: 20
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: [3.6, 3.7]
+        python-version: [3.7, 3.8]
 
     runs-on: ${{ matrix.os }}
 
@@ -46,4 +46,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          coveralls
+          coveralls --service=github

@@ -40,8 +40,6 @@ from beep.utils.s3 import download_s3_object
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
-PROCESSED_CYCLER_FILE = "2017-06-30_2C-10per_6C_CH10_structure.json"
-PROCESSED_CYCLER_FILE_INSUF = "structure_insufficient.json"
 MACCOR_FILE_W_DIAGNOSTICS = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000020_CH71.071")
 MACCOR_FILE_W_PARAMETERS = os.path.join(
     TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010"
@@ -53,10 +51,12 @@ SKIP_MSG = "Tests requiring large files with diagnostic cycles are disabled, set
 
 class TestFeaturizer(unittest.TestCase):
     def setUp(self):
+        self.processed_cycler_file = "2017-06-30_2C-10per_6C_CH10_structure.json"
+        self.processed_cycler_file_insuf = "structure_insufficient.json"
         pass
 
     def test_feature_generation_full_model(self):
-        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
+        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.processed_cycler_file)
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
             pcycler_run = loadfn(processed_cycler_run_path)
@@ -66,10 +66,13 @@ class TestFeaturizer(unittest.TestCase):
 
             self.assertEqual(len(featurizer.X), 1)  # just test if works for now
             # Ensure no NaN values
+            print(featurizer.X.to_dict())
             self.assertFalse(np.any(featurizer.X.isnull()))
+            self.assertEqual(np.round(featurizer.X.loc[0, 'intercept_discharge_capacity_cycle_number_91:100'], 6),
+                             np.round(1.1050065801818196, 6))
 
     def test_feature_old_class(self):
-        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
+        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.processed_cycler_file)
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
             predictor = DegradationPredictor.from_processed_cycler_run_file(
@@ -78,7 +81,7 @@ class TestFeaturizer(unittest.TestCase):
             self.assertEqual(predictor.feature_labels[4], "charge_time_cycles_1:5")
 
     def test_feature_label_full_model(self):
-        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
+        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.processed_cycler_file)
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
             pcycler_run = loadfn(processed_cycler_run_path)
@@ -89,7 +92,7 @@ class TestFeaturizer(unittest.TestCase):
             self.assertEqual(featurizer.X.columns.tolist()[4], "charge_time_cycles_1:5")
 
     def test_feature_serialization(self):
-        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
+        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.processed_cycler_file)
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
             pcycler_run = loadfn(processed_cycler_run_path)
@@ -107,7 +110,7 @@ class TestFeaturizer(unittest.TestCase):
             )
 
     def test_feature_serialization_for_training(self):
-        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, PROCESSED_CYCLER_FILE)
+        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.processed_cycler_file)
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
             pcycler_run = loadfn(processed_cycler_run_path)
@@ -232,7 +235,7 @@ class TestFeaturizer(unittest.TestCase):
 
     def test_insufficient_data_file(self):
         processed_cycler_run_path = os.path.join(
-            TEST_FILE_DIR, PROCESSED_CYCLER_FILE_INSUF
+            TEST_FILE_DIR, self.processed_cycler_file_insuf
         )
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
@@ -494,10 +497,14 @@ class TestFeaturizer(unittest.TestCase):
             folder = os.path.split(path)[-1]
             dumpfn(featurizer, featurizer.name)
             self.assertEqual(folder, "DiagnosticSummaryStats")
-            self.assertEqual(featurizer.X.shape[1], 42)
+            self.assertEqual(featurizer.X.shape[1], 54)
             self.assertListEqual(
-                [featurizer.X.columns[0], featurizer.X.columns[-1]],
+                [featurizer.X.columns[0], featurizer.X.columns[41]],
                 ["var_charging_capacity", "square_discharging_dQdV"],
+            )
+            self.assertListEqual(
+                [featurizer.X.columns[42], featurizer.X.columns[53]],
+                ["diag_sum_diff_0_1_rpt_0.2Cdischarge_capacity", "diag_sum_diff_0_1_rpt_2Ccharge_energy"],
             )
             x = [-3.622991274215596, -1.4948801528128568, -2.441732890889216, -0.794422489658189, 0.4889470327970021,
                  0.7562360890191123, -0.9122534588595697, -3.771727344982484, -1.6613278517299095, -3.9279757071656616,
@@ -507,7 +514,10 @@ class TestFeaturizer(unittest.TestCase):
                  0.8239822694093881, 1.2085578295115413, 0.06687710057927358, -1.0135736732168983, 0.12101479889802537,
                  -2.2735196264247866, 0.37844357940755063, 1.425189114118929, 1.8786507359201035, 1.6731897281287798,
                  -1.1875358619917917, 0.1361208058450041, -1.8275104616090456, -0.2665523054105704, 1.1375831683815445,
-                 1.84972885518774, 1.5023615714170622]
+                 1.84972885518774, 1.5023615714170622, -0.00472514151532623, -0.003475275535937185,
+                 -0.008076419207993832, -0.008621551983451683, 7.413107429038043e-05, 0.0013748657878274915,
+                 -0.005084993748595586, -0.005675990891556979, -0.002536196993382343, -0.0018987653783979423,
+                 -0.00016598153694586686, -0.00105148083990717]
             computed = featurizer.X.iloc[0].tolist()
             for indx, value in enumerate(x):
                 precision = 5
@@ -531,9 +541,11 @@ class TestFeaturizer(unittest.TestCase):
                  0.46799197793006897, 0.5117431282997131, -1.4615182876586914, 1.2889420237956628,
                  2.6205135712205725, 2.176016330718994, 3.1539101600646973, -0.9218153953552246,
                  0.23360896110534668, -1.1706260442733765, -0.5070897459236073, 1.1722059184617377,
-                 2.0029776096343994, 1.7837194204330444]
+                 2.0029776096343994, 1.7837194204330444, -0.021425815851990795, -0.020270314430328763,
+                 -0.028696091773302315, -0.02782930233422708, -0.017478835661355316, -0.019788159842565697,
+                 -0.021354840746757066, -0.021056601447539146, -0.026599426370616085, -0.03017946374275189,
+                 -0.017983518726387225, -0.01771638489069907]
             computed = featurizer.X.iloc[0].tolist()
-            print(computed)
             for indx, value in enumerate(x):
                 precision = 5
                 self.assertEqual(np.around(np.float32(value), precision),

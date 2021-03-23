@@ -683,8 +683,8 @@ class CycleSummaryStats(BeepFeatures):
         # Check for relevant data
         required_columns = ['charge_capacity',
                             'discharge_capacity',
-                            # 'charge_energy',
-                            # 'discharge_energy',
+                            'charge_energy',
+                            'discharge_energy',
                             ]
         pcycler_run_columns = processed_cycler_run.cycles_interpolated.columns
         if not all([column in pcycler_run_columns for column in required_columns]):
@@ -742,7 +742,7 @@ class CycleSummaryStats(BeepFeatures):
 
         # TODO: extend this dataframe and uncomment energy features when
         #   structuring is refactored
-        X = pd.DataFrame(np.zeros((1, 14)))
+        X = pd.DataFrame(np.zeros((1, 28)))
 
         reg_cycle_comp_num = params_dict.get("cycle_comp_num")
         cycle_comp_1 = processed_cycler_run.cycles_interpolated[
@@ -766,26 +766,26 @@ class CycleSummaryStats(BeepFeatures):
         X.loc[0, 7:13] = cls.get_summary_statistics(QdDiff)
 
         # # Charging Energy features
-        # Ec100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].charge_energy
-        # Ec10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].charge_energy
-        # EcDiff = Ec100_1.values - Ec10_1.values
-        # EcDiff = EcDiff[~np.isnan(EcDiff)]
-        #
-        # X.loc[0, 14:20] = cls.get_summary_statistics(EcDiff)
-        #
+        Ec100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].charge_energy
+        Ec10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].charge_energy
+        EcDiff = Ec100_1.values - Ec10_1.values
+        EcDiff = EcDiff[~np.isnan(EcDiff)]
+
+        X.loc[0, 14:20] = cls.get_summary_statistics(EcDiff)
+
         # # Discharging Energy features
-        # Ed100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].discharge_energy
-        # Ed10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].discharge_energy
-        # EdDiff = Ed100_1.values - Ed10_1.values
-        # EdDiff = EdDiff[~np.isnan(EdDiff)]
-        #
-        # X.loc[0, 21:27] = cls.get_summary_statistics(EdDiff)
+        Ed100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].discharge_energy
+        Ed10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].discharge_energy
+        EdDiff = Ed100_1.values - Ed10_1.values
+        EdDiff = EdDiff[~np.isnan(EdDiff)]
+
+        X.loc[0, 21:27] = cls.get_summary_statistics(EdDiff)
 
         quantities = [
             "charging_capacity",
             "discharging_capacity",
-            # "charging_energy",
-            # "discharging_energy",
+            "charging_energy",
+            "discharging_energy",
         ]
 
         X.columns = [y + "_" + x for x in quantities for y in cls.SUMMARY_STATISTIC_NAMES]
@@ -855,6 +855,43 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         return all(conditions)
 
     @classmethod
+    def get_summary_diff(cls, processed_cycler_run,
+                         pos=None,
+                         cycle_types=None,
+                         metrics=None):
+        """
+        Helper function to calculate difference between summary values in the diagnostic cycles
+
+                Args:
+                    processed_cycler_run (beep.structure.ProcessedCyclerRun)
+                    pos (list): position of the diagnostics to use in the calculation
+                    cycle_types (list): calculate difference for these diagnostic types
+                    metrics (str): Calculate difference for these metrics
+
+                Returns:
+                    values (list): List of difference values to insert into the dataframe
+                    names (list): List of column headers to use in the creation of the dataframe
+                """
+        if pos is None:
+            pos = [0, 1]
+        if cycle_types is None:
+            cycle_types = ["rpt_0.2C", "rpt_1C", "rpt_2C"]
+        if metrics is None:
+            metrics = ["discharge_capacity", "discharge_energy", "charge_capacity", "charge_energy"]
+
+        values = []
+        names = []
+        for cycle_type in cycle_types:
+            diag_type_summary = processed_cycler_run.diagnostic_summary[
+                processed_cycler_run.diagnostic_summary.cycle_type == cycle_type]
+            for metric in metrics:
+                diff = (diag_type_summary.iloc[pos[1]][metric] - diag_type_summary.iloc[pos[0]][metric]) \
+                       / diag_type_summary.iloc[pos[0]][metric]
+                values.append(diff)
+                names.append("diag_sum_diff_" + str(pos[0]) + "_" + str(pos[1]) + "_" + cycle_type + metric)
+        return values, names
+
+    @classmethod
     def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
                                            parameters_path="data-share/raw/parameters"):
         """
@@ -884,7 +921,7 @@ class DiagnosticSummaryStats(CycleSummaryStats):
 
         diag_intrp = processed_cycler_run.diagnostic_interpolated
 
-        X = pd.DataFrame(np.zeros((1, 42)))
+        X = pd.DataFrame(np.zeros((1, 54)))
 
         # Calculate the cycles and the steps for the selected diagnostics
         cycles = diag_intrp.cycle_index[diag_intrp.cycle_type ==
@@ -956,6 +993,8 @@ class DiagnosticSummaryStats(CycleSummaryStats):
 
         X.loc[0, 35:41] = cls.get_summary_statistics(dQdVdDiff)
 
+        X.loc[0, 42:53], names = cls.get_summary_diff(processed_cycler_run, params_dict["diag_pos_list"])
+
         operations = ["var", "min", "mean", "skew", "kurtosis", "abs", "square"]
         quantities = [
             "charging_capacity",
@@ -966,7 +1005,7 @@ class DiagnosticSummaryStats(CycleSummaryStats):
             "discharging_dQdV",
         ]
 
-        X.columns = [y + "_" + x for x in quantities for y in operations]
+        X.columns = [y + "_" + x for x in quantities for y in operations] + names
         return X
 
 
@@ -1030,6 +1069,7 @@ class DeltaQFastCharge(BeepFeatures):
                 len(processed_cycler_run.summary.index)
                 > params_dict["final_pred_cycle"]
             )
+        conditions.append("cycle_index" in processed_cycler_run.cycles_interpolated.columns)
 
         return all(conditions)
 
@@ -1074,26 +1114,26 @@ class DeltaQFastCharge(BeepFeatures):
         X = pd.DataFrame(np.zeros((1, 20)))
         labels = []
         # Discharge capacity, cycle 2 = Q(n=2)
-        X[0] = summary.discharge_capacity[1]
+        X[0] = summary.discharge_capacity.iloc[1]
         labels.append("discharge_capacity_cycle_2")
 
         # Max discharge capacity - discharge capacity, cycle 2 = max_n(Q(n)) - Q(n=2)
         X[1] = max(
-            summary.discharge_capacity[np.arange(i_final + 1)]
-            - summary.discharge_capacity[1]
+            summary.discharge_capacity.iloc[np.arange(i_final + 1)]
+            - summary.discharge_capacity.iloc[1]
         )
         labels.append("max_discharge_capacity_difference")
 
         # Discharge capacity, cycle 100 = Q(n=100)
-        X[2] = summary.discharge_capacity[i_final]
+        X[2] = summary.discharge_capacity.iloc[i_final]
         labels.append("discharge_capacity_cycle_100")
 
         # Feature representing time-temperature integral over cycles 2 to 100
-        X[3] = np.nansum(summary.time_temperature_integrated[np.arange(i_final + 1)])
+        X[3] = np.nansum(summary.time_temperature_integrated.iloc[np.arange(i_final + 1)])
         labels.append("integrated_time_temperature_cycles_1:100")
 
         # Mean of charge times of first 5 cycles
-        X[4] = np.nanmean(summary.charge_duration[1:6])
+        X[4] = np.nanmean(summary.charge_duration.iloc[1:6])
         labels.append("charge_time_cycles_1:5")
 
         # Descriptors based on capacity loss between cycles 10 and 100.
@@ -1123,17 +1163,17 @@ class DeltaQFastCharge(BeepFeatures):
         labels.append("abs_kurtosis_discharge_capacity_difference_cycles_2:100")
         labels.append("abs_first_discharge_capacity_difference_cycles_2:100")
 
-        X[11] = max(summary.temperature_maximum[list(range(1, i_final + 1))])  # Max T
+        X[11] = np.max(summary.temperature_maximum.iloc[list(range(1, i_final + 1))])  # Max T
         labels.append("max_temperature_cycles_1:100")
 
-        X[12] = min(summary.temperature_minimum[list(range(1, i_final + 1))])  # Min T
+        X[12] = np.min(summary.temperature_minimum.iloc[list(range(1, i_final + 1))])  # Min T
         labels.append("min_temperature_cycles_1:100")
 
         # Slope and intercept of linear fit to discharge capacity as a fn of cycle #, cycles 2 to 100
 
         X[13], X[14] = np.polyfit(
             list(range(1, i_final + 1)),
-            summary.discharge_capacity[list(range(1, i_final + 1))],
+            summary.discharge_capacity.iloc[list(range(1, i_final + 1))],
             1,
         )
 
@@ -1143,13 +1183,13 @@ class DeltaQFastCharge(BeepFeatures):
         # Slope and intercept of linear fit to discharge capacity as a fn of cycle #, cycles 91 to 100
         X[15], X[16] = np.polyfit(
             list(range(i_mid, i_final + 1)),
-            summary.discharge_capacity[list(range(i_mid, i_final + 1))],
+            summary.discharge_capacity.iloc[list(range(i_mid, i_final + 1))],
             1,
         )
         labels.append("slope_discharge_capacity_cycle_number_91:100")
         labels.append("intercept_discharge_capacity_cycle_number_91:100")
 
-        IR_trend = summary.dc_internal_resistance[list(range(1, i_final + 1))]
+        IR_trend = summary.dc_internal_resistance.iloc[list(range(1, i_final + 1))]
         if any(v == 0 for v in IR_trend):
             IR_trend[IR_trend == 0] = np.nan
 
@@ -1158,12 +1198,12 @@ class DeltaQFastCharge(BeepFeatures):
         labels.append("min_internal_resistance_cycles_2:100")
 
         # Internal resistance at cycle 2
-        X[18] = summary.dc_internal_resistance[1]
+        X[18] = summary.dc_internal_resistance.iloc[1]
         labels.append("internal_resistance_cycle_2")
 
         # Internal resistance at cycle 100 - cycle 2
         X[19] = (
-            summary.dc_internal_resistance[i_final] - summary.dc_internal_resistance[1]
+            summary.dc_internal_resistance.iloc[i_final] - summary.dc_internal_resistance.iloc[1]
         )
         labels.append("internal_resistance_difference_cycles_2:100")
 
