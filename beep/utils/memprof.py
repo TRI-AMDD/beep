@@ -18,7 +18,7 @@ import boto3
 
 from memory_profiler import profile
 from monty.tempfile import ScratchDir
-from beep.structure import RawCyclerRun, ProcessedCyclerRun
+from beep.structure import auto_load
 from beep.run_model import DegradationModel
 from beep.featurize import DegradationPredictor
 from beep import S3_CACHE, tqdm
@@ -57,18 +57,17 @@ def memory_profile(s3_objs=None):
         # validator.validate_from_paths(data_paths)
 
         # Data structuring
-        raw_cycler_runs = [
-            RawCyclerRun.from_file(data_path) for data_path in data_paths
+        datapath_objs = [
+            auto_load(data_path) for data_path in data_paths
         ]
-        processed_cycler_runs = [
-            ProcessedCyclerRun.from_raw_cycler_run(raw_cycler_run)
-            for raw_cycler_run in raw_cycler_runs
-        ]
+
+        for dp in datapath_objs:
+            dp.structure()
 
         # Featurization
         predictors = [
-            DegradationPredictor.init_full_model(processed_cycler_run)
-            for processed_cycler_run in processed_cycler_runs
+            DegradationPredictor.init_full_model(dp)
+            for dp in datapath_objs
         ]
 
         # Prediction

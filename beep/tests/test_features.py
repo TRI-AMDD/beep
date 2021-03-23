@@ -31,7 +31,7 @@ from beep.featurize import (
     DiagnosticSummaryStats,
     CycleSummaryStats
 )
-from beep.structure import RawCyclerRun
+from beep.structure.maccor import MaccorDatapath
 from beep.features import featurizer_helpers
 from beep.utils import parameters_lookup
 from monty.serialization import dumpfn, loadfn
@@ -59,7 +59,7 @@ class TestFeaturizer(unittest.TestCase):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.processed_cycler_file)
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
-            pcycler_run = loadfn(processed_cycler_run_path)
+            pcycler_run = MaccorDatapath.from_json_file(processed_cycler_run_path)
             featurizer = DeltaQFastCharge.from_run(
                 processed_cycler_run_path, os.getcwd(), pcycler_run
             )
@@ -559,7 +559,7 @@ class TestFeaturizer(unittest.TestCase):
             )
 
             # Test diagnostic with regular cycles
-            pcycler_run = loadfn(pcycler_run_loc)
+            pcycler_run = MaccorDatapath.from_json_file(pcycler_run_loc)
             featurizer = CycleSummaryStats.from_run(
                 pcycler_run_loc, os.getcwd(), pcycler_run
             )
@@ -580,7 +580,7 @@ class TestFeaturizer(unittest.TestCase):
             pcycler_run_loc = os.path.join(
                 TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
             )
-            pcycler_run = loadfn(pcycler_run_loc)
+            pcycler_run = MaccorDatapath.from_json_file(pcycler_run_loc)
             featurizer = DiagnosticProperties.from_run(
                 pcycler_run_loc, os.getcwd(), pcycler_run
             )
@@ -600,8 +600,8 @@ class TestFeaturizer(unittest.TestCase):
         processed_cycler_run_path_1 = os.path.join(
             TEST_FILE_DIR, "PreDiag_000233_00021F_truncated_structure.json"
         )
-        pcycler_run = loadfn(processed_cycler_run_path_1)
-        pcycler_run.summary = pcycler_run.summary[~pcycler_run.summary.cycle_index.isin(pcycler_run.diagnostic_summary.cycle_index)]
+        pcycler_run = MaccorDatapath.from_json_file(processed_cycler_run_path_1)
+        pcycler_run.structured_summary = pcycler_run.structured_summary[~pcycler_run.structured_summary.cycle_index.isin(pcycler_run.diagnostic_summary.cycle_index)]
 
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
 
@@ -632,7 +632,7 @@ class TestFeaturizer(unittest.TestCase):
         processed_cycler_run_path_2 = os.path.join(
             TEST_FILE_DIR, "Talos_001383_NCR18650618001_CH31_truncated_structure.json"
         )
-        pcycler_run = loadfn(processed_cycler_run_path_2)
+        pcycler_run = MaccorDatapath.from_json_file(processed_cycler_run_path_2)
 
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
 
@@ -736,7 +736,7 @@ class TestRawToFeatures(unittest.TestCase):
             TEST_FILE_DIR, "PreDiag_000287_000128.092"
         )
 
-    @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
+    # @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_raw_to_features(self):
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
 
@@ -747,16 +747,16 @@ class TestRawToFeatures(unittest.TestCase):
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
             # os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
-            cycler_run = RawCyclerRun.from_file(self.maccor_file_w_parameters)
-            processed_cycler_run = cycler_run.to_processed_cycler_run()
-            processed_cycler_run_path = os.path.join(
+            dp = MaccorDatapath.from_file(self.maccor_file_w_parameters)
+            dp.structure()
+            processed_run_path = os.path.join(
                 TEST_FILE_DIR, "processed_diagnostic.json"
             )
             # Dump to the structured file and check the file size
-            dumpfn(processed_cycler_run, processed_cycler_run_path)
+            dumpfn(dp, processed_run_path)
             # Create dummy json obj
             json_obj = {
-                "file_list": [processed_cycler_run_path],
+                "file_list": [processed_run_path],
                 "run_list": [0],
             }
             json_string = json.dumps(json_obj)
@@ -764,8 +764,13 @@ class TestRawToFeatures(unittest.TestCase):
             newjsonpaths = process_file_list_from_json(
                 json_string, processed_dir=os.getcwd()
             )
+
             reloaded = json.loads(newjsonpaths)
-            result_list = ['success', 'success', 'success', 'success', 'success', 'success', 'success']
+
+            import pprint
+            pprint.pprint(reloaded)
+
+            result_list = ['success'] * 7
             self.assertEqual(reloaded['result_list'], result_list)
             rpt_df = loadfn(reloaded['file_list'][0])
             self.assertEqual(np.round(rpt_df.X['m0_Amp_rpt_0.2C_1'].iloc[0], 6), 0.867371)

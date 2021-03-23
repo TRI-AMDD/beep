@@ -1019,10 +1019,10 @@ def get_fractional_quantity_remaining_nx(
         / processed_cycler_run.diagnostic_summary[metric].iloc[0]
     )
 
-    if "\\" in processed_cycler_run.protocol:
-        protocol_name = processed_cycler_run.protocol.split("\\")[-1]
+    if "\\" in processed_cycler_run.metadata.protocol:
+        protocol_name = processed_cycler_run.metadata.protocol.split("\\")[-1]
     else:
-        _, protocol_name = os.path.split(processed_cycler_run.protocol)
+        _, protocol_name = os.path.split(processed_cycler_run.metadata.protocol)
 
     parameter_row, _ = parameters_lookup.get_protocol_parameters(protocol_name, parameters_path=parameters_path)
 

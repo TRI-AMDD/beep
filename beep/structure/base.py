@@ -111,7 +111,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             # Extra metadata will always be in .raw
             self.raw = metadata_dict
 
-    def __init__(self, raw_data, metadata, paths=None):
+    def __init__(self, raw_data, metadata, paths=None, impute_missing=True):
         self.raw_data = raw_data
 
         # paths may include "raw", "metadata", and "structured", as well as others.
@@ -122,6 +122,13 @@ class BEEPDatapath(abc.ABC, MSONable):
             self.paths = paths
         else:
             self.paths = {"raw": None}
+
+        if impute_missing:
+            # support legacy operation
+            if raw_data is not None:
+                for col in self.IMPUTABLE_COLUMNS:
+                    if col not in raw_data:
+                        raw_data[col] = np.NaN
 
         self.structured_summary = None     # equivalent of PCR.summary
         self.structured_data = None        # equivalent of PCR.cycles_interpolated
@@ -361,7 +368,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         full_fast_charge=0.8,
         diagnostic_available=False,
         charge_axis='charge_capacity',
-        discharge_axis='voltage'
+        discharge_axis='voltage',
     ):
         """
 
@@ -376,7 +383,6 @@ class BEEPDatapath(abc.ABC, MSONable):
                 diagnostic cycles correctly.
         """
         logger.info(f"Beginning structuring along charge axis '{charge_axis}' and discharge axis '{discharge_axis}'.")
-
 
         if diagnostic_available:
             self.diagnostic_summary = self.summarize_diagnostic(
