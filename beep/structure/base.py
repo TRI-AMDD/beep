@@ -72,16 +72,21 @@ class BEEPDatapath(abc.ABC, MSONable):
             - _diag_aggregation (dict): Specifies the pandas aggregation columns order for diagnostic data
             - _summary_cols (list): The ordering of summary columns for normal cycler data.
             - _diag_summary_cols (list): The ordering of summary columns for diagnostic data.
+
     """
 
     IMPUTABLE_COLUMNS = ["temperature", "internal_resistance"]
 
     class StructuringDecorators:
+        """
+        Internal container class for decorators related to data structuring.
+        """
 
         @classmethod
         def must_be_structured(cls, func):
             """
             Decorator to check if the datapath has been structured.
+
             Args:
                 func: A function or method.
             Returns:
@@ -125,7 +130,21 @@ class BEEPDatapath(abc.ABC, MSONable):
             return wrapper
 
     class CyclerRunMetadata:
+        """
+        Container class for cycler metadata. Does not change based on whether the instance is structured or unstructured.
+
+        Attributes:
+            raw (dict): The raw metadata dict
+            barcode (str): The barcode
+            protocol (any, json serializable): The protocol used by the cycler for this run
+            channel_id (int): Channel id number
+        """
         def __init__(self, metadata_dict):
+            """
+
+            Args:
+                metadata_dict (dict): A dictionary which can contain arbitrary metadata.
+            """
 
             # Keep all the common metadata attr-accessible
             self.barcode = metadata_dict.get("barcode")
@@ -136,6 +155,14 @@ class BEEPDatapath(abc.ABC, MSONable):
             self.raw = metadata_dict
 
     def __init__(self, raw_data, metadata, paths=None, impute_missing=True):
+        """
+
+        Args:
+            raw_data (pd.DataFrame): A pandas dataframe of
+            metadata:
+            paths:
+            impute_missing:
+        """
         self.raw_data = raw_data
 
         # paths may include "raw", "metadata", and "structured", as well as others.
