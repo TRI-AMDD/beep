@@ -1029,7 +1029,31 @@ class TestIndigoDatapath(unittest.TestCase):
 class TestBioLogicDatapath(unittest.TestCase):
     # based on RCRT.test_ingestion_biologic
     def test_ingestion_biologic(self):
-        pass
+
+        biologic_file = os.path.join(
+            TEST_FILE_DIR, "raw", "biologic_test_file_short.mpt"
+        )
+        dp = BiologicDatapath.from_file(biologic_file)
+
+        self.assertEqual(
+            {
+                "cycle_index",
+                "step_index",
+                "voltage",
+                "current",
+                "discharge_capacity",
+                "charge_capacity",
+                "data_point",
+                "charge_energy",
+                "discharge_energy",
+            },
+            set(dp.raw_data.columns),
+        )
+
+        self.assertEqual(
+            {"_today_datetime", "filename", "barcode", "protocol", "channel_id"},
+            set(dp.metadata.raw.keys()),
+        )
 
 
 class TestNewareDatapath(unittest.TestCase):
