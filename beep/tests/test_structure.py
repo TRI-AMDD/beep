@@ -63,10 +63,6 @@ from beep.structure.maccor import MaccorDatapath
 #  - automatic file name recognition (i.e., which datapath is this kind of file?)
 
 
-
-
-
-
 class TestBEEPDatapath(unittest.TestCase):
     """
     Tests common to all datapaths.
@@ -157,29 +153,9 @@ class TestBEEPDatapath(unittest.TestCase):
             paths={"raw": maccor_diag_misplaced_original_fname, "raw_metadata": maccor_diag_misplaced_meta_fname}
         )
 
-
         cls.cycle_run_file = os.path.join(
             TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_processed.json"
         )
-
-
-        # Use maccor bigfile, if tests are enabled for it
-
-        # maccor_file_w_parameters_s3 = {
-        #     "bucket": "beep-sync-test-stage",
-        #     "key": "big_file_tests/PreDiag_000287_000128.092"
-        # }
-        # if BIG_FILE_TESTS:
-        #     download_s3_object(
-        #         bucket=maccor_file_w_parameters_s3["bucket"],
-        #         key=maccor_file_w_parameters_s3["key"],
-        #         destination_path=self.maccor_file_w_parameters)
-        #     cls.maccor_file_w_parameters = os.path.join(
-        #         TEST_FILE_DIR, "PreDiag_000287_000128.092"
-        #     )
-        # else:
-        #     cls.maccor_file_w_parameters = None
-
 
         cls.diagnostic_available = {
             "type": "HPPC",
@@ -517,6 +493,14 @@ class TestBEEPDatapath(unittest.TestCase):
 
 
 class TestBaseEIS(unittest.TestCase):
+    class EISChildGood(EIS):
+        def from_file(self):
+            print("success EISChildGood")
+
+    def setUp(self) -> None:
+        self.raw_data = pd.DataFrame({"a": [1,2,3]})
+        self.metadata = pd.DataFrame({"example": ["metadata"]})
+
     def test_BEEPDatapathWithEIS(self):
 
         # Must implement load_eis and from_file
@@ -531,34 +515,33 @@ class TestBaseEIS(unittest.TestCase):
             def extra_method(self):
                 pass
 
-        raw_data = pd.DataFrame({"a": [1,2,3]})
-        metadata = {"example": "metadata"}
+        example_metadata = {"example": "metadata"}
 
-        BEEPDatapathWithEISChildTestGood(raw_data=raw_data, metadata=metadata)
+        BEEPDatapathWithEISChildTestGood(raw_data=self.raw_data, metadata=example_metadata)
 
         with self.assertRaises(TypeError):
-            BEEPDatapathWithEISChildTestBad(raw_data=raw_data, metadata=metadata)
+            BEEPDatapathWithEISChildTestBad(raw_data=self.raw_data, metadata=example_metadata)
 
     def test_EIS(self):
         # must implement a from_file method
-
-        data = pd.DataFrame({"a": [1,2,3]})
-        metadata = {"example": "metadata"}
-
-        class EISChildGood(EIS):
-            def from_file(self):
-                print("success EISChildGood")
-
         class EISChildBad(EIS):
             def extra_method(self):
                 pass
 
-        eis = EISChildGood(data=data, metadata=metadata)
+        eis = self.EISChildGood(data=self.raw_data, metadata=self.metadata)
         self.assertTrue(hasattr(eis, "from_dict"))
         self.assertTrue(hasattr(eis, "as_dict"))
 
         with self.assertRaises(TypeError):
             EISChildBad()
+
+    def test_EIS_serialization(self):
+        eis = self.EISChildGood(data=self.raw_data, metadata=self.metadata)
+        d = eis.as_dict()
+
+        eis_test = self.EISChildGood.from_dict(d)
+        self.assertTrue(eis.data.equals(eis_test.data))
+        self.assertTrue(eis.metadata.equals(eis_test.metadata))
 
 
 class TestArbinDatapath(unittest.TestCase):
@@ -1009,10 +992,10 @@ class TestMaccorDatapath(unittest.TestCase):
         os.remove(processed_cycler_run_loc)
 
     # based on EISpectrumTest.test_from_maccor
+    # todo: needs testing for the entire maccor object
     def test_eis(self):
         path = os.path.join(TEST_FILE_DIR, "maccor_test_file_4267-66-6519.EDA0001.041")
-        MaccorDatapath.MaccorEIS.from_file(path)
-
+        d = MaccorDatapath.MaccorEIS.from_file(path)
 
 
 class TestCLI(unittest.TestCase):

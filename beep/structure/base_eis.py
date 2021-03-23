@@ -17,8 +17,8 @@ class EIS(MSONable):
         """
 
         Args:
-            data:
-            metadata:
+            data (pd.DataFrame)
+            metadata (pd.DataFrame)
         """
         self.data = data
         self.metadata = metadata
@@ -39,7 +39,7 @@ class EIS(MSONable):
             "@module": self.__class__.__module__,
             "@class": self.__class__.__name__,
             "data": self.data.to_dict("list"),
-            "metadata": self.metadata.to_dict(),
+            "metadata": self.metadata.to_dict()
         }
 
     @classmethod

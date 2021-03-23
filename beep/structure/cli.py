@@ -1,4 +1,9 @@
-from
+import re
+
+from beep import logger
+from beep.conversion_schemas import FastCharge_CONFIG, xTesladiag_CONFIG
+from beep.structure.arbin import ArbinDatapath
+from beep.structure.maccor import MaccorDatapath
 
 
 def process_file_list_from_json(file_list_json, processed_dir="data-share/structure/"):
@@ -94,3 +99,33 @@ def process_file_list_from_json(file_list_json, processed_dir="data-share/struct
 
     # Return jsonable file list
     return json.dumps(output_json)
+
+
+
+# todo: ALEXTODO needs validation as an argument and to actually validate during load
+def auto_load(filename):
+    """
+    Method for loading processed cycler run from raw cycler filename,
+    processing it according to prescribed logic corresponding to the
+    file name and or the file's contents.
+
+    Args:
+        filename (str): filename associated with the project
+        validate (bool): whether or not to validate file
+
+    Returns:
+        beep.structure.ProcessedCyclerRun: ProcessedCyclerRun corresponding
+            to the read and processed data from the filename
+
+    """
+    # Arbin files are via standard pipeline
+    if re.match(FastCharge_CONFIG["file_pattern"], filename):
+        dp = ArbinDatapath.from_file(filename)
+        return raw.to_processed_cycler_run()
+    elif re.match(xTesladiag_CONFIG["file_pattern"], filename):
+        dp = MaccorDatapath.from_file(filename)
+    else:
+        raise TypeError(f"File {filename} does not match any known file patterns!")
+
+    dp.structure()
+    return dp
