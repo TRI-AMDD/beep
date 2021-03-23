@@ -59,12 +59,6 @@ TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 
 
-# todo: ALEXTODO: to integrate list
-#  - test_get_protocol_parameters  (move to beep.utils)
-#  - test_get_project_name (move to beep.utils)
-#  - test_get_diagnostic_parameters (move to beep.utils)
-
-
 class TestBEEPDatapath(unittest.TestCase):
     """
     Tests common to all datapaths.
@@ -1070,6 +1064,13 @@ class TestNewareDatapath(unittest.TestCase):
 
 
 class TestCLI(unittest.TestCase):
+
+    def setUp(self):
+        self.arbin_file = os.path.join(
+            TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29.csv"
+        )
+
+
     # based on CliTest.test_simple_conversion
     def test_structure_command_simple_conversion(self):
         with ScratchDir("."):
@@ -1114,83 +1115,119 @@ class TestCLI(unittest.TestCase):
                 "run_list": [0, 1],
                 "validity": ["valid", "invalid"],
             }
+
+
             json_string = json.dumps(json_obj)
-            # Get json output from method
-            json_output = process_file_list_from_json(json_string)
-            reloaded = json.loads(json_output)
 
-            # Actual tests here
-            # Ensure garbage file doesn't have output string
-            self.assertEqual(reloaded["invalid_file_list"][0], "garbage_file")
+            test_fname = "test.json"
+            dumpfn(json_obj, test_fname)
 
-            # Ensure first is correct
-            loaded_processed_cycler_run = loadfn(reloaded["file_list"][0])
-            loaded_from_raw = RawCyclerRun.from_file(
-                json_obj["file_list"][0]
-            ).to_processed_cycler_run()
-            self.assertTrue(
-                np.all(loaded_processed_cycler_run.summary == loaded_from_raw.summary),
-                "Loaded processed cycler_run is not equal to that loaded from raw file",
-            )
 
-            # Workflow output
-            output_file_path = Path(tempfile.gettempdir()) / "results.json"
-            self.assertTrue(output_file_path.exists())
+            # test both raw json input and json from a file
+            for json_rep in (json_string, test_fname):
 
-            output_json = json.loads(output_file_path.read_text())
+                if json_rep == test_fname:
+                    print("Testing json processing from file")
+                else:
+                    print("Testing json processing from string")
 
-            self.assertEqual(reloaded["file_list"][0], output_json["filename"])
-            self.assertEqual(os.path.getsize(output_json["filename"]), output_json["size"])
-            self.assertEqual(0, output_json["run_id"])
-            self.assertEqual("structuring", output_json["action"])
-            self.assertEqual("success", output_json["status"])
+                # Get json output from method
+                json_output = process_file_list_from_json(json_rep)
+                reloaded = json.loads(json_output)
 
-        # Test same functionality with json file
-        with ScratchDir("."):
-            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
-            os.mkdir("data-share")
-            os.mkdir(os.path.join("data-share", "structure"))
+                # Actual tests here
+                # Ensure garbage file doesn't have output string
+                self.assertEqual(reloaded["invalid_file_list"][0], "garbage_file")
 
-            json_obj = {
-                "file_list": [self.arbin_file, "garbage_file"],
-                "run_list": [0, 1],
-                "validity": ["valid", "invalid"],
-            }
-            dumpfn(json_obj, "test.json")
-            # Get json output from method
-            json_output = process_file_list_from_json("test.json")
-            reloaded = json.loads(json_output)
+                # Ensure first is correct
+                loaded_datapath = loadfn(reloaded["file_list"][0])
+                loaded_from_raw = ArbinDatapath.from_file(
+                    json_obj["file_list"][0]
+                )
 
-            # Actual tests here
-            # Ensure garbage file doesn't have output string
-            self.assertEqual(reloaded["invalid_file_list"][0], "garbage_file")
+                loaded_from_raw.structure()
 
-            # Ensure first is correct
-            loaded_processed_cycler_run = loadfn(reloaded["file_list"][0])
-            loaded_from_raw = RawCyclerRun.from_file(
-                json_obj["file_list"][0]
-            ).to_processed_cycler_run()
-            self.assertTrue(
-                np.all(loaded_processed_cycler_run.summary == loaded_from_raw.summary),
-                "Loaded processed cycler_run is not equal to that loaded from raw file",
-            )
+                self.assertTrue(
+                    np.all(loaded_datapath.structured_summary == loaded_from_raw.structured_summary),
+                    "Loaded processed cycler_run is not equal to that loaded from raw file",
+                )
 
-            # Workflow output
-            output_file_path = Path(tempfile.gettempdir()) / "results.json"
-            self.assertTrue(output_file_path.exists())
+                # Workflow output
+                output_file_path = Path(tempfile.gettempdir()) / "results.json"
+                self.assertTrue(output_file_path.exists())
 
-            output_json = json.loads(output_file_path.read_text())
+                output_json = json.loads(output_file_path.read_text())
 
-            self.assertEqual(reloaded["file_list"][0], output_json["filename"])
-            self.assertEqual(os.path.getsize(output_json["filename"]), output_json["size"])
-            self.assertEqual(0, output_json["run_id"])
-            self.assertEqual("structuring", output_json["action"])
-            self.assertEqual("success", output_json["status"])
+                self.assertEqual(reloaded["file_list"][0], output_json["filename"])
+                self.assertEqual(os.path.getsize(output_json["filename"]), output_json["size"])
+                self.assertEqual(0, output_json["run_id"])
+                self.assertEqual("structuring", output_json["action"])
+                self.assertEqual("success", output_json["status"])
 
+    # todo: could be more comprehensive
     # based on PCRT.test_auto_load
     def test_auto_load(self):
-        loaded = ProcessedCyclerRun.auto_load(self.arbin_file)
-        self.assertIsInstance(loaded, ProcessedCyclerRun)
+        dp = auto_load(self.arbin_file)
+        self.assertIsInstance(dp, ArbinDatapath)
+
+
+# todo: Either these tested functions should be moved into structuring
+# todo: Or these tests should be moved into a separate utils file
+class TestStructuringUtils(unittest.TestCase):
+    """
+    Tests related to utils only used in structuring.
+    """
+
+    def setUp(self) -> None:
+        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+
+
+    # based on RCRT.test_get_protocol_parameters
+    def test_get_protocol_parameters(self):
+        filepath = os.path.join(
+            TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010"
+        )
+        test_path = os.path.join("data-share", "raw", "parameters")
+        parameters, _ = parameters_lookup.get_protocol_parameters(filepath, parameters_path=test_path)
+
+        self.assertEqual(parameters["diagnostic_type"].iloc[0], "HPPC+RPT")
+        self.assertEqual(parameters["diagnostic_parameter_set"].iloc[0], "Tesla21700")
+        self.assertEqual(parameters["seq_num"].iloc[0], 109)
+        self.assertEqual(len(parameters.index), 1)
+
+        parameters_missing, project_missing = parameters_lookup.get_protocol_parameters(
+            "Fake", parameters_path=test_path
+        )
+        self.assertEqual(parameters_missing, None)
+        self.assertEqual(project_missing, None)
+
+        filepath = os.path.join(TEST_FILE_DIR, "PreDiag_000292_tztest.010")
+        parameters, _ = parameters_lookup.get_protocol_parameters(filepath, parameters_path=test_path)
+        self.assertEqual(parameters["diagnostic_type"].iloc[0], "HPPC+RPT")
+        self.assertEqual(parameters["seq_num"].iloc[0], 292)
+
+    # based on RCRT.test_get_project_name
+    def test_get_project_name(self):
+        project_name_parts = parameters_lookup.get_project_sequence(
+            os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010")
+        )
+        project_name = project_name_parts[0]
+        self.assertEqual(project_name, "PredictionDiagnostics")
+
+    # based on RCRT.test_get_diagnostic_parameters
+    def test_get_diagnostic_parameters(self):
+        diagnostic_available = {
+            "parameter_set": "Tesla21700",
+            "cycle_type": ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"],
+            "length": 5,
+            "diagnostic_starts_at": [1, 36, 141],
+        }
+        diagnostic_parameter_path = os.path.join(MODULE_DIR, "procedure_templates")
+        project_name = "PreDiag"
+        v_range = parameters_lookup.get_diagnostic_parameters(
+            diagnostic_available, diagnostic_parameter_path, project_name
+        )
+        self.assertEqual(v_range, [2.7, 4.2])
 
 
 
