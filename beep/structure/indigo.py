@@ -9,6 +9,7 @@ from beep.conversion_schemas import INDIGO_CONFIG
 
 class IndigoDatapath(BEEPDatapath):
 
+    @classmethod
     def from_file(cls, path):
         """
         Creates RawCyclerRun from an Indigo data file.

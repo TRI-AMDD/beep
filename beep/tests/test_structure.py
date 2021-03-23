@@ -46,8 +46,8 @@ from beep.structure.base_eis import EIS, BEEPDatapathWithEIS
 from beep.structure.arbin import ArbinDatapath
 from beep.structure.maccor import MaccorDatapath
 from beep.structure.neware import NewareDatapath
-# from beep.structure.indigo import IndigoDatapath
-# from beep.structure.biologic import BiologicDatapath
+from beep.structure.indigo import IndigoDatapath
+from beep.structure.biologic import BiologicDatapath
 
 
 BIG_FILE_TESTS = os.environ.get("BIG_FILE_TESTS", None) == "True"
@@ -1002,18 +1002,31 @@ class TestMaccorDatapath(unittest.TestCase):
 
 
 class TestIndigoDatapath(unittest.TestCase):
-    def setUp(self) -> None:
-        pass
-
     # based on RCRT.test_ingestion_indigo
-    def test_ingestion_indigo(self):
-        pass
+    def test_from_file(self):
+        indigo_file = os.path.join(TEST_FILE_DIR, "indigo_test_sample.h5")
+        md = IndigoDatapath.from_file(indigo_file)
+        self.assertTrue(
+            {
+                "data_point",
+                "cycle_index",
+                "step_index",
+                "voltage",
+                "temperature",
+                "current",
+                "charge_capacity",
+                "discharge_capacity",
+            }
+            < set(md.raw_data.columns)
+        )
+
+        self.assertEqual(
+            set(md.metadata.raw.keys()),
+            {"indigo_cell_id", "_today_datetime", "start_datetime", "filename"},
+        )
 
 
 class TestBioLogicDatapath(unittest.TestCase):
-    def setUp(self) -> None:
-        pass
-
     # based on RCRT.test_ingestion_biologic
     def test_ingestion_biologic(self):
         pass
