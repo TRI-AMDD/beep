@@ -1055,10 +1055,10 @@ def get_step_index(pcycler_run, cycle_type="hppc", diag_pos=0):
     soc_change_threshold = 0.05
     parameters_path = os.path.join(os.environ.get("BEEP_PROCESSING_DIR", "/"), "data-share", "raw", "parameters")
 
-    if "\\" in pcycler_run.protocol:
-        protocol_name = pcycler_run.protocol.split("\\")[-1]
+    if "\\" in pcycler_run.metadata.protocol:
+        protocol_name = pcycler_run.metadata.protocol.split("\\")[-1]
     else:
-        _, protocol_name = os.path.split(pcycler_run.protocol)
+        _, protocol_name = os.path.split(pcycler_run.metadata.protocol)
 
     parameter_row, _ = parameters_lookup.get_protocol_parameters(protocol_name, parameters_path=parameters_path)
 

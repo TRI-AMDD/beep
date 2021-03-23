@@ -260,10 +260,12 @@ class RPTdQdVFeatures(BeepFeatures):
         """
         conditions = []
         if not hasattr(processed_cycler_run, "diagnostic_summary") & hasattr(
-            processed_cycler_run, "diagnostic_interpolated"
+            processed_cycler_run, "diagnostic_data"
         ):
             return False
-        if processed_cycler_run.diagnostic_summary.empty:
+        if processed_cycler_run.diagnostic_summary is None:
+            return False
+        elif processed_cycler_run.diagnostic_summary.empty:
             return False
         else:
             conditions.append(
@@ -401,10 +403,12 @@ class HPPCResistanceVoltageFeatures(BeepFeatures):
         """
         conditions = []
         if not hasattr(processed_cycler_run, "diagnostic_summary") & hasattr(
-            processed_cycler_run, "diagnostic_interpolated"
+            processed_cycler_run, "diagnostic_data"
         ):
             return False
-        if processed_cycler_run.diagnostic_summary.empty:
+        if processed_cycler_run.diagnostic_summary is None:
+            return False
+        elif processed_cycler_run.diagnostic_summary.empty:
             return False
         else:
             conditions.append(
@@ -532,10 +536,12 @@ class HPPCRelaxationFeatures(BeepFeatures):
 
         conditions = []
         if not hasattr(processed_cycler_run, "diagnostic_summary") & hasattr(
-            processed_cycler_run, "diagnostic_interpolated"
+            processed_cycler_run, "diagnostic_data"
         ):
             return False
-        if processed_cycler_run.diagnostic_summary.empty:
+        if processed_cycler_run.diagnostic_summary is None:
+            return False
+        elif processed_cycler_run.diagnostic_summary.empty:
             return False
 
         if not any(
@@ -842,10 +848,12 @@ class DiagnosticSummaryStats(CycleSummaryStats):
             params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
         conditions = []
         if not hasattr(processed_cycler_run, "diagnostic_summary") & hasattr(
-            processed_cycler_run, "diagnostic_interpolated"
+            processed_cycler_run, "diagnostic_data"
         ):
             return False
-        if processed_cycler_run.diagnostic_summary.empty:
+        if processed_cycler_run.diagnostic_summary is None:
+            return False
+        elif processed_cycler_run.diagnostic_summary.empty:
             return False
         else:
             df = processed_cycler_run.diagnostic_summary
@@ -1331,10 +1339,12 @@ class DiagnosticProperties(BeepFeatures):
             bool: True/False indication of ability to proceed with feature generation
         """
         if not hasattr(processed_cycler_run, "diagnostic_summary") & hasattr(
-            processed_cycler_run, "diagnostic_interpolated"
+            processed_cycler_run, "diagnostic_data"
         ):
             return False
-        if processed_cycler_run.diagnostic_summary.empty:
+        if processed_cycler_run.diagnostic_summary is None:
+            return False
+        elif processed_cycler_run.diagnostic_summary.empty:
             return False
         else:
             return True
