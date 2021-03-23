@@ -54,7 +54,9 @@ from docopt import docopt
 from monty.json import MSONable
 from monty.serialization import loadfn, dumpfn
 from scipy.stats import skew, kurtosis
+
 from beep.collate import scrub_underscore_suffix, add_suffix_to_filename
+from beep.structure.legacy import load_processed_json_legacy
 from beep.utils import WorkflowOutputs
 from beep.features import featurizer_helpers
 from beep import logger, __version__
@@ -1434,7 +1436,7 @@ class DegradationPredictor(MSONable):
             prediction_type (str): Type of regression - 'single' vs 'multi'.
             diagnostic_features (bool): whether to compute diagnostic features.
         """
-        processed_cycler_run = loadfn(path)
+        processed_cycler_run = load_processed_json_legacy(path)
 
         if features_label == "full_model":
             return cls.init_full_model(

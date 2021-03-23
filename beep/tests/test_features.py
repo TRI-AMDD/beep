@@ -53,7 +53,6 @@ class TestFeaturizer(unittest.TestCase):
     def setUp(self):
         self.processed_cycler_file = "2017-06-30_2C-10per_6C_CH10_structure.json"
         self.processed_cycler_file_insuf = "structure_insufficient.json"
-        pass
 
     def test_feature_generation_full_model(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.processed_cycler_file)
@@ -66,7 +65,7 @@ class TestFeaturizer(unittest.TestCase):
 
             self.assertEqual(len(featurizer.X), 1)  # just test if works for now
             # Ensure no NaN values
-            print(featurizer.X.to_dict())
+            # print(featurizer.X.to_dict())
             self.assertFalse(np.any(featurizer.X.isnull()))
             self.assertEqual(np.round(featurizer.X.loc[0, 'intercept_discharge_capacity_cycle_number_91:100'], 6),
                              np.round(1.1050065801818196, 6))
