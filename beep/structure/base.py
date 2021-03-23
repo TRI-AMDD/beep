@@ -29,11 +29,49 @@ from beep.validate import BeepValidationError, ValidatorBeep
 class BEEPDatapath(abc.ABC, MSONable):
     """The base class for all beep datapaths.
 
-    Each BEEPDatapath will have a maximum of four *very important* structured attributes dataframes:
-        - structured_summary: A summary of the cycles
-        - structured_data: The interpolated cycles
-        - diagnostic_data: The interpolated diagnostic cycles
-        - diagnostic_summary: A summary of diagnostic cycles
+    BEEPDatapaths handle all BEEP structuring data, including
+
+    - holding raw data
+    - validating data
+    - normal and diagnostic cycle interpolation
+    - diagnostic extraction
+    - automatic structuring
+    - normal and diagnostic cycle summarization
+    - determining cycle-capacity and capacity-cycle relationships
+    - determining cycle lifetimes
+    - saving and loading processed (structured) runs* from static json files
+        - *including legacy json serialized with earlier versions of BEEP
+
+    Note that BEEPDatapath does NOT handle featurization or ML modelling, only data organization and munging.
+
+
+    BEEPDatapath is an abstract base class requiring a child class to implement the following methods:
+    - from_file: Take raw cycler output files and convert them to a BEEPDatapath object. It should
+        return a BEEPDatapath object with the correct data types (specified in __init__).
+
+
+    Attributes:
+
+        Important/Very common attributes:
+            Each BEEPDatapath will have a maximum of 5 *very important* structured attributes dataframes:
+            - structured_summary (pd.DataFrame): A summary of the cycles
+            - structured_data (pd.DataFrame): The interpolated cycles
+            - diagnostic_data (pd.DataFrame): The interpolated diagnostic cycles
+            - diagnostic_summary (pd.DataFrame): A summary of diagnostic cycles
+            - raw_data (pd.DataFrame): All raw data from the raw input file.
+
+        Less important attributes:
+            - metadata (BEEPDatapath.CyclerRunMetadata): An object holding all metadata.
+            - paths (dict): A mapping of {descriptor: full_path or [paths]} for all files related to this datapath.
+                This can include things like "raw", "metadata", "structured", as well as other paths (e.g., "eis").
+
+        Private:
+            - _is_legacy (bool): Whether this file is loaded from a legacy ProcessedCyclerRun. Some operations are
+                not supported for legacy-loaded processed/structured files.
+            - _aggregation (dict): Specifies the pandas aggregation columns order for normal cycler data
+            - _diag_aggregation (dict): Specifies the pandas aggregation columns order for diagnostic data
+            - _summary_cols (list): The ordering of summary columns for normal cycler data.
+            - _diag_summary_cols (list): The ordering of summary columns for diagnostic data.
     """
 
     IMPUTABLE_COLUMNS = ["temperature", "internal_resistance"]
