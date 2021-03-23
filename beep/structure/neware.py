@@ -10,7 +10,7 @@ from beep.conversion_schemas import NEWARE_CONFIG
 class NewareDatapath(BEEPDatapath):
 
     @classmethod
-    def from_file(cls, filename, validate=False):
+    def from_file(cls, filename):
         """
         Method for ingestion of Neware format files.
 
