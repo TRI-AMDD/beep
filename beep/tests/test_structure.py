@@ -49,6 +49,7 @@ from beep.structure.maccor import MaccorDatapath
 from beep.structure.neware import NewareDatapath
 from beep.structure.indigo import IndigoDatapath
 from beep.structure.biologic import BiologicDatapath
+from beep.structure.cli import process_file_list_from_json, auto_load
 
 
 BIG_FILE_TESTS = os.environ.get("BIG_FILE_TESTS", None) == "True"
@@ -62,9 +63,6 @@ TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 #  - test_get_protocol_parameters  (move to beep.utils)
 #  - test_get_project_name (move to beep.utils)
 #  - test_get_diagnostic_parameters (move to beep.utils)
-#  - test_json_processing
-#  - test_auto_load
-#  - automatic file name recognition (i.e., which datapath is this kind of file?)
 
 
 class TestBEEPDatapath(unittest.TestCase):
@@ -1072,14 +1070,8 @@ class TestNewareDatapath(unittest.TestCase):
 
 
 class TestCLI(unittest.TestCase):
-
-    def setUp(self):
-        self.arbin_file = os.path.join(
-            TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29.csv"
-        )
-
     # based on CliTest.test_simple_conversion
-    def test_simple_conversion(self):
+    def test_structure_command_simple_conversion(self):
         with ScratchDir("."):
             # Set root env
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
@@ -1097,7 +1089,7 @@ class TestCLI(unittest.TestCase):
             command = "structure {}".format(os_format(json_string))
             result = subprocess.check_call(command, shell=True)
             self.assertEqual(result, 0)
-            print(os.listdir(os.path.join("data-share", "structure")))
+            # print(os.listdir(os.path.join("data-share", "structure")))
             processed = loadfn(
                 os.path.join(
                     "data-share",
@@ -1106,7 +1098,7 @@ class TestCLI(unittest.TestCase):
                 )
             )
 
-        self.assertIsInstance(processed, ProcessedCyclerRun)
+        self.assertIsInstance(processed, BEEPDatapath)
 
     # based on PCRT.test_json_processing
     def test_json_processing(self):
@@ -1194,6 +1186,12 @@ class TestCLI(unittest.TestCase):
             self.assertEqual(0, output_json["run_id"])
             self.assertEqual("structuring", output_json["action"])
             self.assertEqual("success", output_json["status"])
+
+    # based on PCRT.test_auto_load
+    def test_auto_load(self):
+        loaded = ProcessedCyclerRun.auto_load(self.arbin_file)
+        self.assertIsInstance(loaded, ProcessedCyclerRun)
+
 
 
 class RawCyclerRunTest(unittest.TestCase):
