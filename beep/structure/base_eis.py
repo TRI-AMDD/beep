@@ -66,6 +66,8 @@ class BEEPDatapathWithEIS(BEEPDatapath):
         self.eis = None
         super(BEEPDatapathWithEIS, self).__init__(*args, **kwargs)
 
+
+    # Loading EIS implementation should update the paths as well.
     def load_eis(self, *args, **kwargs):
         raise NotImplementedError(
             "EIS containing datapath must implement 'load_eis' method.")

@@ -153,6 +153,7 @@ class MaccorDatapath(BEEPDatapathWithEIS):
             eis_runs.append(eis)
 
         self.eis = eis_runs
+        self.paths["eis"] = paths
 
 
 
