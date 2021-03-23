@@ -2,10 +2,11 @@ import numpy as np
 import pandas as pd
 import json
 from monty.json import MSONable
+from monty.serialization import loadfn
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-from monty.serialization import loadfn
 
+from beep.structure.cli import auto_load_processed
 
 class PrincipalComponents(MSONable):
     """
@@ -230,7 +231,7 @@ def pivot_data(
     file_list = file_list_data["file_list"]
     df_to_pca = pd.DataFrame()
     for file in file_list:
-        processed_run = loadfn(file)
+        processed_run = auto_load_processed(file)
 
         df = processed_run.structured_data
         df = df[df.cycle_index.isin(cycles_to_pca)]
