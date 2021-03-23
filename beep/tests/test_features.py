@@ -748,7 +748,7 @@ class TestRawToFeatures(unittest.TestCase):
             os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
             # os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             dp = MaccorDatapath.from_file(self.maccor_file_w_parameters)
-            dp.structure()
+            dp.autostructure()
             processed_run_path = os.path.join(
                 TEST_FILE_DIR, "processed_diagnostic.json"
             )
