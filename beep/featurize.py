@@ -260,17 +260,13 @@ class RPTdQdVFeatures(BeepFeatures):
         """
         conditions = []
 
-        print("ALEXTODO: RPTdQdQFeatures")
         if not hasattr(processed_cycler_run, "diagnostic_summary") & hasattr(
             processed_cycler_run, "diagnostic_data"
         ):
-            print("wrong attrs!")
             return False
         if processed_cycler_run.diagnostic_summary is None:
-            print("Diagnostic summary is none!")
             return False
         elif processed_cycler_run.diagnostic_summary.empty:
-            print("Diagnostic summary is empty!")
             return False
         else:
             conditions.append(
