@@ -134,7 +134,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         Container class for cycler metadata. Does not change based on whether the instance is structured or unstructured.
 
         Attributes:
-            raw (dict): The raw metadata dict
+            raw (dict): The raw metadata dict, containing all input metadata.
             barcode (str): The barcode
             protocol (any, json serializable): The protocol used by the cycler for this run
             channel_id (int): Channel id number
@@ -158,10 +158,11 @@ class BEEPDatapath(abc.ABC, MSONable):
         """
 
         Args:
-            raw_data (pd.DataFrame): A pandas dataframe of
-            metadata:
-            paths:
-            impute_missing:
+            raw_data (pd.DataFrame): A pandas dataframe of raw data. Must contain the columns specified in _summary_cols.
+            metadata (dict): A dictionary fo metadata. Should contain keys specified in CyclerRunMetadata, but does not have to.
+            paths ({str: str, Pathlike}): Should contain "raw" and "metadata" keys, even if they are the same filepath.
+            impute_missing (bool): Impute missing columns such as temperature and internal_resistance if they are not
+                included in raw_data.
         """
         self.raw_data = raw_data
 
@@ -237,7 +238,19 @@ class BEEPDatapath(abc.ABC, MSONable):
 
     @classmethod
     @abc.abstractmethod
-    def from_file(cls, path):
+    def from_file(cls, path, *args, **kwargs):
+        """
+        Go from a raw cycler output data file (or files) to a BEEPDatapath.
+
+        Must be implemented for the BEEPDatapath child to be valid.
+
+        Args:
+            path (str, Pathlike): The path to the raw data file.
+
+        Returns:
+            (BEEPDatapath): A child class of BEEPDatapath.
+
+        """
         raise NotImplementedError
 
     def validate(self):
