@@ -58,7 +58,6 @@ TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
 
-
 class TestBEEPDatapath(unittest.TestCase):
     """
     Tests common to all datapaths.
@@ -443,7 +442,6 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertLess(first_step.voltage.diff().max(), 0.001)
         self.assertLess(second_step.voltage.diff().max(), 0.001)
 
-
     # based on RCRT.test_get_diagnostic_summary
     def test_summarize_diagnostic(self):
         diag_summary = self.datapath_diag.summarize_diagnostic(self.diagnostic_available)
@@ -474,6 +472,27 @@ class TestBEEPDatapath(unittest.TestCase):
         datapath = self.BEEPDatapathChildTest.from_json_file(self.cycle_run_file)
         self.assertEqual(datapath.get_cycle_life(30, 0.99), 82)
         self.assertEqual(datapath.get_cycle_life(40, 0.0), 189)
+
+    # based on PCRT.test_data_types_old_processed
+    def test_data_types_old_processed(self):
+        datapath = self.BEEPDatapathChildTest.from_json_file(self.cycle_run_file)
+
+        all_summary = datapath.structured_summary
+        reg_dyptes = all_summary.dtypes.tolist()
+        reg_columns = all_summary.columns.tolist()
+        reg_dyptes = [str(dtyp) for dtyp in reg_dyptes]
+        for indx, col in enumerate(reg_columns):
+            self.assertEqual(reg_dyptes[indx], STRUCTURE_DTYPES["summary"][col])
+
+        all_interpolated = datapath.structured_data
+        cycles_interpolated_dyptes = all_interpolated.dtypes.tolist()
+        cycles_interpolated_columns = all_interpolated.columns.tolist()
+        cycles_interpolated_dyptes = [str(dtyp) for dtyp in cycles_interpolated_dyptes]
+        for indx, col in enumerate(cycles_interpolated_columns):
+            self.assertEqual(
+                cycles_interpolated_dyptes[indx],
+                STRUCTURE_DTYPES["cycles_interpolated"][col],
+            )
 
     # based on PCRT.test_cycles_to_reach_set_capacities
     def test_capacities_to_cycles(self):
