@@ -1,4 +1,8 @@
 import re
+import os
+import json
+
+from monty.serialization import loadfn, dumpfn
 
 from beep import logger
 from beep.conversion_schemas import FastCharge_CONFIG, xTesladiag_CONFIG, ARBIN_CONFIG, MACCOR_CONFIG, INDIGO_CONFIG, BIOLOGIC_CONFIG, NEWARE_CONFIG
@@ -7,6 +11,8 @@ from beep.structure.maccor import MaccorDatapath
 from beep.structure.neware import NewareDatapath
 from beep.structure.indigo import IndigoDatapath
 from beep.structure.biologic import BiologicDatapath
+from beep.utils import WorkflowOutputs
+from beep.collate import add_suffix_to_filename
 
 
 def process_file_list_from_json(file_list_json, processed_dir="data-share/structure/"):
@@ -60,18 +66,22 @@ def process_file_list_from_json(file_list_json, processed_dir="data-share/struct
     for filename, validity, run_id in zip(file_list, validities, run_ids):
         logger.info("run_id=%s structuring=%s", str(run_id), filename, extra=s)
         if validity == "valid":
-            # Process raw cycler run and dump to file
-            raw_cycler_run = RawCyclerRun.from_file(filename)
-            processed_cycler_run = raw_cycler_run.to_processed_cycler_run()
+            # Process datapath and dump to file
+
+            dp = auto_load(filename)
+            dp.structure()
+
+            # raw_cycler_run = RawCyclerRun.from_file(filename)
+            # processed_cycler_run = raw_cycler_run.to_processed_cycler_run()
             new_filename, ext = os.path.splitext(os.path.basename(filename))
             new_filename = new_filename + ".json"
             new_filename = add_suffix_to_filename(new_filename, "_structure")
-            processed_cycler_run_loc = os.path.join(processed_dir, new_filename)
-            processed_cycler_run_loc = os.path.abspath(processed_cycler_run_loc)
-            dumpfn(processed_cycler_run, processed_cycler_run_loc)
+            structured_run_loc = os.path.join(processed_dir, new_filename)
+            structured_run_loc = os.path.abspath(structured_run_loc)
+            dumpfn(dp, structured_run_loc)
 
             # Append file loc to list to be returned
-            processed_file_list.append(processed_cycler_run_loc)
+            processed_file_list.append(structured_run_loc)
             processed_run_list.append(run_id)
             processed_result_list.append("success")
             processed_message_list.append({"comment": "", "error": ""})
@@ -104,31 +114,28 @@ def process_file_list_from_json(file_list_json, processed_dir="data-share/struct
     return json.dumps(output_json)
 
 
-
-
-# todo: ALEXTODO needs validation as an argument and to actually validate during load
-def auto_load(path):
+def auto_load(filename):
     """
     Factory method to invoke RawCyclerRun from filename with recognition of
     type from filename, using corresponding class method as constructor.
 
     Args:
-        path (str): string corresponding to file path.
+        filename (str): string corresponding to file filename.
         validate (bool): whether or not to validate file.
 
     Returns:
         beep.structure.RawCyclerRun: RawCyclerRun corresponding to parsed file(s).
 
     """
-    if re.match(ARBIN_CONFIG["file_pattern"], path) or re.match(FastCharge_CONFIG["file_pattern"], filename):
-        return ArbinDatapath.from_file(path)
-    elif re.match(MACCOR_CONFIG["file_pattern"], path) or re.match(xTesladiag_CONFIG["file_pattern"], filename):
-        return MaccorDatapath.from_file(path)
-    elif re.match(INDIGO_CONFIG["file_pattern"], path):
-        return IndigoDatapath.from_file(path)
-    elif re.match(BIOLOGIC_CONFIG["file_pattern"], path):
-        return BiologicDatapath.from_file(path)
-    elif re.match(NEWARE_CONFIG["file_pattern"], path):
-        return NewareDatapath.from_file(path)
+    if re.match(ARBIN_CONFIG["file_pattern"], filename) or re.match(FastCharge_CONFIG["file_pattern"], filename):
+        return ArbinDatapath.from_file(filename)
+    elif re.match(MACCOR_CONFIG["file_pattern"], filename) or re.match(xTesladiag_CONFIG["file_pattern"], filename):
+        return MaccorDatapath.from_file(filename)
+    elif re.match(INDIGO_CONFIG["file_pattern"], filename):
+        return IndigoDatapath.from_file(filename)
+    elif re.match(BIOLOGIC_CONFIG["file_pattern"], filename):
+        return BiologicDatapath.from_file(filename)
+    elif re.match(NEWARE_CONFIG["file_pattern"], filename):
+        return NewareDatapath.from_file(filename)
     else:
-        raise ValueError("{} does not match any known file pattern".format(path))
+        raise ValueError("{} does not match any known file pattern".format(filename))

@@ -21,8 +21,12 @@ import unittest
 import numpy as np
 import pandas as pd
 
+
+import matplotlib.pyplot as plt
 from pathlib import Path
-from beep import MODULE_DIR
+from monty.serialization import loadfn, dumpfn
+from monty.tempfile import ScratchDir
+
 from beep.structure_old import (
     RawCyclerRun,
     ProcessedCyclerRun,
@@ -32,15 +36,12 @@ from beep.structure_old import (
     determine_whether_step_is_waveform_charge,
     get_max_paused_over_threshold
 )
+
+from beep import MODULE_DIR
 from beep.utils import parameters_lookup
 from beep.conversion_schemas import STRUCTURE_DTYPES
-from monty.serialization import loadfn, dumpfn
-from monty.tempfile import ScratchDir
 from beep.utils import os_format
 from beep.utils.s3 import download_s3_object
-import matplotlib.pyplot as plt
-
-
 from beep.structure.base import BEEPDatapath, step_is_waveform_dchg, step_is_waveform_chg
 from beep.structure.base_eis import EIS, BEEPDatapathWithEIS
 from beep.structure.arbin import ArbinDatapath

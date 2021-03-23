@@ -7,6 +7,7 @@ import pandas as pd
 from beep.conversion_schemas import ARBIN_CONFIG
 from beep import logger
 from beep.structure.base import BEEPDatapath
+from beep.validate import ValidatorBeep, BeepValidationError
 
 
 class ArbinDatapath(BEEPDatapath):

@@ -24,6 +24,7 @@ from beep.conversion_schemas import (
 
 from beep.utils import WorkflowOutputs, parameters_lookup
 from beep import logger, __version__
+from beep.validate import BeepValidationError, ValidatorBeep
 
 
 # todo: ALEXTODO add more logging operations
@@ -113,7 +114,6 @@ class BEEPDatapath(abc.ABC, MSONable):
     def __init__(self, raw_data, metadata, paths=None):
         self.raw_data = raw_data
 
-
         # paths may include "raw", "metadata", and "structured", as well as others.
         if paths:
             for path_ref, path in paths.items():
@@ -182,6 +182,11 @@ class BEEPDatapath(abc.ABC, MSONable):
     def from_file(cls, path):
         raise NotImplementedError
 
+    def validate(self):
+        validator = ValidatorBeep()
+        is_valid = validator.validate_arbin_dataframe(self.raw_data)
+        if not is_valid:
+            raise BeepValidationError("Beep validation failed")
 
     def _cast_dtypes(self, result, structure_dtypes_key):
         available_dtypes = {}
