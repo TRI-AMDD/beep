@@ -1,3 +1,6 @@
+"""Processing logic for Arbin cycler data.
+
+"""
 import os
 from datetime import datetime
 
@@ -7,14 +10,28 @@ import pandas as pd
 from beep.conversion_schemas import ARBIN_CONFIG
 from beep import logger
 from beep.structure.base import BEEPDatapath
-from beep.validate import ValidatorBeep, BeepValidationError
 
 
 class ArbinDatapath(BEEPDatapath):
+    """A datapath for Arbin cycler data.
+
+    Arbin cycler data contains two files:
+
+    - Raw data: A raw CSV
+    - Metadata: Typically the filename of the raw data + "_Metadata" at the end.
+
+    The metadata file is optional but strongly recommended.
+
+    Attributes:
+        All from BEEPDatapath
+    """
 
     @classmethod
     def from_file(cls, path, metadata_path=None):
-        """
+        """Load an Arbin file to a datapath.
+
+        Args:
+            path (str, Pathlike): Path to the raw data csv.
         """
         data = pd.read_csv(path)
         data.rename(str.lower, axis="columns", inplace=True)
