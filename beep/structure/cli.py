@@ -63,6 +63,7 @@ from beep.structure.maccor import MaccorDatapath
 from beep.structure.neware import NewareDatapath
 from beep.structure.indigo import IndigoDatapath
 from beep.structure.biologic import BiologicDatapath
+from beep.structure.base import BEEPDatapath
 from beep.utils import WorkflowOutputs
 from beep.collate import add_suffix_to_filename
 
@@ -194,6 +195,35 @@ def auto_load(filename):
         return NewareDatapath.from_file(filename)
     else:
         raise ValueError("{} does not match any known file pattern".format(filename))
+
+
+# todo: ALEXTODO needs tests
+def auto_load_processed(path):
+    """
+    Load processed BEEP files regardless of their class.
+
+    Enables loadfn capability for legacy BEEP files, since calling
+    loadfn on legacy files will return dictionaries instead of objects
+    or will outright fail.
+
+    Args:
+        path (str, Pathlike): Path to the structured json file.
+
+    Returns:
+        BEEPDatapath
+
+    """
+
+    processed_obj = loadfn(path)
+
+    if not isinstance(processed_obj, BEEPDatapath):
+        if isinstance(processed_obj, dict):
+            # default to Arbin file for BEEPDatapath purposes
+            return ArbinDatapath.from_json_file(path)
+        else:
+            raise TypeError(f"Unknown type for legacy processed json! `{type(processed_obj)}`")
+    else:
+        return processed_obj
 
 
 def main():

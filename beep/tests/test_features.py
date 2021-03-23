@@ -32,6 +32,7 @@ from beep.featurize import (
     CycleSummaryStats
 )
 from beep.structure.maccor import MaccorDatapath
+from beep.structure.cli import auto_load_processed
 from beep.features import featurizer_helpers
 from beep.utils import parameters_lookup
 from monty.serialization import dumpfn, loadfn
@@ -58,7 +59,7 @@ class TestFeaturizer(unittest.TestCase):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.processed_cycler_file)
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
-            pcycler_run = MaccorDatapath.from_json_file(processed_cycler_run_path)
+            pcycler_run = auto_load_processed(processed_cycler_run_path)
             featurizer = DeltaQFastCharge.from_run(
                 processed_cycler_run_path, os.getcwd(), pcycler_run
             )
@@ -83,7 +84,7 @@ class TestFeaturizer(unittest.TestCase):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.processed_cycler_file)
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
-            pcycler_run = loadfn(processed_cycler_run_path)
+            pcycler_run = auto_load_processed(processed_cycler_run_path)
             featurizer = DeltaQFastCharge.from_run(
                 processed_cycler_run_path, os.getcwd(), pcycler_run
             )
@@ -94,7 +95,7 @@ class TestFeaturizer(unittest.TestCase):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.processed_cycler_file)
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
-            pcycler_run = loadfn(processed_cycler_run_path)
+            pcycler_run = auto_load_processed(processed_cycler_run_path)
             featurizer = DeltaQFastCharge.from_run(
                 processed_cycler_run_path, os.getcwd(), pcycler_run
             )
@@ -112,7 +113,7 @@ class TestFeaturizer(unittest.TestCase):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.processed_cycler_file)
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
-            pcycler_run = loadfn(processed_cycler_run_path)
+            pcycler_run = auto_load_processed(processed_cycler_run_path)
             featurizer = DeltaQFastCharge.from_run(
                 processed_cycler_run_path, os.getcwd(), pcycler_run
             )
@@ -128,7 +129,7 @@ class TestFeaturizer(unittest.TestCase):
             pcycler_run_loc = os.path.join(
                 TEST_FILE_DIR, "2017-06-30_2C-10per_6C_CH10_structure.json"
             )
-            pcycler_run = loadfn(pcycler_run_loc)
+            pcycler_run = auto_load_processed(pcycler_run_loc)
             featurizer = DeltaQFastCharge.from_run(
                 pcycler_run_loc, os.getcwd(), pcycler_run
             )
@@ -274,7 +275,7 @@ class TestFeaturizer(unittest.TestCase):
             pcycler_run_loc = os.path.join(
                 TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
             )
-            pcycler_run = loadfn(pcycler_run_loc)
+            pcycler_run = auto_load_processed(pcycler_run_loc)
             params_dict = {
                 "test_time_filter_sec": 1000000,
                 "cycle_index_filter": 6,
@@ -300,7 +301,7 @@ class TestFeaturizer(unittest.TestCase):
             pcycler_run_loc = os.path.join(
                 TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
             )
-            pcycler_run = loadfn(pcycler_run_loc)
+            pcycler_run = auto_load_processed(pcycler_run_loc)
             featurizer = HPPCResistanceVoltageFeatures.from_run(
                 pcycler_run_loc, os.getcwd(), pcycler_run
             )
@@ -319,7 +320,7 @@ class TestFeaturizer(unittest.TestCase):
             TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
         )
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-        pcycler_run = loadfn(pcycler_run_loc)
+        pcycler_run = auto_load_processed(pcycler_run_loc)
         hppc_ocv_features = featurizer_helpers.get_hppc_ocv(pcycler_run, 1)
         self.assertEqual(np.round(hppc_ocv_features['var_ocv'].iloc[0], 6), 0.000016)
         self.assertEqual(np.round(hppc_ocv_features['min_ocv'].iloc[0], 6), -0.001291)
@@ -336,11 +337,11 @@ class TestFeaturizer(unittest.TestCase):
 
         parameters_path = os.path.join(TEST_FILE_DIR, "data-share", "raw", "parameters")
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-        pcycler_run = loadfn(pcycler_run_loc)
-        data = pcycler_run.diagnostic_interpolated
+        pcycler_run = auto_load_processed(pcycler_run_loc)
+        data = pcycler_run.diagnostic_data
         hppc_cycles = data.loc[data.cycle_type == "hppc"]
         print(hppc_cycles.step_index.unique())
-        _, protocol_name = os.path.split(pcycler_run.protocol)
+        _, protocol_name = os.path.split(pcycler_run.metadata.protocol)
         parameter_row, _ = parameters_lookup.get_protocol_parameters(protocol_name, parameters_path=parameters_path)
 
         for cycle in hppc_cycles.cycle_index.unique():
@@ -391,8 +392,8 @@ class TestFeaturizer(unittest.TestCase):
         )
         parameters_path = os.path.join(TEST_FILE_DIR, "data-share", "raw", "parameters")
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-        pcycler_run = loadfn(pcycler_run_loc)
-        _, protocol_name = os.path.split(pcycler_run.protocol)
+        pcycler_run = auto_load_processed(pcycler_run_loc)
+        _, protocol_name = os.path.split(pcycler_run.metadata.protocol)
         parameter_row, _ = parameters_lookup.get_protocol_parameters(protocol_name, parameters_path=parameters_path)
 
         step_ind = featurizer_helpers.get_step_index(pcycler_run,
@@ -448,7 +449,7 @@ class TestFeaturizer(unittest.TestCase):
             pcycler_run_loc = os.path.join(
                 TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
             )
-            pcycler_run = loadfn(pcycler_run_loc)
+            pcycler_run = auto_load_processed(pcycler_run_loc)
             diffusion_df = featurizer_helpers.get_diffusion_coeff(pcycler_run, 1)
             print(np.round(diffusion_df.iloc[0].to_list(), 3))
             self.assertEqual(np.round(diffusion_df.iloc[0].to_list(), 3)[0], -0.016)
@@ -460,7 +461,7 @@ class TestFeaturizer(unittest.TestCase):
             pcycler_run_loc = os.path.join(
                 TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
             )
-            pcycler_run = loadfn(pcycler_run_loc)
+            pcycler_run = auto_load_processed(pcycler_run_loc)
             featurizer = HPPCRelaxationFeatures.from_run(
                 pcycler_run_loc, os.getcwd(), pcycler_run
             )
@@ -488,7 +489,7 @@ class TestFeaturizer(unittest.TestCase):
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
             pcycler_run_loc = os.path.join(TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json")
-            pcycler_run = loadfn(pcycler_run_loc)
+            pcycler_run = auto_load_processed(pcycler_run_loc)
             featurizer = DiagnosticSummaryStats.from_run(
                 pcycler_run_loc, os.getcwd(), pcycler_run
             )
@@ -528,7 +529,7 @@ class TestFeaturizer(unittest.TestCase):
 
             pcycler_run_loc = os.path.join(TEST_FILE_DIR,
                                            "PredictionDiagnostics_000136_00002D_truncated_structure.json")
-            pcycler_run = loadfn(pcycler_run_loc)
+            pcycler_run = auto_load_processed(pcycler_run_loc)
             featurizer = DiagnosticSummaryStats.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
             x = [-2.4602845133649374, -0.7912059829821004, -1.3246516129064152, -0.5577484175221676,
                  0.22558675296269257, 1.4107424811304434, 0.44307560772987753, -2.968731527885897,
@@ -558,7 +559,7 @@ class TestFeaturizer(unittest.TestCase):
             )
 
             # Test diagnostic with regular cycles
-            pcycler_run = MaccorDatapath.from_json_file(pcycler_run_loc)
+            pcycler_run = auto_load_processed(pcycler_run_loc)
             featurizer = CycleSummaryStats.from_run(
                 pcycler_run_loc, os.getcwd(), pcycler_run
             )
@@ -579,7 +580,7 @@ class TestFeaturizer(unittest.TestCase):
             pcycler_run_loc = os.path.join(
                 TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
             )
-            pcycler_run = MaccorDatapath.from_json_file(pcycler_run_loc)
+            pcycler_run = auto_load_processed(pcycler_run_loc)
             featurizer = DiagnosticProperties.from_run(
                 pcycler_run_loc, os.getcwd(), pcycler_run
             )
@@ -599,7 +600,7 @@ class TestFeaturizer(unittest.TestCase):
         processed_cycler_run_path_1 = os.path.join(
             TEST_FILE_DIR, "PreDiag_000233_00021F_truncated_structure.json"
         )
-        pcycler_run = MaccorDatapath.from_json_file(processed_cycler_run_path_1)
+        pcycler_run = auto_load_processed(processed_cycler_run_path_1)
         pcycler_run.structured_summary = pcycler_run.structured_summary[~pcycler_run.structured_summary.cycle_index.isin(pcycler_run.diagnostic_summary.cycle_index)]
 
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
@@ -631,7 +632,7 @@ class TestFeaturizer(unittest.TestCase):
         processed_cycler_run_path_2 = os.path.join(
             TEST_FILE_DIR, "Talos_001383_NCR18650618001_CH31_truncated_structure.json"
         )
-        pcycler_run = MaccorDatapath.from_json_file(processed_cycler_run_path_2)
+        pcycler_run = auto_load_processed(processed_cycler_run_path_2)
 
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
 
@@ -652,7 +653,7 @@ class TestFeaturizer(unittest.TestCase):
         )
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-            pcycler_run = loadfn(processed_cycler_run_path)
+            pcycler_run = auto_load_processed(processed_cycler_run_path)
             peaks_df = featurizer_helpers.generate_dQdV_peak_fits(pcycler_run, 'rpt_0.2C', 0, 1, plotting_y_n=1)
             print(len(peaks_df.columns))
             self.assertEqual(peaks_df.columns.tolist(),
@@ -677,7 +678,7 @@ class TestFeaturizer(unittest.TestCase):
             os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
 
             # processed_cycler_run_path_1
-            pcycler_run = loadfn(processed_cycler_run_path_1)
+            pcycler_run = auto_load_processed(processed_cycler_run_path_1)
             v_vars_df = featurizer_helpers.get_v_diff(pcycler_run, 1, 8)
             print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var_v_diff'], decimals=8),
@@ -689,7 +690,7 @@ class TestFeaturizer(unittest.TestCase):
             self.assertListEqual(temp_list, [0.00472705,0.0108896,0.13865059,0.59427689,2.36743208,176.50219843,30.4896637])
             
             # processed_cycler_run_path_2
-            pcycler_run = loadfn(processed_cycler_run_path_2)
+            pcycler_run = auto_load_processed(processed_cycler_run_path_2)
             v_vars_df = featurizer_helpers.get_v_diff(pcycler_run, 1, 8)
             print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var_v_diff'], decimals=8),
@@ -701,7 +702,7 @@ class TestFeaturizer(unittest.TestCase):
             self.assertListEqual(temp_list, [2.664e-05,0.01481062,0.01993318,1.70458503,4.89453871,6.83708111,0.14542267])
 
             # processed_cycler_run_path_3
-            pcycler_run = loadfn(processed_cycler_run_path_3)
+            pcycler_run = auto_load_processed(processed_cycler_run_path_3)
             v_vars_df = featurizer_helpers.get_v_diff(pcycler_run, 1, 8)
             print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var_v_diff'], decimals=8),
@@ -713,7 +714,7 @@ class TestFeaturizer(unittest.TestCase):
             self.assertListEqual(temp_list, [4.82e-06,0.01134005,0.01569094,-0.01052989,3.25562527,4.07964428,0.06526675])
 
             # processed_cycler_run_path_4
-            pcycler_run = loadfn(processed_cycler_run_path_4)
+            pcycler_run = auto_load_processed(processed_cycler_run_path_4)
             v_vars_df = featurizer_helpers.get_v_diff(pcycler_run, 1, 8)
             print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var_v_diff'], decimals=8),

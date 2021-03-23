@@ -45,8 +45,8 @@ def isolate_dQdV_peaks(
             The peaks will be isolated
     """
 
-    rpt_type_data = processed_cycler_run.diagnostic_interpolated[
-        (processed_cycler_run.diagnostic_interpolated.cycle_type == rpt_type)
+    rpt_type_data = processed_cycler_run.diagnostic_data[
+        (processed_cycler_run.diagnostic_data.cycle_type == rpt_type)
     ]
     cycles = rpt_type_data.cycle_index.unique()
 
@@ -364,7 +364,7 @@ def get_hppc_ocv(processed_cycler_run, diag_pos):
 
     hppc_ocv_features = pd.DataFrame()
 
-    data = processed_cycler_run.diagnostic_interpolated
+    data = processed_cycler_run.diagnostic_data
     cycle_hppc = data.loc[data.cycle_type == "hppc"]
     cycle_hppc = cycle_hppc.loc[cycle_hppc.current.notna()]
     cycles = cycle_hppc.cycle_index.unique()
@@ -412,7 +412,7 @@ def get_chosen_df(processed_cycler_run, diag_pos):
         'diagnostic_time[h]' starting from 0 for this dataframe.
     """
 
-    data = processed_cycler_run.diagnostic_interpolated
+    data = processed_cycler_run.diagnostic_data
     hppc_cycle = data.loc[data.cycle_type == "hppc"]
     hppc_cycle = hppc_cycle.loc[hppc_cycle.current.notna()]
     cycles = hppc_cycle.cycle_index.unique()
@@ -624,7 +624,7 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window):
 
     result = pd.DataFrame()
 
-    data = processed_cycler_run.diagnostic_interpolated
+    data = processed_cycler_run.diagnostic_data
     hppc_data = data.loc[data.cycle_type == "hppc"]
     cycles = hppc_data.cycle_index.unique()
 
@@ -730,7 +730,7 @@ def get_diffusion_coeff(processed_cycler_run, diag_pos):
         a dataframe with 8 entries, slope at different socs.
     """
 
-    data = processed_cycler_run.diagnostic_interpolated
+    data = processed_cycler_run.diagnostic_data
     hppc_cycle = data.loc[data.cycle_type == "hppc"]
     cycles = hppc_cycle.cycle_index.unique()
     diag_num = cycles[diag_pos]
@@ -858,8 +858,8 @@ def get_relaxation_features(processed_cycler_run, hppc_list=[0, 1], max_n_soc=10
     for hppc_chosen in hppc_list:
 
         # Getting just the HPPC cycles
-        hppc_diag_cycles = processed_cycler_run.diagnostic_interpolated[
-            processed_cycler_run.diagnostic_interpolated.cycle_type == "hppc"
+        hppc_diag_cycles = processed_cycler_run.diagnostic_data[
+            processed_cycler_run.diagnostic_data.cycle_type == "hppc"
         ]
 
         # Getting unique and ordered cycle index list for HPPC cycles, and choosing the hppc cycle
@@ -1063,7 +1063,7 @@ def get_step_index(pcycler_run, cycle_type="hppc", diag_pos=0):
     parameter_row, _ = parameters_lookup.get_protocol_parameters(protocol_name, parameters_path=parameters_path)
 
     step_indices_annotated = {}
-    diag_data = pcycler_run.diagnostic_interpolated
+    diag_data = pcycler_run.diagnostic_data
     cycles = diag_data.loc[diag_data.cycle_type == cycle_type]
     cycle = cycles[cycles.cycle_index == cycles.cycle_index.unique()[diag_pos]]
 
