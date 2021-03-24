@@ -1,3 +1,7 @@
+"""Classes and functions for handling Neware battery cycler data.
+
+"""
+
 import numpy as np
 import pandas as pd
 from monty.tempfile import ScratchDir
@@ -8,18 +12,18 @@ from beep.conversion_schemas import NEWARE_CONFIG
 
 
 class NewareDatapath(BEEPDatapath):
+    """A BEEPDatapath for ingesting and structuring Neware data files.
+    """
 
     @classmethod
     def from_file(cls, filename):
-        """
-        Method for ingestion of Neware format files.
+        """Create a NewareDatapath from a raw Neware cycler file.
 
         Args:
-            filename (str): file path for neware format file.
-            validate (bool): whether to validate on instantiation.
+            filename (str, Pathlike): file path for neware file.
 
         Returns:
-            beep.structure.RawCyclerRun
+            (NewareDatapath)
         """
         ir_column_name = '"DCIR(O)"'
         with open(filename, encoding="ISO-8859-1") as input:
@@ -119,8 +123,7 @@ class NewareDatapath(BEEPDatapath):
 
     @staticmethod
     def step_time(x):
-        """
-        Helper function to convert the step time format from Neware h:min:s.ms into
+        """Helper function to convert the step time format from Neware h:min:s.ms into
         decimal seconds
 
         Args:
@@ -128,7 +131,6 @@ class NewareDatapath(BEEPDatapath):
 
         Returns:
             float: The time in seconds
-
         """
         time_list = x.split(":")
         time = (
