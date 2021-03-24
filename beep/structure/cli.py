@@ -11,11 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Module and script for processing cycler run CSVs into structured data
-for featurization and analysis.  Contains RawCyclerRun and ProcessedCyclerRun
-objects, which parse and structure data, along with utility
-functions for manipulating tabular data.
+"""Command line/batch interface for structuring many battery cycler runs.
 
 Usage:
     structure [INPUT_JSON]
@@ -72,8 +68,7 @@ SERVICE_CONFIG = {"service": "DataStructurer"}
 
 
 def process_file_list_from_json(file_list_json, processed_dir="data-share/structure/"):
-    """
-    Function to take a json filename corresponding to a data structure
+    """Function to take a json filename corresponding to a data structure
     with a 'file_list' and a 'validity' attribute, process each file
     with a corresponding True validity, dump the processed file into
     a predetermined directory, and return a jsonable dict of processed
@@ -88,7 +83,7 @@ def process_file_list_from_json(file_list_json, processed_dir="data-share/struct
             files to be placed.
 
     Returns:
-        str: json string of processed files (with key "processed_file_list").
+        (str): json string of processed files (with key "processed_file_list").
             Note that this list contains None values for every file that
             had a corresponding False in the validity list.
 
@@ -171,16 +166,24 @@ def process_file_list_from_json(file_list_json, processed_dir="data-share/struct
 
 
 def auto_load(filename):
-    """
-    Factory method to invoke RawCyclerRun from filename with recognition of
-    type from filename, using corresponding class method as constructor.
+    """Load any supported raw battery cycler file to the correct Datapath automatically.
+
+    Matches raw file patterns to the correct datapath and returns the datapath object.
+
+    Example:
+        auto_load("2017-05-09_test-TC-contact_CH33.csv")
+
+        >>> <ArbinDatapath object>
+
+        auto_load("PreDiag_000287_000128short.092")
+
+        >>> <MaccorDatapath object>
 
     Args:
-        filename (str): string corresponding to file filename.
-        validate (bool): whether or not to validate file.
+        filename (str, Pathlike): string corresponding to battery cycler file filename.
 
     Returns:
-        beep.structure.RawCyclerRun: RawCyclerRun corresponding to parsed file(s).
+        (beep.structure.base.BEEPDatapath): The datapath child class corresponding to this file.
 
     """
     if re.match(ARBIN_CONFIG["file_pattern"], filename) or re.match(FastCharge_CONFIG["file_pattern"], filename):
@@ -197,20 +200,32 @@ def auto_load(filename):
         raise ValueError("{} does not match any known file pattern".format(filename))
 
 
-# todo: ALEXTODO needs tests
 def auto_load_processed(path):
-    """
-    Load processed BEEP files regardless of their class.
+    """Load processed BEEP .json files regardless of their class.
 
     Enables loadfn capability for legacy BEEP files, since calling
     loadfn on legacy files will return dictionaries instead of objects
     or will outright fail.
 
+    Examples:
+
+        auto_load_processed("maccor_file_structured.json")
+
+        >>> <MaccorDatapath object>
+
+        auto_load_processed("neware_file_structured.json")
+
+        >>> <NewareDatapath object>
+
+        auto_load_processed("old_Biologic_ProcessedCyclerRun_legacy.json")
+
+        >>> <BiologicDatapath object>
+
     Args:
         path (str, Pathlike): Path to the structured json file.
 
     Returns:
-        BEEPDatapath
+        (BEEPDatapath)
 
     """
 
@@ -227,8 +242,7 @@ def auto_load_processed(path):
 
 
 def main():
-    """
-    Main function of this module, takes in arguments of an input
+    """Main function of this module, takes in arguments of an input
     and output filename and uses the input file to create a
     structured data output for analysis/ML processing.
     """
