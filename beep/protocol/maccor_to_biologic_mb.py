@@ -993,7 +993,7 @@ def convert_diagnostic_v5_multi_techniques():
     tech2_main_loop_steps.append(end_step)
     tech2_main_loop_steps = sub_goto_step_nums(
         tech2_main_loop_steps,
-        main_loop_start_i + 2,
+        main_loop_start_i + 1,
     )
 
     # bring loop level down 1
@@ -1007,10 +1007,10 @@ def convert_diagnostic_v5_multi_techniques():
     tech4_steps = steps[main_loop_end_i + 1:]
     tech4_steps = sub_goto_step_nums(
         tech4_steps,
-        main_loop_end_i + 2,
+        main_loop_end_i + 1,
     )
 
-    assert get(tech4_steps[1], "Ends.EndEntry.Step") == "002"
+    assert get(tech4_steps[1], "Ends.EndEntry.Step") == "003"
 
     print("*** creating technique 1")
     tech1_seqs = converter._maccor_steps_to_biologic_seqs(tech1_steps)
