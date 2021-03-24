@@ -72,7 +72,6 @@ class MaccorDatapath(BEEPDatapathWithEIS):
             data = pd.read_csv(StringIO(data), delimiter="\t")
             return cls(data=data, metadata=metadata)
 
-
     @classmethod
     def from_file(cls, path):
         """Create a MaccorDatapath file from a Maccor cycler run raw file.
@@ -156,7 +155,6 @@ class MaccorDatapath(BEEPDatapathWithEIS):
 
         # todo: ALEXTODO add logging for if no paths added
 
-
     @staticmethod
     def quantity_sum(data, quantity, state_type):
         """Computes non-decreasing capacity or energy (either charge or discharge)
@@ -228,7 +226,6 @@ class MaccorDatapath(BEEPDatapathWithEIS):
             quantity_agg[begin_step_ind:] += cycle_sum
         return quantity_agg
 
-
     @staticmethod
     def parse_metadata(metadata_string):
         """Parses maccor metadata string, which is annoyingly inconsistent.
@@ -251,13 +248,12 @@ class MaccorDatapath(BEEPDatapathWithEIS):
             "Comment/Barcode:",
         ]
         metadata_values = MaccorDatapath.split_string_by_fields(metadata_string,
-                                                 metadata_fields)
+                                                                metadata_fields)
         metadata = {
             k.replace(":", ""): [v.strip()]
             for k, v in zip(metadata_fields, metadata_values)
         }
         return metadata
-
 
     @staticmethod
     def correct_timestamp(x):
@@ -279,19 +275,18 @@ class MaccorDatapath(BEEPDatapathWithEIS):
             iso = (
                 pacific.localize(datetime.strptime(x, "%m/%d/%Y %H:%M:%S"),
                                  is_dst=True)
-                    .astimezone(utc)
-                    .isoformat()
+                .astimezone(utc)
+                .isoformat()
             )
         except ValueError:
             x = x + " 00:00:00"
             iso = (
                 pacific.localize(datetime.strptime(x, "%m/%d/%Y %H:%M:%S"),
                                  is_dst=True)
-                    .astimezone(utc)
-                    .isoformat()
+                .astimezone(utc)
+                .isoformat()
             )
         return iso
-
 
     @staticmethod
     def split_string_by_fields(string, fields):
@@ -318,5 +313,3 @@ class MaccorDatapath(BEEPDatapathWithEIS):
             substrings.append(init)
         substrings.append(leftovers)
         return substrings
-
-

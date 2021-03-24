@@ -120,7 +120,6 @@ class NewareDatapath(BEEPDatapath):
 
         return cls(data, metadata, paths)
 
-
     @staticmethod
     def step_time(x):
         """Helper function to convert the step time format from Neware h:min:s.ms into

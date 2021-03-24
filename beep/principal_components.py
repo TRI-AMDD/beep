@@ -8,6 +8,7 @@ from sklearn.preprocessing import StandardScaler
 
 from beep.structure.cli import auto_load_processed
 
+
 class PrincipalComponents(MSONable):
     """
     PCA object.

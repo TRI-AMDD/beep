@@ -61,8 +61,8 @@ class IndigoDatapath(BEEPDatapath):
         data["internal_resistance"] = data.cell_voltage_v / data.cell_current_a
         data["date_time_iso"] = data["system_time_us"].apply(
             lambda x: datetime.utcfromtimestamp(x / 1000000)
-                .replace(tzinfo=pytz.UTC)
-                .isoformat()
+            .replace(tzinfo=pytz.UTC)
+            .isoformat()
         )
 
         data.rename(INDIGO_CONFIG["data_columns"], axis="columns", inplace=True)

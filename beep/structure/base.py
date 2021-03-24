@@ -103,7 +103,6 @@ class BEEPDatapath(abc.ABC, MSONable):
 
             return wrapper
 
-
         @classmethod
         def must_not_be_legacy(cls, func):
             """
@@ -131,7 +130,8 @@ class BEEPDatapath(abc.ABC, MSONable):
 
     class CyclerRunMetadata:
         """
-        Container class for cycler metadata. Does not change based on whether the instance is structured or unstructured.
+        Container class for cycler metadata. Does not change based on whether the instance is structured
+        or unstructured.
 
         Attributes:
             raw (dict): The raw metadata dict, containing all input metadata.
@@ -139,6 +139,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             protocol (any, json serializable): The protocol used by the cycler for this run
             channel_id (int): Channel id number
         """
+
         def __init__(self, metadata_dict):
             """
 
@@ -158,11 +159,14 @@ class BEEPDatapath(abc.ABC, MSONable):
         """
 
         Args:
-            raw_data (pd.DataFrame): A pandas dataframe of raw data. Must contain the columns specified in _summary_cols.
-            metadata (dict): A dictionary fo metadata. Should contain keys specified in CyclerRunMetadata, but does not have to.
-            paths ({str: str, Pathlike}): Should contain "raw" and "metadata" keys, even if they are the same filepath.
-            impute_missing (bool): Impute missing columns such as temperature and internal_resistance if they are not
-                included in raw_data.
+            raw_data (pd.DataFrame): A pandas dataframe of raw data. Must contain the columns specified in
+                summary_cols.
+            metadata (dict): A dictionary for metadata. Should contain keys specified in CyclerRunMetadata, but does not
+                have to.
+            paths ({str: str, Pathlike}): Should contain "raw" and "metadata" keys, even if they are the same
+                filepath.
+            impute_missing (bool): Impute missing columns such as temperature and internal_resistance if they
+                are not included in raw_data.
         """
         self.raw_data = raw_data
 
@@ -233,8 +237,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         self._diag_aggregation = copy.deepcopy(self._aggregation)
         self._diag_aggregation.pop("internal_resistance")
         self._diag_summary_cols = copy.deepcopy(self._summary_cols)
-        self._diag_summary_cols.pop(5) # internal_resistance
-
+        self._diag_summary_cols.pop(5)  # internal_resistance
 
     @classmethod
     @abc.abstractmethod
@@ -251,7 +254,6 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         """
         raise NotImplementedError
-
 
     @classmethod
     def from_json_file(cls, filename):
@@ -291,7 +293,6 @@ class BEEPDatapath(abc.ABC, MSONable):
         with open(filename, "w") as f:
             json.dump(self.as_dict(), f)
 
-
     @StructuringDecorators.must_not_be_legacy
     def as_dict(self):
         """Serialize a BEEPDatapath as a dictionary.
@@ -311,9 +312,9 @@ class BEEPDatapath(abc.ABC, MSONable):
         else:
             summary = self.structured_summary.to_dict("list")
             cycles_interpolated = self.structured_data.to_dict("list")
-            diagnostic_summary = self.diagnostic_summary.to_dict("list") if self.diagnostic_summary is not None else None
+            diagnostic_summary = self.diagnostic_summary.to_dict(
+                "list") if self.diagnostic_summary is not None else None
             diagnostic_interpolated = self.diagnostic_data.to_dict("list") if self.diagnostic_data is not None else None
-
 
         return {
             "@module": self.__class__.__module__,
@@ -373,7 +374,8 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         diagnostic_summary = d.get("diagnostic_summary")
         diagnostic_data = d.get("diagnostic_interpolated")
-        datapath.diagnostic_summary = diagnostic_summary if diagnostic_summary is None else pd.DataFrame(diagnostic_summary)
+        datapath.diagnostic_summary = diagnostic_summary if diagnostic_summary is None else pd.DataFrame(
+            diagnostic_summary)
         datapath.diagnostic_data = diagnostic_data if diagnostic_data is None else pd.DataFrame(diagnostic_data)
         return datapath
 
@@ -391,15 +393,15 @@ class BEEPDatapath(abc.ABC, MSONable):
 
     @StructuringDecorators.must_not_be_legacy
     def structure(self,
-        v_range=None,
-        resolution=1000,
-        diagnostic_resolution=500,
-        nominal_capacity=1.1,
-        full_fast_charge=0.8,
-        diagnostic_available=False,
-        charge_axis='charge_capacity',
-        discharge_axis='voltage',
-    ):
+                  v_range=None,
+                  resolution=1000,
+                  diagnostic_resolution=500,
+                  nominal_capacity=1.1,
+                  full_fast_charge=0.8,
+                  diagnostic_available=False,
+                  charge_axis='charge_capacity',
+                  discharge_axis='voltage',
+                  ):
         """
 
         Args:
@@ -523,8 +525,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         ]
         all_dfs = []
         cycle_indices = self.raw_data.cycle_index.unique()
-        cycle_indices = [c for c in cycle_indices if c in reg_cycles]
-        cycle_indices.sort()
+        cycle_indices = sorted([c for c in cycle_indices if c in reg_cycles])
 
         for cycle_index in tqdm(cycle_indices, desc=desc):
             # Use a cycle_index mask instead of a global groupby to save memory
@@ -735,8 +736,8 @@ class BEEPDatapath(abc.ABC, MSONable):
         charge_finish_time = (
             self.raw_data[
                 self.raw_data.charge_capacity >= nominal_capacity * full_fast_charge]
-                .groupby("cycle_index", as_index=False)["date_time_iso"]
-                .agg("first")
+            .groupby("cycle_index", as_index=False)["date_time_iso"]
+            .agg("first")
         )
 
         # Left merge, since some cells might not reach desired levels of
@@ -792,7 +793,7 @@ class BEEPDatapath(abc.ABC, MSONable):
                 (summary.iloc[[-1]])["discharge_capacity"].iloc[0]
                 > cycle_complete_discharge_ratio
                 * (summary.iloc[[-1]])["charge_capacity"].iloc[0]
-        )
+                    )
         ):
             return summary
         else:
@@ -976,10 +977,10 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         return diag_summary
 
-
     # locate diagnostic cycles
     # determine voltage range to interpolate on
     # this is a function that TRI is using mostly for themselves
+
     @StructuringDecorators.must_not_be_legacy
     def determine_structuring_parameters(
         self,
@@ -1035,8 +1036,10 @@ class BEEPDatapath(abc.ABC, MSONable):
                     diag_1_pattern = [len(self.raw_data[self.raw_data.cycle_index == x].step_index.unique())
                                       for x in range(initial_diagnostic_at[1], initial_diagnostic_at[1] + hppc_rpt_len)]
                     # Find the steps present in the reset cycles for the first and second diagnostic
-                    diag_0_steps = set(self.raw_data[self.raw_data.cycle_index == initial_diagnostic_at[0]].step_index.unique())
-                    diag_1_steps = set(self.raw_data[self.raw_data.cycle_index == initial_diagnostic_at[1]].step_index.unique())
+                    diag_0_steps = set(self.raw_data[self.raw_data.cycle_index ==
+                                       initial_diagnostic_at[0]].step_index.unique())
+                    diag_1_steps = set(self.raw_data[self.raw_data.cycle_index ==
+                                       initial_diagnostic_at[1]].step_index.unique())
                     diagnostic_starts_at = []
                     for cycle in self.raw_data.cycle_index.unique():
                         steps_present = set(self.raw_data[
@@ -1105,7 +1108,6 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         return cycle_life
 
-
     @StructuringDecorators.must_be_structured
     def cycles_to_capacities(self, cycle_min=200, cycle_max=1800, cycle_interval=200):
         """
@@ -1136,7 +1138,6 @@ class BEEPDatapath(abc.ABC, MSONable):
             "cycle_", cycle_indices.astype(str)
         )
         return discharge_capacities
-
 
     @StructuringDecorators.must_be_structured
     def capacities_to_cycles(

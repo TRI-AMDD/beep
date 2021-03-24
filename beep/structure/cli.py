@@ -53,7 +53,15 @@ from docopt import docopt
 from monty.serialization import loadfn, dumpfn
 
 from beep import logger, __version__
-from beep.conversion_schemas import FastCharge_CONFIG, xTesladiag_CONFIG, ARBIN_CONFIG, MACCOR_CONFIG, INDIGO_CONFIG, BIOLOGIC_CONFIG, NEWARE_CONFIG
+from beep.conversion_schemas import (
+    FastCharge_CONFIG,
+    xTesladiag_CONFIG,
+    ARBIN_CONFIG,
+    MACCOR_CONFIG,
+    INDIGO_CONFIG,
+    BIOLOGIC_CONFIG,
+    NEWARE_CONFIG
+)
 from beep.structure.arbin import ArbinDatapath
 from beep.structure.maccor import MaccorDatapath
 from beep.structure.neware import NewareDatapath

@@ -90,7 +90,6 @@ class BiologicDatapath(BEEPDatapath):
 
         return cls(data, metadata, paths)
 
-
     @staticmethod
     def parse_metadata(metadata_path):
         """Extracts BioLogic metadata from metadata file.
