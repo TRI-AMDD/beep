@@ -1,4 +1,4 @@
-"""Processing logic for Arbin cycler data.
+"""Classes and functions for handling Arbin battery cycler data.
 
 """
 import os

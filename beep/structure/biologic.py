@@ -1,5 +1,8 @@
-from datetime import datetime
+"""Classes and functions for handling BioLogic battery cyclers.
+"""
+
 import hashlib
+from datetime import datetime
 
 import pandas as pd
 
@@ -8,11 +11,12 @@ from beep.conversion_schemas import BIOLOGIC_CONFIG
 
 
 class BiologicDatapath(BEEPDatapath):
+    """Datapath for ingesting and structuring BioLogic cycler data.
+    """
 
     @classmethod
     def from_file(cls, path):
-        """
-        Creates RawCyclerRun from an Biologic data file.
+        """Creates a BEEPDatapath from a raw BioLogic battery cycler output file.
 
         Args:
             path (str): file path to data file
@@ -89,17 +93,18 @@ class BiologicDatapath(BEEPDatapath):
 
     @staticmethod
     def parse_metadata(metadata_path):
-        """
+        """Extracts BioLogic metadata from metadata file.
+
         Iterates through a biologic metadata file and extracts the meta fields:
             - cell_id
             - barcode
             - protocol
 
         Args:
-            metadata_path (str):                path to metadata file
+            metadata_path (str): path to metadata file
 
         Returns:
-            dict:                               dictionary with metadata fields
+            (dict): dictionary with metadata fields
         """
 
         flag_cell_id = False
@@ -159,5 +164,4 @@ class BiologicDatapath(BEEPDatapath):
                 i += 1
                 if i > max_lines:
                     break
-
         return metadata
