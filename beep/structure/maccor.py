@@ -135,7 +135,7 @@ class MaccorDatapath(BEEPDatapathWithEIS):
         # Automatically find EIS from directory
 
         if not paths:
-            # todo: ALEXTODO replace with logging
+            # todo: replace with logging
             print(f"Looking in directory {self.paths['raw']} for EIS runs, as no paths specified to `load_eis`.")
             eis_pattern = ".*.".join(self.paths["raw"].rsplit(".", 1))
             paths = glob(eis_pattern)
@@ -148,7 +148,7 @@ class MaccorDatapath(BEEPDatapathWithEIS):
         self.eis = eis_runs
         self.paths["eis"] = paths
 
-        # todo: ALEXTODO add logging for if no paths added
+        # todo: add logging for if no paths added
 
     @staticmethod
     def quantity_sum(data, quantity, state_type):

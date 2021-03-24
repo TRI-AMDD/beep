@@ -194,7 +194,6 @@ class TestBEEPDatapath(unittest.TestCase):
         self.datapath_nodiag.unstructure()
         self.assertFalse(self.datapath_nodiag.is_structured)
 
-    # todo: ALEXTODO expand to also use some small file with diagnostic data and summary
     def test_serialization(self):
         truth_datapath = self.datapath_diag
 
@@ -453,7 +452,6 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertEqual(self.datapath_small_params.metadata.channel_id, 10)
         self.assertTrue(self.datapath_small_params.is_structured)
 
-    # todo: ALEXTODO
     def test_autostructure(self):
         pass
 
