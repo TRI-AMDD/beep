@@ -217,6 +217,8 @@ class RawCyclerRun(MSONable):
             "current",
             "charge_capacity",
             "discharge_capacity",
+            "charge_energy",
+            "discharge_energy",
             "internal_resistance",
             "temperature",
         ]
@@ -378,6 +380,7 @@ class RawCyclerRun(MSONable):
         cycle_complete_discharge_ratio=0.97,
         cycle_complete_vmin=3.3,
         cycle_complete_vmax=3.3,
+        error_threshold=1e6,
     ):
         """
         Gets summary statistics for data according to cycle number. Summary data
@@ -393,6 +396,9 @@ class RawCyclerRun(MSONable):
                 in any complete cycle
             cycle_complete_vmax (float): expected voltage maximum achieved
                 in any complete cycle
+            error_threshold (float): threshold to consider the summary value
+                an error (applied only to specific columns that should reset
+                each cycle)
 
         Returns:
             pandas.DataFrame: summary statistics by cycle.
@@ -447,6 +453,9 @@ class RawCyclerRun(MSONable):
         summary.loc[
             ~np.isfinite(summary["energy_efficiency"]), "energy_efficiency"
         ] = np.NaN
+        # This code is designed to remove erroneous energy values
+        for col in ["discharge_energy", "charge_energy"]:
+            summary.loc[summary[col].abs() > error_threshold, col] = np.NaN
         summary["charge_throughput"] = summary.charge_capacity.cumsum()
         summary["energy_throughput"] = summary.charge_energy.cumsum()
 
@@ -563,13 +572,14 @@ class RawCyclerRun(MSONable):
             "date_time_iso",
             "cycle_index",
         ]
+        diag_summary["paused"] = self.data.groupby("cycle_index").apply(
+            get_max_paused_over_threshold
+        )
+
         diag_summary = diag_summary[diag_summary.index.isin(diag_cycles_at)]
 
         diag_summary["coulombic_efficiency"] = (
             diag_summary["discharge_capacity"] / diag_summary["charge_capacity"]
-        )
-        diag_summary["paused"] = self.data.groupby("cycle_index").apply(
-            get_max_paused_over_threshold
         )
 
         diag_summary.reset_index(drop=True, inplace=True)
@@ -628,15 +638,6 @@ class RawCyclerRun(MSONable):
 
         diag_data = self.data[self.data["cycle_index"].isin(diag_cycles_at)]
 
-        # Convert date_time_iso field into pd.datetime object
-        diag_data.loc[:, "date_time_iso"] = pd.to_datetime(diag_data["date_time_iso"])
-
-        # Convert datetime into seconds to allow interpolation of time
-        diag_data.loc[:, "datetime_seconds"] = [
-            time.mktime(t.timetuple()) if t is not pd.NaT else float("nan")
-            for t in diag_data["date_time_iso"]
-        ]
-
         # Counter to ensure non-contiguous repeats of step_index
         # within same cycle_index are grouped separately
         diag_data.loc[:, "step_index_counter"] = 0
@@ -657,7 +658,6 @@ class RawCyclerRun(MSONable):
             "discharge_energy",
             "internal_resistance",
             "temperature",
-            "datetime_seconds",
             "test_time",
         ]
 
@@ -691,13 +691,6 @@ class RawCyclerRun(MSONable):
                     columns=incl_columns,
                     resolution=resolution,
                 )
-
-            # Convert interpolated time in seconds back to datetime
-            new_df["date_time_iso"] = [
-                datetime.utcfromtimestamp(t).isoformat() if ~np.isnan(t) else t
-                for t in new_df["datetime_seconds"]
-            ]
-            new_df = new_df.drop(columns="datetime_seconds")
 
             new_df["cycle_index"] = cycle_index
             new_df["cycle_type"] = diag_cycle_type[diag_cycles_at.index(cycle_index)]
@@ -1242,39 +1235,38 @@ class RawCyclerRun(MSONable):
         if run_parameter is not None:
             if {"capacity_nominal"}.issubset(run_parameter.columns.tolist()):
                 nominal_capacity = run_parameter["capacity_nominal"].iloc[0]
-            if {"discharge_cutoff_voltage", "charge_cutoff_voltage"}.issubset(
-                run_parameter.columns
-            ):
+            if {"discharge_cutoff_voltage", "charge_cutoff_voltage"}.issubset(run_parameter.columns):
                 v_range = [
                     all_parameters["discharge_cutoff_voltage"].min(),
                     all_parameters["charge_cutoff_voltage"].max(),
                 ]
-            if {
-                "diagnostic_type",
-                "diagnostic_start_cycle",
-                "diagnostic_interval",
-            }.issubset(run_parameter.columns):
+            if {"diagnostic_type", "diagnostic_start_cycle", "diagnostic_interval"}.issubset(run_parameter.columns):
                 if run_parameter["diagnostic_type"].iloc[0] == "HPPC+RPT":
                     hppc_rpt = ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"]
                     hppc_rpt_len = 5
-                    diagnostic_starts_at = [
-                        1,
-                        1
-                        + run_parameter["diagnostic_start_cycle"].iloc[0]
-                        + 1 * hppc_rpt_len,
-                    ]
-                    for i in range(1, 100):
-                        diag_cycle_num = (
-                            i
-                            * (
-                                run_parameter["diagnostic_interval"].iloc[0]
-                                + hppc_rpt_len
-                            )
-                            + 1
-                            + run_parameter["diagnostic_start_cycle"].iloc[0]
-                            + 1 * hppc_rpt_len
-                        )
-                        diagnostic_starts_at.append(diag_cycle_num)
+                    initial_diagnostic_at = [1, 1 + run_parameter["diagnostic_start_cycle"].iloc[0] + 1 * hppc_rpt_len]
+                    # Calculate the number of steps present for each cycle in the diagnostic as the pattern for
+                    # the diagnostic. If this pattern of steps shows up at the end of the file, that indicates
+                    # the presence of a final diagnostic
+                    diag_0_pattern = [len(self.data[self.data.cycle_index == x].step_index.unique()) for x in
+                                      range(initial_diagnostic_at[0], initial_diagnostic_at[0] + hppc_rpt_len)]
+                    diag_1_pattern = [len(self.data[self.data.cycle_index == x].step_index.unique()) for x in
+                                      range(initial_diagnostic_at[1], initial_diagnostic_at[1] + hppc_rpt_len)]
+                    # Find the steps present in the reset cycles for the first and second diagnostic
+                    diag_0_steps = set(self.data[self.data.cycle_index == initial_diagnostic_at[0]].step_index.unique())
+                    diag_1_steps = set(self.data[self.data.cycle_index == initial_diagnostic_at[1]].step_index.unique())
+                    diagnostic_starts_at = []
+                    for cycle in self.data.cycle_index.unique():
+                        steps_present = set(self.data[self.data.cycle_index == cycle].step_index.unique())
+                        cycle_pattern = [len(self.data[self.data.cycle_index == x].step_index.unique()) for x in
+                                         range(cycle, cycle + hppc_rpt_len)]
+                        if steps_present == diag_0_steps or steps_present == diag_1_steps:
+                            diagnostic_starts_at.append(cycle)
+                        # Detect final diagnostic if present in the data
+                        elif cycle >= (self.data.cycle_index.max() - hppc_rpt_len - 1) and \
+                                (cycle_pattern == diag_0_pattern or cycle_pattern == diag_1_pattern):
+                            diagnostic_starts_at.append(cycle)
+
                     diagnostic_available = {
                         "parameter_set": run_parameter["diagnostic_parameter_set"].iloc[0],
                         "cycle_type": hppc_rpt,
@@ -1925,7 +1917,7 @@ def get_interpolated_data(
     columns = columns or dataframe.columns
     columns = list(set(columns) | {field_name})
 
-    df = dataframe.loc[:, columns]
+    df = dataframe.reindex(columns=columns)
     field_range = field_range or [df[field_name].iloc[0], df[field_name].iloc[-1]]
     # If interpolating on datetime, change column to datetime series and
     # use date_range to create interpolating vector

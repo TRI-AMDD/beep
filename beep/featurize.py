@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Module and scripts for generating descriptors (quantities listed
-in cell_analysis.m) from cycle-level summary statistics.
+Module and scripts for generating feature objects from structured
+battery cycling data, to be used as inputs for machine learning
+early prediction models.
 
 Usage:
     featurize [INPUT_JSON]
@@ -48,7 +49,6 @@ import os
 import json
 import numpy as np
 import pandas as pd
-import math
 from abc import ABCMeta, abstractmethod
 from docopt import docopt
 from monty.json import MSONable
@@ -97,7 +97,8 @@ class BeepFeatures(MSONable, metaclass=ABCMeta):
 
     @classmethod
     def from_run(
-        cls, input_filename, feature_dir, processed_cycler_run, params_dict=None
+        cls, input_filename, feature_dir, processed_cycler_run,
+            params_dict=None, parameters_path="data-share/raw/parameters"
     ):
         """
         This method contains the workflow for the creation of the feature class
@@ -111,6 +112,8 @@ class BeepFeatures(MSONable, metaclass=ABCMeta):
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
             gets featurized. These could be filters for column or row operations
+            parameters_path (str): Root directory storing project parameter files.
+
         Returns:
             (beep.featurize.BeepFeatures): class object for the feature set
         """
@@ -120,7 +123,7 @@ class BeepFeatures(MSONable, metaclass=ABCMeta):
                 input_filename, feature_dir
             )
             feature_object = cls.features_from_processed_cycler_run(
-                processed_cycler_run, params_dict
+                processed_cycler_run, params_dict, parameters_path=parameters_path
             )
             metadata = cls.metadata_from_processed_cycler_run(
                 processed_cycler_run, params_dict
@@ -131,13 +134,14 @@ class BeepFeatures(MSONable, metaclass=ABCMeta):
 
     @classmethod
     @abstractmethod
-    def validate_data(cls, processed_cycler_run):
+    def validate_data(cls, processed_cycler_run, params_dict=None):
         """
         Method for validation of input data, e.g. processed_cycler_runs
 
         Args:
             processed_cycler_run (ProcessedCyclerRun): processed_cycler_run
                 to validate
+            params_dict (dict): parameter dictionary for validation
 
         Returns:
             (bool): boolean for whether data is validated
@@ -174,7 +178,8 @@ class BeepFeatures(MSONable, metaclass=ABCMeta):
 
     @classmethod
     @abstractmethod
-    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None):
+    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
+                                           parameters_path="data-share/raw/parameters"):
         raise NotImplementedError
 
     @classmethod
@@ -213,14 +218,14 @@ class BeepFeatures(MSONable, metaclass=ABCMeta):
 
 class RPTdQdVFeatures(BeepFeatures):
     """
-        Object corresponding to features generated from dQdV curves in rate performance
-        test cycles. Includes constructors to create the features, object names and metadata
-        attributes in the object
-            name (str): predictor object name.
-            X (pandas.DataFrame): features in DataFrame format.
-            metadata (dict): information about the conditions, data
-                and code used to produce features
-        """
+    Object corresponding to features generated from dQdV curves in rate performance
+    test cycles. Includes constructors to create the features, object names and metadata
+    attributes in the object
+        name (str): predictor object name.
+        X (pandas.DataFrame): features in DataFrame format.
+        metadata (dict): information about the conditions, data
+            and code used to produce features
+    """
 
     # Class name for the feature object
     class_feature_name = "RPTdQdVFeatures"
@@ -229,7 +234,7 @@ class RPTdQdVFeatures(BeepFeatures):
         """
         Args:
             name (str): predictor object name
-            feature_object (pandas.DataFrame): features in DataFrame format.
+            X (pandas.DataFrame): features in DataFrame format.
             metadata (dict): information about the data and code used to produce features
         """
         super().__init__(name, X, metadata)
@@ -271,12 +276,15 @@ class RPTdQdVFeatures(BeepFeatures):
         return all(conditions)
 
     @classmethod
-    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None):
+    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
+                                           parameters_path="data-share/raw/parameters"):
         """
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun)
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
                 gets featurized. These could be filters for column or row operations
+            parameters_path (str): Root directory storing project parameter files.
+
 
         Returns:
              (pd.DataFrame) containing features based on gaussian fits to dQdV features in rpt cycles
@@ -309,6 +317,19 @@ class RPTdQdVFeatures(BeepFeatures):
         elif (params_dict["rpt_type"] == "rpt_2C") and (params_dict["charge_y_n"] == 0):
             max_nr_peaks = 3
             cwt_range_input = np.arange(10, 50)
+        else:
+            raise ValueError("Unsupported rpt_type {} or charge_y_n {}".format(
+                params_dict['rpt_type'], params_dict['charge_y_n']
+            ))
+
+        # Filter out low cycle numbers at the end of the test, corresponding to the "final" diagnostic
+        processed_cycler_run.diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated[
+                ~((processed_cycler_run.diagnostic_interpolated.test_time > params_dict['test_time_filter_sec']) &
+                  (processed_cycler_run.diagnostic_interpolated.cycle_index < params_dict['cycle_index_filter']))
+            ]
+        processed_cycler_run.diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated.groupby(
+            ["cycle_index", "step_index", "step_index_counter"]
+        ).filter(lambda x: ~x["test_time"].isnull().all())
 
         peak_fit_df_ref = featurizer_helpers.generate_dQdV_peak_fits(
             processed_cycler_run,
@@ -396,7 +417,8 @@ class HPPCResistanceVoltageFeatures(BeepFeatures):
         return all(conditions)
 
     @classmethod
-    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None):
+    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
+                                           parameters_path="data-share/raw/parameters"):
         """
         This method calculates features based on voltage, diffusion and resistance changes in hppc cycles.
 
@@ -412,12 +434,23 @@ class HPPCResistanceVoltageFeatures(BeepFeatures):
             processed_cycler_run (beep.structure.ProcessedCyclerRun)
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
             gets featurized. These could be filters for column or row operations
+            parameters_path (str): Root directory storing project parameter files.
+
 
         Returns:
             dataframe of features based on voltage and resistance changes over a SOC window in hppc cycles
         """
         if params_dict is None:
             params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
+
+        # Filter out low cycle numbers at the end of the test, corresponding to the "final" diagnostic
+        processed_cycler_run.diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated[
+                ~((processed_cycler_run.diagnostic_interpolated.test_time > params_dict['test_time_filter_sec']) &
+                  (processed_cycler_run.diagnostic_interpolated.cycle_index < params_dict['cycle_index_filter']))
+            ]
+        processed_cycler_run.diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated.groupby(
+            ["cycle_index", "step_index", "step_index_counter"]
+        ).filter(lambda x: ~x["test_time"].isnull().all())
 
         # diffusion features
         diffusion_features = featurizer_helpers.get_diffusion_features(
@@ -452,15 +485,15 @@ class HPPCResistanceVoltageFeatures(BeepFeatures):
 
 class HPPCRelaxationFeatures(BeepFeatures):
     """
-           Object corresponding to features built from relaxation time-contants
-           from hybrid pulse power characterization cycles.
-           Includes constructors to create the features, object names and metadata
-           attributes in the object
-               name (str): predictor object name.
-               X (pandas.DataFrame): features in DataFrame format.
-               metadata (dict): information about the conditions, data
-                   and code used to produce features
-           """
+    Object corresponding to features built from relaxation time-contants
+    from hybrid pulse power characterization cycles.
+    Includes constructors to create the features, object names and metadata
+    attributes in the object
+        name (str): predictor object name.
+        X (pandas.DataFrame): features in DataFrame format.
+        metadata (dict): information about the conditions, data
+            and code used to produce features
+    """
 
     # Class name for the feature object
     class_feature_name = "HPPCRelaxationFeatures"
@@ -469,7 +502,7 @@ class HPPCRelaxationFeatures(BeepFeatures):
         """
         Args:
             name (str): predictor object name
-            feature_object (pandas.DataFrame): features in DataFrame format.
+            X (pandas.DataFrame): features in DataFrame format.
             metadata (dict): information about the data and code used to produce features
         """
         super().__init__(name, X, metadata)
@@ -546,7 +579,8 @@ class HPPCRelaxationFeatures(BeepFeatures):
         return all(conditions)
 
     @classmethod
-    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None):
+    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
+                                           parameters_path="data-share/raw/parameters"):
         """
         This function returns all of the relaxation features in a dataframe for a given processed cycler run.
 
@@ -555,6 +589,7 @@ class HPPCRelaxationFeatures(BeepFeatures):
             you want the diagnostic features for.
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
             gets featurized. These could be filters for column or row operations
+            parameters_path (str): Root directory storing project parameter files.
 
         Returns:
             @featureDf(pd.DataFrame): Columns are either SOC{#%}_degrad{#%} where the first #% is the
@@ -564,6 +599,15 @@ class HPPCRelaxationFeatures(BeepFeatures):
         """
         if params_dict is None:
             params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
+
+        # Filter out low cycle numbers at the end of the test, corresponding to the "final" diagnostic
+        processed_cycler_run.diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated[
+                ~((processed_cycler_run.diagnostic_interpolated.test_time > params_dict['test_time_filter_sec']) &
+                  (processed_cycler_run.diagnostic_interpolated.cycle_index < params_dict['cycle_index_filter']))
+            ]
+        processed_cycler_run.diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated.groupby(
+            ["cycle_index", "step_index", "step_index_counter"]
+        ).filter(lambda x: ~x["test_time"].isnull().all())
 
         relax_feature_array = featurizer_helpers.get_relaxation_features(
             processed_cycler_run, params_dict["hppc_list"]
@@ -582,26 +626,25 @@ class HPPCRelaxationFeatures(BeepFeatures):
         return pd.DataFrame(dict(zip(col_names, full_feature_array)), index=[0])
 
 
-class DiagnosticSummaryStats(BeepFeatures):
+class CycleSummaryStats(BeepFeatures):
     """
-   Object corresponding to summary statistics from a diagnostic cycle of
-   specific type. Includes constructors to create the features, object names
-   and metadata attributes in the object
+    Object corresponding to summary statistics from
+    regular cycles
 
-   name (str): predictor object name.
-   X (pandas.DataFrame): features in DataFrame format.
-   metadata (dict): information about the conditions, data
-       and code used to produce features
-   """
+    name (str): predictor object name.
+    X (pandas.DataFrame): features in DataFrame format.
+    metadata (dict): information about the conditions, data
+        and code used to produce features
+    """
 
     # Class name for the feature object
-    class_feature_name = "DiagnosticSummaryStats"
+    class_feature_name = "CycleSummaryStats"
 
     def __init__(self, name, X, metadata):
         """
         Args:
             name (str): predictor object name
-            feature_object (pandas.DataFrame): features in DataFrame format.
+            X (pandas.DataFrame): features in DataFrame format.
             metadata (dict): information about the data and code used to produce features
         """
         super().__init__(name, X, metadata)
@@ -619,7 +662,177 @@ class DiagnosticSummaryStats(BeepFeatures):
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
-            gets featurized. These could be filters for column or row operations
+                gets featurized. These could be filters for column or row operations
+        Returns:
+            bool: True/False indication of ability to proceed with feature generation
+        """
+        if params_dict is None:
+            params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
+
+        # TODO: not sure this is necessary
+        # Check for data in each of the selected cycles
+        index_1, index_2 = params_dict['cycle_comp_num']
+        cycle_1 = processed_cycler_run.cycles_interpolated[
+            processed_cycler_run.cycles_interpolated.cycle_index == index_1]
+        cycle_2 = processed_cycler_run.cycles_interpolated[
+            processed_cycler_run.cycles_interpolated.cycle_index == index_2]
+        if len(cycle_1) == 0 or len(cycle_2) == 0:
+            return False
+
+        # TODO: check whether this is good
+        # Check for relevant data
+        required_columns = ['charge_capacity',
+                            'discharge_capacity',
+                            'charge_energy',
+                            'discharge_energy',
+                            ]
+        pcycler_run_columns = processed_cycler_run.cycles_interpolated.columns
+        if not all([column in pcycler_run_columns for column in required_columns]):
+            return False
+
+        return True
+
+    SUMMARY_STATISTIC_NAMES = ["var", "min", "mean", "skew", "kurtosis", "abs", "square"]
+
+    @staticmethod
+    def get_summary_statistics(array):
+        """
+        Static method for getting values corresponding
+        to standard 7 operations that many beep features
+        use, i.e. log of absolute value of each of
+        variance, min, mean, skew, kurtosis, the sum of
+        the absolute values and the sum of squares
+
+        Args:
+            array (list, np.ndarray): array of values to get
+                standard operation values for, e.g. cycle
+                discharging capacity, QcDiff, etc.
+
+        Returns:
+            [float]: list of features
+
+        """
+        return np.array([
+            np.log10(np.absolute(np.var(array))),
+            np.log10(np.absolute(min(array))),
+            np.log10(np.absolute(np.mean(array))),
+            np.log10(np.absolute(skew(array))),
+            np.log10(np.absolute(kurtosis(array, fisher=False, bias=False))),
+            np.log10(np.sum(np.absolute(array))),
+            np.log10(np.sum(np.square(array)))
+        ])
+
+    @classmethod
+    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
+                                           parameters_path="data-share/raw/parameters"):
+        """
+        Generate features listed in early prediction manuscript using both diagnostic and regular cycles
+
+        Args:
+            processed_cycler_run (beep.structure.ProcessedCyclerRun)
+            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
+                gets featurized. These could be filters for column or row operations
+            parameters_path (str): Root directory storing project parameter files.
+
+        Returns:
+            X (pd.DataFrame): Dataframe containing the feature
+        """
+        if params_dict is None:
+            params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
+
+        # TODO: extend this dataframe and uncomment energy features when
+        #   structuring is refactored
+        X = pd.DataFrame(np.zeros((1, 28)))
+
+        reg_cycle_comp_num = params_dict.get("cycle_comp_num")
+        cycle_comp_1 = processed_cycler_run.cycles_interpolated[
+            processed_cycler_run.cycles_interpolated.cycle_index == reg_cycle_comp_num[1]
+            ]
+        cycle_comp_0 = processed_cycler_run.cycles_interpolated[
+            processed_cycler_run.cycles_interpolated.cycle_index == reg_cycle_comp_num[0]
+            ]
+        Qc100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].charge_capacity
+        Qc10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].charge_capacity
+        QcDiff = Qc100_1.values - Qc10_1.values
+        QcDiff = QcDiff[~np.isnan(QcDiff)]
+
+        X.loc[0, 0:6] = cls.get_summary_statistics(QcDiff)
+
+        Qd100_1 = cycle_comp_1[cycle_comp_1.step_type == "discharge"].discharge_capacity
+        Qd10_1 = cycle_comp_0[cycle_comp_0.step_type == "discharge"].discharge_capacity
+        QdDiff = Qd100_1.values - Qd10_1.values
+        QdDiff = QdDiff[~np.isnan(QdDiff)]
+
+        X.loc[0, 7:13] = cls.get_summary_statistics(QdDiff)
+
+        # # Charging Energy features
+        Ec100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].charge_energy
+        Ec10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].charge_energy
+        EcDiff = Ec100_1.values - Ec10_1.values
+        EcDiff = EcDiff[~np.isnan(EcDiff)]
+
+        X.loc[0, 14:20] = cls.get_summary_statistics(EcDiff)
+
+        # # Discharging Energy features
+        Ed100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].discharge_energy
+        Ed10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].discharge_energy
+        EdDiff = Ed100_1.values - Ed10_1.values
+        EdDiff = EdDiff[~np.isnan(EdDiff)]
+
+        X.loc[0, 21:27] = cls.get_summary_statistics(EdDiff)
+
+        quantities = [
+            "charging_capacity",
+            "discharging_capacity",
+            "charging_energy",
+            "discharging_energy",
+        ]
+
+        X.columns = [y + "_" + x for x in quantities for y in cls.SUMMARY_STATISTIC_NAMES]
+
+        return X
+
+
+class DiagnosticSummaryStats(CycleSummaryStats):
+    """
+    Object corresponding to summary statistics from a diagnostic cycle of
+    specific type. Includes constructors to create the features, object names
+    and metadata attributes in the object.  Inherits from RegularCycleSummaryStats
+    to reuse standard feature generation
+
+    name (str): predictor object name.
+    X (pandas.DataFrame): features in DataFrame format.
+    metadata (dict): information about the conditions, data
+        and code used to produce features
+    """
+
+    # Class name for the feature object
+    class_feature_name = "DiagnosticSummaryStats"
+
+    def __init__(self, name, X, metadata):
+        """
+        Args:
+            name (str): predictor object name
+            X (pandas.DataFrame): features in DataFrame format.
+            metadata (dict): information about the data and code used to produce features
+        """
+        super().__init__(name, X, metadata)
+        self.name = name
+        self.X = X
+        self.metadata = metadata
+
+    @classmethod
+    def validate_data(cls, processed_cycler_run, params_dict=None):
+        """
+        This function determines if the input data has the necessary attributes for
+        creation of this feature class. It should test for all of the possible reasons
+        that feature generation would fail for this particular input data.
+
+        Args:
+            processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
+            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
+                gets featurized. These could be filters for column or row operations
+
         Returns:
             bool: True/False indication of ability to proceed with feature generation
         """
@@ -636,142 +849,151 @@ class DiagnosticSummaryStats(BeepFeatures):
             df = processed_cycler_run.diagnostic_summary
             df = df[df.cycle_type == params_dict["diagnostic_cycle_type"]]
             conditions.append(
-                df.cycle_index.nunique() >= max(params_dict["cycle_comp_num"]) + 1
+                df.cycle_index.nunique() >= max(params_dict["diag_pos_list"]) + 1
             )
 
         return all(conditions)
 
     @classmethod
-    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None):
+    def get_summary_diff(cls, processed_cycler_run,
+                         pos=None,
+                         cycle_types=None,
+                         metrics=None):
+        """
+        Helper function to calculate difference between summary values in the diagnostic cycles
+
+                Args:
+                    processed_cycler_run (beep.structure.ProcessedCyclerRun)
+                    pos (list): position of the diagnostics to use in the calculation
+                    cycle_types (list): calculate difference for these diagnostic types
+                    metrics (str): Calculate difference for these metrics
+
+                Returns:
+                    values (list): List of difference values to insert into the dataframe
+                    names (list): List of column headers to use in the creation of the dataframe
+                """
+        if pos is None:
+            pos = [0, 1]
+        if cycle_types is None:
+            cycle_types = ["rpt_0.2C", "rpt_1C", "rpt_2C"]
+        if metrics is None:
+            metrics = ["discharge_capacity", "discharge_energy", "charge_capacity", "charge_energy"]
+
+        values = []
+        names = []
+        for cycle_type in cycle_types:
+            diag_type_summary = processed_cycler_run.diagnostic_summary[
+                processed_cycler_run.diagnostic_summary.cycle_type == cycle_type]
+            for metric in metrics:
+                diff = (diag_type_summary.iloc[pos[1]][metric] - diag_type_summary.iloc[pos[0]][metric]) \
+                       / diag_type_summary.iloc[pos[0]][metric]
+                values.append(diff)
+                names.append("diag_sum_diff_" + str(pos[0]) + "_" + str(pos[1]) + "_" + cycle_type + metric)
+        return values, names
+
+    @classmethod
+    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
+                                           parameters_path="data-share/raw/parameters"):
         """
         Generate features listed in early prediction manuscript using both diagnostic and regular cycles
 
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun)
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
-            gets featurized. These could be filters for column or row operations
+                gets featurized. These could be filters for column or row operations
+            parameters_path (str): Root directory storing project parameter files.
+
         Returns:
             X (pd.DataFrame): Dataframe containing the feature
         """
         if params_dict is None:
             params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
-        diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated
 
-        X = pd.DataFrame(np.zeros((1, 42)))
-
-        # Determine beginning and end of investigated cycle type
-        index_pos_list = [
-            i
-            for i in range(len(diagnostic_interpolated.cycle_type))
-            if diagnostic_interpolated.cycle_type[i]
-            == params_dict["diagnostic_cycle_type"]
+        # Filter out "final" diagnostic cycles that have been appended to the end of the file with the wrong
+        # cycle number(test time is monotonic)
+        processed_cycler_run.diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated[
+            ~((processed_cycler_run.diagnostic_interpolated.test_time > params_dict['test_time_filter_sec']) &
+              (processed_cycler_run.diagnostic_interpolated.cycle_index < params_dict['cycle_index_filter']))
         ]
+        processed_cycler_run.diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated.groupby(
+            ["cycle_index", "step_index", "step_index_counter"]
+        ).filter(lambda x: ~x["test_time"].isnull().all())
 
-        end_list = [
-            index_pos_list[i]
-            for i in range(len(index_pos_list) - 1)
-            if index_pos_list[i + 1] != index_pos_list[i] + 1
-        ]
-        start_list = [
-            index_pos_list[i]
-            for i in range(1, len(index_pos_list))
-            if index_pos_list[i - 1] != index_pos_list[i] - 1
-        ]
-        end_list.append(index_pos_list[-1])
-        start_list.insert(0, index_pos_list[0])
+        diag_intrp = processed_cycler_run.diagnostic_interpolated
 
-        if (
-            diagnostic_interpolated.cycle_type[0]
-            == params_dict["diagnostic_cycle_type"]
-        ):
-            start_list.insert(0, 1)
-        if (
-            diagnostic_interpolated.cycle_type[
-                len(diagnostic_interpolated.cycle_type) - 1
-            ]
-            == params_dict["diagnostic_cycle_type"]
-        ):
-            end_list.append(len(diagnostic_interpolated.cycle_type) - 1)
+        X = pd.DataFrame(np.zeros((1, 54)))
 
-        # Create features
+        # Calculate the cycles and the steps for the selected diagnostics
+        cycles = diag_intrp.cycle_index[diag_intrp.cycle_type ==
+                                        params_dict["diagnostic_cycle_type"]].unique()
+        step_dict_0 = featurizer_helpers.get_step_index(processed_cycler_run,
+                                                        cycle_type=params_dict["diagnostic_cycle_type"],
+                                                        diag_pos=params_dict["diag_pos_list"][0])
+        step_dict_1 = featurizer_helpers.get_step_index(processed_cycler_run,
+                                                        cycle_type=params_dict["diagnostic_cycle_type"],
+                                                        diag_pos=params_dict["diag_pos_list"][1])
+
+        # Create masks for each position in the data
+        mask_pos_0_charge = ((diag_intrp.cycle_index == cycles[params_dict["diag_pos_list"][0]]) &
+                             (diag_intrp.step_index == step_dict_0[params_dict["diagnostic_cycle_type"] + '_charge']))
+        mask_pos_1_charge = ((diag_intrp.cycle_index == cycles[params_dict["diag_pos_list"][1]]) &
+                             (diag_intrp.step_index == step_dict_1[params_dict["diagnostic_cycle_type"] + '_charge']))
+        mask_pos_0_discharge = ((diag_intrp.cycle_index == cycles[params_dict["diag_pos_list"][0]]) &
+                                (diag_intrp.step_index ==
+                                 step_dict_0[params_dict["diagnostic_cycle_type"] + '_discharge']))
+        mask_pos_1_discharge = ((diag_intrp.cycle_index == cycles[params_dict["diag_pos_list"][1]]) &
+                                (diag_intrp.step_index ==
+                                 step_dict_1[params_dict["diagnostic_cycle_type"] + '_discharge']))
 
         # Charging Capacity features
+        Qc_1 = diag_intrp.charge_capacity[mask_pos_1_charge]
+        Qc_0 = diag_intrp.charge_capacity[mask_pos_0_charge]
+        QcDiff = Qc_1.values - Qc_0.values
+        QcDiff = QcDiff[~np.isnan(QcDiff)]
+
+        X.loc[0, 0:6] = cls.get_summary_statistics(QcDiff)
 
         # Discharging Capacity features
-        Qd100_1 = diagnostic_interpolated.discharge_capacity[
-            start_list[params_dict["cycle_comp_num"][1]]
-            + params_dict["Q_seg"]
-            + 1: start_list[params_dict["cycle_comp_num"][1]]
-            + 2 * params_dict["Q_seg"]
-        ]
-        Qd10_1 = diagnostic_interpolated.discharge_capacity[
-            start_list[params_dict["cycle_comp_num"][0]]
-            + params_dict["Q_seg"]
-            + 1: start_list[params_dict["cycle_comp_num"][0]]
-            + 2 * params_dict["Q_seg"]
-        ]
-        QdDiff = [a_i - b_i for a_i, b_i in zip(Qd100_1, Qd10_1)]
-        QdDiff = [elem for elem in QdDiff if (math.isnan(elem) is False)]
+        Qd_1 = diag_intrp.discharge_capacity[mask_pos_1_discharge]
+        Qd_0 = diag_intrp.discharge_capacity[mask_pos_0_discharge]
+        QdDiff = Qd_1.values - Qd_0.values
+        QdDiff = QdDiff[~np.isnan(QdDiff)]
 
-        X[7] = np.log10(np.absolute(np.var(QdDiff)))
-        X[8] = np.log10(np.absolute(min(QdDiff)))
-        X[9] = np.log10(np.absolute(np.mean(QdDiff)))
-        X[10] = np.log10(np.absolute(skew(QdDiff)))
-        X[11] = np.log10(np.absolute(kurtosis(QdDiff, fisher=False, bias=False)))
-        X[12] = np.log10(np.sum(np.absolute(QdDiff)))
-        X[13] = np.log10(np.sum(np.square(QdDiff)))
+        X.loc[0, 7:13] = cls.get_summary_statistics(QdDiff)
 
         # Charging Energy features
+        Ec_1 = diag_intrp.charge_energy[mask_pos_1_charge]
+        Ec_0 = diag_intrp.charge_energy[mask_pos_0_charge]
+        EcDiff = Ec_1.values - Ec_0.values
+        EcDiff = EcDiff[~np.isnan(EcDiff)]
+
+        X.loc[0, 14:20] = cls.get_summary_statistics(EcDiff)
 
         # Discharging Energy features
-        Ed100_1 = diagnostic_interpolated.discharge_energy[
-            start_list[params_dict["cycle_comp_num"][1]]
-            + params_dict["Q_seg"]
-            + 1: start_list[params_dict["cycle_comp_num"][1]]
-            + 2 * params_dict["Q_seg"]
-        ]
-        Ed10_1 = diagnostic_interpolated.discharge_energy[
-            start_list[params_dict["cycle_comp_num"][0]]
-            + params_dict["Q_seg"]
-            + 1: start_list[params_dict["cycle_comp_num"][0]]
-            + 2 * params_dict["Q_seg"]
-        ]
-        EdDiff = [a_i - b_i for a_i, b_i in zip(Ed100_1, Ed10_1)]
-        EdDiff = [elem for elem in EdDiff if (math.isnan(elem) is False)]
+        Ed_1 = diag_intrp.discharge_energy[mask_pos_1_discharge]
+        Ed_0 = diag_intrp.discharge_energy[mask_pos_0_discharge]
+        EdDiff = Ed_1.values - Ed_0.values
+        EdDiff = EdDiff[~np.isnan(EdDiff)]
 
-        X[21] = np.log10(np.absolute(np.var(EdDiff)))
-        X[22] = np.log10(np.absolute(min(EdDiff)))
-        X[23] = np.log10(np.absolute(np.mean(EdDiff)))
-        X[24] = np.log10(np.absolute(skew(EdDiff)))
-        X[25] = np.log10(np.absolute(kurtosis(EdDiff, fisher=False, bias=False)))
-        X[26] = np.log10(np.sum(np.absolute(EdDiff)))
-        X[27] = np.log10(np.sum(np.square(EdDiff)))
+        X.loc[0, 21:27] = cls.get_summary_statistics(EdDiff)
 
         # Charging dQdV features
+        dQdVc_1 = diag_intrp.charge_dQdV[mask_pos_1_charge]
+        dQdVc_0 = diag_intrp.charge_dQdV[mask_pos_0_charge]
+        dQdVcDiff = dQdVc_1.values - dQdVc_0.values
+        dQdVcDiff = dQdVcDiff[~np.isnan(dQdVcDiff)]
+
+        X.loc[0, 28:34] = cls.get_summary_statistics(dQdVcDiff)
 
         # Discharging Capacity features
-        dQdVd100_1 = diagnostic_interpolated.discharge_dQdV[
-            start_list[params_dict["cycle_comp_num"][1]]
-            + params_dict["Q_seg"]
-            + 1: start_list[params_dict["cycle_comp_num"][1]]
-            + 2 * params_dict["Q_seg"]
-        ]
-        dQdVd10_1 = diagnostic_interpolated.discharge_dQdV[
-            start_list[params_dict["cycle_comp_num"][0]]
-            + params_dict["Q_seg"]
-            + 1: start_list[params_dict["cycle_comp_num"][0]]
-            + 2 * params_dict["Q_seg"]
-        ]
-        dQdVdDiff = [a_i - b_i for a_i, b_i in zip(dQdVd100_1, dQdVd10_1)]
-        dQdVdDiff = [elem for elem in dQdVdDiff if (math.isnan(elem) is False)]
+        dQdVd_1 = diag_intrp.discharge_dQdV[mask_pos_1_discharge]
+        dQdVd_0 = diag_intrp.discharge_dQdV[mask_pos_0_discharge]
+        dQdVdDiff = dQdVd_1.values - dQdVd_0.values
+        dQdVdDiff = dQdVdDiff[~np.isnan(dQdVdDiff)]
 
-        X[35] = np.log10(np.absolute(np.var(dQdVdDiff)))
-        X[36] = np.log10(np.absolute(min(dQdVdDiff)))
-        X[37] = np.log10(np.absolute(np.mean(dQdVdDiff)))
-        X[38] = np.log10(np.absolute(skew(dQdVdDiff)))
-        X[39] = np.log10(np.absolute(kurtosis(dQdVdDiff, fisher=False, bias=False)))
-        X[40] = np.log10(np.sum(np.absolute(dQdVdDiff)))
-        X[41] = np.log10(np.sum(np.square(dQdVdDiff)))
+        X.loc[0, 35:41] = cls.get_summary_statistics(dQdVdDiff)
+
+        X.loc[0, 42:53], names = cls.get_summary_diff(processed_cycler_run, params_dict["diag_pos_list"])
 
         operations = ["var", "min", "mean", "skew", "kurtosis", "abs", "square"]
         quantities = [
@@ -783,7 +1005,7 @@ class DiagnosticSummaryStats(BeepFeatures):
             "discharging_dQdV",
         ]
 
-        X.columns = [y + "_" + x for x in quantities for y in operations]
+        X.columns = [y + "_" + x for x in quantities for y in operations] + names
         return X
 
 
@@ -805,7 +1027,7 @@ class DeltaQFastCharge(BeepFeatures):
         """
         Args:
             name (str): predictor object name
-            feature_object (pandas.DataFrame): features in DataFrame format.
+            X (pandas.DataFrame): features in DataFrame format.
             metadata (dict): information about the data and code used to produce features
         """
         super().__init__(name, X, metadata)
@@ -847,11 +1069,13 @@ class DeltaQFastCharge(BeepFeatures):
                 len(processed_cycler_run.summary.index)
                 > params_dict["final_pred_cycle"]
             )
+        conditions.append("cycle_index" in processed_cycler_run.cycles_interpolated.columns)
 
         return all(conditions)
 
     @classmethod
-    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None):
+    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
+                                           parameters_path="data-share/raw/parameters"):
         """
         Generate features listed in early prediction manuscript, primarily related to the
         so called delta Q feature
@@ -859,6 +1083,8 @@ class DeltaQFastCharge(BeepFeatures):
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
                 gets featurized. These could be filters for column or row operations
+            parameters_path (str): Root directory storing project parameter files.
+
         Returns:
             pd.DataFrame: features indicative of degradation, derived from the input data
         """
@@ -888,26 +1114,26 @@ class DeltaQFastCharge(BeepFeatures):
         X = pd.DataFrame(np.zeros((1, 20)))
         labels = []
         # Discharge capacity, cycle 2 = Q(n=2)
-        X[0] = summary.discharge_capacity[1]
+        X[0] = summary.discharge_capacity.iloc[1]
         labels.append("discharge_capacity_cycle_2")
 
         # Max discharge capacity - discharge capacity, cycle 2 = max_n(Q(n)) - Q(n=2)
         X[1] = max(
-            summary.discharge_capacity[np.arange(i_final + 1)]
-            - summary.discharge_capacity[1]
+            summary.discharge_capacity.iloc[np.arange(i_final + 1)]
+            - summary.discharge_capacity.iloc[1]
         )
         labels.append("max_discharge_capacity_difference")
 
         # Discharge capacity, cycle 100 = Q(n=100)
-        X[2] = summary.discharge_capacity[i_final]
+        X[2] = summary.discharge_capacity.iloc[i_final]
         labels.append("discharge_capacity_cycle_100")
 
         # Feature representing time-temperature integral over cycles 2 to 100
-        X[3] = np.nansum(summary.time_temperature_integrated[np.arange(i_final + 1)])
+        X[3] = np.nansum(summary.time_temperature_integrated.iloc[np.arange(i_final + 1)])
         labels.append("integrated_time_temperature_cycles_1:100")
 
         # Mean of charge times of first 5 cycles
-        X[4] = np.nanmean(summary.charge_duration[1:6])
+        X[4] = np.nanmean(summary.charge_duration.iloc[1:6])
         labels.append("charge_time_cycles_1:5")
 
         # Descriptors based on capacity loss between cycles 10 and 100.
@@ -937,17 +1163,17 @@ class DeltaQFastCharge(BeepFeatures):
         labels.append("abs_kurtosis_discharge_capacity_difference_cycles_2:100")
         labels.append("abs_first_discharge_capacity_difference_cycles_2:100")
 
-        X[11] = max(summary.temperature_maximum[list(range(1, i_final + 1))])  # Max T
+        X[11] = np.max(summary.temperature_maximum.iloc[list(range(1, i_final + 1))])  # Max T
         labels.append("max_temperature_cycles_1:100")
 
-        X[12] = min(summary.temperature_minimum[list(range(1, i_final + 1))])  # Min T
+        X[12] = np.min(summary.temperature_minimum.iloc[list(range(1, i_final + 1))])  # Min T
         labels.append("min_temperature_cycles_1:100")
 
         # Slope and intercept of linear fit to discharge capacity as a fn of cycle #, cycles 2 to 100
 
         X[13], X[14] = np.polyfit(
             list(range(1, i_final + 1)),
-            summary.discharge_capacity[list(range(1, i_final + 1))],
+            summary.discharge_capacity.iloc[list(range(1, i_final + 1))],
             1,
         )
 
@@ -957,13 +1183,13 @@ class DeltaQFastCharge(BeepFeatures):
         # Slope and intercept of linear fit to discharge capacity as a fn of cycle #, cycles 91 to 100
         X[15], X[16] = np.polyfit(
             list(range(i_mid, i_final + 1)),
-            summary.discharge_capacity[list(range(i_mid, i_final + 1))],
+            summary.discharge_capacity.iloc[list(range(i_mid, i_final + 1))],
             1,
         )
         labels.append("slope_discharge_capacity_cycle_number_91:100")
         labels.append("intercept_discharge_capacity_cycle_number_91:100")
 
-        IR_trend = summary.dc_internal_resistance[list(range(1, i_final + 1))]
+        IR_trend = summary.dc_internal_resistance.iloc[list(range(1, i_final + 1))]
         if any(v == 0 for v in IR_trend):
             IR_trend[IR_trend == 0] = np.nan
 
@@ -972,12 +1198,12 @@ class DeltaQFastCharge(BeepFeatures):
         labels.append("min_internal_resistance_cycles_2:100")
 
         # Internal resistance at cycle 2
-        X[18] = summary.dc_internal_resistance[1]
+        X[18] = summary.dc_internal_resistance.iloc[1]
         labels.append("internal_resistance_cycle_2")
 
         # Internal resistance at cycle 100 - cycle 2
         X[19] = (
-            summary.dc_internal_resistance[i_final] - summary.dc_internal_resistance[1]
+            summary.dc_internal_resistance.iloc[i_final] - summary.dc_internal_resistance.iloc[1]
         )
         labels.append("internal_resistance_difference_cycles_2:100")
 
@@ -1044,7 +1270,8 @@ class TrajectoryFastCharge(DeltaQFastCharge):
         return all(conditions)
 
     @classmethod
-    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None):
+    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
+                                           parameters_path="data-share/raw/parameters"):
         """
         Calculate the outcomes from the input data. In particular, the number of cycles
         where we expect to reach certain thresholds of capacity loss
@@ -1052,6 +1279,8 @@ class TrajectoryFastCharge(DeltaQFastCharge):
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
             gets featurized. These could be filters for column or row operations
+            parameters_path (str): Root directory storing project parameter files.
+
         Returns:
             pd.DataFrame: cycles at which capacity/energy degradation exceeds thresholds
         """
@@ -1109,13 +1338,16 @@ class DiagnosticProperties(BeepFeatures):
             return True
 
     @classmethod
-    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None):
+    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
+                                           parameters_path="data-share/raw/parameters"):
         """
         Generates diagnostic-property features from processed cycler run, including values for n*x method
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
             gets featurized. These could be filters for column or row operations
+            parameters_path (str): Root directory storing project parameter files.
+
         Returns:
             pd.DataFrame: with "cycle_index", "fractional_metric", "x", "n", "cycle_type" and "metric" columns, rows
             for each diagnostic cycle of the cell
@@ -1128,7 +1360,7 @@ class DiagnosticProperties(BeepFeatures):
         for quantity in params_dict["quantities"]:
             for cycle_type in cycle_types:
                 summary_diag_cycle_type = featurizer_helpers.get_fractional_quantity_remaining_nx(
-                    processed_cycler_run, quantity, cycle_type
+                    processed_cycler_run, quantity, cycle_type, parameters_path=parameters_path
                 )
 
                 summary_diag_cycle_type["cycle_type"] = cycle_type
@@ -1458,10 +1690,6 @@ def process_file_list_from_json(file_list_json, processed_dir="data-share/featur
             and loaded, otherwise interpreted as a json string.
         processed_dir (str): location for processed cycler run output files
             to be placed.
-        features_label (str): name of feature generation method.
-        predict_only (bool): whether to calculate predictions or not.
-        prediction_type (str): Single or multi-point predictions.
-        predicted_quantity (str): quantity being predicted - cycle or capacity.
 
     Returns:
         str: json string of feature files (with key "file_list").

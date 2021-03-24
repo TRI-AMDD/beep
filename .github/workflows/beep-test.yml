@@ -2,15 +2,15 @@ name: Testing - main
 
 on:
   push:
-    branch: [master]
-
+    branches-ignore:
+    - dependabot**
 jobs:
   test:
     strategy:
       max-parallel: 20
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: [3.6, 3.7]
+        python-version: [3.7, 3.8]
 
     runs-on: ${{ matrix.os }}
 
@@ -39,11 +39,11 @@ jobs:
         env:
           MPLBACKEND: "Agg"
           BEEP_ENV: "dev"
-          BEEP_BIG_TESTS: "True"
+          BIG_FILE_TESTS: "True"
         run: |
           pytest beep --color=yes --cov=beep --cov-config=.coveragerc --cov-report html:coverage_reports
       - name: Coveralls
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          coveralls
+          coveralls --service=github

@@ -5,8 +5,10 @@ cycles_interpolated:
   voltage: 'float32'
   temperature: 'float32'
   internal_resistance: 'float32'
-  charge_capacity: 'float64'
-  discharge_capacity: 'float64'
+  charge_capacity: 'float32'
+  discharge_capacity: 'float32'
+  charge_energy: 'float32'
+  discharge_energy: 'float32'
   step_type: 'category'
 
 summary:
@@ -20,12 +22,12 @@ summary:
   temperature_average: 'float32'
   temperature_minimum: 'float32'
   date_time_iso: 'object'
-  energy_efficiency: 'float64'
+  energy_efficiency: 'float32'
   charge_throughput: 'float32'
   energy_throughput: 'float32'
   charge_duration: 'float32'
   time_temperature_integrated: 'float64'
-  paused: 'int8'
+  paused: 'int32'
 
 diagnostic_summary:
   discharge_capacity: 'float64'
@@ -38,7 +40,7 @@ diagnostic_summary:
   date_time_iso: 'object'
   cycle_index: 'int32'
   coulombic_efficiency: 'float64'
-  paused: 'int8'
+  paused: 'int32'
   cycle_type: 'category'
 
 diagnostic_interpolated:
@@ -51,14 +53,13 @@ diagnostic_interpolated:
   internal_resistance: 'float32'
   temperature: 'float32'
   test_time: 'float64'
-  date_time_iso: 'object'
   cycle_index: 'int32'
   cycle_type: 'category'
   step_index: 'int16'
   step_index_counter: 'int16'
   step_type: 'category'
-  discharge_dQdV: 'float64'
-  charge_dQdV: 'float64'
+  discharge_dQdV: 'float32'
+  charge_dQdV: 'float32'
 
 
 

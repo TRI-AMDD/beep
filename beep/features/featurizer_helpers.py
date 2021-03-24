@@ -14,6 +14,7 @@ from scipy import signal
 from lmfit import models
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
+from scipy.stats import skew, kurtosis
 from beep.utils import parameters_lookup
 import os
 
@@ -210,7 +211,7 @@ def generate_dQdV_peak_fits(
 
     Args:
         processed_cycler_run: processed_cycler_run (beep.structure.ProcessedCyclerRun)
-        diag_nr: if 1, takes dQdV of 1st RPT past the initial diagnostic, 0 (default) is initial dianostic
+        diag_nr: if 1, takes dQdV of 1st RPT past the initial diagnostic, 0 (default) is initial diagnostic
         charge_y_n: if 1 (default), takes charge dQdV, if 0, takes discharge dQdV
 
     Returns:
@@ -349,15 +350,16 @@ def get_hppc_ocv_helper(cycle_hppc_0, step_num):
 
 def get_hppc_ocv(processed_cycler_run, diag_pos):
     """
-    This function calculates the variance of ocv changes between hppc cycle specified by and the first one.
+    This function calculates the variance, min, mean, skew, kurtosis, sum and sum of squares 
+    of ocv changes between hppc cycle specified by and the first one.
 
     Argument:
             processed_cycler_run (beep.structure.ProcessedCyclerRun)
             diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
             if rpt_0.2C, occurs at cycle_index = [2, 37, 142, 244 ...], <diag_pos>=0 would correspond to cycle_index 2.
     Returns:
-            a dataframe with one entry('variance of ocv'):
-                the variance of the diag_num minus cycle 2 for OCV.
+            a dataframe with seven entries 
+            ('var_ocv, min_ocv, mean_ocv, skew_ocv, kurtosis_ocv, sum_ocv, sum_square_ocv'):
     """
 
     hppc_ocv_features = pd.DataFrame()
@@ -368,21 +370,29 @@ def get_hppc_ocv(processed_cycler_run, diag_pos):
     cycles = cycle_hppc.cycle_index.unique()
 
     cycle_hppc_0 = cycle_hppc.loc[cycle_hppc.cycle_index == cycles[0]]
-    #     in case that cycle 2 correspond to two cycles one is real cycle 2, one is at the end
-    cycle_hppc_0 = cycle_hppc_0.loc[cycle_hppc_0.test_time < 250000]
 
-    step = 11
-    step_later = 43
+    first_diagnostic_steps = get_step_index(processed_cycler_run,
+                                            cycle_type="hppc",
+                                            diag_pos=0)
+    later_diagnostic_steps = get_step_index(processed_cycler_run,
+                                            cycle_type="hppc",
+                                            diag_pos=diag_pos)
+    step_first = first_diagnostic_steps['hppc_long_rest']
+    step_later = later_diagnostic_steps['hppc_long_rest']
 
-    voltage_1 = get_hppc_ocv_helper(cycle_hppc_0, step)
-    chosen = cycle_hppc.loc[cycle_hppc.cycle_index == cycles[diag_pos]]
-    voltage_2 = get_hppc_ocv_helper(chosen, step_later)
+    voltage_1 = get_hppc_ocv_helper(cycle_hppc_0, step_first)
+    selected_diag_df = cycle_hppc.loc[cycle_hppc.cycle_index == cycles[diag_pos]]
+    voltage_2 = get_hppc_ocv_helper(selected_diag_df, step_later)
 
-    dv = list_minus(voltage_1, voltage_2)
+    ocv = list_minus(voltage_1, voltage_2)
 
-    var_dv = np.var(dv)
-
-    hppc_ocv_features["variance of ocv"] = [var_dv]
+    hppc_ocv_features["var_ocv"] = [np.var(ocv)]
+    hppc_ocv_features["min_ocv"] = [min(ocv)]
+    hppc_ocv_features["mean_ocv"] = [np.mean(ocv)]
+    hppc_ocv_features["skew_ocv"] = [skew(ocv)]
+    hppc_ocv_features["kurtosis_ocv"] = [kurtosis(ocv, fisher=False, bias=False)]
+    hppc_ocv_features["sum_ocv"] = [np.sum(np.absolute(ocv))]
+    hppc_ocv_features["sum_square_ocv"] = [np.sum(np.square(ocv))]
 
     return hppc_ocv_features
 
@@ -408,20 +418,20 @@ def get_chosen_df(processed_cycler_run, diag_pos):
     cycles = hppc_cycle.cycle_index.unique()
     diag_num = cycles[diag_pos]
 
-    chosen = hppc_cycle.loc[hppc_cycle.cycle_index == diag_num]
-    chosen = chosen.sort_values(by="test_time")
-    chosen["diagnostic_time"] = (chosen.test_time - chosen.test_time.min()) / 3600
+    selected_diag_df = hppc_cycle.loc[hppc_cycle.cycle_index == diag_num]
+    selected_diag_df = selected_diag_df.sort_values(by="test_time")
+    selected_diag_df["diagnostic_time"] = (selected_diag_df.test_time - selected_diag_df.test_time.min()) / 3600
 
-    return chosen
+    return selected_diag_df
 
 
-def res_calc(chosen, diag_pos, soc, step_ocv, step_cur, index):
+def res_calc(selected_diag_df, steps, soc, step_ocv, step_cur, index):
     """
     This function calculates resistances at different socs and a specific pulse duration for a specified hppc cycle.
 
     Args:
-        chosen(pd.DataFrame): a dataframe for a specific diagnostic cycle you are interested in.
-        diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
+        selected_diag_df(pd.DataFrame): a dataframe for a specific diagnostic cycle you are interested in.
+        steps (list): list of step numbers for the specific occurrence of the diagnostic
         if rpt_0.2C, occurs at cycle_index = [2, 37, 142, 244 ...], <diag_pos>=0 would correspond to cycle_index 2
         soc (int): step index counter corresponding to the soc window of interest.
         step_ocv (int): 0 corresponds to the 1h-rest, and 2 corresponds to the 40s-rest.
@@ -435,42 +445,37 @@ def res_calc(chosen, diag_pos, soc, step_ocv, step_cur, index):
 
     counters = []
 
-    if diag_pos == 0:
-        steps = [11, 12, 13, 14, 15]
-    else:
-        steps = [43, 44, 45, 46, 47]
-
     for step in steps:
         counters.append(
-            chosen[chosen.step_index == step].step_index_counter.unique().tolist()
+            selected_diag_df[selected_diag_df.step_index == step].step_index_counter.unique().tolist()
         )
 
     if index == "last":
         index = -1
     else:
-        start = chosen[
-            (chosen.step_index_counter == counters[step_cur][soc])
+        start = selected_diag_df[
+            (selected_diag_df.step_index_counter == counters[step_cur][soc])
         ].diagnostic_time.min()
         stop = start + index / 3600
         index = len(
-            chosen[
-                (chosen.step_index_counter == counters[step_cur][soc])
-                & (chosen.diagnostic_time > start)
-                & (chosen.diagnostic_time < stop)
+            selected_diag_df[
+                (selected_diag_df.step_index_counter == counters[step_cur][soc])
+                & (selected_diag_df.diagnostic_time > start)
+                & (selected_diag_df.diagnostic_time < stop)
             ]
         )
 
     if len(counters[step_ocv]) < soc - 1:
         return None
 
-    v_ocv = chosen[(chosen.step_index_counter == counters[step_ocv][soc])].voltage.iloc[
+    v_ocv = selected_diag_df[(selected_diag_df.step_index_counter == counters[step_ocv][soc])].voltage.iloc[
         -1
     ]
     #     i_ocv = chosen[(chosen.step_index_counter == counters[step_ocv][soc])].current.tail(5).mean()
-    v_dis = chosen[(chosen.step_index_counter == counters[step_cur][soc])].voltage.iloc[
+    v_dis = selected_diag_df[(selected_diag_df.step_index_counter == counters[step_cur][soc])].voltage.iloc[
         index
     ]
-    i_dis = chosen[(chosen.step_index_counter == counters[step_cur][soc])].current.iloc[
+    i_dis = selected_diag_df[(selected_diag_df.step_index_counter == counters[step_cur][soc])].current.iloc[
         index
     ]
     res = (v_dis - v_ocv) / i_dis
@@ -494,42 +499,52 @@ def get_resistance_soc_duration_hppc(processed_cycler_run, diag_pos):
     """
 
     resistances = pd.DataFrame()
+    step_dict = get_step_index(processed_cycler_run,
+                               cycle_type="hppc",
+                               diag_pos=diag_pos)
+    steps = [
+        step_dict['hppc_long_rest'],
+        step_dict['hppc_discharge_pulse'],
+        step_dict['hppc_short_rest'],
+        step_dict['hppc_charge_pulse'],
+        step_dict['hppc_discharge_to_next_soc']
+        ]
 
-    chosen = get_chosen_df(processed_cycler_run, diag_pos)
+    selected_diag_df = get_chosen_df(processed_cycler_run, diag_pos)
 
     resistance = []
     for i in range(9):
-        res = res_calc(chosen, diag_pos, i, 0, 1, "last")
+        res = res_calc(selected_diag_df, steps, i, 0, 1, "last")
         resistance.append(res)
     resistances["discharge_pulse_last"] = resistance
 
     resistance = []
     for i in range(9):
-        res = res_calc(chosen, diag_pos, i, 0, 1, 0.001)
+        res = res_calc(selected_diag_df, steps, i, 0, 1, 0.001)
         resistance.append(res)
     resistances["discharge_pulse_0.001s"] = resistance
 
     resistance = []
     for i in range(9):
-        res = res_calc(chosen, diag_pos, i, 0, 1, 2)
+        res = res_calc(selected_diag_df, steps, i, 0, 1, 2)
         resistance.append(res)
     resistances["discharge_pulse_2s"] = resistance
 
     resistance = []
     for i in range(9):
-        res = res_calc(chosen, diag_pos, i, 2, 3, "last")
+        res = res_calc(selected_diag_df, steps, i, 2, 3, "last")
         resistance.append(res)
     resistances["charge_pulse_last"] = resistance
 
     resistance = []
     for i in range(9):
-        res = res_calc(chosen, diag_pos, i, 2, 3, 2)
+        res = res_calc(selected_diag_df, steps, i, 2, 3, 2)
         resistance.append(res)
     resistances["charge_pulse_2s"] = resistance
 
     resistance = []
     for i in range(9):
-        res = res_calc(chosen, diag_pos, i, 2, 3, 0.001)
+        res = res_calc(selected_diag_df, steps, i, 2, 3, 0.001)
         resistance.append(res)
     resistances["charge_pulse_0.001s"] = resistance
 
@@ -592,7 +607,7 @@ def get_V_I(df):
     return result
 
 
-def get_v_diff(processed_cycler_run, diag_pos, soc_window, baseline_step_index=15, measured_step_index=47):
+def get_v_diff(processed_cycler_run, diag_pos, soc_window):
     """
     This method calculates the variance of voltage difference between a specified hppc cycle and the first
     one during a specified state of charge window.
@@ -602,8 +617,6 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window, baseline_step_index=1
         diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
         if rpt_0.2C, occurs at cycle_index = [2, 37, 142, 244 ...], <diag_pos>=0 would correspond to cycle_index 2
         soc_window (int): step index counter corresponding to the soc window of interest.
-        baseline_step_index (int): step index of the initial hppc cycle (TODO automatically get value in the method)
-        measured_step_index (int): step index of the comparison hppc cycle (TODO automatically get value in the method)
 
     Returns:
         a dataframe that contains the variance of the voltage differences
@@ -622,8 +635,15 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window, baseline_step_index=1
 
     #         the discharge steps in later hppc cycles has a step number of 47
     #         but that in the initial hppc cycle has a step number of 15
-    hppc_data_2_d = hppc_data_2.loc[hppc_data_2.step_index == measured_step_index]
-    hppc_data_1_d = hppc_data_1.loc[hppc_data_1.step_index == baseline_step_index]
+    step_ind_1 = get_step_index(processed_cycler_run,
+                                cycle_type="hppc",
+                                diag_pos=0)
+    step_ind_2 = get_step_index(processed_cycler_run,
+                                cycle_type="hppc",
+                                diag_pos=1)
+
+    hppc_data_2_d = hppc_data_2.loc[hppc_data_2.step_index == step_ind_2["hppc_discharge_to_next_soc"]]
+    hppc_data_1_d = hppc_data_1.loc[hppc_data_1.step_index == step_ind_1["hppc_discharge_to_next_soc"]]
     step_counters_1 = hppc_data_1_d.step_index_counter.unique()
     step_counters_2 = hppc_data_2_d.step_index_counter.unique()
     chosen_1 = hppc_data_1_d.loc[
@@ -662,7 +682,14 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window, baseline_step_index=1
         print("weird voltage")
         return None
     else:
-        result["var(v_diff)"] = [np.var(v_diff)]
+        result["var_v_diff"] = [np.var(v_diff)] 
+        result["min_v_diff"] = [min(v_diff)]
+        result["mean_v_diff"] = [np.mean(v_diff)]
+        result["skew_v_diff"] = [skew(v_diff)]
+        result["kurtosis_v_diff"] = [kurtosis(v_diff, fisher=False, bias=False)]
+        result["sum_v_diff"] = [np.sum(np.absolute(v_diff))]
+        result["sum_square_v_diff"] = [np.sum(np.square(v_diff))]
+
         return result
 
 
@@ -696,7 +723,7 @@ def get_diffusion_coeff(processed_cycler_run, diag_pos):
 
     Args:
         processed_cycler_run (beep.structure.ProcessedCyclerRun)
-        diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
+        diag_pos (int): diagnostic cycle occurrence for a specific <diagnostic_cycle_type>. e.g.
         if rpt_0.2C, occurs at cycle_index = [2, 37, 142, 244 ...], <diag_pos>=0 would correspond to cycle_index 2
 
     Returns:
@@ -708,26 +735,30 @@ def get_diffusion_coeff(processed_cycler_run, diag_pos):
     cycles = hppc_cycle.cycle_index.unique()
     diag_num = cycles[diag_pos]
 
-    chosen = hppc_cycle.loc[hppc_cycle.cycle_index == diag_num]
-    chosen = chosen.sort_values(by="test_time")
+    selected_diag_df = hppc_cycle.loc[hppc_cycle.cycle_index == diag_num]
+    selected_diag_df = selected_diag_df.sort_values(by="test_time")
 
     counters = []
 
-    if diag_pos == 0:
-        steps = [11, 12, 13, 14, 15]
-    else:
-        steps = [43, 44, 45, 46, 47]
+    step_ind = get_step_index(processed_cycler_run,
+                              cycle_type="hppc",
+                              diag_pos=diag_pos)
+    steps = [step_ind["hppc_long_rest"],
+             step_ind["hppc_discharge_pulse"],
+             step_ind["hppc_short_rest"],
+             step_ind["hppc_charge_pulse"],
+             step_ind["hppc_discharge_to_next_soc"]]
 
     for step in steps:
         counters.append(
-            chosen[chosen.step_index == step].step_index_counter.unique().tolist()
+            selected_diag_df[selected_diag_df.step_index == step].step_index_counter.unique().tolist()
         )
 
     result = pd.DataFrame()
 
     for i in range(1, min(len(counters[1]), 9)):
-        discharge = chosen.loc[chosen.step_index_counter == counters[1][i]]
-        rest = chosen.loc[chosen.step_index_counter == counters[2][i]]
+        discharge = selected_diag_df.loc[selected_diag_df.step_index_counter == counters[1][i]]
+        rest = selected_diag_df.loc[selected_diag_df.step_index_counter == counters[2][i]]
         rest["diagnostic_time"] = rest.test_time - rest.test_time.min()
         t_d = discharge.test_time.max() - discharge.test_time.min()
         v = rest.voltage
@@ -911,7 +942,8 @@ def get_fractional_quantity_remaining(
 def get_fractional_quantity_remaining_nx(
         processed_cycler_run,
         metric="discharge_energy",
-        diagnostic_cycle_type="rpt_0.2C"
+        diagnostic_cycle_type="rpt_0.2C",
+        parameters_path="data-share/raw/parameters"
 ):
     """
     Similar to get_fractional_quantity_remaining()
@@ -923,6 +955,7 @@ def get_fractional_quantity_remaining_nx(
         processed_cycler_run (beep.structure.ProcessedCyclerRun): information about cycler run
         metric (str): column name to use for measuring degradation
         diagnostic_cycle_type (str): the diagnostic cycle to use for computing the amount of degradation
+        parameters_path (str): path to the parameters file for this run
 
     Returns:
         a dataframe with cycle_index, corresponding degradation relative to the first measured value, 'x',
@@ -991,7 +1024,7 @@ def get_fractional_quantity_remaining_nx(
     else:
         _, protocol_name = os.path.split(processed_cycler_run.protocol)
 
-    parameter_row, _ = parameters_lookup.get_protocol_parameters(protocol_name)
+    parameter_row, _ = parameters_lookup.get_protocol_parameters(protocol_name, parameters_path=parameters_path)
 
     summary_diag_cycle_type['diagnostic_start_cycle'] = parameter_row['diagnostic_start_cycle'].values[0]
     summary_diag_cycle_type['diagnostic_interval'] = parameter_row['diagnostic_interval'].values[0]
@@ -1001,3 +1034,85 @@ def get_fractional_quantity_remaining_nx(
                                        "normalized_diagnostic_throughput", "diagnostic_start_cycle",
                                        "diagnostic_interval"]
     return summary_diag_cycle_type
+
+
+def get_step_index(pcycler_run, cycle_type="hppc", diag_pos=0):
+    """
+        Gets the step indices of the diagnostic cycle which correspond to specific attributes
+
+        Args:
+            pcycler_run (beep.structure.ProcessedCyclerRun): processed data
+            cycle_type (str): which diagnostic cycle type to evaluate
+            diag_pos (int): which iteration of the diagnostic cycle to use (0 for first, 1 for second, -1 for last)
+
+        Returns:
+            dict: descriptive keys with step index as values
+    """
+
+    pulse_time = 120  # time in seconds used to decide if a current is a pulse or an soc change
+    pulse_c_rate = 0.5  # c-rate to decide if a current is a discharge pulse
+    rest_long_vs_short = 600  # time in seconds to decide if the rest is the long or short rest step
+    soc_change_threshold = 0.05
+    parameters_path = os.path.join(os.environ.get("BEEP_PROCESSING_DIR", "/"), "data-share", "raw", "parameters")
+
+    if "\\" in pcycler_run.protocol:
+        protocol_name = pcycler_run.protocol.split("\\")[-1]
+    else:
+        _, protocol_name = os.path.split(pcycler_run.protocol)
+
+    parameter_row, _ = parameters_lookup.get_protocol_parameters(protocol_name, parameters_path=parameters_path)
+
+    step_indices_annotated = {}
+    diag_data = pcycler_run.diagnostic_interpolated
+    cycles = diag_data.loc[diag_data.cycle_type == cycle_type]
+    cycle = cycles[cycles.cycle_index == cycles.cycle_index.unique()[diag_pos]]
+
+    if cycle_type == "hppc":
+        for step in cycle.step_index.unique():
+            cycle_step = cycle[(cycle.step_index == step)]
+            median_crate = np.round(cycle_step.current.median() / parameter_row["capacity_nominal"].iloc[0], 2)
+            mean_crate = np.round(cycle_step.current.mean() / parameter_row["capacity_nominal"].iloc[0], 2)
+            remaining_time = cycle.test_time.max() - cycle_step.test_time.max()
+            step_counter_duration = []
+            for step_iter in cycle_step.step_index_counter.unique():
+                cycle_step_iter = cycle_step[(cycle_step.step_index_counter == step_iter)]
+                duration = cycle_step_iter.test_time.max() - cycle_step_iter.test_time.min()
+                step_counter_duration.append(duration)
+            median_duration = np.round(np.median(step_counter_duration), 0)
+
+            if median_crate == 0.0:
+                if median_duration > rest_long_vs_short:
+                    step_indices_annotated["hppc_long_rest"] = step
+                elif rest_long_vs_short >= median_duration > 0:
+                    step_indices_annotated["hppc_short_rest"] = step
+                else:
+                    raise ValueError
+            elif median_crate <= -pulse_c_rate and median_duration < pulse_time:
+                step_indices_annotated["hppc_discharge_pulse"] = step
+            elif median_crate >= pulse_c_rate and median_duration < pulse_time:
+                step_indices_annotated["hppc_charge_pulse"] = step
+            elif mean_crate == median_crate < 0 and abs(mean_crate * median_duration/3600) > soc_change_threshold:
+                step_indices_annotated["hppc_discharge_to_next_soc"] = step
+            elif mean_crate != median_crate < 0 and remaining_time == 0.0:
+                step_indices_annotated["hppc_final_discharge"] = step
+            elif mean_crate == median_crate < 0 and remaining_time == 0.0:
+                step_indices_annotated["hppc_final_discharge"] = step
+            elif median_crate > 0 and median_duration > pulse_time:
+                step_indices_annotated["hppc_charge_to_soc"] = step
+
+    elif cycle_type == "rpt_0.2C" or cycle_type == "rpt_1C" or cycle_type == "rpt_2C" or cycle_type == "reset":
+        for step in cycle.step_index.unique():
+            cycle_step = cycle[(cycle.step_index == step)]
+            median_crate = np.round(cycle_step.current.median() / parameter_row["capacity_nominal"].iloc[0], 2)
+            if median_crate > 0:
+                step_indices_annotated[cycle_type + "_charge"] = step
+            elif median_crate < 0:
+                step_indices_annotated[cycle_type + "_discharge"] = step
+            else:
+                raise ValueError
+    else:
+        raise NotImplementedError
+
+    assert len(cycle.step_index.unique()) == len(step_indices_annotated.values())
+
+    return step_indices_annotated

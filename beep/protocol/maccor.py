@@ -26,7 +26,7 @@ import xmltodict
 from beep.protocol import PROCEDURE_TEMPLATE_DIR, PROTOCOL_SCHEMA_DIR
 from beep.conversion_schemas import MACCOR_WAVEFORM_CONFIG
 from beep.utils import DashOrderedDict
-from beep.utils.waveform import convert_velocity_to_power_waveform
+from beep.utils.waveform import convert_velocity_to_power_waveform, RapidChargeWave
 
 s = {"service": "ProtocolGenerator"}
 
@@ -119,6 +119,7 @@ class Procedure(DashOrderedDict):
         Writes object to maccor-formatted xml file using xmltodict
         unparse function.
 
+        filename (str): full path and name to save the output
         encoding (str): text encoding of output file
 
         Args:
@@ -288,7 +289,7 @@ class Procedure(DashOrderedDict):
         return obj
 
     # TODO: These should probably all be private
-    def insert_maccor_waveform_discharge(self, waveform_idx, waveform_filename):
+    def insert_maccor_waveform(self, waveform_idx, waveform_filename):
         """
         Inserts a waveform into procedure dictionary at given id.
 
@@ -559,10 +560,6 @@ class Procedure(DashOrderedDict):
         assert (
             reg_param["charge_cutoff_voltage"] > reg_param["discharge_cutoff_voltage"]
         )
-        assert (
-            reg_param["charge_constant_current_1"]
-            <= reg_param["charge_constant_current_2"]
-        )
 
         rest_idx = 0
 
@@ -666,13 +663,13 @@ class Procedure(DashOrderedDict):
         reg_charge_idx = 27 + 1
         obj.insert_charge_regcyclev3(reg_charge_idx, reg_param)
         reg_discharge_idx = 27 + 5
-        obj.insert_maccor_waveform_discharge(reg_discharge_idx, waveform_name)
+        obj.insert_maccor_waveform(reg_discharge_idx, waveform_name)
 
         # Start of main loop of regular cycles
         reg_charge_idx = 59 + 1
         obj.insert_charge_regcyclev3(reg_charge_idx, reg_param)
         reg_discharge_idx = 59 + 5
-        obj.insert_maccor_waveform_discharge(reg_discharge_idx, waveform_name)
+        obj.insert_maccor_waveform(reg_discharge_idx, waveform_name)
 
         # Storage cycle
         reg_storage_idx = 93
@@ -695,6 +692,106 @@ class Procedure(DashOrderedDict):
                     "EndEntry"
                 ][1]["Value"]
                 == obj["MaccorTestProcedure"]["ProcSteps"]["TestStep"][reg_charge_idx + 1][
+                    "Ends"
+                ]["EndEntry"][0]["Value"]
+        )
+
+        return obj
+
+    @classmethod
+    def generate_procedure_chargingv1(cls, protocol_index, reg_param, waveform_name, template=None):
+        """
+        Generates a procedure according to the diagnosticV4 template.
+
+        Args:
+            protocol_index (int): number of the protocol file being
+                generated from this file.
+            reg_param (pandas.DataFrame): containing the following quantities
+                charge_type_1 (str): {'smooth', 'step'} type of charging waveform
+                charge_start_soc_1 (float): assumed starting soc for the charge
+                charge_current_param_1 (float): c-rate for first charging window
+                charge_current_param_2 (float): c-rate for second charging window
+                charge_current_param_3 (float): c-rate for third charging window
+                charge_current_param_4 (float): c-rate for fourth charging window
+                charge_soc_param_1 (float): soc point for dividing first charging window from second window
+                charge_soc_param_2 (float): soc point for dividing second charging window from third window
+                charge_fast_soc_limit (float): % of nominal capacity to end fast charging
+                charge_cutoff_voltage (float): upper voltage limit for the charge
+                charge_constant_voltage_time (integer): mins
+                charge_rest_time (integer): mins
+                profile_charge_limit (float): upper limit voltage for the profile
+                max_profile_power (float): maximum power setpoint during the profile
+                n_repeats (int): number of repetitions for the profile
+                discharge_cutoff_voltage (float): V
+                power_scaling (float): Power relative to the other profiles
+                discharge_rest_time (integer): mins
+                cell_temperature_nominal (float): ˚C
+                capacity_nominal (float): Ah
+                diagnostic_start_cycle (integer): cycles
+                diagnostic_interval (integer): cycles
+            waveform_name (str): Name of the waveform file (not path) without extension
+            template (str): template for invocation, defaults to
+                the diagnosticV4.000 template
+
+        Returns:
+            (Procedure): dictionary invoked using template/parameters
+        """
+        assert (
+                reg_param["charge_cutoff_voltage"] > reg_param["discharge_cutoff_voltage"]
+        )
+
+        rest_idx = 0
+
+        template = template or os.path.join(PROCEDURE_TEMPLATE_DIR, "diagnosticV4.000")
+        obj = cls.from_file(template)
+        obj.insert_initialrest_regcyclev3(rest_idx, protocol_index)
+
+        dc_idx = 1
+        obj.insert_resistance_regcyclev2(dc_idx, reg_param)
+
+        # Set variables necessary to use regcyclev3 function
+        reg_param["charge_constant_current_1"] = 1
+        reg_param["charge_constant_current_2"] = reg_param["charge_current_param_4"]
+        reg_param["charge_percent_limit_1"] = reg_param["charge_fast_soc_limit"]
+
+        # Start of initial set of regular cycles
+        reg_charge_idx = 27 + 1
+        obj.insert_charge_regcyclev3(reg_charge_idx, reg_param)
+        obj.insert_maccor_waveform(reg_charge_idx, waveform_name)
+        reg_discharge_idx = 27 + 5
+        obj.insert_discharge_regcyclev2(reg_discharge_idx, reg_param)
+
+        # Start of main loop of regular cycles
+        reg_charge_idx = 59 + 1
+        obj.insert_charge_regcyclev3(reg_charge_idx, reg_param)
+        obj.insert_maccor_waveform(reg_charge_idx, waveform_name)
+        reg_discharge_idx = 59 + 5
+        obj.insert_discharge_regcyclev2(reg_discharge_idx, reg_param)
+
+        # Storage cycle
+        reg_storage_idx = 93
+        obj.insert_storage_regcyclev3(reg_storage_idx, reg_param)
+
+        # Check that the upper charge voltage is lower for the fast charge portion
+        reg_charge_idx = 27 + 1
+        df_mwf = pd.read_csv(
+            waveform_name,
+            sep="\t",
+            header=None,
+        )
+        waveform_charge_limit = df_mwf.loc[:, 4].max()
+
+        assert (
+                waveform_charge_limit
+                < obj["MaccorTestProcedure"]["ProcSteps"]["TestStep"][reg_charge_idx + 1][
+                    "Ends"
+                ]["EndEntry"][0]["Value"]
+        )
+
+        reg_charge_idx = 59 + 1
+        assert (
+                waveform_charge_limit
+                < obj["MaccorTestProcedure"]["ProcSteps"]["TestStep"][reg_charge_idx + 1][
                     "Ends"
                 ]["EndEntry"][0]["Value"]
         )
@@ -1269,6 +1366,87 @@ def insert_driving_parametersv1(reg_params, waveform_directory=None):
     return file_path
 
 
+def insert_charging_parametersv1(reg_params, waveform_directory=None, max_c_rate=3.0, min_c_rate=0.2):
+    """
+    This function generates the waveform file for rapid charging. The charging rate parameters
+    are applied over SOC windows defined by charge_start_soc, charge_soc_param_1,
+    charge_soc_param_2, fast_charge_soc_limit.
+
+    Args:
+        reg_params (pandas.DataFrame): containing the following quantities
+            charge_type_1 (str): {'smooth', 'step'} type of charging waveform
+            charge_start_soc (float): assumed starting soc for the charge
+            charge_current_param_1 (float): c-rate for first charging window
+            charge_current_param_2 (float): c-rate for second charging window
+            charge_current_param_3 (float): c-rate for third charging window
+            charge_current_param_4 (float): c-rate for fourth charging window
+            charge_soc_param_1 (float): soc point for dividing first charging window from second window
+            charge_soc_param_2 (float): soc point for dividing second charging window from third window
+            charge_fast_soc_limit (float): fraction of nominal capacity to end fast charging
+            charge_cutoff_voltage (float): upper voltage limit for the charge
+            capacity_nominal (float): expected capacity of cell for c-rate calculations
+        waveform_directory (str): path to save waveform files
+        max_c_rate (float): maximum charging c-rate for safety and cycler limits
+        min_c_rate (float): minimum charging c-rate
+    """
+    mwf_config = {
+        "control_mode": "I",
+        "value_scale": 1,
+        "charge_limit_mode": "V",
+        "charge_limit_value": 4.2,
+        "discharge_limit_mode": "V",
+        "discharge_limit_value": 2.7,
+        "charge_end_mode": "V",
+        "charge_end_operation": ">=",
+        "charge_end_mode_value": 4.25,
+        "discharge_end_mode": "V",
+        "discharge_end_operation": "<=",
+        "discharge_end_mode_value": 2.5,
+        "report_mode": "T",
+        "report_value": 3.0000,
+        "range": "A",
+    }
+    soc_initial = reg_params["charge_start_soc"]
+    soc_final = reg_params["charge_fast_soc_limit"]
+    charging_c_rates = [reg_params["charge_current_param_1"], reg_params["charge_current_param_2"],
+                        reg_params["charge_current_param_3"], reg_params["charge_current_param_4"]]
+
+    soc_points = [soc_initial, reg_params["charge_soc_param_1"], reg_params["charge_soc_param_2"], soc_final]
+    final_c_rate = charging_c_rates[-1]
+
+    charging = RapidChargeWave(final_c_rate, soc_initial, soc_final, max_c_rate, min_c_rate)
+    current_smooth, current_step, time_uniform = charging.get_currents_with_uniform_time_basis(charging_c_rates,
+                                                                                               soc_points)
+
+    assert np.max(current_smooth) <= max_c_rate, "Maximum c-rate exceeded in {}, abort".format(reg_params["seq_num"])
+    assert np.max(current_step) <= max_c_rate, "Maximum c-rate exceeded in {}, abort".format(reg_params["seq_num"])
+
+    if reg_params["charge_type_1"] == "smooth":
+        df_charge = pd.DataFrame({"current": current_smooth, "time": time_uniform})
+    elif reg_params["charge_type_1"] == "step":
+        df_charge = pd.DataFrame({"current": current_step, "time": time_uniform})
+    else:
+        raise NotImplementedError
+
+    if not os.path.exists(waveform_directory):
+        os.makedirs(waveform_directory)
+
+    mwf_config["value_scale"] = reg_params["capacity_nominal"] * max(df_charge["current"])
+    mwf_config["charge_limit_value"] = reg_params["charge_cutoff_voltage"] - reg_params["charge_voltage_offset_1"]
+
+    waveform_name = "{}_{}_{}".format(reg_params["project_name"], reg_params["charge_type_1"], reg_params["seq_num"])
+    assert len(waveform_name) < 25, "Waveform name is too long"
+
+    file_path = generate_maccor_waveform_file(
+        df_charge,
+        waveform_name,
+        waveform_directory,
+        mwf_config=mwf_config
+    )
+
+    return file_path
+
+
 def generate_maccor_waveform_file(df, file_prefix, file_directory, mwf_config=None):
     """
     Helper function that takes in a variable power waveform and outputs a maccor waveform file (.MWF), which is read by
@@ -1289,21 +1467,35 @@ def generate_maccor_waveform_file(df, file_prefix, file_directory, mwf_config=No
     if mwf_config is None:
         mwf_config = MACCOR_WAVEFORM_CONFIG
 
-    df["power"] = df["power"] / max(abs(df["power"])) * mwf_config["value_scale"]
+    if "power" in df.columns:
+        df["power"] = df["power"] / max(abs(df["power"])) * mwf_config["value_scale"]
+        df["step_counter"] = df["power"].diff().fillna(0).ne(0).cumsum()
+        df = df.groupby("step_counter").agg({"time": "count", "power": "first"})
 
-    df["step_counter"] = df["power"].diff().fillna(0).ne(0).cumsum()
-    df = df.groupby("step_counter").agg({"time": "count", "power": "first"})
+        df.rename(columns={"time": "duration"}, inplace=True)
 
-    df.rename(columns={"time": "duration"}, inplace=True)
+        df["control_mode"] = mwf_config["control_mode"]
 
-    df["control_mode"] = mwf_config["control_mode"]
+        if mwf_config["control_mode"] == "P":
+            df.loc[df["power"] == 0, "control_mode"] = "I"
 
-    if mwf_config["control_mode"] == "P":
-        df.loc[df["power"] == 0, "control_mode"] = "I"
+        df["value"] = np.round(abs(df["power"]), 5)
 
-    df["value"] = np.round(abs(df["power"]), 5)
+        mask = df["power"] <= 0
 
-    mask = df["power"] <= 0
+    elif "current" in df.columns:
+        df["current"] = df["current"] / max(abs(df["current"])) * mwf_config["value_scale"]
+        df["step_counter"] = df["current"].diff().fillna(0).ne(0).cumsum()
+        df = df.groupby("step_counter").agg({"time": "count", "current": "first"})
+
+        df.rename(columns={"time": "duration"}, inplace=True)
+
+        df["control_mode"] = mwf_config["control_mode"]
+
+        df["value"] = np.round(abs(df["current"]), 5)
+
+        mask = df["current"] <= 0
+
     df = df.assign(
         **{
             "state": "C",

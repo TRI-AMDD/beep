@@ -40,6 +40,7 @@ from beep.featurize import (
     DiagnosticSummaryStats
 )
 from sklearn.model_selection import train_test_split
+from scipy import interpolate
 
 FEATURE_HYPERPARAMS = loadfn(
     os.path.join(MODULE_DIR, "features/feature_hyperparameters.yaml")
@@ -75,7 +76,7 @@ class BeepDataset(MSONable):
 
     """
 
-    def __init__(self, name, data, metadata, filenames, feature_sets, dataset_dir, missing=None):
+    def __init__(self, name, data, metadata, filenames, feature_sets, dataset_dir='data-share/datasets', missing=None):
 
         """
         Invokes BeepDataset object
@@ -118,7 +119,9 @@ class BeepDataset(MSONable):
             "data": self.data.to_dict("list"),
             "metadata": self.metadata,
             "filenames": self.filenames,
-            "feature_sets": self.feature_sets
+            "dataset_dir": self.dataset_dir,
+            "feature_sets": self.feature_sets,
+            "missing": self.missing.to_dict("list")
         }
         return obj
 
@@ -126,6 +129,8 @@ class BeepDataset(MSONable):
     def from_dict(cls, d):
         """MSONable deserialization method"""
         d["data"] = pd.DataFrame(d["data"])
+        d["missing"] = pd.DataFrame(d["missing"])
+        d["filenames"] = list(d["filenames"])
         return cls(**d)
 
     @classmethod
@@ -161,6 +166,9 @@ class BeepDataset(MSONable):
                         obj = loadfn(feature_json)
                         df = obj.X
                         df['file'] = obj.metadata['protocol'].split('.')[0]
+                        # seq_num computation assumes file naming follows the convention:
+                        # ProjectName_SeqNum_Channel_ObjectName.json
+                        df['seq_num'] = int(os.path.basename(feature_json).split('_')[1])
                         feature_df = pd.concat([feature_df, df]).reset_index(drop=True)
                         # TODO: Need some logic for ensuring that features of a given class being concatenated
                         # row-wise have the same metadata dict
@@ -172,7 +180,7 @@ class BeepDataset(MSONable):
                 missing.loc[len(missing)] = \
                     ['', feature_class.class_feature_name]
 
-        df = reduce(lambda x, y: pd.merge(x, y, on='file', how='outer'), feature_df_list)
+        df = reduce(lambda x, y: pd.merge(x, y, on=['file', 'seq_num'], how='outer'), feature_df_list)
         # Outer-join used so that even partially featurized cells can be loaded into dataset
         # NaNs imputation to be done downstream by the user
 
@@ -183,7 +191,8 @@ class BeepDataset(MSONable):
                                    feature_class_list=FEATURIZER_CLASSES,
                                    hyperparameter_dict=None, processed_dir="data-share/structure/",
                                    feature_dir="data-share/features/",
-                                   dataset_dir="data-share/datasets"):
+                                   dataset_dir="data-share/datasets",
+                                   parameters_path="data-share/raw/parameters"):
         """
         Method to assemble a dataset directly from a list of ProcessedCyclerRun objects
 
@@ -227,8 +236,8 @@ class BeepDataset(MSONable):
                     else:
                         hyperparameter_dict[feature_class.class_feature_name] = None
                 # if the provided hyperparameter dictionary has the wrong keys, raise error
-                elif set(FEATURE_HYPERPARAMS[feature_class.class_feature_name.keys()]) != \
-                        set(hyperparameter_dict[feature_class.class_feature_name].keys()):
+                elif set(FEATURE_HYPERPARAMS[feature_class.class_feature_name].keys()) != \
+                        set(hyperparameter_dict[feature_class.class_feature_name][0].keys()):
                     raise ValueError('Invalid hyperparameter dictionary for' +
                                      feature_class.class_feature_name)
 
@@ -250,10 +259,12 @@ class BeepDataset(MSONable):
             for feature_class in feature_class_list:
                 # For a given feature_class, loop through multiple hyperparameter combinations, if provided.
                 for d in hyperparameter_dict[feature_class.class_feature_name]:
-                    obj = feature_class.from_run(processed_json, feature_dir, processed_cycler_run, d)
+                    obj = feature_class.from_run(processed_json, feature_dir, processed_cycler_run,
+                                                 d, parameters_path=parameters_path)
                     if obj:
                         df = obj.X
                         df['file'] = obj.metadata['protocol'].split('.')[0]
+                        df['seq_num'] = int(os.path.basename(processed_json).split('_')[1])
                         feature_df_list[idx] = pd.concat([feature_df_list[idx], df]).reset_index(drop=True)
                     else:
                         failed_featurizations.loc[len(failed_featurizations)] = \
@@ -263,7 +274,7 @@ class BeepDataset(MSONable):
         for idx, feature_class in enumerate(feature_class_list):
             feature_sets[feature_class.class_feature_name] = list(feature_df_list[idx].columns)
 
-        df = reduce(lambda x, y: pd.merge(x, y, on='file', how='outer'), feature_df_list)
+        df = reduce(lambda x, y: pd.merge(x, y, on=['file', 'seq_num'], how='outer'), feature_df_list)
         return cls(name, df, hyperparameter_dict, df.file.unique(), feature_sets, dataset_dir, failed_featurizations)
 
     def generate_train_test_split(self, predictors=None, outcomes=None,
@@ -327,6 +338,104 @@ class BeepDataset(MSONable):
             os.makedirs(self.dataset_dir)
         dumpfn(self, os.path.join(self.dataset_dir, self.name))
         return self.dataset_dir
+
+
+def get_threshold_targets(dataset_diagnostic_properties,
+                          cycle_type="rpt_1C",
+                          metric="discharge_energy",
+                          threshold=0.80,
+                          filter_kinks=None,
+                          extrapolate_threshold=True):
+    """
+    Method to generate a data frame with cycle number and throughputs at which the cell drops below a fractional metric.
+    The metric being used is set by the basis variable and the value of the threshold can be varied. The cycle being
+    used to evaluate the factional metric can be set be cycle_type_target. The point at which the cell crosses the
+    threshold is determined with a linear interpolation between diagnostic cycles. In the event that the cell has not
+    yet reached the threshold, the point at which it is expected to reach the threshold can be calculated by linear
+    extrapolation from the last two diagnostic cycles. The filter kinks option allows for removal of cells with an
+    abrupt change in degradation rate, possibly indicating some error or problem with the experiment.
+
+    Args:
+        dataset_diagnostic_properties (BeepDataset.data): Data attribute of dataset object created from the
+            DiagnosticProperties feature
+        cycle_type (str): Type of diagnostic cycle being used to measure the fractional metric
+        metric (str): The metric being used for fractional capacity
+        threshold (float): Value for the fractional metric to be considered above or below threshold
+        filter_kinks (float): If set, cutoff value for the second derivative of the fractional metric (cells with an
+            abrupt change in degradation rate might have something else going on). Typical value might be 0.04
+        extrapolate_threshold (bool): Should threshold crossing point be extrapolated for cells that have not yet
+            reached the threshold (warning: this uses a linear extrapolation from the last two diagnostic cycles)
+
+    Returns:
+         pd.DataFrame: Each row is a seq_num and contains the interpolated throughput and cycle number at which
+            that particular run crossed the threshold.
+
+    """
+    threshold_values_df_list = []
+    # Only use the target cycle type and basis for calculation
+    cycle_type_target_df = dataset_diagnostic_properties[dataset_diagnostic_properties.cycle_type == cycle_type]
+    cycle_type_target_df = cycle_type_target_df[cycle_type_target_df['metric'] == metric]
+
+    for indx, run in enumerate(dataset_diagnostic_properties['file'].unique()):
+        # Look at one run at a time
+        run_target_df = cycle_type_target_df[cycle_type_target_df['file'] == run]
+
+        # Filter to truncate data from cells that have a sudden drop in the fractional metric
+        # (something wrong with the test)
+        if filter_kinks and np.any(run_target_df['fractional_metric'].diff().diff() < filter_kinks):
+            last_good_cycle = run_target_df[run_target_df['fractional_metric'].diff().diff() < filter_kinks][
+                'cycle_index'].min()
+            #         print(last_good_cycle)
+            run_target_df = run_target_df[run_target_df['cycle_index'] < last_good_cycle]
+
+        x_throughput_axis = run_target_df['normalized_regular_throughput']
+        x_cycle_axis = run_target_df['cycle_index']
+        y_interpolation_axis = run_target_df['fractional_metric']
+
+        # Logic around how to deal with cells that have not crossed the threshold
+        if run_target_df['fractional_metric'].min() > threshold and not extrapolate_threshold:
+            print(run, " has not crossed threshold and extrapolation is off")
+            continue
+        elif run_target_df['fractional_metric'].min() > threshold and extrapolate_threshold:
+            fill_value = "extrapolate"
+            bounds_error = False
+            x_throughput_linspace = np.linspace(x_throughput_axis.min(), 2 * x_throughput_axis.max(), num=1000)
+            x_cycle_linspace = np.linspace(x_cycle_axis.min(), 2 * x_cycle_axis.max(), num=1000)
+        else:
+            fill_value = np.nan
+            bounds_error = True
+            x_throughput_linspace = np.linspace(x_throughput_axis.min(), x_throughput_axis.max(), num=1000)
+            x_cycle_linspace = np.linspace(x_cycle_axis.min(), x_cycle_axis.max(), num=1000)
+
+        f_throughput = interpolate.interp1d(x_throughput_axis, y_interpolation_axis, kind='linear',
+                                            bounds_error=bounds_error, fill_value=fill_value)
+        f_cycle = interpolate.interp1d(x_cycle_axis, y_interpolation_axis, kind='linear', bounds_error=bounds_error,
+                                       fill_value=fill_value)
+
+        throughput_crossing_array = abs(f_throughput(x_throughput_linspace) - threshold)
+        cycle_crossing_array = abs(f_cycle(x_cycle_linspace) - threshold)
+        throughput_to_threshold = x_throughput_linspace[np.argmin(throughput_crossing_array)]
+        cycles_to_threshold = x_cycle_linspace[np.argmin(cycle_crossing_array)]
+
+        if ~(throughput_to_threshold > 0) or ~(cycles_to_threshold > 0):
+            print(run, " does not have a positive value to threshold")
+            continue
+
+        real_throughput_to_threshold = throughput_to_threshold * run_target_df['initial_regular_throughput'].values[0]
+
+        threshold_dict = {
+            "file": [run],
+            "seq_num": [int(run.split("_")[1])],
+            'initial_regular_throughput': run_target_df['initial_regular_throughput'].values[0],
+            cycle_type + metric + str(threshold) + "_normalized_reg_throughput": [throughput_to_threshold],
+            cycle_type + metric + str(threshold) + "_real_reg_throughput": [real_throughput_to_threshold],
+            cycle_type + metric + str(threshold) + "_cycles": [cycles_to_threshold]
+        }
+
+        threshold_values_df_list.append(pd.DataFrame(threshold_dict))
+    threshold_targets_df = pd.concat(threshold_values_df_list)
+    threshold_targets_df.reset_index(drop=True, inplace=True)
+    return threshold_targets_df
 
 
 def get_parameter_dict(file_list, parameters_path):

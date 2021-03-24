@@ -230,6 +230,26 @@ class ValidationMaccorTest(unittest.TestCase):
             )
             self.assertEqual(df.loc["xTESLADIAG_000019_CH70.070", "validated"], True)
 
+    def test_monotonic_cycle_index_maccor(self):
+        path = "PredictionDiagnostics_000109_tztest.010"
+        path = os.path.join(TEST_FILE_DIR, path)
+
+        v = SimpleValidator(
+            schema_filename=os.path.join(
+                VALIDATION_SCHEMA_DIR, "schema-maccor-2170.yaml"
+            )
+        )
+        v.allow_unknown = True
+        header = pd.read_csv(path, delimiter="\t", nrows=0)
+        print(header)
+        df = pd.read_csv(path, delimiter="\t", skiprows=1)
+        df["State"] = df["State"].astype(str)
+        df["current"] = df["Amps"]
+        df.loc[df["Cyc#"] == 89, "Cyc#"] = 0
+        validity, reason = v.validate(df)
+        self.assertFalse(validity)
+        self.assertEqual(reason, "cyc# needs to be monotonically increasing for processing")
+
 
 class ValidationEisTest(unittest.TestCase):
     # To further develop
