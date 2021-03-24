@@ -1,3 +1,6 @@
+"""Classes and functions for handling Indigo battery cycler data.
+
+"""
 from datetime import datetime
 
 import pytz
@@ -8,18 +11,19 @@ from beep.conversion_schemas import INDIGO_CONFIG
 
 
 class IndigoDatapath(BEEPDatapath):
+    """Datapath for ingesting and structuring Indigo battery cycler data.
+
+    """
 
     @classmethod
     def from_file(cls, path):
-        """
-        Creates RawCyclerRun from an Indigo data file.
+        """Creates a BEEPDatapath from an raw Indigo data file.
 
         Args:
-            path (str): file path to data file
-            validate (bool): True if data is to be validated.
+            path (str, Pathlike): file path to data file
 
         Returns:
-            beep.structure.RawCyclerRun
+            (IndigoDatapath)
         """
 
         data = pd.read_hdf(path, "time_series_data")

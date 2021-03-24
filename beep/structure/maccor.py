@@ -1,5 +1,5 @@
-"""
-For structuring Maccor files.
+"""Classes and functions for handling Maccor battery cycler data.
+
 """
 
 from datetime import datetime
@@ -19,30 +19,28 @@ from beep.conversion_schemas import MACCOR_CONFIG
 from beep.structure.base_eis import BEEPDatapathWithEIS, EIS
 
 
-# todo: ALEXTODO needs docstrings
 class MaccorDatapath(BEEPDatapathWithEIS):
-    """
+    """Datapath for ingesting and structuring Maccor battery cycler data.
+
     Attributes:
+        - all attributes inherited from BEEPDatapath
         - eis [MaccorEIS]: List of MaccorEIS objects, each representing an electrochemical
             impedance spectrum complete with data and metadata.
     """
 
     class MaccorEIS(EIS):
-        """
-        One EIS run for Maccor files.
+        """Class representing a single EIS run from Maccor data.
         """
 
         @classmethod
         def from_file(cls, filename):
-            """
-            EISpectrum from Maccor file.
+            """Create a single MaccorEIS object from a raw EIS output file.
 
             Args:
-                filename (str): file path to data.
+                filename (str, Pathlike): file path to data.
 
             Returns:
-                beep.structure.EISpectrum: EISpectrum object representation of
-                    data.
+                (MaccorEIS): EIS object representation of data.
             """
             with open(filename) as f:
                 lines = f.readlines()
@@ -77,14 +75,13 @@ class MaccorDatapath(BEEPDatapathWithEIS):
 
     @classmethod
     def from_file(cls, path):
-        """
-        Method for ingestion of Maccor format files.
+        """Create a MaccorDatapath file from a Maccor cycler run raw file.
 
         Args:
-            filename (str): file path for maccor format file.
-            include_eis (bool): whether to include the eis spectrum
-                in the ingestion procedure.
-            validate (bool): whether to validate on instantiation.
+            path (str, Pathlike): file path for maccor file.
+
+        Returns:
+            (MaccorDatapath)
         """
         with open(path) as f:
             metadata_line = f.readline().strip()
@@ -115,7 +112,6 @@ class MaccorDatapath(BEEPDatapathWithEIS):
         # Note the to_dict, which scrubs numpy typing
         metadata = {col: item[0] for col, item in metadata.to_dict("list").items()}
 
-
         # standardizing time format
         data["date_time_iso"] = data["date_time"].apply(cls.correct_timestamp)
 
@@ -127,15 +123,19 @@ class MaccorDatapath(BEEPDatapathWithEIS):
         return cls(data, metadata, paths=paths)
 
     def load_eis(self, paths=None):
-        """
-        Load eis from specified paths to EIS files, or automatically detect them from
+        """Load eis from specified paths to EIS files, or automatically detect them from
         the directory where the raw maccor data file is located.
 
+        This method sets MaccorDatapath.eis to a list MaccorEIS objects.
+        This method also updates MaccorDatapath.paths to reflect EIS paths.
+
         Args:
-            paths:
+            paths((str, Pathlike) or None): Paths to Maccor EIS files. If None, will automatically
+                scan the directory where the raw MaccorDatapath file was located and choose all
+                files matching the Maccor EIS RegEx as EIS files.
 
         Returns:
-
+            None
         """
 
         # Automatically find EIS from directory
@@ -159,8 +159,7 @@ class MaccorDatapath(BEEPDatapathWithEIS):
 
     @staticmethod
     def quantity_sum(data, quantity, state_type):
-        """
-        Computes non-decreasing capacity or energy (either charge or discharge)
+        """Computes non-decreasing capacity or energy (either charge or discharge)
         through multiple steps of a single cycle and resets capacity at the
         start of each new cycle. Input Maccor data resets to zero at each step.
 
@@ -232,8 +231,7 @@ class MaccorDatapath(BEEPDatapathWithEIS):
 
     @staticmethod
     def parse_metadata(metadata_string):
-        """
-        Parses maccor metadata string, which is annoyingly inconsistent.
+        """Parses maccor metadata string, which is annoyingly inconsistent.
         Basically just splits the string by a set of fields and creates
         a dictionary of pairs of fields and values with colons scrubbed
         from fields.
@@ -263,8 +261,7 @@ class MaccorDatapath(BEEPDatapathWithEIS):
 
     @staticmethod
     def correct_timestamp(x):
-        """
-        Helper function with exception handling for cases where the
+        """Helper function with exception handling for cases where the
         maccor cycler mis-prints the datetime stamp for the row. This
         happens when data is being recorded rapidly as the date switches over
         ie. between 10/21/2019 23:59:59 and 10/22/2019 00:00:00.
@@ -298,8 +295,7 @@ class MaccorDatapath(BEEPDatapathWithEIS):
 
     @staticmethod
     def split_string_by_fields(string, fields):
-        """
-        Helper function to split a string by a set of ordered strings,
+        """Helper function to split a string by a set of ordered strings,
         primarily used for Maccor metadata parsing.
 
         >>> MaccorDatapath.split_string_by_fields("first name: Joey  last name Montoya",

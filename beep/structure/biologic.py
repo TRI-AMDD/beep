@@ -22,7 +22,7 @@ class BiologicDatapath(BEEPDatapath):
             path (str): file path to data file
 
         Returns:
-            beep.structure.RawCyclerRun
+            BiologicDatapath
         """
 
         header_line = 3  # specific to file layout

@@ -32,6 +32,9 @@ class ArbinDatapath(BEEPDatapath):
 
         Args:
             path (str, Pathlike): Path to the raw data csv.
+
+        Returns:
+            (ArbinDatapath)
         """
         data = pd.read_csv(path)
         data.rename(str.lower, axis="columns", inplace=True)
