@@ -239,8 +239,7 @@ class BEEPDatapath(abc.ABC, MSONable):
     @classmethod
     @abc.abstractmethod
     def from_file(cls, path, *args, **kwargs):
-        """
-        Go from a raw cycler output data file (or files) to a BEEPDatapath.
+        """Go from a raw cycler output data file (or files) to a BEEPDatapath.
 
         Must be implemented for the BEEPDatapath child to be valid.
 
@@ -253,28 +252,54 @@ class BEEPDatapath(abc.ABC, MSONable):
         """
         raise NotImplementedError
 
-    def validate(self):
-        validator = ValidatorBeep()
-        is_valid = validator.validate_arbin_dataframe(self.raw_data)
-        if not is_valid:
-            raise BeepValidationError("Beep validation failed")
 
-    def _cast_dtypes(self, result, structure_dtypes_key):
-        available_dtypes = {}
-        for field, dtype in STRUCTURE_DTYPES[structure_dtypes_key].items():
-            if field in result.columns:
-                # if not result[field].isna().all():
-                available_dtypes[field] = dtype
+    @classmethod
+    def from_json_file(cls, filename):
+        """Load a structured run previously saved to file.
 
-        return result.astype(available_dtypes)
+        Loads a BEEPDatapath or (legacy) ProcessedCyclerRun structured object from json.
+
+        Can be used in combination with files serialized with BEEPDatapath.to_json_file.
+
+        Args:
+            filename (str, Pathlike): a json file from a structured run, serialzed with to_json_file.
+
+        Returns:
+            None
+        """
+        with open(filename, "r") as f:
+            d = json.load(f)
+
+        # Add this structured file path to the paths dict
+        paths = d.get("paths", {})
+        paths["structured"] = os.path.abspath(filename)
+        d["paths"] = paths
+
+        return cls.from_dict(d)
+
+    def to_json_file(self, filename):
+        """Save a BEEPDatapath to disk as a json.
+
+        Not named from_json to avoid conflict with MSONable.from_json(*)
+
+        Args:
+            filename (str, Pathlike): The filename to save the file to.
+
+        Returns:
+            None
+        """
+        with open(filename, "w") as f:
+            json.dump(self.as_dict(), f)
+
 
     @StructuringDecorators.must_not_be_legacy
     def as_dict(self):
-        """
-        Method for dictionary serialization.
+        """Serialize a BEEPDatapath as a dictionary.
+
+        Must not be loaded from legacy.
 
         Returns:
-            dict: corresponding to dictionary for serialization.
+            (dict): corresponding to dictionary for serialization.
 
         """
 
@@ -299,7 +324,6 @@ class BEEPDatapath(abc.ABC, MSONable):
             "metadata": self.metadata.raw,
             "paths": self.paths,
 
-
             # For backwards compatibility
             # All this data is in the "metadata" key, this is just for redundancy
             "barcode": self.metadata.barcode,
@@ -313,36 +337,10 @@ class BEEPDatapath(abc.ABC, MSONable):
             "diagnostic_interpolated": diagnostic_interpolated
         }
 
-    def to_json_file(self, filename):
-        """
-        Not named from_json to avoid conflict with MSONable.from_json(*)
-
-        Args:
-            filename:
-
-        Returns:
-
-        """
-        with open(filename, "w") as f:
-            json.dump(self.as_dict(), f)
-
-    @StructuringDecorators.must_not_be_legacy
-    def unstructure(self):
-        """
-        Cleanly remove all structuring data, to restructure using different parameters.
-
-        Returns:
-            None
-        """
-        self.structured_data = None
-        self.diagnostic_data = None
-        self.structured_summary = None
-        self.diagnostic_summary = None
-        # todo: print logging statement saying structuring has been reset
-
     @classmethod
     def from_dict(cls, d):
-        """
+        """Create a BEEPDatapath object from a dictionary.
+
         Args:
             d (dict): dictionary represenation.
 
@@ -379,49 +377,17 @@ class BEEPDatapath(abc.ABC, MSONable):
         datapath.diagnostic_data = diagnostic_data if diagnostic_data is None else pd.DataFrame(diagnostic_data)
         return datapath
 
-    @classmethod
-    def from_json_file(cls, filename):
-        """
-
-        Args:
-            filename:
+    def validate(self):
+        """Validate the raw data.
 
         Returns:
+            (bool) True if the raw data is valid, false otherwise.
 
         """
-        with open(filename, "r") as f:
-            d = json.load(f)
-
-        # Add this structured file path to the paths dict
-        paths = d.get("paths", {})
-        paths["structured"] = os.path.abspath(filename)
-        d["paths"] = paths
-
-        return cls.from_dict(d)
-
-    def autostructure(self):
-        """
-        Automatically run structuring based on automatically determined structuring parameters.
-        The parameters are determined from the raw input file, so ensure the raw input file paths
-        are in the 'paths' attribute.
-
-        Returns:
-            None
-        """
-        v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \
-            self.determine_structuring_parameters()
-        logger.info(f"Autostructuring determined parameters of v_range={v_range}, "
-                    f"resolution={resolution}, "
-                    f"nominal_capacity={nominal_capacity}, "
-                    f"full_fast_charge={full_fast_charge}, "
-                    f"diagnostic_available={diagnostic_available}")
-        return self.structure(
-            v_range=v_range,
-            resolution=resolution,
-            nominal_capacity=nominal_capacity,
-            full_fast_charge=full_fast_charge,
-            diagnostic_available=diagnostic_available
-        )
+        validator = ValidatorBeep()
+        is_valid = validator.validate_arbin_dataframe(self.raw_data)
+        if not is_valid:
+            raise BeepValidationError("Beep validation failed")
 
     @StructuringDecorators.must_not_be_legacy
     def structure(self,
@@ -470,7 +436,44 @@ class BEEPDatapath(abc.ABC, MSONable):
             diagnostic_available=diagnostic_available
         )
 
-    # todo: ALEXTODO check docstring
+    def autostructure(self):
+        """
+        Automatically run structuring based on automatically determined structuring parameters.
+        The parameters are determined from the raw input file, so ensure the raw input file paths
+        are in the 'paths' attribute.
+
+        Returns:
+            None
+        """
+        v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \
+            self.determine_structuring_parameters()
+        logger.info(f"Autostructuring determined parameters of v_range={v_range}, "
+                    f"resolution={resolution}, "
+                    f"nominal_capacity={nominal_capacity}, "
+                    f"full_fast_charge={full_fast_charge}, "
+                    f"diagnostic_available={diagnostic_available}")
+        return self.structure(
+            v_range=v_range,
+            resolution=resolution,
+            nominal_capacity=nominal_capacity,
+            full_fast_charge=full_fast_charge,
+            diagnostic_available=diagnostic_available
+        )
+
+    @StructuringDecorators.must_not_be_legacy
+    def unstructure(self):
+        """
+        Cleanly remove all structuring data, to restructure using different parameters.
+
+        Returns:
+            None
+        """
+        self.structured_data = None
+        self.diagnostic_data = None
+        self.structured_summary = None
+        self.diagnostic_summary = None
+        # todo: print logging statement saying structuring has been reset
+
     def interpolate_step(
             self,
             v_range,
@@ -490,6 +493,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             step_type (str): which step to interpolate i.e. 'charge' or 'discharge'
             reg_cycles (list): list containing cycle indicies of regular cycles
             axis (str): which column to use for interpolation
+            desc (str): Description to print to tqdm column.
 
         Returns:
             pandas.DataFrame: DataFrame corresponding to interpolated values.
@@ -586,14 +590,16 @@ class BEEPDatapath(abc.ABC, MSONable):
         Gets interpolated cycles for both charge and discharge steps.
 
         Args:
-            v_range ([Float, Float]): list of two floats that define
+            v_range ([float, float]): list of two floats that define
                 the voltage interpolation range endpoints.
             resolution (int): resolution of interpolated data.
             diagnostic_available (dict): dictionary containing information about
                 location of diagnostic cycles
+            charge_axis (str): column to use for interpolation for charge
+            discharge_axis (str): column to use for interpolation for discharge
 
         Returns:
-            pandas.DataFrame: DataFrame corresponding to interpolated values.
+            (pandas.DataFrame): DataFrame corresponding to interpolated values.
         """
         if diagnostic_available:
             diag_cycles = list(
@@ -646,7 +652,7 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         return self._cast_dtypes(result, "cycles_interpolated")
 
-    # equivalent of get_summary
+    # equivalent of legacy get_summary
     def summarize_cycles(
             self,
             diagnostic_available=False,
@@ -676,7 +682,7 @@ class BEEPDatapath(abc.ABC, MSONable):
                 each cycle)
 
         Returns:
-            pandas.DataFrame: summary statistics by cycle.
+            (pandas.DataFrame): summary statistics by cycle.
 
         """
         # Filter out only regular cycles for summary stats. Diagnostic summary computed separately
@@ -808,7 +814,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             v_resolution (float): voltage delta to set for range based interpolation
 
         Returns:
-            (DataFrame) of interpolated diagnostic steps by step and cycle
+            (pd.DataFrame) of interpolated diagnostic steps by step and cycle
 
         """
         # Get the project name and the parameter file for the diagnostic
@@ -1173,6 +1179,24 @@ class BEEPDatapath(abc.ABC, MSONable):
         else:
             return False
 
+    def _cast_dtypes(self, result, structure_dtypes_key):
+        """Cast data types of a result dataframe to those specified by the structuring config.
+
+        Args:
+            result (pd.DataFrame): The result to cast
+            structure_dtypes_key: The required key, for structure dtype casting, as per STRUCTURE_DTYPES
+
+        Returns:
+            (pd.DataFrame): The result, cast to the correct datatypes.
+
+        """
+        available_dtypes = {}
+        for field, dtype in STRUCTURE_DTYPES[structure_dtypes_key].items():
+            if field in result.columns:
+                # if not result[field].isna().all():
+                available_dtypes[field] = dtype
+
+        return result.astype(available_dtypes)
 
 
 # based on get_interpolated_data
@@ -1242,7 +1266,6 @@ def interpolate_df(
     return interpolated_df
 
 
-# todo: ALEXTODO: need docstring
 def step_is_chg_state(step_df, chg):
     """
     Helper function to determine whether a given dataframe corresponding
@@ -1250,8 +1273,12 @@ def step_is_chg_state(step_df, chg):
     to be used with a dataframe for single step/cycle
 
     Args:
-         step_dataframe (pandas.DataFrame): dataframe to determine whether
-         charging or discharging
+         step_df (pandas.DataFrame): dataframe to determine whether
+            charging or discharging
+         chg (bool): Charge state; True if charging
+
+    Returns:
+        (bool): True if step is the charge state specified.
     """
     cap = step_df[["charge_capacity", "discharge_capacity"]]
     cap = cap.diff(axis=0).mean(axis=0).diff().iloc[-1]
@@ -1277,6 +1304,11 @@ def step_is_waveform(step_df, chg_filter):
 
     Args:
          step_df (pandas.DataFrame): dataframe to determine whether waveform step is present
+         chg_filter (func): Function for determining whether step is charging or not.
+
+
+    Returns:
+        (bool): True if step is waveform discharge.
     """
 
     # Check for waveform in maccor
@@ -1319,7 +1351,7 @@ def get_max_paused_over_threshold(group, paused_threshold=3600):
         paused_threshold (int): gap in seconds to classify as a pause in cycling
 
     Returns:
-        float: number of seconds that test was paused
+        (float): number of seconds that test was paused
 
     """
     date_time_objs = pd.to_datetime(group["date_time_iso"])

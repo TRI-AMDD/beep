@@ -126,7 +126,6 @@ class MaccorDatapath(BEEPDatapathWithEIS):
 
         return cls(data, metadata, paths=paths)
 
-
     def load_eis(self, paths=None):
         """
         Load eis from specified paths to EIS files, or automatically detect them from
@@ -155,6 +154,7 @@ class MaccorDatapath(BEEPDatapathWithEIS):
         self.eis = eis_runs
         self.paths["eis"] = paths
 
+        # todo: ALEXTODO add logging for if no paths added
 
 
     @staticmethod
