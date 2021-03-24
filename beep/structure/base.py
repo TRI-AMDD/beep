@@ -1,22 +1,20 @@
 """Base classes and assorted functions for beep structuring datapaths.
 """
 
+import os
 import abc
 import json
 import copy
+import time
+import itertools
 
 import pandas as pd
 import numpy as np
-import os
-import tqdm
-import time
 from scipy import integrate
-import itertools
-
 from monty.json import MSONable
-from beep import tqdm
 
-from beep import StringIO, MODULE_DIR
+from beep import tqdm
+from beep import MODULE_DIR
 from beep.conversion_schemas import (
     STRUCTURE_DTYPES,
 )

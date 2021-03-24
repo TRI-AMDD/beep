@@ -1,21 +1,16 @@
 """Classes and functions for handling Maccor battery cycler data.
 
 """
-
+import os
 from datetime import datetime
+from glob import glob
 
 import pandas as pd
 import numpy as np
-import os
-import tqdm
 import pytz
 
-from glob import glob
-from beep import tqdm
-
-from beep import StringIO
+from beep import tqdm, StringIO
 from beep.conversion_schemas import MACCOR_CONFIG
-
 from beep.structure.base_eis import BEEPDatapathWithEIS, EIS
 
 
