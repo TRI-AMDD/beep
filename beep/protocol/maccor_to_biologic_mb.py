@@ -1069,7 +1069,6 @@ def convert_diagnostic_v5_multi_techniques():
         "Loop\r\n"
         "goto Ne             2                   \r\n"
         "nt times            1000                \r\n"
-        "\r\n"
     )
 
     technique_4_str = "\r\nTechnique : 4\r\n" "Modulo Bat\r\n"
