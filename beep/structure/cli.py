@@ -128,7 +128,7 @@ def process_file_list_from_json(file_list_json, processed_dir="data-share/struct
             # Process datapath and dump to file
 
             dp = auto_load(filename)
-            dp.structure()
+            dp.autostructure()
 
             # raw_cycler_run = RawCyclerRun.from_file(filename)
             # processed_cycler_run = raw_cycler_run.to_processed_cycler_run()
