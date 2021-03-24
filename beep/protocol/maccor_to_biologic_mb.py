@@ -477,6 +477,10 @@ class MaccorToBiologicMb:
             )
             return
 
+        return self._maccor_steps_to_biologic_seqs(steps)
+
+    def _maccor_steps_to_biologic_seqs(self, steps):
+
         # To build our seqs we need to be able to handle GOTOs
         # in order to do that we a mapping between Step Numbers
         # and seq numbers. This will require us to pre-compute
@@ -642,6 +646,34 @@ class MaccorToBiologicMb:
 
         return xmltodict.parse(text, process_namespaces=False, strip_whitespace=True)
 
+    def _seqs_to_str(self, seqs, col_width=20):
+        seq_str = ""
+        for key in OrderedDict.keys(self.blank_seq):
+            if len(key) > col_width:
+                raise Exception(
+                    "seq key {} has length greater than col width {}".format(
+                        key, col_width
+                    )
+                )
+
+            field_row = key.ljust(col_width, " ")
+            for seq_num, seq in enumerate(seqs):
+                if key not in seq:
+                    raise Exception(
+                        "Could not find field {} in seq {}".format(key, seq_num)
+                    )
+
+                if len(str(seq[key])) > col_width:
+                    raise Exception(
+                        "{} in seq {} is greater than column width".format(
+                            seq[key], seq_num
+                        )
+                    )
+                field_row += str(seq[key]).ljust(col_width, " ")
+            seq_str += field_row + "\r\n"
+
+        return seq_str
+
     """
     converts biologic seqs to biologic protocol string
     resulting string assumes generated file will have
@@ -686,30 +718,7 @@ class MaccorToBiologicMb:
             "Modulo Bat\r\n"
         )
 
-        for key in OrderedDict.keys(self.blank_seq):
-            if len(key) > col_width:
-                raise Exception(
-                    "seq key {} has length greater than col width {}".format(
-                        key, col_width
-                    )
-                )
-
-            field_row = key.ljust(col_width, " ")
-            for seq_num, seq in enumerate(seqs):
-                if key not in seq:
-                    raise Exception(
-                        "Could not find field {} in seq {}".format(key, seq_num)
-                    )
-
-                if len(str(seq[key])) > col_width:
-                    raise Exception(
-                        "{} in seq {} is greater than column width".format(
-                            seq[key], seq_num
-                        )
-                    )
-                field_row += str(seq[key]).ljust(col_width, " ")
-            file_str += field_row + "\r\n"
-
+        file_str += self._seqs_to_str(seqs, col_width)
         return file_str
 
     """
@@ -920,3 +929,160 @@ def convert_diagnostic_v5_segment_files():
             loop_lens.pop()
         else:
             loop_lens[-1] += 1
+
+
+def convert_diagnostic_v5_multi_techniques():
+    def is_acceptable_goto(end_entry, step_num):
+        # remove end entries going to step 70 or 94 unless
+        # except when they are the next step
+        goto_step = int(end_entry["Step"])
+
+        goto_70_not_next = goto_step == 70 and step_num != 69
+        goto_94_not_next = goto_step == 94 and step_num != 93
+        leaves_technique_1 = step_num < 37 and goto_step > 37
+        leaves_technique_2 = step_num < 70 and goto_step > 70
+
+        return not (
+            goto_70_not_next
+            or goto_94_not_next
+            or leaves_technique_1
+            or leaves_technique_2
+        )
+
+    def sub_goto_step_nums(steps, sub):
+        subbed_steps = copy.deepcopy(steps)
+        for step in subbed_steps:
+            end_entries = get(step, "Ends.EndEntry")
+            if not end_entries:
+                continue
+
+            if type(end_entries) != list:
+                end_entries = [end_entries]
+
+            for end_entry in end_entries:
+                step_num = int(get(end_entry, "Step"))
+                set_(end_entry, "Step", "{:03d}".format(step_num - sub))
+
+        return subbed_steps
+
+    def set_voltage_range(seqs):
+        for seq in seqs:
+            seq["E range min (V)"] = "0.000"
+            seq["E range max (V)"] = "4.100"
+
+    converter = MaccorToBiologicMb()
+    ast = converter.remove_end_entries_by_pred(
+        converter.load_maccor_ast(
+            os.path.join(PROCEDURE_TEMPLATE_DIR, "diagnosticV5.000")
+        ),
+        is_acceptable_goto,
+    )
+
+    steps = get(ast, "MaccorTestProcedure.ProcSteps.TestStep")
+    main_loop_start_i = 36
+    main_loop_end_i = 68
+
+    end_step = steps[-1]
+
+    tech1_steps = steps[0:main_loop_start_i]
+    tech1_steps.append(end_step)
+    tech1_steps = copy.deepcopy(tech1_steps)
+
+    # remove loop start/end
+    tech2_main_loop_steps = steps[main_loop_start_i + 1:main_loop_end_i]
+    tech2_main_loop_steps.append(end_step)
+    tech2_main_loop_steps = sub_goto_step_nums(
+        tech2_main_loop_steps,
+        main_loop_start_i + 2,
+    )
+
+    # bring loop level down 1
+    for step in tech2_main_loop_steps:
+        if get(step, "StepType") == "Loop 2":
+            set_(step, "StepType", "Loop 1")
+
+        if get(step, "StepType") == "Do 2":
+            set_(step, "StepType", "Do 1")
+
+    tech4_steps = steps[main_loop_end_i + 1:]
+    tech4_steps = sub_goto_step_nums(
+        tech4_steps,
+        main_loop_end_i + 2,
+    )
+
+    assert get(tech4_steps[1], "Ends.EndEntry.Step") == "002"
+
+    print("*** creating technique 1")
+    tech1_seqs = converter._maccor_steps_to_biologic_seqs(tech1_steps)
+    set_voltage_range(tech1_seqs)
+
+    print("*** creating technique 2")
+    tech2_seqs = converter._maccor_steps_to_biologic_seqs(tech2_main_loop_steps)
+    set_voltage_range(tech2_seqs)
+
+    print("*** creating technique 4")
+    tech4_seqs = converter._maccor_steps_to_biologic_seqs(tech4_steps)
+    set_voltage_range(tech4_seqs)
+
+    header = (
+        "BT-LAB-SETTINGS-FILE\r\n"
+        "\r\n"
+        "Number of linked techniques : 3\r\n"
+        "\r\n"
+        "Filename : C:\\Users\\Biologic Server\\Documents\\BT-Lab\\Data\\PK_loop_technique2.mps\r\n"
+        "\r\n"
+        "Device : BCS-815\r\n"
+        "Ecell ctrl range : min = 0.00 V, max = 9.00 V\r\n"
+        "Safety Limits :\r\n"
+        "	Ecell min = 2.70 V\r\n"
+        "	Ecell max = 4.45 V\r\n"
+        "	for t > 10 ms\r\n"
+        "Electrode material : \r\n"
+        "Initial state : \r\n"
+        "Electrolyte : \r\n"
+        "Comments : \r\n"
+        "Mass of active material : 0.001 mg\r\n"
+        " at x = 0.000\r\n"
+        "Molecular weight of active material (at x = 0) : 0.001 g/mol\r\n"
+        "Atomic weight of intercalated ion : 0.001 g/mol\r\n"
+        "Acquisition started at : xo = 0.000\r\n"
+        "Number of e- transfered per intercalated ion : 1\r\n"
+        "for DX = 1, DQ = 26.802 mA.h\r\n"
+        "Battery capacity : 0.000 A.h\r\n"
+        "Electrode surface area : 0.001 cm\N{superscript two}\r\n"
+        "Characteristic mass : 0.001 g\r\n"
+        "Text export\r\n"
+        "   Mode : Standard\r\n"
+        "   Time format : Absolute MMDDYYYY\r\n"
+        "Cycle Definition : Charge/Discharge alternance\r\n"
+        "Do not turn to OCV between techniques\r\n"
+    )
+
+    technique_1_str = "\r\nTechnique : 1\r\n" "Modulo Bat\r\n"
+    technique_1_str += converter._seqs_to_str(tech1_seqs)
+
+    technique_2_str = "\r\nTechnique : 2\r\n" "Modulo Bat\r\n"
+    technique_2_str += converter._seqs_to_str(tech2_seqs)
+
+    technique_3_str = (
+        "\r\nTechnique : 3\r\n"
+        "Loop\r\n"
+        "goto Ne             2                   \r\n"
+        "nt times            1000                \r\n"
+        "\r\n"
+    )
+
+    technique_4_str = "\r\nTechnique : 4\r\n" "Modulo Bat\r\n"
+    technique_4_str += converter._seqs_to_str(tech4_seqs)
+
+    file_str = (
+        header + technique_1_str + technique_2_str + technique_3_str + technique_4_str
+    )
+    fp = os.path.join(BIOLOGIC_TEMPLATE_DIR, "diagnosticV5000.mps")
+    with open(fp, "wb") as f:
+        f.write(file_str.encode("ISO-8859-1"))
+        print("created {}".format(fp))
+
+
+# big loop starts at line 1266 last step is line 2364
+convert_diagnostic_v5_multi_techniques()
