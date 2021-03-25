@@ -442,6 +442,9 @@ class BEEPDatapath(abc.ABC, MSONable):
         The parameters are determined from the raw input file, so ensure the raw input file paths
         are in the 'paths' attribute.
 
+        WARNING: The BEEP_PROCESSING_DIR environment variable must have a parameters file within it
+        in order for autostructuring to work correctly.
+
         Returns:
             None
         """
@@ -989,7 +992,11 @@ class BEEPDatapath(abc.ABC, MSONable):
         parameters_path="data-share/raw/parameters",
     ):
         """
-        Method for determining what values to use to convert raw run into processed run
+        Method for determining what values to use to convert raw run into processed run.
+
+
+        WARNING: The BEEP_PROCESSING_DIR environment variable must have a parameters file within it
+        in order for determine_structuring_parameters to work correctly (see parameters_path).
 
         Args:
             v_range ([float, float]): voltage range for interpolation
