@@ -295,7 +295,7 @@ from beep.structure import MaccorDatapath
 
 datapath = MaccorDatapath.from_file("/path/to/my_maccor_file_with_diagnostic.071")
 datapath.autostructure()
-print(datapath.diagnostic_data)
+print(datapath.diagnostic_summary)
 
 
 # Out:
@@ -328,7 +328,7 @@ from beep.structure import MaccorDatapath
 
 datapath = MaccorDatapath.from_file("/path/to/my_maccor_file.071")
 datapath.autostructure()
-print(datapath.diagnostic_data)
+print(datapath.get_cycle_life())
 
 
 # Out:
@@ -484,6 +484,8 @@ print(batch_result)
 {"file_list": ["/path/to/your/beep/processing/data-share/structure/2017-05-12_6C-50per_3_6C_CH36_structure.json"], "run_list": [0], "result_list": ["success"], "message_list": [{"comment": "", "error": ""}], "invalid_file_list": [], "mode": "events_off"}
 ```
 
+See [the first tutorial](tutorial1.md) for a full usage example of structuring with `process_file_list_from_json`.
+
 
 #### `auto_load`
 
@@ -536,7 +538,8 @@ print(processed_datapath_legacy)
 
 ## Structuring compatibility with processed legacy BEEP files
 
-`Str`
+Both legacy and `*Datapath` processed (structured) files saved as json should load with `*Datapath.from_json_file`, but the capabilities between files serialized with legacy and files serialized with newer `BEEPDatapath` files will differ. 
+**The main discrepancy is that legacy files cannot be restructured once loaded.** All of `BEEPDatapath`'s other structured attributes and properties should function for legacy files identically to those serialized with newer `BEEPDatapath`.
 
 
 
