@@ -1024,10 +1024,106 @@ def convert_diagnostic_v5_multi_techniques():
     tech4_seqs = converter._maccor_steps_to_biologic_seqs(tech4_steps)
     set_voltage_range(tech4_seqs)
 
-    header = (
-        "BT-LAB-SETTINGS-FILE\r\n"
+    def sub_goto_step_nums(steps, sub):
+        subbed_steps = copy.deepcopy(steps)
+        for step in subbed_steps:
+            end_entries = get(step, "Ends.EndEntry")
+            if not end_entries:
+                continue
+
+            if type(end_entries) != list:
+                end_entries = [end_entries]
+
+            for end_entry in end_entries:
+                step_num = int(get(end_entry, "Step"))
+                set_(end_entry, "Step", "{:03d}".format(step_num - sub))
+
+        return subbed_steps
+
+    def set_voltage_range(seqs):
+        for seq in seqs:
+            seq["E range min (V)"] = "0.000"
+            seq["E range max (V)"] = "4.100"
+
+    converter = MaccorToBiologicMb()
+    ast = converter.remove_end_entries_by_pred(
+        converter.load_maccor_ast(
+            os.path.join(PROCEDURE_TEMPLATE_DIR, "diagnosticV5.000")
+        ),
+        is_acceptable_goto,
+    )
+
+    steps = get(ast, "MaccorTestProcedure.ProcSteps.TestStep")
+    main_loop_start_i = 36
+    main_loop_end_i = 68
+
+    end_step = steps[-1]
+
+    tech1_steps = steps[0:main_loop_start_i]
+    tech1_steps.append(end_step)
+    tech1_steps = copy.deepcopy(tech1_steps)
+
+    # remove loop start/end
+    tech2_main_loop_steps = steps[main_loop_start_i + 1:main_loop_end_i]
+    tech2_main_loop_steps.append(end_step)
+    tech2_main_loop_steps = sub_goto_step_nums(
+        tech2_main_loop_steps,
+        main_loop_start_i + 1,
+    )
+
+    # bring loop level down 1
+    for step in tech2_main_loop_steps:
+        if get(step, "StepType") == "Loop 2":
+            set_(step, "StepType", "Loop 1")
+
+        if get(step, "StepType") == "Do 2":
+            set_(step, "StepType", "Do 1")
+
+    tech4_steps = steps[main_loop_end_i + 1:]
+    tech4_steps = sub_goto_step_nums(
+        tech4_steps,
+        main_loop_end_i + 1,
+    )
+
+    assert get(tech4_steps[1], "Ends.EndEntry.Step") == "003"
+
+    print("*** creating technique 1")
+    tech1_seqs = converter._maccor_steps_to_biologic_seqs(tech1_steps)
+    set_voltage_range(tech1_seqs)
+
+    print("*** creating technique 2")
+    tech2_seqs = converter._maccor_steps_to_biologic_seqs(tech2_main_loop_steps)
+    set_voltage_range(tech2_seqs)
+
+    print("*** creating technique 4")
+    tech4_seqs = converter._maccor_steps_to_biologic_seqs(tech4_steps)
+    set_voltage_range(tech4_seqs)
+
+    modulo_bat_template = "\r\n" "Technique : {}\r\n" "Modulo Bat\r\n"
+
+    technique_1_str = modulo_bat_template.format(1)
+    technique_1_str += converter._seqs_to_str(tech1_seqs)
+
+    technique_2_str = modulo_bat_template.format(2)
+    technique_2_str += converter._seqs_to_str(tech2_seqs)
+
+    technique_3_str = (
         "\r\n"
-        "Number of linked techniques : 3\r\n"
+        "Technique : 3\r\n"
+        "Loop\r\n"
+        "goto Ne             2                   \r\n"
+        "nt times            1000                \r\n"
+    )
+
+    technique_4_str = modulo_bat_template.format(4)
+    technique_4_str += converter._seqs_to_str(tech4_seqs)
+
+    techniques = [technique_1_str, technique_2_str, technique_3_str, technique_4_str]
+
+    file_str = (
+        "BT-LAB SETTING FILE\r\n"
+        "\r\n"
+        "Number of linked techniques : {}\r\n"
         "\r\n"
         "Filename : C:\\Users\\Biologic Server\\Documents\\BT-Lab\\Data\\PK_loop_technique2.mps\r\n"
         "\r\n"
@@ -1056,32 +1152,13 @@ def convert_diagnostic_v5_multi_techniques():
         "   Time format : Absolute MMDDYYYY\r\n"
         "Cycle Definition : Charge/Discharge alternance\r\n"
         "Do not turn to OCV between techniques\r\n"
-    )
+    ).format(len(techniques))
 
-    technique_1_str = "\r\nTechnique : 1\r\n" "Modulo Bat\r\n"
-    technique_1_str += converter._seqs_to_str(tech1_seqs)
+    for technique in techniques:
+        file_str += technique
 
-    technique_2_str = "\r\nTechnique : 2\r\n" "Modulo Bat\r\n"
-    technique_2_str += converter._seqs_to_str(tech2_seqs)
-
-    technique_3_str = (
-        "\r\nTechnique : 3\r\n"
-        "Loop\r\n"
-        "goto Ne             2                   \r\n"
-        "nt times            1000                \r\n"
-    )
-
-    technique_4_str = "\r\nTechnique : 4\r\n" "Modulo Bat\r\n"
-    technique_4_str += converter._seqs_to_str(tech4_seqs)
-
-    file_str = (
-        header + technique_1_str + technique_2_str + technique_3_str + technique_4_str
-    )
-    fp = os.path.join(BIOLOGIC_TEMPLATE_DIR, "diagnosticV5000.mps")
+    filename = "diagnostic_v5000_split_techniques.mps"
+    fp = os.path.join(BIOLOGIC_TEMPLATE_DIR, filename)
     with open(fp, "wb") as f:
         f.write(file_str.encode("ISO-8859-1"))
         print("created {}".format(fp))
-
-
-# big loop starts at line 1266 last step is line 2364
-convert_diagnostic_v5_multi_techniques()
