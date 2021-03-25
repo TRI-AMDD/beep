@@ -129,7 +129,6 @@ Access all paths of files related to this datapath. `paths` is a simple mapping 
 ```python
 from beep.structure import ArbinDatapath
 
-
 datapath = ArbinDatapath.from_file("/path/to/my_arbin_file.csv")
 print(datapath.paths)
 
@@ -142,9 +141,44 @@ print(datapath.paths)
 The raw data, loaded into a standardized dataframe format, of this datapath's battery cycler data.
 
 
+```python
+from beep.structure import ArbinDatapath
+
+datapath = ArbinDatapath.from_file("/path/to/my_arbin_file.csv")
+print(datapath.raw_data)
+
+
+# Out:
+        data_point   test_time  ...  temperature              date_time_iso
+0                0      0.0021  ...    20.750711  2017-12-05T03:37:36+00:00
+1                1      1.0014  ...    20.750711  2017-12-05T03:37:36+00:00
+2                2      1.1165  ...    20.750711  2017-12-05T03:37:36+00:00
+3                3      2.1174  ...    20.750711  2017-12-05T03:37:36+00:00
+4                4     12.1782  ...    20.750711  2017-12-05T03:37:36+00:00
+...            ...         ...  ...          ...                        ...
+251258      251258  30545.2000  ...    32.595604  2017-12-14T00:10:40+00:00
+251259      251259  30545.2000  ...    32.555054  2017-12-14T00:10:40+00:00
+251260      251260  30550.1970  ...    32.555054  2017-12-14T00:12:48+00:00
+251261      251261  30550.1970  ...    32.545870  2017-12-14T00:12:48+00:00
+251262      251262  30555.1970  ...    32.445827  2017-12-14T00:12:48+00:00
+```
+
+
 #### `*Datapath.metadata`
 
 An object holding all metadata for this datapath's cycler run.
+
+
+```python
+from beep.structure import ArbinDatapath
+
+datapath = ArbinDatapath.from_file("/path/to/my_arbin_file.csv")
+print(datapath.metadata.barcode)
+print(datapath.metadata.channel_id)
+print(datapath.metadata.protocol)
+print(datapath.metadata.raw)
+
+```
 
 
 #### `*Datapath.structured_data`
