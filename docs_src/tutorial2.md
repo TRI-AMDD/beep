@@ -66,7 +66,8 @@ datapath = MaccorDatapath.from_json_file("my_previously_serialized_datapath.json
 ```
 
 
-#### `*Datapath(data, metadata, paths=None, **kwargs)`: Initialize any cycler from the raw data (given as a pandas dataframe) and metadata (given as a dictionary). Paths can be included to keep track of where various cycler files are located. **Note: This is not the recommended way to create a `BEEPDatapath`, as `data` and `metadata` must have specific formats to load and structure correctly.
+#### `*Datapath(data, metadata, paths=None, **kwargs)`
+Initialize any cycler from the raw data (given as a pandas dataframe) and metadata (given as a dictionary). Paths can be included to keep track of where various cycler files are located. **Note: This is not the recommended way to create a `BEEPDatapath`, as `data` and `metadata` must have specific formats to load and structure correctly.**
 
 
 ### Validation and structuring with `BEEPDatapath`s
@@ -125,6 +126,16 @@ datapath.autostructure()
 Access all paths of files related to this datapath. `paths` is a simple mapping of `{file_description: file_path}` which holds the paths of **all** files related to this datapath, including raw data, metadata, EIS files, and structured outputs.
 
 
+```python
+from beep.structure import ArbinDatapath
+
+
+datapath = ArbinDatapath.from_file("/path/to/my_arbin_file.csv")
+print(datapath.paths)
+
+# Out:
+{"raw": "/path/to/my_arbin_file.csv", "metadata": "/path/to/my_arbin_file_Metadata.csv"}
+```
 
 #### `*Datapath.raw_data`
 
@@ -156,6 +167,23 @@ The structured (interpolated) data for diagnostic cycles, as a dataframe. The fo
 A summary of the structured diagnostic cycle data, as a dataframe. The datapath must be structured before this attribute is available.
 
 
+#### `*Datapath.get_cycle_life(n_cycles, threshold)`
+
+Calculate the cycle life for capacity loss below a certain threshold.
+
+
+#### `*Datapath.cycles_to_capacities(cycle_min, cycle_max, cycle_interval)`
+
+Get the capacities for an array of cycles in an interval.
+
+
+#### `*Datapath.capacities_to_cycles(thresh_max_cap, thresh_min_cap, interval_cap)`
+
+Get the number of cycles to reach an array of threshold capacities in an interval.
+
+#### `*Datapath.is_structured`
+
+Tells whether the datapath has been structured or not.
 
 
 ---
