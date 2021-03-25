@@ -3,16 +3,18 @@
 Here you'll find more info about creating and using beep to do your own custom cycler analysie.
 
 
-- [`BEEPDatapath` - One object for ingestion, structuring, and validation](#beepdatapath)
-- [Cycler not supported? Try making your own `BEEPDatapath`](#making-your-own-beepdatapath)
+- [`BEEPDatapath` - One object for ingestion, structuring, and validation](#structuring-with-beepdatapath)
 - [Batch functions for structuring](#batch-functions-for-structuring)
 - [Featurization](#featurization)
 - [Running and analyzing models](#running-and-analyzing-models)
 
 
 
-## `BEEPDatapath` 
+## Structuring with `BEEPDatapath` 
 ### One class for ingestion, structuring, and validation
+
+
+![beepdatapath_infographic](static/beepdatapath_infographic.png)
 
 `BEEPDatapath` is an abstract base class that can handle ingestion, structuring, and validation for many types of cyclers. A datapath
 object represents a complete processing pipeline for battery cycler data.
@@ -396,7 +398,7 @@ True
 ---
 
 
-## Making your own `BEEPDatapath`
+### Making your own `BEEPDatapath`
 
 If your cycler is not already supported by BEEP, you can write a class for structuring its data with BEEP by inheriting `BEEPDatapath` and implementing one method: `from_file`.
 
@@ -450,15 +452,25 @@ Once you have written your custom class's `from_file` method, all the existing b
 - etc.
 
 
-## Electrochemical Impedance Spectra
+### Electrochemical Impedance Spectra
 
 More documentation for EIS coming soon!
+
+
+## Structuring compatibility with processed legacy BEEP files
+
+Both legacy and `*Datapath` processed (structured) files saved as json should load with `*Datapath.from_json_file`, but the capabilities between files serialized with legacy and files serialized with newer `BEEPDatapath` files will differ. 
+**The main discrepancy is that legacy files cannot be restructured once loaded.** All of `BEEPDatapath`'s other structured attributes and properties should function for legacy files identically to those serialized with newer `BEEPDatapath`.
+
+See [the `auto_load_processed` documentation](#auto_load_processed) for more info on loading legacy processed `BEEPDatapath`s. 
 
 
 ## Batch functions for structuring
 
 Aside from the CLI (shown in [the command line interface guide](cli.md), BEEP also contains lower-level python functions for helping loading and structuring many cycler output files in batches.
 
+
+---
 
 
 #### `process_file_list_from_json`
@@ -534,13 +546,6 @@ print(processed_datapath_legacy)
 # Out:
 <NewareDatapath object>
 ```
-
-
-## Structuring compatibility with processed legacy BEEP files
-
-Both legacy and `*Datapath` processed (structured) files saved as json should load with `*Datapath.from_json_file`, but the capabilities between files serialized with legacy and files serialized with newer `BEEPDatapath` files will differ. 
-**The main discrepancy is that legacy files cannot be restructured once loaded.** All of `BEEPDatapath`'s other structured attributes and properties should function for legacy files identically to those serialized with newer `BEEPDatapath`.
-
 
 
 ## Featurization
