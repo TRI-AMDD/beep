@@ -164,7 +164,7 @@ from monty.serialization import loadfn
 
 processing_dir = os.environ.get("BEEP_PROCESSING_DIR", "tutorial")
 struct = loadfn(os.path.join(processing_dir, 'data-share', 'structure', '2017-05-12_6C-50per_3_6C_CH36_structure.json'))
-reg_charge = struct.cycles_interpolated[struct.cycles_interpolated.step_type == 'charge']
+reg_charge = struct.structured_data[struct.structured_data.step_type == 'charge']
 print(reg_charge.current[reg_charge.cycle_index == 25].mean())
 print(reg_charge.cycle_index.max())
 print(reg_charge.charge_capacity[reg_charge.cycle_index == 25].max())
@@ -189,7 +189,7 @@ plt.show()
 The summary data provides a quick way of determine how the battery cell degrades during the cycling experiment. Quantities such as energy efficiency per cycle and total charge throughput at a given cycle number are calculated.
 
 ```python
-plt.plot(struct.summary.cycle_index, struct.summary.energy_efficiency)
+plt.plot(struct.structured_summary.cycle_index, struct.structured_summary.energy_efficiency)
 plt.show()
 ```
 

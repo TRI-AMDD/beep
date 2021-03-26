@@ -107,7 +107,7 @@ class EndToEndTest(unittest.TestCase):
         """
         Console command for end to end test, run by passing the output of
         `program_executable [JSON_STRING]` from module to module, essentially simulating
-        >>> collate | validate | structure | featurize | run_model
+        > collate | validate | structure | featurize | run_model
         """
 
         rename_output = subprocess.check_output("collate", shell=True).decode("utf-8")
@@ -193,7 +193,7 @@ class EndToEndTest(unittest.TestCase):
                 "data-share", "structure", "FastCharge_000002_CH29_structure.json"
             )
         )
-        self.assertIsInstance(loaded_structure, structure.ProcessedCyclerRun)
+        self.assertIsInstance(loaded_structure, structure.BEEPDatapath)
 
         loaded_features = loadfn(
             os.path.join(
