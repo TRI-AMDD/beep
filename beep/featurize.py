@@ -54,7 +54,9 @@ from docopt import docopt
 from monty.json import MSONable
 from monty.serialization import loadfn, dumpfn
 from scipy.stats import skew, kurtosis
+
 from beep.collate import scrub_underscore_suffix, add_suffix_to_filename
+from beep.structure.cli import auto_load_processed
 from beep.utils import WorkflowOutputs
 from beep.features import featurizer_helpers
 from beep import logger, __version__
@@ -187,9 +189,9 @@ class BeepFeatures(MSONable, metaclass=ABCMeta):
         if params_dict is None:
             params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
         metadata = {
-            "barcode": processed_cycler_run.barcode,
-            "protocol": processed_cycler_run.protocol,
-            "channel_id": processed_cycler_run.channel_id,
+            "barcode": processed_cycler_run.metadata.barcode,
+            "protocol": processed_cycler_run.metadata.protocol,
+            "channel_id": processed_cycler_run.metadata.channel_id,
             "parameters": params_dict,
         }
         return metadata
@@ -257,11 +259,14 @@ class RPTdQdVFeatures(BeepFeatures):
             bool: True/False indication of ability to proceed with feature generation
         """
         conditions = []
+
         if not hasattr(processed_cycler_run, "diagnostic_summary") & hasattr(
-            processed_cycler_run, "diagnostic_interpolated"
+            processed_cycler_run, "diagnostic_data"
         ):
             return False
-        if processed_cycler_run.diagnostic_summary.empty:
+        if processed_cycler_run.diagnostic_summary is None:
+            return False
+        elif processed_cycler_run.diagnostic_summary.empty:
             return False
         else:
             conditions.append(
@@ -323,11 +328,11 @@ class RPTdQdVFeatures(BeepFeatures):
             ))
 
         # Filter out low cycle numbers at the end of the test, corresponding to the "final" diagnostic
-        processed_cycler_run.diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated[
-                ~((processed_cycler_run.diagnostic_interpolated.test_time > params_dict['test_time_filter_sec']) &
-                  (processed_cycler_run.diagnostic_interpolated.cycle_index < params_dict['cycle_index_filter']))
+        processed_cycler_run.diagnostic_data = processed_cycler_run.diagnostic_data[
+                ~((processed_cycler_run.diagnostic_data.test_time > params_dict['test_time_filter_sec']) &
+                  (processed_cycler_run.diagnostic_data.cycle_index < params_dict['cycle_index_filter']))
             ]
-        processed_cycler_run.diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated.groupby(
+        processed_cycler_run.diagnostic_data = processed_cycler_run.diagnostic_data.groupby(
             ["cycle_index", "step_index", "step_index_counter"]
         ).filter(lambda x: ~x["test_time"].isnull().all())
 
@@ -399,10 +404,12 @@ class HPPCResistanceVoltageFeatures(BeepFeatures):
         """
         conditions = []
         if not hasattr(processed_cycler_run, "diagnostic_summary") & hasattr(
-            processed_cycler_run, "diagnostic_interpolated"
+            processed_cycler_run, "diagnostic_data"
         ):
             return False
-        if processed_cycler_run.diagnostic_summary.empty:
+        if processed_cycler_run.diagnostic_summary is None:
+            return False
+        elif processed_cycler_run.diagnostic_summary.empty:
             return False
         else:
             conditions.append(
@@ -444,11 +451,11 @@ class HPPCResistanceVoltageFeatures(BeepFeatures):
             params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
 
         # Filter out low cycle numbers at the end of the test, corresponding to the "final" diagnostic
-        processed_cycler_run.diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated[
-                ~((processed_cycler_run.diagnostic_interpolated.test_time > params_dict['test_time_filter_sec']) &
-                  (processed_cycler_run.diagnostic_interpolated.cycle_index < params_dict['cycle_index_filter']))
+        processed_cycler_run.diagnostic_data = processed_cycler_run.diagnostic_data[
+                ~((processed_cycler_run.diagnostic_data.test_time > params_dict['test_time_filter_sec']) &
+                  (processed_cycler_run.diagnostic_data.cycle_index < params_dict['cycle_index_filter']))
             ]
-        processed_cycler_run.diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated.groupby(
+        processed_cycler_run.diagnostic_data = processed_cycler_run.diagnostic_data.groupby(
             ["cycle_index", "step_index", "step_index_counter"]
         ).filter(lambda x: ~x["test_time"].isnull().all())
 
@@ -530,10 +537,12 @@ class HPPCRelaxationFeatures(BeepFeatures):
 
         conditions = []
         if not hasattr(processed_cycler_run, "diagnostic_summary") & hasattr(
-            processed_cycler_run, "diagnostic_interpolated"
+            processed_cycler_run, "diagnostic_data"
         ):
             return False
-        if processed_cycler_run.diagnostic_summary.empty:
+        if processed_cycler_run.diagnostic_summary is None:
+            return False
+        elif processed_cycler_run.diagnostic_summary.empty:
             return False
 
         if not any(
@@ -547,8 +556,8 @@ class HPPCRelaxationFeatures(BeepFeatures):
         # chooses the first and the second diagnostic cycle
         for hppc_chosen in [0, 1]:
             # Getting just the HPPC cycles
-            hppc_diag_cycles = processed_cycler_run.diagnostic_interpolated[
-                processed_cycler_run.diagnostic_interpolated.cycle_type == "hppc"
+            hppc_diag_cycles = processed_cycler_run.diagnostic_data[
+                processed_cycler_run.diagnostic_data.cycle_type == "hppc"
             ]
 
             # Getting unique and ordered cycle index list for HPPC cycles, and choosing the hppc cycle
@@ -601,11 +610,11 @@ class HPPCRelaxationFeatures(BeepFeatures):
             params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
 
         # Filter out low cycle numbers at the end of the test, corresponding to the "final" diagnostic
-        processed_cycler_run.diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated[
-                ~((processed_cycler_run.diagnostic_interpolated.test_time > params_dict['test_time_filter_sec']) &
-                  (processed_cycler_run.diagnostic_interpolated.cycle_index < params_dict['cycle_index_filter']))
+        processed_cycler_run.diagnostic_data = processed_cycler_run.diagnostic_data[
+                ~((processed_cycler_run.diagnostic_data.test_time > params_dict['test_time_filter_sec']) &
+                  (processed_cycler_run.diagnostic_data.cycle_index < params_dict['cycle_index_filter']))
             ]
-        processed_cycler_run.diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated.groupby(
+        processed_cycler_run.diagnostic_data = processed_cycler_run.diagnostic_data.groupby(
             ["cycle_index", "step_index", "step_index_counter"]
         ).filter(lambda x: ~x["test_time"].isnull().all())
 
@@ -672,10 +681,10 @@ class CycleSummaryStats(BeepFeatures):
         # TODO: not sure this is necessary
         # Check for data in each of the selected cycles
         index_1, index_2 = params_dict['cycle_comp_num']
-        cycle_1 = processed_cycler_run.cycles_interpolated[
-            processed_cycler_run.cycles_interpolated.cycle_index == index_1]
-        cycle_2 = processed_cycler_run.cycles_interpolated[
-            processed_cycler_run.cycles_interpolated.cycle_index == index_2]
+        cycle_1 = processed_cycler_run.structured_data[
+            processed_cycler_run.structured_data.cycle_index == index_1]
+        cycle_2 = processed_cycler_run.structured_data[
+            processed_cycler_run.structured_data.cycle_index == index_2]
         if len(cycle_1) == 0 or len(cycle_2) == 0:
             return False
 
@@ -686,7 +695,7 @@ class CycleSummaryStats(BeepFeatures):
                             'charge_energy',
                             'discharge_energy',
                             ]
-        pcycler_run_columns = processed_cycler_run.cycles_interpolated.columns
+        pcycler_run_columns = processed_cycler_run.structured_data.columns
         if not all([column in pcycler_run_columns for column in required_columns]):
             return False
 
@@ -745,11 +754,11 @@ class CycleSummaryStats(BeepFeatures):
         X = pd.DataFrame(np.zeros((1, 28)))
 
         reg_cycle_comp_num = params_dict.get("cycle_comp_num")
-        cycle_comp_1 = processed_cycler_run.cycles_interpolated[
-            processed_cycler_run.cycles_interpolated.cycle_index == reg_cycle_comp_num[1]
+        cycle_comp_1 = processed_cycler_run.structured_data[
+            processed_cycler_run.structured_data.cycle_index == reg_cycle_comp_num[1]
             ]
-        cycle_comp_0 = processed_cycler_run.cycles_interpolated[
-            processed_cycler_run.cycles_interpolated.cycle_index == reg_cycle_comp_num[0]
+        cycle_comp_0 = processed_cycler_run.structured_data[
+            processed_cycler_run.structured_data.cycle_index == reg_cycle_comp_num[0]
             ]
         Qc100_1 = cycle_comp_1[cycle_comp_1.step_type == "charge"].charge_capacity
         Qc10_1 = cycle_comp_0[cycle_comp_0.step_type == "charge"].charge_capacity
@@ -840,10 +849,12 @@ class DiagnosticSummaryStats(CycleSummaryStats):
             params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
         conditions = []
         if not hasattr(processed_cycler_run, "diagnostic_summary") & hasattr(
-            processed_cycler_run, "diagnostic_interpolated"
+            processed_cycler_run, "diagnostic_data"
         ):
             return False
-        if processed_cycler_run.diagnostic_summary.empty:
+        if processed_cycler_run.diagnostic_summary is None:
+            return False
+        elif processed_cycler_run.diagnostic_summary.empty:
             return False
         else:
             df = processed_cycler_run.diagnostic_summary
@@ -911,15 +922,15 @@ class DiagnosticSummaryStats(CycleSummaryStats):
 
         # Filter out "final" diagnostic cycles that have been appended to the end of the file with the wrong
         # cycle number(test time is monotonic)
-        processed_cycler_run.diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated[
-            ~((processed_cycler_run.diagnostic_interpolated.test_time > params_dict['test_time_filter_sec']) &
-              (processed_cycler_run.diagnostic_interpolated.cycle_index < params_dict['cycle_index_filter']))
+        processed_cycler_run.diagnostic_data = processed_cycler_run.diagnostic_data[
+            ~((processed_cycler_run.diagnostic_data.test_time > params_dict['test_time_filter_sec']) &
+              (processed_cycler_run.diagnostic_data.cycle_index < params_dict['cycle_index_filter']))
         ]
-        processed_cycler_run.diagnostic_interpolated = processed_cycler_run.diagnostic_interpolated.groupby(
+        processed_cycler_run.diagnostic_data = processed_cycler_run.diagnostic_data.groupby(
             ["cycle_index", "step_index", "step_index_counter"]
         ).filter(lambda x: ~x["test_time"].isnull().all())
 
-        diag_intrp = processed_cycler_run.diagnostic_interpolated
+        diag_intrp = processed_cycler_run.diagnostic_data
 
         X = pd.DataFrame(np.zeros((1, 54)))
 
@@ -1055,21 +1066,21 @@ class DeltaQFastCharge(BeepFeatures):
 
         conditions = []
 
-        if "cycle_index" in processed_cycler_run.summary.columns:
+        if "cycle_index" in processed_cycler_run.structured_summary.columns:
             conditions.append(
-                processed_cycler_run.summary.cycle_index.max()
+                processed_cycler_run.structured_summary.cycle_index.max()
                 > params_dict["final_pred_cycle"]
             )
             conditions.append(
-                processed_cycler_run.summary.cycle_index.min()
+                processed_cycler_run.structured_summary.cycle_index.min()
                 <= params_dict["init_pred_cycle"]
             )
         else:
             conditions.append(
-                len(processed_cycler_run.summary.index)
+                len(processed_cycler_run.structured_summary.index)
                 > params_dict["final_pred_cycle"]
             )
-        conditions.append("cycle_index" in processed_cycler_run.cycles_interpolated.columns)
+        conditions.append("cycle_index" in processed_cycler_run.structured_data.columns)
 
         return all(conditions)
 
@@ -1100,17 +1111,17 @@ class DeltaQFastCharge(BeepFeatures):
         i_final = params_dict["final_pred_cycle"] - 1  # python indexing
         i_mid = params_dict["mid_pred_cycle"] - 1
 
-        summary = processed_cycler_run.summary
+        summary = processed_cycler_run.structured_summary
         params_dict[
             "n_nominal_cycles"
         ] = 40  # For nominal capacity, use median discharge capacity of first n cycles
 
-        if "step_type" in processed_cycler_run.cycles_interpolated.columns:
-            interpolated_df = processed_cycler_run.cycles_interpolated[
-                processed_cycler_run.cycles_interpolated.step_type == "discharge"
+        if "step_type" in processed_cycler_run.structured_data.columns:
+            interpolated_df = processed_cycler_run.structured_data[
+                processed_cycler_run.structured_data.step_type == "discharge"
             ]
         else:
-            interpolated_df = processed_cycler_run.cycles_interpolated
+            interpolated_df = processed_cycler_run.structured_data
         X = pd.DataFrame(np.zeros((1, 20)))
         labels = []
         # Discharge capacity, cycle 2 = Q(n=2)
@@ -1264,7 +1275,7 @@ class TrajectoryFastCharge(DeltaQFastCharge):
             params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
 
         conditions = []
-        cap = processed_cycler_run.summary.discharge_capacity
+        cap = processed_cycler_run.structured_summary.discharge_capacity
         conditions.append(cap.min() / cap.max() < params_dict["thresh_max_cap"])
 
         return all(conditions)
@@ -1286,7 +1297,7 @@ class TrajectoryFastCharge(DeltaQFastCharge):
         """
         if params_dict is None:
             params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
-        y = processed_cycler_run.cycles_to_reach_set_capacities(
+        y = processed_cycler_run.capacities_to_cycles(
             params_dict["thresh_max_cap"],
             params_dict["thresh_min_cap"],
             params_dict["interval_cap"],
@@ -1329,10 +1340,12 @@ class DiagnosticProperties(BeepFeatures):
             bool: True/False indication of ability to proceed with feature generation
         """
         if not hasattr(processed_cycler_run, "diagnostic_summary") & hasattr(
-            processed_cycler_run, "diagnostic_interpolated"
+            processed_cycler_run, "diagnostic_data"
         ):
             return False
-        if processed_cycler_run.diagnostic_summary.empty:
+        if processed_cycler_run.diagnostic_summary is None:
+            return False
+        elif processed_cycler_run.diagnostic_summary.empty:
             return False
         else:
             return True
@@ -1434,7 +1447,7 @@ class DegradationPredictor(MSONable):
             prediction_type (str): Type of regression - 'single' vs 'multi'.
             diagnostic_features (bool): whether to compute diagnostic features.
         """
-        processed_cycler_run = loadfn(path)
+        processed_cycler_run = auto_load_processed(path)
 
         if features_label == "full_model":
             return cls.init_full_model(
@@ -1480,21 +1493,21 @@ class DegradationPredictor(MSONable):
         ), "Must have final_pred_cycle > mid_pred_cycle"
         i_final = final_pred_cycle - 1  # python indexing
         i_mid = mid_pred_cycle - 1
-        summary = processed_cycler_run.summary
+        summary = processed_cycler_run.structured_summary
         assert (
-            len(processed_cycler_run.summary) > final_pred_cycle
+            len(processed_cycler_run.structured_summary) > final_pred_cycle
         ), "cycle count must exceed final_pred_cycle"
         cycles_to_average_over = (
             40  # For nominal capacity, use median discharge capacity of first n cycles
         )
 
         # Features in "nature energy" set only use discharge portion of the cycle
-        if "step_type" in processed_cycler_run.cycles_interpolated.columns:
-            interpolated_df = processed_cycler_run.cycles_interpolated[
-                processed_cycler_run.cycles_interpolated.step_type == "discharge"
+        if "step_type" in processed_cycler_run.structured_data.columns:
+            interpolated_df = processed_cycler_run.structured_data[
+                processed_cycler_run.structured_data.step_type == "discharge"
             ]
         else:
-            interpolated_df = processed_cycler_run.cycles_interpolated
+            interpolated_df = processed_cycler_run.structured_data
 
         X = pd.DataFrame(np.zeros((1, 20)))
         labels = []
@@ -1605,11 +1618,11 @@ class DegradationPredictor(MSONable):
                 y = processed_cycler_run.get_cycle_life()
             elif prediction_type == "multi":
                 if predicted_quantity == "cycle":
-                    y = processed_cycler_run.cycles_to_reach_set_capacities(
+                    y = processed_cycler_run.capacities_to_cycles(
                         thresh_max_cap=0.98, thresh_min_cap=0.78, interval_cap=0.03
                     )
                 elif predicted_quantity == "capacity":
-                    y = processed_cycler_run.capacities_at_set_cycles()
+                    y = processed_cycler_run.cycles_to_capacities()
                 else:
                     raise NotImplementedError(
                         "{} predicted_quantity type not implemented".format(
@@ -1721,7 +1734,7 @@ def process_file_list_from_json(file_list_json, processed_dir="data-share/featur
 
     for path, run_id in zip(file_list, run_ids):
         logger.info("run_id=%s featurizing=%s", str(run_id), path, extra=s)
-        processed_cycler_run = loadfn(path)
+        processed_cycler_run = auto_load_processed(path)
 
         featurizer_classes = [
             RPTdQdVFeatures,

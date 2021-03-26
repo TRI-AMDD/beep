@@ -34,6 +34,7 @@ from monty.serialization import loadfn, dumpfn
 from functools import reduce
 from beep import MODULE_DIR
 from beep.utils import parameters_lookup
+from beep.structure.cli import auto_load_processed
 from beep.featurize import (
     RPTdQdVFeatures, HPPCResistanceVoltageFeatures,
     HPPCRelaxationFeatures, DiagnosticProperties,
@@ -254,7 +255,7 @@ class BeepDataset(MSONable):
         feature_df_list = [pd.DataFrame()]*sum([len(x) for x in hyperparameter_dict.values()])
 
         for processed_json in processed_run_list:
-            processed_cycler_run = loadfn(processed_json)
+            processed_cycler_run = auto_load_processed(processed_json)
             idx = 0
             for feature_class in feature_class_list:
                 # For a given feature_class, loop through multiple hyperparameter combinations, if provided.
