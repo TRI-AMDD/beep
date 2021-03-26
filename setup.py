@@ -33,7 +33,7 @@ setup(name="beep",
           "console_scripts": [
               "collate = beep.collate:main",
               "validate = beep.validate:main",
-              "structure = beep.structure:main",
+              "structure = beep.structure.cli:main",
               "featurize = beep.featurize:main",
               "run_model = beep.run_model:main",
               "generate_protocol = beep.generate_protocol:main"
