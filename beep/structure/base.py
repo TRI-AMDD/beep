@@ -105,8 +105,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         def must_not_be_legacy(cls, func):
             """
             Decorator to check if datapath has been serialized from legacy,
-            as some operations depend on data which is not in (or not is not easily accessed from)
-            legacy serialized files.
+            as some operations depend on data which is not in legacy serialized files.
 
             Args:
                 func: A function or method
