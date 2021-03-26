@@ -566,7 +566,7 @@ class BEEPDatapath(abc.ABC, MSONable):
                     resolution=resolution,
                 )
             else:
-                raise NotImplementedError
+                raise ValueError(f"Axis {axis} not a valid step interpolation axis.")
             new_df["cycle_index"] = cycle_index
             new_df["step_type"] = step_type
             new_df["step_type"] = new_df["step_type"].astype("category")
