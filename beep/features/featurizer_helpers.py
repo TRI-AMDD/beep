@@ -450,6 +450,9 @@ def res_calc(selected_diag_df, steps, soc, step_ocv, step_cur, index):
             selected_diag_df[selected_diag_df.step_index == step].step_index_counter.unique().tolist()
         )
 
+    if (len(counters[step_ocv]) - 1) < soc:
+        return None
+
     if index == "last":
         index = -1
     else:
@@ -464,9 +467,6 @@ def res_calc(selected_diag_df, steps, soc, step_ocv, step_cur, index):
                 & (selected_diag_df.diagnostic_time < stop)
             ]
         )
-
-    if len(counters[step_ocv]) < soc - 1:
-        return None
 
     v_ocv = selected_diag_df[(selected_diag_df.step_index_counter == counters[step_ocv][soc])].voltage.iloc[
         -1
