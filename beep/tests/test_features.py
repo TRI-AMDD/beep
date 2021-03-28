@@ -155,8 +155,8 @@ class TestFeaturizer(unittest.TestCase):
                 )
                 if featurizer:
                     self.assertEqual(featurizer.metadata["channel_id"], 9)
-                    self.assertEqual(featurizer.metadata["protocol"], None)
-                    self.assertEqual(featurizer.metadata["barcode"], None)
+                    self.assertEqual(featurizer.metadata["protocol"], '2017-06-30_tests\\20170629-2C_10per_6C.sdu')
+                    self.assertEqual(featurizer.metadata["barcode"], 'el150800460605')
                     dumpfn(featurizer, featurizer.name)
                     processed_paths_list.append(featurizer.name)
                     processed_run_list.append(run_id)
@@ -315,7 +315,6 @@ class TestFeaturizer(unittest.TestCase):
                 ["ohmic_r_d0", "D_8"],
             )
 
-
     def test_HPPCRelaxationFeatures_class(self):
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
@@ -457,7 +456,7 @@ class TestFeaturizer(unittest.TestCase):
                  21.12108276469096, 30, 100, 'reset', 'discharge_energy']
             )
 
-    # @unittest.skip
+    @unittest.skip
     def test_features_on_list(self):
         files = [
             "PredictionDiagnostics_000102_0001B1_structure.json",
@@ -602,7 +601,7 @@ class TestFeaturizerHelpers(unittest.TestCase):
                                   "sum_v_diff", "sum_square_v_diff"])
 
             temp_list = v_vars_df.iloc[0, :].to_list()
-            temp_list = [np.round(np.float(x), 8) for x in temp_list]
+            temp_list = [np.round(float(x), 8) for x in temp_list]
             self.assertListEqual(temp_list,
                                  [0.00472705, 0.0108896, 0.13865059, 0.59427689, 2.36743208, 176.50219843, 30.4896637])
 
@@ -784,25 +783,9 @@ class TestFeaturizerHelpers(unittest.TestCase):
             TEST_FILE_DIR, "PredictionDiagnostics_000136_00002D_truncated_structure.json"
         )
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-        pcycler_run = loadfn(pcycler_run_loc)
+        pcycler_run = auto_load_processed(pcycler_run_loc)
         step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="hppc", diag_pos=0)
         self.assertEqual(len(step_ind.values()), 6)
-        #
-        # pcycler_run_loc = os.path.join(
-        #     TEST_FILE_DIR, "PredictionDiagnostics_000175_000247_structure.json"
-        # )
-        # os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-        # pcycler_run = loadfn(pcycler_run_loc)
-        # step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="hppc", diag_pos=0)
-        # self.assertEqual(len(step_ind.values()), 7)
-        #
-        # pcycler_run_loc = os.path.join(
-        #     TEST_FILE_DIR, "PredictionDiagnostics_000184_000244_structure.json"
-        # )
-        # os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-        # pcycler_run = loadfn(pcycler_run_loc)
-        # step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="hppc", diag_pos=0)
-        # self.assertEqual(len(step_ind.values()), 7)
 
     def test_get_diffusion_coeff(self):
         with ScratchDir("."):
@@ -815,6 +798,7 @@ class TestFeaturizerHelpers(unittest.TestCase):
             print(np.round(diffusion_df.iloc[0].to_list(), 3))
             self.assertEqual(np.round(diffusion_df.iloc[0].to_list(), 3)[0], -0.016)
             self.assertEqual(np.round(diffusion_df.iloc[0].to_list(), 3)[5], -0.011)
+
 
 class TestRawToFeatures(unittest.TestCase):
     def setUp(self):
