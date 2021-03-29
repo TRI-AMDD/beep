@@ -1,5 +1,15 @@
 
 
+v2021.3.29.15
+-------------
+
+* Complete refactor of structuring module - Thanks to Alex Dunn!
+* Attribute `pcycler_run.summary` is now `pcycler_run.structured_summary`
+* Attribute `pcycler_run.cycles_interpolated` is now `pcycler_run.structured_data`
+* Attribute `pcycler_run.diagnostic_interpolated` is now `pcycler_run.diagnostic_data`
+* Loading of structured data should use `auto_load_processed(path)` for backwards compatibilty.
+
+
 v2021.3.4.9
 -----------
 * BUGFIX Change diagnostic cycle detection and add detection for final diagnostic
