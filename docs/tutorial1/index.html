@@ -15,7 +15,7 @@
     
     
       
-        <title>Tutorial - BEEP - Battery Evaluation and Early Prediction</title>
+        <title>Python tutorial 1: Start here - BEEP - Battery Evaluation and Early Prediction</title>
       
     
     
@@ -62,7 +62,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#tutorial" class="md-skip">
+        <a href="#python-tutorial-1-start-here" class="md-skip">
           Skip to content
         </a>
       
@@ -91,7 +91,7 @@
           </span>
           <span class="md-header-nav__topic md-ellipsis">
             
-              Tutorial
+              Python tutorial 1: Start here
             
           </span>
         </div>
@@ -203,7 +203,7 @@
 
   <li class="md-nav__item">
     <a href="../cli/" class="md-nav__link">
-      Commands
+      Command line interface
     </a>
   </li>
 
@@ -215,7 +215,7 @@
 
   <li class="md-nav__item">
     <a href="../data/" class="md-nav__link">
-      Data requirements
+      Cycler data requirements
     </a>
   </li>
 
@@ -235,12 +235,12 @@
     
     
       <label class="md-nav__link md-nav__link--active" for="__toc">
-        Tutorial
+        Python tutorial 1: Start here
         <span class="md-nav__icon md-icon"></span>
       </label>
     
     <a href="./" class="md-nav__link md-nav__link--active">
-      Tutorial
+      Python tutorial 1: Start here
     </a>
     
       
@@ -342,6 +342,18 @@
   
 </nav>
     
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../tutorial2/" class="md-nav__link">
+      Python tutorial 2: Next steps
+    </a>
   </li>
 
     
@@ -462,12 +474,12 @@
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/tri-amdd/beep/edit/master/docs/tutorial.md" title="Edit this page" class="md-content__button md-icon">
+                  <a href="https://github.com/tri-amdd/beep/edit/master/docs/tutorial1.md" title="Edit this page" class="md-content__button md-icon">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
                   </a>
                 
                 
-                <h1 id="tutorial">Tutorial<a class="headerlink" href="#tutorial" title="Permanent link">&para;</a></h1>
+                <h1 id="python-tutorial-1-start-here">Python tutorial 1: Start here<a class="headerlink" href="#python-tutorial-1-start-here" title="Permanent link">&para;</a></h1>
 <p>This notebook is meant to demonstrate basic usage of the beep package with data from "Data-driven prediction of battery cycle life before capacity degradation" KA Severson, et al. Nature Energy 4 (5), 383-391</p>
 <p>This data is available for download from https://data.matr.io/1/ . For brevity, only one test is included in this notebook but the example can easily be extended to a larger number of files.</p>
 <h2 id="step-0-install-beep-and-set-environment">Step 0: Install beep and set environment<a class="headerlink" href="#step-0-install-beep-and-set-environment" title="Permanent link">&para;</a></h2>
@@ -481,7 +493,7 @@
 <li><code>BEEP_PROCESSING_DIR</code>: The central directory BEEP will use to process intermediate files and organize data.</li>
 </ul>
 <div class="codehilite"><pre><span></span><code><span class="nb">export</span> <span class="nv">BEEP_ENV</span><span class="o">=</span><span class="s2">&quot;dev&quot;</span>
-<span class="nb">export</span> <span class="nv">BEEP_PROCESSING_DIR</span><span class="o">=</span><span class="s2">&quot;tutorial&quot;</span>
+<span class="nb">export</span> <span class="nv">BEEP_PROCESSING_DIR</span><span class="o">=</span><span class="s2">&quot;./tutorial/&quot;</span>
 </code></pre></div>
 
 <h2 id="step-1-download-example-battery-cycler-data">Step 1: Download example battery cycler data<a class="headerlink" href="#step-1-download-example-battery-cycler-data" title="Permanent link">&para;</a></h2>
@@ -491,7 +503,8 @@
 <span class="kn">import</span> <span class="nn">requests</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Beginning file download with requests&#39;</span><span class="p">)</span>
-<span class="n">data_dir</span> <span class="o">=</span> <span class="s1">&#39;./Severson-et-al/&#39;</span>
+<span class="n">this_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+<span class="n">data_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">this_dir</span><span class="p">,</span> <span class="s1">&#39;Severson-et-al&#39;</span><span class="p">)</span>
 
 <span class="k">try</span><span class="p">:</span>
     <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">data_dir</span><span class="p">)</span>
@@ -595,7 +608,7 @@
 
 <span class="n">processing_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;BEEP_PROCESSING_DIR&quot;</span><span class="p">,</span> <span class="s2">&quot;tutorial&quot;</span><span class="p">)</span>
 <span class="n">struct</span> <span class="o">=</span> <span class="n">loadfn</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">processing_dir</span><span class="p">,</span> <span class="s1">&#39;data-share&#39;</span><span class="p">,</span> <span class="s1">&#39;structure&#39;</span><span class="p">,</span> <span class="s1">&#39;2017-05-12_6C-50per_3_6C_CH36_structure.json&#39;</span><span class="p">))</span>
-<span class="n">reg_charge</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">cycles_interpolated</span><span class="p">[</span><span class="n">struct</span><span class="o">.</span><span class="n">cycles_interpolated</span><span class="o">.</span><span class="n">step_type</span> <span class="o">==</span> <span class="s1">&#39;charge&#39;</span><span class="p">]</span>
+<span class="n">reg_charge</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">structured_data</span><span class="p">[</span><span class="n">struct</span><span class="o">.</span><span class="n">structured_data</span><span class="o">.</span><span class="n">step_type</span> <span class="o">==</span> <span class="s1">&#39;charge&#39;</span><span class="p">]</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">reg_charge</span><span class="o">.</span><span class="n">current</span><span class="p">[</span><span class="n">reg_charge</span><span class="o">.</span><span class="n">cycle_index</span> <span class="o">==</span> <span class="mi">25</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">reg_charge</span><span class="o">.</span><span class="n">cycle_index</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">reg_charge</span><span class="o">.</span><span class="n">charge_capacity</span><span class="p">[</span><span class="n">reg_charge</span><span class="o">.</span><span class="n">cycle_index</span> <span class="o">==</span> <span class="mi">25</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
@@ -614,7 +627,7 @@
 <p><img alt="chg_cap" src="../static/chg_cap_vs_voltage.png" /></p>
 <h4 id="summary-data">Summary data<a class="headerlink" href="#summary-data" title="Permanent link">&para;</a></h4>
 <p>The summary data provides a quick way of determine how the battery cell degrades during the cycling experiment. Quantities such as energy efficiency per cycle and total charge throughput at a given cycle number are calculated.</p>
-<div class="codehilite"><pre><span></span><code><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">struct</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">cycle_index</span><span class="p">,</span> <span class="n">struct</span><span class="o">.</span><span class="n">summary</span><span class="o">.</span><span class="n">energy_efficiency</span><span class="p">)</span>
+<div class="codehilite"><pre><span></span><code><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">struct</span><span class="o">.</span><span class="n">structured_summary</span><span class="o">.</span><span class="n">cycle_index</span><span class="p">,</span> <span class="n">struct</span><span class="o">.</span><span class="n">structured_summary</span><span class="o">.</span><span class="n">energy_efficiency</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </code></pre></div>
 
@@ -648,11 +661,25 @@
                 <span class="md-footer-nav__direction">
                   Previous
                 </span>
-                Data requirements
+                Cycler data requirements
               </div>
             </div>
           </a>
         
+        
+          <a href="../tutorial2/" class="md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                Python tutorial 2: Next steps
+              </div>
+            </div>
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+            </div>
+          </a>
         
       </nav>
     </div>
