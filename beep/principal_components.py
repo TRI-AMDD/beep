@@ -51,7 +51,7 @@ class PrincipalComponents(MSONable):
         name="FastCharge",
         qty_to_pca="discharge_capacity",
         pivot_column="voltage",
-        cycles_to_pca=np.linspace(20, 500, 20, dtype="int"),
+        cycles_to_pca=np.linspace(20, 500, 20, dtype=int),
     ):
         """
         Method to take a list of structure jsons containing interpolated capacity vs voltage,
@@ -63,7 +63,7 @@ class PrincipalComponents(MSONable):
             qty_to_pca (str): string denoting quantity to pca.
             pivot_column (str): string denoting column to pivot on. For PCA of
                 Q(V), pivot_column would be voltage.
-            cycles_to_pca (int): how many cycles per file to use for pca decomposition.
+            cycles_to_pca (np.ndarray): how many cycles per file to use for pca decomposition.
 
         Returns:
             beep.principal_components.PrincipalComponents:
@@ -206,7 +206,7 @@ def pivot_data(
     file_list_json,
     qty_to_pca="discharge_capacity",
     pivot_column="voltage",
-    cycles_to_pca=np.linspace(10, 100, 10, dtype="int"),
+    cycles_to_pca=np.linspace(10, 100, 10, dtype=int),
 ):
     """
     Method to take a list of structure jsons, construct a dataframe to PCA using
@@ -234,7 +234,8 @@ def pivot_data(
     for file in file_list:
         processed_run = auto_load_processed(file)
 
-        df = processed_run.structured_data
+        df = processed_run.structured_data[processed_run.structured_data.step_type == "discharge"]
+
         df = df[df.cycle_index.isin(cycles_to_pca)]
         df_to_pca = df_to_pca.append(
             df.pivot(index="cycle_index", columns=pivot_column, values=qty_to_pca),
