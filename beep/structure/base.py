@@ -23,6 +23,8 @@ from beep.utils import parameters_lookup
 from beep import logger
 from beep.validate import BeepValidationError, ValidatorBeep
 
+SERVICE_CONFIG = {"service": "DataStructurer"}
+
 
 class BEEPDatapath(abc.ABC, MSONable):
     """The base class for all beep datapaths.
@@ -411,7 +413,8 @@ class BEEPDatapath(abc.ABC, MSONable):
             diagnostic_available (dict): project metadata for processing
                 diagnostic cycles correctly.
         """
-        logger.info(f"Beginning structuring along charge axis '{charge_axis}' and discharge axis '{discharge_axis}'.")
+        logger.info(f"Beginning structuring along charge axis '{charge_axis}' and discharge axis '{discharge_axis}'.",
+                    extra=SERVICE_CONFIG)
 
         if diagnostic_available:
             self.diagnostic_summary = self.summarize_diagnostic(
@@ -453,7 +456,7 @@ class BEEPDatapath(abc.ABC, MSONable):
                     f"resolution={resolution}, "
                     f"nominal_capacity={nominal_capacity}, "
                     f"full_fast_charge={full_fast_charge}, "
-                    f"diagnostic_available={diagnostic_available}")
+                    f"diagnostic_available={diagnostic_available}", extra=SERVICE_CONFIG)
         return self.structure(
             v_range=v_range,
             resolution=resolution,
