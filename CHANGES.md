@@ -1,5 +1,9 @@
 
 
+v2021.3.30.9
+------------
+* Add service information into the base class for the logger
+
 v2021.3.29.15
 -------------
 
