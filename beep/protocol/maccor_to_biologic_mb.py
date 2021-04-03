@@ -467,6 +467,9 @@ class MaccorToBiologicMb:
     cycles advance only during a loop (Cycle Definition: Loop)
 
     Loops that are not representable in Biologic MB format will be unrolled
+
+    returns
+        - a list of biologic seqs
     """
 
     def maccor_ast_to_biologic_seqs(self, maccor_ast):
@@ -477,7 +480,20 @@ class MaccorToBiologicMb:
             )
             return
 
-        return self._maccor_steps_to_biologic_seqs(steps)
+        seqs, _ = self._maccor_steps_to_biologic_seqs(steps)
+        return seqs
+
+    """
+    Converts a list of Maccor AST to a list of equivlanet Biologic MB seqs assuming
+    cycles advance only during a loop (Cycle Definition: Loop)
+
+    Loops that are not representable in Biologic MB format will be unrolled
+
+    returns
+        - a list of biologic seqs
+        - a dictionary containing the mapping from output seqs to input steps
+          seqs are 0-indexed, steps are 1-indexed
+    """
 
     def _maccor_steps_to_biologic_seqs(self, steps):
 
@@ -499,6 +515,10 @@ class MaccorToBiologicMb:
         loop_unroll_status_by_idx = {}
         adv_cycle_ignore_status_by_idx = {}
 
+        # tracking
+        loop_start_seq_num_stack = []
+        step_num_by_seq_num = {}
+
         assert steps[-1]["StepType"] == "End"
         for idx, step in enumerate(steps[0:-1]):
             step_num = idx + 1
@@ -511,8 +531,9 @@ class MaccorToBiologicMb:
                 # no nested loops in Maccor
                 # we don't care about marking base protocol as will_unroll
                 loop_will_unroll_stack[-1] = True
-
                 loop_will_unroll_stack.append(False)
+                loop_start_seq_num_stack.append(curr_seq_num)
+
                 loop_seq_count_stack.append(0)
             elif (
                 step_type == "AdvCycle"
@@ -526,11 +547,18 @@ class MaccorToBiologicMb:
                 adv_cycle_ignore_status_by_idx[idx] = {"ignore": False}
 
                 # creating adv cycle requires 2 seqs
-                loop_seq_count_stack[-1] += 2
-                curr_seq_num += 2
+                step_num_by_seq_num[curr_seq_num] = step_num
+                loop_seq_count_stack[-1] += 1
+                curr_seq_num += 1
+
+                step_num_by_seq_num[curr_seq_num] = step_num
+                loop_seq_count_stack[-1] += 1
+                curr_seq_num += 1
             elif step_type[0:4] == "Loop":
                 assert step["Ends"]["EndEntry"]["EndType"] == "Loop Cnt"
                 num_loops = int(step["Ends"]["EndEntry"]["Value"])
+
+                curr_loop_start_seq = loop_start_seq_num_stack.pop()
                 curr_loop_seq_count = loop_seq_count_stack.pop()
 
                 loop_unroll_status_by_idx[idx] = {"will_unroll": curr_loop_will_unroll}
@@ -538,11 +566,19 @@ class MaccorToBiologicMb:
 
                 if curr_loop_will_unroll:
                     # add unrolled loop seqs
-                    # curr_loop_seq_count *= num_loops
+
+                    # first add tracking data
+                    for seq_num in range(curr_loop_start_seq, curr_seq_num):
+                        step_num_for_seq = step_num_by_seq_num[seq_num]
+                        for loop_num in range(1, num_loops):
+                            looped_seq_num = seq_num + (loop_num * curr_loop_seq_count)
+                            step_num_by_seq_num[looped_seq_num] = step_num_for_seq
+
                     curr_seq_num += curr_loop_seq_count * num_loops
                     curr_loop_seq_count *= num_loops + 1
                 else:
                     # add loop seq
+                    step_num_by_seq_num[curr_seq_num] = step_num
                     curr_seq_num += 1
                     curr_loop_seq_count += 1
 
@@ -551,10 +587,12 @@ class MaccorToBiologicMb:
                 # last step is not adv cycle, must unroll
                 loop_will_unroll_stack[-1] = True
 
+                step_num_by_seq_num[curr_seq_num] = step_num
                 loop_seq_count_stack[-1] += 1
                 curr_seq_num += 1
             else:
                 # physical step
+                step_num_by_seq_num[curr_seq_num] = step_num
                 loop_seq_count_stack[-1] += 1
                 curr_seq_num += 1
 
@@ -634,7 +672,8 @@ class MaccorToBiologicMb:
         assert len(seqs) == pre_computed_seq_count
 
         print("conversion created {} seqs".format(pre_computed_seq_count))
-        return seqs
+
+        return seqs, step_num_by_seq_num
 
     """
     returns the AST for a Maccor diagnostic file
@@ -979,71 +1018,6 @@ def convert_diagnostic_v5_multi_techniques():
     )
 
     steps = get(ast, "MaccorTestProcedure.ProcSteps.TestStep")
-    main_loop_start_i = 36
-    main_loop_end_i = 68
-
-    end_step = steps[-1]
-
-    tech1_steps = steps[0:main_loop_start_i]
-    tech1_steps.append(end_step)
-    tech1_steps = copy.deepcopy(tech1_steps)
-
-    # remove loop start/end
-    tech2_main_loop_steps = steps[main_loop_start_i + 1:main_loop_end_i]
-    tech2_main_loop_steps.append(end_step)
-    tech2_main_loop_steps = sub_goto_step_nums(
-        tech2_main_loop_steps,
-        main_loop_start_i + 1,
-    )
-
-    # bring loop level down 1
-    for step in tech2_main_loop_steps:
-        if get(step, "StepType") == "Loop 2":
-            set_(step, "StepType", "Loop 1")
-
-        if get(step, "StepType") == "Do 2":
-            set_(step, "StepType", "Do 1")
-
-    tech4_steps = steps[main_loop_end_i + 1:]
-    tech4_steps = sub_goto_step_nums(
-        tech4_steps,
-        main_loop_end_i + 1,
-    )
-
-    assert get(tech4_steps[1], "Ends.EndEntry.Step") == "003"
-
-    print("*** creating technique 1")
-    tech1_seqs = converter._maccor_steps_to_biologic_seqs(tech1_steps)
-    set_voltage_range(tech1_seqs)
-
-    print("*** creating technique 2")
-    tech2_seqs = converter._maccor_steps_to_biologic_seqs(tech2_main_loop_steps)
-    set_voltage_range(tech2_seqs)
-
-    print("*** creating technique 4")
-    tech4_seqs = converter._maccor_steps_to_biologic_seqs(tech4_steps)
-    set_voltage_range(tech4_seqs)
-
-    def sub_goto_step_nums(steps, sub):
-        subbed_steps = copy.deepcopy(steps)
-        for step in subbed_steps:
-            end_entries = get(step, "Ends.EndEntry")
-            if not end_entries:
-                continue
-
-            if type(end_entries) != list:
-                end_entries = [end_entries]
-
-            for end_entry in end_entries:
-                step_num = int(get(end_entry, "Step"))
-                set_(end_entry, "Step", "{:03d}".format(step_num - sub))
-
-        return subbed_steps
-
-    def set_voltage_range(seqs):
-        for seq in seqs:
-            seq["E range min (V)"] = "0.000"
-            seq["E range max (V)"] = "4.100"
 
     converter = MaccorToBiologicMb()
     ast = converter.remove_end_entries_by_pred(
@@ -1064,11 +1038,13 @@ def convert_diagnostic_v5_multi_techniques():
     tech1_steps = copy.deepcopy(tech1_steps)
 
     # remove loop start/end
-    tech2_main_loop_steps = steps[main_loop_start_i + 1:main_loop_end_i]
+    tech2_start_i = main_loop_start_i + 1
+
+    tech2_main_loop_steps = steps[tech2_start_i:main_loop_end_i]
     tech2_main_loop_steps.append(end_step)
     tech2_main_loop_steps = sub_goto_step_nums(
         tech2_main_loop_steps,
-        main_loop_start_i + 1,
+        tech2_start_i,
     )
 
     # bring loop level down 1
@@ -1079,24 +1055,27 @@ def convert_diagnostic_v5_multi_techniques():
         if get(step, "StepType") == "Do 2":
             set_(step, "StepType", "Do 1")
 
-    tech4_steps = steps[main_loop_end_i + 1:]
+    tech4_start_i = main_loop_end_i + 1
+    tech4_steps = steps[tech4_start_i:]
     tech4_steps = sub_goto_step_nums(
         tech4_steps,
-        main_loop_end_i + 1,
+        tech4_start_i,
     )
 
     assert get(tech4_steps[1], "Ends.EndEntry.Step") == "003"
 
     print("*** creating technique 1")
-    tech1_seqs = converter._maccor_steps_to_biologic_seqs(tech1_steps)
+    tech1_seqs, tech1_seq_map = converter._maccor_steps_to_biologic_seqs(tech1_steps)
     set_voltage_range(tech1_seqs)
 
     print("*** creating technique 2")
-    tech2_seqs = converter._maccor_steps_to_biologic_seqs(tech2_main_loop_steps)
+    tech2_seqs, tech2_seq_map = converter._maccor_steps_to_biologic_seqs(
+        tech2_main_loop_steps
+    )
     set_voltage_range(tech2_seqs)
 
     print("*** creating technique 4")
-    tech4_seqs = converter._maccor_steps_to_biologic_seqs(tech4_steps)
+    tech4_seqs, tech4_seq_map = converter._maccor_steps_to_biologic_seqs(tech4_steps)
     set_voltage_range(tech4_seqs)
 
     modulo_bat_template = "\r\n" "Technique : {}\r\n" "Modulo Bat\r\n"
@@ -1162,3 +1141,32 @@ def convert_diagnostic_v5_multi_techniques():
     with open(fp, "wb") as f:
         f.write(file_str.encode("ISO-8859-1"))
         print("created {}".format(fp))
+
+    # create output mapping:
+    mappings = [
+        (tech1_seq_map, 0, "Technique 1:"),
+        (tech2_seq_map, tech2_start_i, "Technique 2:"),
+        (tech4_seq_map, tech4_start_i, "Technique 4:"),
+    ]
+
+    file_str = ""
+    for tech_map, step_num_offset, header in mappings:
+        file_str += header + "\r\n"
+
+        pairs = list(tech_map.items())
+        pairs.sort(key=lambda x: x[0])
+
+        for seq_num, step_num in pairs:
+            file_str += "seq {} generated from step {}\r\n".format(
+                seq_num, step_num + step_num_offset
+            )
+        file_str += "\r\n"
+
+    filename += ".step-mapping.txt"
+    fp = os.path.join(BIOLOGIC_TEMPLATE_DIR, filename)
+    with open(fp, "wb") as f:
+        f.write(file_str.encode("ISO-8859-1"))
+        print("created {}".format(fp))
+
+
+convert_diagnostic_v5_multi_techniques()
