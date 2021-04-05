@@ -1018,16 +1018,6 @@ def convert_diagnostic_v5_multi_techniques():
     )
 
     steps = get(ast, "MaccorTestProcedure.ProcSteps.TestStep")
-
-    converter = MaccorToBiologicMb()
-    ast = converter.remove_end_entries_by_pred(
-        converter.load_maccor_ast(
-            os.path.join(PROCEDURE_TEMPLATE_DIR, "diagnosticV5.000")
-        ),
-        is_acceptable_goto,
-    )
-
-    steps = get(ast, "MaccorTestProcedure.ProcSteps.TestStep")
     main_loop_start_i = 36
     main_loop_end_i = 68
 
@@ -1144,13 +1134,13 @@ def convert_diagnostic_v5_multi_techniques():
 
     # create output mapping:
     mappings = [
-        (tech1_seq_map, 0, "Technique 1:"),
-        (tech2_seq_map, tech2_start_i, "Technique 2:"),
-        (tech4_seq_map, tech4_start_i, "Technique 4:"),
+        (tech1_seqs, tech1_seq_map, 0, "Technique 1:"),
+        (tech1_seqs, tech2_seq_map, tech2_start_i, "Technique 2:"),
+        (tech2_seqs, tech4_seq_map, tech4_start_i, "Technique 4:"),
     ]
 
     file_str = ""
-    for tech_map, step_num_offset, header in mappings:
+    for _, tech_map, step_num_offset, header in mappings:
         file_str += header + "\r\n"
 
         pairs = list(tech_map.items())
@@ -1162,7 +1152,45 @@ def convert_diagnostic_v5_multi_techniques():
             )
         file_str += "\r\n"
 
-    filename += ".step-mapping.txt"
+    filename = "diagnostic_v5000_split_techniques.mps.step-mapping.txt"
+    fp = os.path.join(BIOLOGIC_TEMPLATE_DIR, filename)
+    with open(fp, "wb") as f:
+        f.write(file_str.encode("ISO-8859-1"))
+        print("created {}".format(fp))
+
+    file_str = ""
+    for tech_seqs, tech_map, step_num_offset, tech_num_str in mappings:
+        pairs = list(tech_map.items())
+        pairs.sort(key=lambda x: x[0])
+
+        for seq_num, adjusted_step_num in pairs:
+            step_num = adjusted_step_num + step_num_offset
+
+            seq = tech_seqs[seq_num]
+            step = steps[step_num - 1]
+
+            file_str += "{} seq:{}, step num:{}\r\n".format(
+                tech_num_str[:-1], seq_num, step_num
+            )
+
+            step_lines = xmltodict.unparse({"TestStep": step}, pretty=True).split("\n")
+            # remove xmlheader
+            step_lines = step_lines[1:]
+
+            seq_lines = converter._seqs_to_str([seq]).split("\r\n")
+            # remove blankline
+            seq_lines = seq_lines[:-1]
+
+            num_lines = max(len(seq_lines), len(step_lines))
+            for i in range(0, num_lines):
+                seq_str = seq_lines[i] if i < len(seq_lines) else ""
+                step_str = step_lines[i] if i < len(step_lines) else ""
+                file_str += "{:<40s}{}\r\n".format(seq_str, step_str)
+            file_str += "\r\n"
+
+    file_str += "\r\n"
+
+    filename = "diagnostic_v5000_split_techniques.mps.step-mapping-verbose.txt"
     fp = os.path.join(BIOLOGIC_TEMPLATE_DIR, filename)
     with open(fp, "wb") as f:
         f.write(file_str.encode("ISO-8859-1"))
