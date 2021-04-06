@@ -1004,7 +1004,7 @@ def convert_diagnostic_v5_multi_techniques():
 
         return subbed_steps
 
-    def set_voltage_range(seqs):
+    def set_global_fields(seqs):
         for seq in seqs:
             seq["E range min (V)"] = "0.000"
             seq["E range max (V)"] = "4.100"
@@ -1055,17 +1055,17 @@ def convert_diagnostic_v5_multi_techniques():
 
     print("*** creating technique 1")
     tech1_seqs, tech1_seq_map = converter._maccor_steps_to_biologic_seqs(tech1_steps)
-    set_voltage_range(tech1_seqs)
+    set_global_fields(tech1_seqs)
 
     print("*** creating technique 2")
     tech2_seqs, tech2_seq_map = converter._maccor_steps_to_biologic_seqs(
         tech2_main_loop_steps
     )
-    set_voltage_range(tech2_seqs)
+    set_global_fields(tech2_seqs)
 
     print("*** creating technique 4")
     tech4_seqs, tech4_seq_map = converter._maccor_steps_to_biologic_seqs(tech4_steps)
-    set_voltage_range(tech4_seqs)
+    set_global_fields(tech4_seqs)
 
     modulo_bat_template = "\r\n" "Technique : {}\r\n" "Modulo Bat\r\n"
 
