@@ -1010,10 +1010,9 @@ def convert_diagnostic_v5_multi_techniques():
             seq["E range max (V)"] = "4.100"
 
     converter = MaccorToBiologicMb()
+    source_file = "diagnosticV.5000"
     ast = converter.remove_end_entries_by_pred(
-        converter.load_maccor_ast(
-            os.path.join(PROCEDURE_TEMPLATE_DIR, "diagnosticV5.000")
-        ),
+        converter.load_maccor_ast(os.path.join(PROCEDURE_TEMPLATE_DIR, source_file)),
         is_acceptable_goto,
     )
 
@@ -1126,7 +1125,7 @@ def convert_diagnostic_v5_multi_techniques():
     for technique in techniques:
         file_str += technique
 
-    filename = "diagnostic_v5000_split_techniques.mps"
+    filename = "{}_split_techniques.mps".format(source_file)
     fp = os.path.join(BIOLOGIC_TEMPLATE_DIR, filename)
     with open(fp, "wb") as f:
         f.write(file_str.encode("ISO-8859-1"))
@@ -1152,7 +1151,7 @@ def convert_diagnostic_v5_multi_techniques():
             )
         file_str += "\r\n"
 
-    filename = "diagnostic_v5000_split_techniques.mps.step-mapping.txt"
+    filename = "{}_split_techniques.mps.step-mapping.txt".format(source_file)
     fp = os.path.join(BIOLOGIC_TEMPLATE_DIR, filename)
     with open(fp, "wb") as f:
         f.write(file_str.encode("ISO-8859-1"))
@@ -1190,7 +1189,7 @@ def convert_diagnostic_v5_multi_techniques():
 
     file_str += "\r\n"
 
-    filename = "diagnostic_v5000_split_techniques.mps.step-mapping-verbose.txt"
+    filename = "{}_split_techniques.mps.step-mapping-verbose.txt".format(source_file)
     fp = os.path.join(BIOLOGIC_TEMPLATE_DIR, filename)
     with open(fp, "wb") as f:
         f.write(file_str.encode("ISO-8859-1"))
