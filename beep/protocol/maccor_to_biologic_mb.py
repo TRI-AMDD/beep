@@ -252,8 +252,8 @@ class MaccorToBiologicMb:
         )
 
         # maccor end entries are conceptually equivalent to biologic limits
-        num_lims = len(end_entries_list)
-        if num_lims > 3:
+        num_end_entries = len(end_entries_list)
+        if num_end_entries > 3:
             raise Exception(
                 (
                     "Step {} has more than 3 EndEntries, the max allowed"
@@ -263,7 +263,8 @@ class MaccorToBiologicMb:
                 ).format(step_num)
             )
 
-        new_seq["lim_nb"] = num_lims
+        # number of limits for biologic to use
+        new_seq["lim_nb"] = num_end_entries
 
         for idx, end_entry in enumerate(end_entries_list):
             lim_num = idx + 1
@@ -583,15 +584,13 @@ class MaccorToBiologicMb:
                     curr_loop_seq_count += 1
 
                 loop_seq_count_stack[-1] += curr_loop_seq_count
-            elif is_last_step_in_loop:
-                # last step is not adv cycle, must unroll
-                loop_will_unroll_stack[-1] = True
-
-                step_num_by_seq_num[curr_seq_num] = step_num
-                loop_seq_count_stack[-1] += 1
-                curr_seq_num += 1
             else:
                 # physical step
+
+                # last step in loop does not advance cycle, must unroll
+                if is_last_step_in_loop:
+                    loop_will_unroll_stack[-1] = True
+
                 step_num_by_seq_num[curr_seq_num] = step_num
                 loop_seq_count_stack[-1] += 1
                 curr_seq_num += 1
@@ -1196,4 +1195,4 @@ def convert_diagnostic_v5_multi_techniques():
         print("created {}".format(fp))
 
 
-convert_diagnostic_v5_multi_techniques()
+# convert_diagnostic_v5_multi_techniques()
