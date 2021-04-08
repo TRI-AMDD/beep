@@ -92,7 +92,7 @@ class ConversionTest(unittest.TestCase):
         converter = MaccorToBiologicMb()
         tests = [
             ("::.01", "10.000", "ms"),
-            ("03::", "3.000", "hr"),
+            ("03::", "3.000", "h"),
             ("03:30:", "210.000",  "mn"),
             ("00:00:50", "50.000", "s")
         ]
@@ -583,7 +583,7 @@ class ConversionTest(unittest.TestCase):
             "lim1_comp           >                   >                   <                   <                   <                   <                   <                   <                   <                   \r\n"
             "lim1_Q              Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             \r\n"
             "lim1_value          3.000               1.000               28.600              28.600              28.600              28.600              0.000               0.000               0.000               \r\n"
-            "lim1_value_unit     hr                  s                   mA                  mA                  mA                  mA                  s                   s                   s                   \r\n"
+            "lim1_value_unit     h                   s                   mA                  mA                  mA                  mA                  s                   s                   s                   \r\n"
             "lim1_action         Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       \r\n"
             "lim1_seq            1                   2                   3                   4                   5                   6                   7                   8                   9                   \r\n"
             "lim2_type           Time                Time                Time                Time                Time                Time                Time                Time                Time                \r\n"

@@ -122,7 +122,7 @@ class MaccorToBiologicMb:
         secs = 0.0 if sec_str == "" else float(sec_str)
 
         if mins == 0.0 and secs == 0.0:
-            return "{:.3f}".format(int(hours)), "hr"
+            return "{:.3f}".format(int(hours)), "h"
 
         if secs == 0.0:
             total_time_min = int(hours * 60 + mins)
