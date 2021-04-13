@@ -89,7 +89,7 @@ class Schedule(DashOrderedDict):
         flat_keys.reverse()  # Reverse ensures sub-dicts are removed first
         data_tuples = []
         for flat_key in flat_keys:
-            data_tuple = (flat_key.replace(".", "_"), data.get(flat_key))
+            data_tuple = (flat_key.replace(".", "_"), data.get_path(flat_key))
             data_tuples.append(data_tuple)
             data.unset(flat_key)
         data_tuples.reverse()
@@ -155,7 +155,7 @@ class Schedule(DashOrderedDict):
         """
         # Find all step labels
         labelled_steps = filter(
-            lambda x: self.get("Schedule.{}.m_szLabel".format(x)) == step_label,
+            lambda x: self.get_path("Schedule.{}.m_szLabel".format(x)) == step_label,
             self["Schedule"].keys(),
         )
         return labelled_steps
@@ -209,7 +209,7 @@ class Schedule(DashOrderedDict):
         labelled_steps = self.get_labelled_steps(step_label)
         for step in labelled_steps:
             # Get all matching limit keys
-            step_data = self.get("Schedule.{}".format(step))
+            step_data = self.get_path("Schedule.{}".format(step))
             limits = [
                 heading
                 for heading in _get_headings(step_data)
