@@ -571,12 +571,12 @@ class GenerateProcedureTest(unittest.TestCase):
                 discharge_df = waveform_df[waveform_df[0] == "D"]
                 self.assertGreaterEqual(discharge_df[4].abs().max(), MIN_PROFILE_VOLTAGE)
 
-                self.assertEqual(protocol.get("MaccorTestProcedure.ProcSteps.TestStep.32.StepType"), 'FastWave')
-                self.assertEqual(protocol.get("MaccorTestProcedure.ProcSteps.TestStep.64.StepType"), 'FastWave')
+                self.assertEqual(protocol.get_path("MaccorTestProcedure.ProcSteps.TestStep.32.StepType"), 'FastWave')
+                self.assertEqual(protocol.get_path("MaccorTestProcedure.ProcSteps.TestStep.64.StepType"), 'FastWave')
                 wave_value = os.path.split(waveform_name)[-1].split(".")[0]
-                self.assertEqual(protocol.get("MaccorTestProcedure.ProcSteps.TestStep.32.StepValue"),
+                self.assertEqual(protocol.get_path("MaccorTestProcedure.ProcSteps.TestStep.32.StepValue"),
                                  wave_value)
-                self.assertEqual(protocol.get("MaccorTestProcedure.ProcSteps.TestStep.64.StepValue"),
+                self.assertEqual(protocol.get_path("MaccorTestProcedure.ProcSteps.TestStep.64.StepValue"),
                                  wave_value)
 
             self.assertEqual(len(os.listdir(os.path.join(output_directory, "procedures"))), 36)
@@ -1198,7 +1198,7 @@ class BiologicSettingsTest(unittest.TestCase):
         filename = "BCS - 171.64.160.115_Ta19_ourprotocol_gdocSEP2019_CC7.mps"
         bcs = Settings.from_file(os.path.join(BIOLOGIC_TEMPLATE_DIR, filename))
         self.assertEqual(len(bcs["Technique"]["1"]["Step"].keys()), 55)
-        self.assertEqual(bcs.get("Technique.1.Step.5.Ns"), "4")
+        self.assertEqual(bcs.get_path("Technique.1.Step.5.Ns"), "4")
         self.assertEqual(bcs["Technique"]["1"]["Type"], "Modulo Bat")
         self.assertEqual(bcs["Metadata"]["BT-LAB SETTING FILE"], None)
         self.assertEqual(bcs["Metadata"]["line3"], "blank")
@@ -1224,7 +1224,7 @@ class BiologicSettingsTest(unittest.TestCase):
         bcs = Settings.from_file(os.path.join(BIOLOGIC_TEMPLATE_DIR, filename))
         value = "{:.3f}".format(5)
         bcs.set("Technique.1.Step.3.ctrl1_val", value)
-        self.assertEqual(bcs.get("Technique.1.Step.3.ctrl1_val"), "5.000")
+        self.assertEqual(bcs.get_path("Technique.1.Step.3.ctrl1_val"), "5.000")
         test_name = "test.mps"
         with ScratchDir("."):
             bcs.to_file(test_name)
@@ -1259,22 +1259,22 @@ class BiologicSettingsTest(unittest.TestCase):
                 if template == "formationV1.mps":
                     bcs = Settings.from_file(os.path.join(BIOLOGIC_TEMPLATE_DIR, filename))
 
-                    self.assertEqual(bcs.get("Metadata.Cycle Definition"), "Charge/Discharge alternance")
+                    self.assertEqual(bcs.get_path("Metadata.Cycle Definition"), "Charge/Discharge alternance")
                     bcs = bcs.formation_protocol_bcs(protocol_params)
-                    self.assertEqual(bcs.get("Technique.1.Step.2.ctrl1_val"), float(round(0.2 * 0.1, 3)))
-                    self.assertEqual(bcs.get("Technique.1.Step.3.lim1_value"), float(round(60, 3)))
-                    self.assertEqual(bcs.get("Technique.1.Step.4.lim1_value"), float(round(30, 3)))
-                    self.assertEqual(bcs.get("Technique.1.Step.5.ctrl1_val"), float(round(0.2 * 0.2, 3)))
-                    self.assertEqual(bcs.get("Technique.1.Step.6.lim1_value"), float(round(30, 3)))
-                    self.assertEqual(bcs.get("Technique.1.Step.7.lim1_value"), float(round(30, 3)))
-                    self.assertEqual(bcs.get("Technique.1.Step.8.ctrl1_val"), float(round(0.2 * 0.2, 3)))
-                    self.assertEqual(bcs.get("Technique.1.Step.8.lim1_value"), float(round(3.0, 3)))
-                    self.assertEqual(bcs.get("Technique.1.Step.9.ctrl1_val"), float(round(0.2 * 0.5, 3)))
-                    self.assertEqual(bcs.get("Technique.1.Step.10.lim1_value"), float(round(3.9, 3)))
-                    self.assertEqual(bcs.get("Technique.1.Step.11.ctrl_repeat"), int(1))
-                    self.assertEqual(bcs.get("Technique.1.Step.12.ctrl1_val"), float(round(0.2 * 1, 3)))
-                    self.assertEqual(bcs.get("Technique.1.Step.13.lim1_value"), float(round(3.5, 3)))
-                    self.assertEqual(bcs.get("Technique.1.Step.14.ctrl1_val"), float(round(3.5, 3)))
+                    self.assertEqual(bcs.get_path("Technique.1.Step.2.ctrl1_val"), float(round(0.2 * 0.1, 3)))
+                    self.assertEqual(bcs.get_path("Technique.1.Step.3.lim1_value"), float(round(60, 3)))
+                    self.assertEqual(bcs.get_path("Technique.1.Step.4.lim1_value"), float(round(30, 3)))
+                    self.assertEqual(bcs.get_path("Technique.1.Step.5.ctrl1_val"), float(round(0.2 * 0.2, 3)))
+                    self.assertEqual(bcs.get_path("Technique.1.Step.6.lim1_value"), float(round(30, 3)))
+                    self.assertEqual(bcs.get_path("Technique.1.Step.7.lim1_value"), float(round(30, 3)))
+                    self.assertEqual(bcs.get_path("Technique.1.Step.8.ctrl1_val"), float(round(0.2 * 0.2, 3)))
+                    self.assertEqual(bcs.get_path("Technique.1.Step.8.lim1_value"), float(round(3.0, 3)))
+                    self.assertEqual(bcs.get_path("Technique.1.Step.9.ctrl1_val"), float(round(0.2 * 0.5, 3)))
+                    self.assertEqual(bcs.get_path("Technique.1.Step.10.lim1_value"), float(round(3.9, 3)))
+                    self.assertEqual(bcs.get_path("Technique.1.Step.11.ctrl_repeat"), int(1))
+                    self.assertEqual(bcs.get_path("Technique.1.Step.12.ctrl1_val"), float(round(0.2 * 1, 3)))
+                    self.assertEqual(bcs.get_path("Technique.1.Step.13.lim1_value"), float(round(3.5, 3)))
+                    self.assertEqual(bcs.get_path("Technique.1.Step.14.ctrl1_val"), float(round(3.5, 3)))
 
                 test_name = "{}.mps".format(filename_prefix)
                 test_name = os.path.join(scratch_dir, "settings", test_name)
