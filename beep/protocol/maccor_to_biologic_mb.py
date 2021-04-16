@@ -24,7 +24,7 @@ from beep.protocol import (
 )
 from monty.serialization import loadfn
 from collections import OrderedDict, deque
-from pydash import get, unset, set_
+from pydash import get, unset, set_, find_index, clone_deep_with
 
 # magic number for biologic
 END_SEQ_NUM = 9999
@@ -149,7 +149,7 @@ class MaccorToBiologicMb:
             return "{:.3f}".format(total_time_sec), "s"
 
     def _proc_step_to_seq(
-        self, proc_step, step_num, seq_from_step_num, goto_lower_bound, end_step_num
+        self, proc_step, step_num, seq_from_step_num, goto_lower_bound, end_step_num, current_range='10 A'
     ):
         """
         converts steps that are not related to control flow to sequence dicts
@@ -211,11 +211,7 @@ class MaccorToBiologicMb:
                 "Charge" if step_type == "Charge" else "Discharge"
             )
 
-            voltage_lim = get(proc_step, "Limits.Voltage")
-            if voltage_lim is not None:
-                voltage_lim_val, voltage_lim_unit = self._convert_volts(voltage_lim)
-                new_seq["ctrl2_val"] = voltage_lim_val
-                new_seq["ctrl2_val_unit"] = voltage_lim_unit
+            assert get(proc_step, "Limits.Voltage") is None
         elif step_mode == "Voltage":
             # does this need to be formatted? e.g. 1.0 from Maccor vs 1.000 for biologic
             assert type(step_value) == str
@@ -234,11 +230,7 @@ class MaccorToBiologicMb:
                 "Charge" if step_type == "Charge" else "Discharge"
             )
 
-            current_lim = get(proc_step, "Limits.Current")
-            if current_lim is not None:
-                current_lim_val, current_lim_unit = self._convert_amps(current_lim)
-                new_seq["ctrl2_val"] = current_lim_val
-                new_seq["ctrl2_val_unit"] = current_lim_unit
+            assert get(proc_step, "Limits.Current") is None
         else:
             raise Exception("Unsupported Charge/Discharge StepMode", step_mode)
 
@@ -270,16 +262,16 @@ class MaccorToBiologicMb:
             lim_num = idx + 1
 
             end_type = end_entry["EndType"]
-            assert type(end_type) == str
+            assert isinstance(end_type, str)
 
             end_oper = end_entry["Oper"]
-            assert type(end_oper) == str
+            assert isinstance(end_oper, str)
 
             end_value = end_entry["Value"]
-            assert type(end_value) == str
+            assert isinstance(end_value, str)
 
             goto_step_num_str = end_entry["Step"]
-            assert type(goto_step_num_str) == str
+            assert isinstance(goto_step_num_str, str)
             goto_step_num = int(goto_step_num_str)
 
             if goto_step_num < goto_lower_bound or goto_step_num > end_step_num:
@@ -394,7 +386,59 @@ class MaccorToBiologicMb:
             else:
                 raise Exception("Unsupported ReportType", report_type)
 
+        new_seq["I Range"] = current_range
+
         return new_seq
+
+    def _split_combined_step(
+        self, step, step_num
+    ):
+        """
+        converts steps that have a combined control mode (CCCV) into separated steps that are compatible with BT-Lab
+        """
+        step_part1 = clone_deep_with(step)
+        step_part2 = clone_deep_with(step)
+
+        if isinstance(get(step_part1, "Ends.EndEntry"), list):
+            indx = find_index(get(step_part1, "Ends.EndEntry"), lambda x: x["EndType"] == "Current")
+            path = "Ends.EndEntry.{}".format(indx)
+        else:
+            path = "Ends.EndEntry"
+
+        if step_part1["StepMode"] == "Current" and "Voltage" in step_part1["Limits"].keys():
+            if step_part1["StepType"] == "Charge":
+                set_(step_part1, path + ".Oper", ">=")
+            elif step_part1["StepType"] == "Dischrge":
+                set_(step_part1, path + ".Oper", "<=")
+            else:
+                raise NotImplementedError
+            set_(step_part1, path + ".EndType", "Voltage")
+            set_(step_part1, path + ".Value", step["Limits"]["Voltage"])
+            set_(step_part1, path + ".Step", str(step_num + 1).zfill(3))
+            step_part1["Limits"] = None
+
+            step_part2["StepMode"] = "Voltage"
+            step_part2["StepValue"] = step["Limits"]["Voltage"]
+            step_part2["Limits"] = None
+
+        elif step_part1["StepMode"] == "Voltage" and "Current" in step_part1["Limits"].keys():
+            if step_part1["StepType"] == "Charge":
+                set_(step_part1, path + ".Oper", ">=")
+            elif step_part1["StepType"] == "Dischrge":
+                set_(step_part1, path + ".Oper", "<=")
+            else:
+                raise NotImplementedError
+            step_part1["StepMode"] = "Current"
+            step_part1["StepValue"] = step["Limits"]["Current"]
+            set_(step_part1, path + ".Value", step["StepValue"])
+            set_(step_part1, path + ".Step", str(step_num + 1).zfill(3))
+            step_part1["Limits"] = None
+
+            step_part2["StepMode"] = "Voltage"
+            step_part2["StepValue"] = step["StepValue"]
+            step_part2["Limits"] = None
+
+        return step_part1, step_part2
 
     def _create_loop_seq(self, seq_num, seq_num_to_loop_to, num_loops):
         loop_seq = self.blank_seq.copy()
@@ -591,9 +635,15 @@ class MaccorToBiologicMb:
                 if is_last_step_in_loop:
                     loop_will_unroll_stack[-1] = True
 
-                step_num_by_seq_num[curr_seq_num] = step_num
-                loop_seq_count_stack[-1] += 1
-                curr_seq_num += 1
+                if get(step, "Limits.Current") or get(step, "Limits.Voltage"):
+                    step_num_by_seq_num[curr_seq_num] = step_num
+                    step_num_by_seq_num[curr_seq_num + 1] = step_num
+                    loop_seq_count_stack[-1] += 2
+                    curr_seq_num += 2
+                else:
+                    step_num_by_seq_num[curr_seq_num] = step_num
+                    loop_seq_count_stack[-1] += 1
+                    curr_seq_num += 1
 
         assert len(loop_seq_count_stack) == 1
         assert len(loop_will_unroll_stack) == 1
@@ -641,7 +691,7 @@ class MaccorToBiologicMb:
                     loop = unrolled_loop
                 else:
                     loop_seq = self._create_loop_seq(
-                        seq_num, loop_start_seq_num, num_loops
+                        seq_num, loop_start_seq_num, num_loops - 1
                     )
                     loop.append(loop_seq)
 
@@ -655,6 +705,24 @@ class MaccorToBiologicMb:
                     )
                     seq_loop_stack[-1].append(blank_loop_seq)
                     seq_loop_stack[-1].append(adv_cycle_loop_seq)
+            elif get(step, "Limits.Voltage") or get(step, "Limits.Current"):
+                step_part1, step_part2 = self._split_combined_step(step, step_num)
+                seq1 = self._proc_step_to_seq(
+                    step_part1,
+                    step_num,
+                    seq_num_by_step_num,
+                    step_num_goto_lower_bound,
+                    end_step_num,
+                )
+                seq_loop_stack[-1].append(seq1)
+                seq2 = self._proc_step_to_seq(
+                    step_part2,
+                    step_num,
+                    seq_num_by_step_num,
+                    step_num_goto_lower_bound,
+                    end_step_num,
+                )
+                seq_loop_stack[-1].append(seq2)
             else:
                 seq = self._proc_step_to_seq(
                     step,
@@ -949,8 +1017,8 @@ def convert_diagnostic_v5_segment_files():
 
             seqs = converter.maccor_ast_to_biologic_seqs(filtered)
             for seq in seqs:
-                seq["E range min (V)"] = "0.000"
-                seq["E range max (V)"] = "4.100"
+                seq["E range min (V)"] = "2.900"
+                seq["E range max (V)"] = "4.300"
 
             filename = segment_filename_template.format(segment_count)
             converter.biologic_seqs_to_protocol_file(
@@ -975,16 +1043,19 @@ def convert_diagnostic_v5_multi_techniques():
         # except when they are the next step
         goto_step = int(end_entry["Step"])
 
+
         goto_70_not_next = goto_step == 70 and step_num != 69
         goto_94_not_next = goto_step == 94 and step_num != 93
         leaves_technique_1 = step_num < 37 and goto_step > 37
         leaves_technique_2 = step_num < 70 and goto_step > 70
+        redundant_voltage = step_num in [94, 95] and end_entry["EndType"] == "Voltage" and goto_step == 96
 
         return not (
             goto_70_not_next
             or goto_94_not_next
             or leaves_technique_1
             or leaves_technique_2
+            or redundant_voltage
         )
 
     def sub_goto_step_nums(steps, sub):
@@ -1005,11 +1076,11 @@ def convert_diagnostic_v5_multi_techniques():
 
     def set_global_fields(seqs):
         for seq in seqs:
-            seq["E range min (V)"] = "0.000"
-            seq["E range max (V)"] = "4.100"
+            seq["E range min (V)"] = "2.900"
+            seq["E range max (V)"] = "4.300"
 
     converter = MaccorToBiologicMb()
-    source_file = "diagnosticV.5000"
+    source_file = "BioTest_000001.000"
     ast = converter.remove_end_entries_by_pred(
         converter.load_maccor_ast(os.path.join(PROCEDURE_TEMPLATE_DIR, source_file)),
         is_acceptable_goto,
@@ -1097,9 +1168,9 @@ def convert_diagnostic_v5_multi_techniques():
         "Device : BCS-815\r\n"
         "Ecell ctrl range : min = 0.00 V, max = 9.00 V\r\n"
         "Safety Limits :\r\n"
-        "	Ecell min = 2.70 V\r\n"
-        "	Ecell max = 4.45 V\r\n"
-        "	for t > 10 ms\r\n"
+        "	Ecell min = 2.90 V\r\n"
+        "	Ecell max = 4.3 V\r\n"
+        "	for t > 100 ms\r\n"
         "Electrode material : \r\n"
         "Initial state : \r\n"
         "Electrolyte : \r\n"
@@ -1118,7 +1189,7 @@ def convert_diagnostic_v5_multi_techniques():
         "   Mode : Standard\r\n"
         "   Time format : Absolute MMDDYYYY\r\n"
         "Cycle Definition : Charge/Discharge alternance\r\n"
-        "Do not turn to OCV between techniques\r\n"
+        "Turn to OCV between techniques\r\n"
     ).format(len(techniques))
 
     for technique in techniques:

@@ -33,7 +33,6 @@ class ConversionTest(unittest.TestCase):
             self.assertEqual(actual_value, expected_value_str)
             self.assertEqual(actual_unit, expected_unit)
 
-
     def test_convert_volts(self):
         converter = MaccorToBiologicMb()
         tests = [
@@ -60,7 +59,6 @@ class ConversionTest(unittest.TestCase):
             tests,
         )
 
-        
     def test_convert_watts(self):
         converter = MaccorToBiologicMb()
         tests = [
@@ -73,8 +71,7 @@ class ConversionTest(unittest.TestCase):
             converter._convert_watts,
             tests,
         )
-    
-        
+
     def test_convert_ohms(self):
         converter = MaccorToBiologicMb()
         tests = [
@@ -275,6 +272,83 @@ class ConversionTest(unittest.TestCase):
             "rec2_type": "Time",
             "rec2_value": "10.000",
             "rec2_value_unit": "ms",
+        }
+
+        self.proc_step_to_seq_test(xml, diff_dict)
+        pass
+
+    def test_step_with_limits_conversion(self):
+        xml = (
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            "<MaccorTestProcedure>"
+            "  <ProcSteps>"
+            "    <TestStep>"
+            "      <StepType> Charge </StepType>"
+            "      <StepMode>Current </StepMode>"
+            "      <StepValue>1.0</StepValue>"
+            "      <Limits>"
+            "        <Voltage>4.2</Voltage>"
+            "      </Limits>"
+            "      <Ends>"
+            "        <EndEntry>"
+            "          <EndType>StepTime</EndType>"
+            "          <SpecialType> </SpecialType>"
+            "          <Oper> = </Oper>"
+            "          <Step>002</Step>"
+            "          <Value>00:00:30</Value>"
+            "        </EndEntry>"
+            "        <EndEntry>"
+            "          <EndType>Current </EndType>"
+            "          <SpecialType> </SpecialType>"
+            "          <Oper>&lt;= </Oper>"
+            "          <Step>002</Step>"
+            "          <Value>0.05</Value>"
+            "        </EndEntry>"
+            "        <EndEntry>"
+            "          <EndType>Voltage </EndType>"
+            "          <SpecialType> </SpecialType>"
+            "          <Oper>&gt;= </Oper>"
+            "          <Step>002</Step>"
+            "          <Value>4.4</Value>"
+            "        </EndEntry>"
+            "      </Ends>"
+            "      <Reports>"
+            "        <ReportEntry>"
+            "          <ReportType>Voltage </ReportType>"
+            "          <Value>0.001</Value>"
+            "        </ReportEntry>"
+            "        <ReportEntry>"
+            "          <ReportType>StepTime</ReportType>"
+            "          <Value>::.01</Value>"
+            "        </ReportEntry>"
+            "      </Reports>"
+            "      <Range>A</Range>"
+            "      <Option1>N</Option1>"
+            "      <Option2>N</Option2>"
+            "      <Option3>N</Option3>"
+            "      <StepNote></StepNote>"
+            "    </TestStep>"
+            "  </ProcSteps>"
+            "</MaccorTestProcedure>"
+        )
+        diff_dict = {
+            "ctrl_type": "CC",
+            "Apply I/C": "I",
+            "N": "1.00",
+            "charge/discharge": "Charge",
+            "lim_nb": 2,
+            "lim1_type": "Ecell",
+            "lim1_comp": ">",
+            "lim1_value": "4.400",
+            "lim1_value_unit": "V",
+            "lim2_type": "Ecell",
+            "lim2_comp": "<",
+            "lim2_value": "2.500",
+            "lim2_value_unit": "V",
+            "rec_nb": 1,
+            "rec1_type": "Ecell",
+            "rec1_value": "2.200",
+            "rec1_value_unit": "V",
         }
 
         self.proc_step_to_seq_test(xml, diff_dict)
@@ -571,7 +645,7 @@ class ConversionTest(unittest.TestCase):
             "N                   1.00                15.00               15.00               15.00               15.00               15.00                                                                           \r\n"
             "charge/discharge    Charge              Charge              Charge              Charge              Charge              Charge                                                                          \r\n"
             "ctrl_seq            0                   0                   0                   0                   0                   0                   5                   0                   7                   \r\n"
-            "ctrl_repeat         0                   0                   0                   0                   0                   0                   2                   0                   1                   \r\n"
+            "ctrl_repeat         0                   0                   0                   0                   0                   0                   1                   0                   1                   \r\n"
             "ctrl_trigger        Falling Edge        Falling Edge        Falling Edge        Falling Edge        Falling Edge        Falling Edge        Falling Edge        Falling Edge        Falling Edge        \r\n"
             "ctrl_TO_t           0.000               0.000               0.000               0.000               0.000               0.000               0.000               0.000               0.000               \r\n"
             "ctrl_TO_t_unit      d                   d                   d                   d                   d                   d                   d                   d                   d                   \r\n"
@@ -673,4 +747,3 @@ class ConversionTest(unittest.TestCase):
             "070"
         )
         pass
-        
