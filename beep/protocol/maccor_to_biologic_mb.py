@@ -1266,4 +1266,4 @@ def convert_diagnostic_v5_multi_techniques():
         print("created {}".format(fp))
 
 
-# convert_diagnostic_v5_multi_techniques()
+convert_diagnostic_v5_multi_techniques()
