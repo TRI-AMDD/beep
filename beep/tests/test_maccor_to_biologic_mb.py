@@ -185,6 +185,7 @@ class ConversionTest(unittest.TestCase):
             "rec1_type": "Ecell",
             "rec1_value": "2.200",
             "rec1_value_unit": "V",
+            "I Range": "10 A",
         }
 
         self.proc_step_to_seq_test(xml, diff_dict)
@@ -272,83 +273,7 @@ class ConversionTest(unittest.TestCase):
             "rec2_type": "Time",
             "rec2_value": "10.000",
             "rec2_value_unit": "ms",
-        }
-
-        self.proc_step_to_seq_test(xml, diff_dict)
-        pass
-
-    def test_step_with_limits_conversion(self):
-        xml = (
-            '<?xml version="1.0" encoding="UTF-8"?>'
-            "<MaccorTestProcedure>"
-            "  <ProcSteps>"
-            "    <TestStep>"
-            "      <StepType> Charge </StepType>"
-            "      <StepMode>Current </StepMode>"
-            "      <StepValue>1.0</StepValue>"
-            "      <Limits>"
-            "        <Voltage>4.2</Voltage>"
-            "      </Limits>"
-            "      <Ends>"
-            "        <EndEntry>"
-            "          <EndType>StepTime</EndType>"
-            "          <SpecialType> </SpecialType>"
-            "          <Oper> = </Oper>"
-            "          <Step>002</Step>"
-            "          <Value>00:00:30</Value>"
-            "        </EndEntry>"
-            "        <EndEntry>"
-            "          <EndType>Current </EndType>"
-            "          <SpecialType> </SpecialType>"
-            "          <Oper>&lt;= </Oper>"
-            "          <Step>002</Step>"
-            "          <Value>0.05</Value>"
-            "        </EndEntry>"
-            "        <EndEntry>"
-            "          <EndType>Voltage </EndType>"
-            "          <SpecialType> </SpecialType>"
-            "          <Oper>&gt;= </Oper>"
-            "          <Step>002</Step>"
-            "          <Value>4.4</Value>"
-            "        </EndEntry>"
-            "      </Ends>"
-            "      <Reports>"
-            "        <ReportEntry>"
-            "          <ReportType>Voltage </ReportType>"
-            "          <Value>0.001</Value>"
-            "        </ReportEntry>"
-            "        <ReportEntry>"
-            "          <ReportType>StepTime</ReportType>"
-            "          <Value>::.01</Value>"
-            "        </ReportEntry>"
-            "      </Reports>"
-            "      <Range>A</Range>"
-            "      <Option1>N</Option1>"
-            "      <Option2>N</Option2>"
-            "      <Option3>N</Option3>"
-            "      <StepNote></StepNote>"
-            "    </TestStep>"
-            "  </ProcSteps>"
-            "</MaccorTestProcedure>"
-        )
-        diff_dict = {
-            "ctrl_type": "CC",
-            "Apply I/C": "I",
-            "N": "1.00",
-            "charge/discharge": "Charge",
-            "lim_nb": 2,
-            "lim1_type": "Ecell",
-            "lim1_comp": ">",
-            "lim1_value": "4.400",
-            "lim1_value_unit": "V",
-            "lim2_type": "Ecell",
-            "lim2_comp": "<",
-            "lim2_value": "2.500",
-            "lim2_value_unit": "V",
-            "rec_nb": 1,
-            "rec1_type": "Ecell",
-            "rec1_value": "2.200",
-            "rec1_value_unit": "V",
+            "I Range": "10 A",
         }
 
         self.proc_step_to_seq_test(xml, diff_dict)
@@ -630,68 +555,68 @@ class ConversionTest(unittest.TestCase):
             "\r\n"
             "Technique : 1\r\n"
             "Modulo Bat\r\n"
-            "Ns                  0                   1                   2                   3                   4                   5                   6                   7                   8                   \r\n"
-            "ctrl_type           Rest                CC                  CV                  CV                  CV                  CC                  Loop                Loop                Loop                \r\n"
-            "Apply I/C           I                   I                   I                   I                   I                   I                   I                   I                   I                   \r\n"
-            "ctrl1_val                               1.000               3.300               3.300               3.300               142.900             100.000             100.000             100.000             \r\n"
-            "ctrl1_val_unit                          A                   A                   A                   A                   mA                                                                              \r\n"
-            "ctrl1_val_vs                            <None>              Ref                 Ref                 Ref                 <None>                                                                          \r\n"
-            "ctrl2_val                                                                                                               4.200                                                                           \r\n"
-            "ctrl2_val_unit                                                                                                          V                                                                               \r\n"
-            "ctrl2_val_vs                                                                                                                                                                                            \r\n"
-            "ctrl3_val                                                                                                                                                                                               \r\n"
-            "ctrl3_val_unit                                                                                                                                                                                          \r\n"
-            "ctrl3_val_vs                                                                                                                                                                                            \r\n"
-            "N                   1.00                15.00               15.00               15.00               15.00               15.00                                                                           \r\n"
-            "charge/discharge    Charge              Charge              Charge              Charge              Charge              Charge                                                                          \r\n"
-            "ctrl_seq            0                   0                   0                   0                   0                   0                   5                   0                   7                   \r\n"
-            "ctrl_repeat         0                   0                   0                   0                   0                   0                   1                   0                   1                   \r\n"
-            "ctrl_trigger        Falling Edge        Falling Edge        Falling Edge        Falling Edge        Falling Edge        Falling Edge        Falling Edge        Falling Edge        Falling Edge        \r\n"
-            "ctrl_TO_t           0.000               0.000               0.000               0.000               0.000               0.000               0.000               0.000               0.000               \r\n"
-            "ctrl_TO_t_unit      d                   d                   d                   d                   d                   d                   d                   d                   d                   \r\n"
-            "ctrl_Nd             6                   6                   6                   6                   6                   6                   6                   6                   6                   \r\n"
-            "ctrl_Na             1                   1                   1                   1                   1                   1                   1                   1                   1                   \r\n"
-            "ctrl_corr           1                   1                   1                   1                   1                   1                   1                   1                   1                   \r\n"
-            "lim_nb              1                   1                   1                   1                   1                   1                   0                   0                   0                   \r\n"
-            "lim1_type           Time                Time                I                   I                   I                   I                   Time                Time                Time                \r\n"
-            "lim1_comp           >                   >                   <                   <                   <                   <                   <                   <                   <                   \r\n"
-            "lim1_Q              Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             \r\n"
-            "lim1_value          3.000               1.000               28.600              28.600              28.600              28.600              0.000               0.000               0.000               \r\n"
-            "lim1_value_unit     h                   s                   mA                  mA                  mA                  mA                  s                   s                   s                   \r\n"
-            "lim1_action         Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       \r\n"
-            "lim1_seq            1                   2                   3                   4                   5                   6                   7                   8                   9                   \r\n"
-            "lim2_type           Time                Time                Time                Time                Time                Time                Time                Time                Time                \r\n"
-            "lim2_comp           <                   <                   <                   <                   <                   <                   <                   <                   <                   \r\n"
-            "lim2_Q              Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             \r\n"
-            "lim2_value          0.000               0.000               0.000               0.000               0.000               0.000               0.000               0.000               0.000               \r\n"
-            "lim2_value_unit     s                   s                   s                   s                   s                   s                   s                   s                   s                   \r\n"
-            "lim2_action         Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       \r\n"
-            "lim2_seq            1                   2                   3                   4                   5                   6                   7                   8                   9                   \r\n"
-            "lim3_type           Time                Time                Time                Time                Time                Time                Time                Time                Time                \r\n"
-            "lim3_comp           <                   <                   <                   <                   <                   <                   <                   <                   <                   \r\n"
-            "lim3_Q              Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             \r\n"
-            "lim3_value          0.000               0.000               0.000               0.000               0.000               0.000               0.000               0.000               0.000               \r\n"
-            "lim3_value_unit     s                   s                   s                   s                   s                   s                   s                   s                   s                   \r\n"
-            "lim3_action         Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       \r\n"
-            "lim3_seq            1                   2                   3                   4                   5                   6                   7                   8                   9                   \r\n"
-            "rec_nb              1                   1                   2                   2                   2                   2                   0                   0                   0                   \r\n"
-            "rec1_type           Time                Time                Ecell               Ecell               Ecell               Ecell               Time                Time                Time                \r\n"
-            "rec1_value          30.000              10.000              1.000               1.000               1.000               1.000               10.000              10.000              10.000              \r\n"
-            "rec1_value_unit     s                   ms                  mV                  mV                  mV                  mV                  s                   s                   s                   \r\n"
-            "rec2_type           Time                Time                Time                Time                Time                Time                Time                Time                Time                \r\n"
-            "rec2_value          10.000              10.000              2.000               2.000               2.000               2.000               10.000              10.000              10.000              \r\n"
-            "rec2_value_unit     s                   s                   mn                  mn                  mn                  mn                  s                   s                   s                   \r\n"
-            "rec3_type           Time                Time                Time                Time                Time                Time                Time                Time                Time                \r\n"
-            "rec3_value          10.000              10.000              10.000              10.000              10.000              10.000              10.000              10.000              10.000              \r\n"
-            "rec3_value_unit     s                   s                   s                   s                   s                   s                   s                   s                   s                   \r\n"
-            "E range min (V)     0.000               0.000               0.000               0.000               0.000               0.000               0.000               0.000               0.000               \r\n"
-            "E range max (V)     10.000              10.000              10.000              10.000              10.000              10.000              10.000              10.000              10.000              \r\n"
-            "I Range             1 mA                1 mA                1 mA                1 mA                1 mA                1 mA                1 mA                1 mA                1 mA                \r\n"
-            "I Range min         Unset               Unset               Unset               Unset               Unset               Unset               Unset               Unset               Unset               \r\n"
-            "I Range max         Unset               Unset               Unset               Unset               Unset               Unset               Unset               Unset               Unset               \r\n"
-            "I Range init        Unset               Unset               Unset               Unset               Unset               Unset               Unset               Unset               Unset               \r\n"
-            "auto rest           0                   0                   0                   0                   0                   0                   0                   0                   0                   \r\n"
-            "Bandwidth           4                   4                   4                   4                   4                   4                   4                   4                   4                   \r\n"
+            "Ns                  0                   1                   2                   3                   4                   5                   5                   7                   8                   9                   \r\n"
+            "ctrl_type           Rest                CC                  CV                  CV                  CV                  CC                  CV                  Loop                Loop                Loop                \r\n"
+            "Apply I/C           I                   I                   I                   I                   I                   I                   I                   I                   I                   I                   \r\n"
+            "ctrl1_val                               1.000               3.300               3.300               3.300               142.900             4.200               100.000             100.000             100.000             \r\n"
+            "ctrl1_val_unit                          A                   A                   A                   A                   mA                  A                                                                               \r\n"
+            "ctrl1_val_vs                            <None>              Ref                 Ref                 Ref                 <None>              Ref                                                                             \r\n"
+            "ctrl2_val                                                                                                                                                                                                                   \r\n"
+            "ctrl2_val_unit                                                                                                                                                                                                              \r\n"
+            "ctrl2_val_vs                                                                                                                                                                                                                \r\n"
+            "ctrl3_val                                                                                                                                                                                                                   \r\n"
+            "ctrl3_val_unit                                                                                                                                                                                                              \r\n"
+            "ctrl3_val_vs                                                                                                                                                                                                                \r\n"
+            "N                   1.00                15.00               15.00               15.00               15.00               15.00               15.00                                                                           \r\n"
+            "charge/discharge    Charge              Charge              Charge              Charge              Charge              Charge              Charge                                                                          \r\n"
+            "ctrl_seq            0                   0                   0                   0                   0                   0                   0                   5                   0                   8                   \r\n"
+            "ctrl_repeat         0                   0                   0                   0                   0                   0                   0                   1                   0                   1                   \r\n"
+            "ctrl_trigger        Falling Edge        Falling Edge        Falling Edge        Falling Edge        Falling Edge        Falling Edge        Falling Edge        Falling Edge        Falling Edge        Falling Edge        \r\n"
+            "ctrl_TO_t           0.000               0.000               0.000               0.000               0.000               0.000               0.000               0.000               0.000               0.000               \r\n"
+            "ctrl_TO_t_unit      d                   d                   d                   d                   d                   d                   d                   d                   d                   d                   \r\n"
+            "ctrl_Nd             6                   6                   6                   6                   6                   6                   6                   6                   6                   6                   \r\n"
+            "ctrl_Na             1                   1                   1                   1                   1                   1                   1                   1                   1                   1                   \r\n"
+            "ctrl_corr           1                   1                   1                   1                   1                   1                   1                   1                   1                   1                   \r\n"
+            "lim_nb              1                   1                   1                   1                   1                   1                   1                   0                   0                   0                   \r\n"
+            "lim1_type           Time                Time                I                   I                   I                   Ecell               I                   Time                Time                Time                \r\n"
+            "lim1_comp           >                   >                   <                   <                   <                   >                   <                   <                   <                   <                   \r\n"
+            "lim1_Q              Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             \r\n"
+            "lim1_value          3.000               1.000               28.600              28.600              28.600              4.200               28.600              0.000               0.000               0.000               \r\n"
+            "lim1_value_unit     h                   s                   mA                  mA                  mA                  V                   mA                  s                   s                   s                   \r\n"
+            "lim1_action         Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       \r\n"
+            "lim1_seq            1                   2                   3                   4                   5                   7                   7                   8                   9                   10                  \r\n"
+            "lim2_type           Time                Time                Time                Time                Time                Time                Time                Time                Time                Time                \r\n"
+            "lim2_comp           <                   <                   <                   <                   <                   <                   <                   <                   <                   <                   \r\n"
+            "lim2_Q              Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             \r\n"
+            "lim2_value          0.000               0.000               0.000               0.000               0.000               0.000               0.000               0.000               0.000               0.000               \r\n"
+            "lim2_value_unit     s                   s                   s                   s                   s                   s                   s                   s                   s                   s                   \r\n"
+            "lim2_action         Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       \r\n"
+            "lim2_seq            1                   2                   3                   4                   5                   6                   6                   8                   9                   10                  \r\n"
+            "lim3_type           Time                Time                Time                Time                Time                Time                Time                Time                Time                Time                \r\n"
+            "lim3_comp           <                   <                   <                   <                   <                   <                   <                   <                   <                   <                   \r\n"
+            "lim3_Q              Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             Q limit             \r\n"
+            "lim3_value          0.000               0.000               0.000               0.000               0.000               0.000               0.000               0.000               0.000               0.000               \r\n"
+            "lim3_value_unit     s                   s                   s                   s                   s                   s                   s                   s                   s                   s                   \r\n"
+            "lim3_action         Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       Next sequence       \r\n"
+            "lim3_seq            1                   2                   3                   4                   5                   6                   6                   8                   9                   10                  \r\n"
+            "rec_nb              1                   1                   2                   2                   2                   2                   2                   0                   0                   0                   \r\n"
+            "rec1_type           Time                Time                Ecell               Ecell               Ecell               Ecell               Ecell               Time                Time                Time                \r\n"
+            "rec1_value          30.000              10.000              1.000               1.000               1.000               1.000               1.000               10.000              10.000              10.000              \r\n"
+            "rec1_value_unit     s                   ms                  mV                  mV                  mV                  mV                  mV                  s                   s                   s                   \r\n"
+            "rec2_type           Time                Time                Time                Time                Time                Time                Time                Time                Time                Time                \r\n"
+            "rec2_value          10.000              10.000              2.000               2.000               2.000               2.000               2.000               10.000              10.000              10.000              \r\n"
+            "rec2_value_unit     s                   s                   mn                  mn                  mn                  mn                  mn                  s                   s                   s                   \r\n"
+            "rec3_type           Time                Time                Time                Time                Time                Time                Time                Time                Time                Time                \r\n"
+            "rec3_value          10.000              10.000              10.000              10.000              10.000              10.000              10.000              10.000              10.000              10.000              \r\n"
+            "rec3_value_unit     s                   s                   s                   s                   s                   s                   s                   s                   s                   s                   \r\n"
+            "E range min (V)     0.000               0.000               0.000               0.000               0.000               0.000               0.000               0.000               0.000               0.000               \r\n"
+            "E range max (V)     10.000              10.000              10.000              10.000              10.000              10.000              10.000              10.000              10.000              10.000              \r\n"
+            "I Range             10 A                10 A                10 A                10 A                10 A                10 A                10 A                1 mA                1 mA                1 mA                \r\n"
+            "I Range min         Unset               Unset               Unset               Unset               Unset               Unset               Unset               Unset               Unset               Unset               \r\n"
+            "I Range max         Unset               Unset               Unset               Unset               Unset               Unset               Unset               Unset               Unset               Unset               \r\n"
+            "I Range init        Unset               Unset               Unset               Unset               Unset               Unset               Unset               Unset               Unset               Unset               \r\n"
+            "auto rest           0                   0                   0                   0                   0                   0                   0                   0                   0                   0                   \r\n"
+            "Bandwidth           4                   4                   4                   4                   4                   4                   4                   4                   4                   4                   \r\n"
         )
 
         expected_lines = expected_output.split("\r\n")
