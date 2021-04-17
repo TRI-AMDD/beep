@@ -673,4 +673,3 @@ class ConversionTest(unittest.TestCase):
             "070"
         )
         pass
-        
