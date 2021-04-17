@@ -1043,7 +1043,6 @@ def convert_diagnostic_v5_multi_techniques():
         # except when they are the next step
         goto_step = int(end_entry["Step"])
 
-
         goto_70_not_next = goto_step == 70 and step_num != 69
         goto_94_not_next = goto_step == 94 and step_num != 93
         leaves_technique_1 = step_num < 37 and goto_step > 37
@@ -1265,5 +1264,5 @@ def convert_diagnostic_v5_multi_techniques():
         f.write(file_str.encode("ISO-8859-1"))
         print("created {}".format(fp))
 
-
 convert_diagnostic_v5_multi_techniques()
+
