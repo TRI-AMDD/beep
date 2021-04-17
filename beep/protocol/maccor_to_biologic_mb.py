@@ -24,7 +24,6 @@ from beep.protocol import (
 )
 from monty.serialization import loadfn
 from collections import OrderedDict, deque
-from beep.utils import DashOrderedDict
 from pydash import get, unset, set_, find_index, clone_deep_with
 
 # magic number for biologic
