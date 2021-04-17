@@ -13,32 +13,20 @@
 # limitations under the License.
 """Unit tests related to cycler run data structures"""
 
-import json
 import os
-import subprocess
-import tempfile
 import unittest
 import numpy as np
 import pandas as pd
 
 import matplotlib.pyplot as plt
-from pathlib import Path
 from monty.serialization import loadfn, dumpfn
-from monty.tempfile import ScratchDir
 
-from beep import MODULE_DIR
-from beep.utils import parameters_lookup
 from beep.conversion_schemas import STRUCTURE_DTYPES
 from beep.utils import os_format
 from beep.utils.s3 import download_s3_object
 from beep.structure.base import BEEPDatapath, step_is_waveform_dchg, step_is_waveform_chg
 from beep.structure.base_eis import EIS, BEEPDatapathWithEIS
-from beep.structure.arbin import ArbinDatapath
 from beep.structure.maccor import MaccorDatapath
-from beep.structure.neware import NewareDatapath
-from beep.structure.indigo import IndigoDatapath
-from beep.structure.biologic import BiologicDatapath
-from beep.structure.cli import process_file_list_from_json, auto_load
 
 
 BIG_FILE_TESTS = os.environ.get("BIG_FILE_TESTS", None) == "True"
@@ -364,8 +352,8 @@ class TestBEEPDatapath(unittest.TestCase):
 
     # based on RCRT.test_determine_structuring_parameters
     def test_determine_structuring_parameters(self):
-
-        (v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available) = self.datapath_diag_normal.determine_structuring_parameters()
+        (v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available) = \
+            self.datapath_diag_normal.determine_structuring_parameters()
         diagnostic_available_test = {
             "parameter_set": "Tesla21700",
             "cycle_type": ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"],
@@ -437,372 +425,11 @@ class TestBEEPDatapath(unittest.TestCase):
         not_paused = self.datapath_diag.paused_intervals
         self.assertEqual(not_paused.max(), 0.0)
 
-    # based on PCRT.test_from_raw_cycler_run_parameters
-    def test_structure(self):
-        self.datapath_small_params.structure()
-        self.assertEqual(self.datapath_small_params.metadata.barcode, "0001BC")
-        self.assertEqual(self.datapath_small_params.metadata.protocol, "PredictionDiagnostics_000109.000")
-        self.assertEqual(self.datapath_small_params.metadata.channel_id, 10)
-        self.assertTrue(self.datapath_small_params.is_structured)
-
-    def test_autostructure(self):
-        pass
-
-    # based on PCRT.test_get_cycle_life
-    def test_get_cycle_life(self):
-        datapath = self.BEEPDatapathChildTest.from_json_file(self.cycle_run_file)
-        self.assertEqual(datapath.get_cycle_life(30, 0.99), 82)
-        self.assertEqual(datapath.get_cycle_life(40, 0.0), 189)
-
-    # based on PCRT.test_data_types_old_processed
-    def test_data_types_old_processed(self):
-        datapath = self.BEEPDatapathChildTest.from_json_file(self.cycle_run_file)
-
-        all_summary = datapath.structured_summary
-        reg_dyptes = all_summary.dtypes.tolist()
-        reg_columns = all_summary.columns.tolist()
-        reg_dyptes = [str(dtyp) for dtyp in reg_dyptes]
-        for indx, col in enumerate(reg_columns):
-            self.assertEqual(reg_dyptes[indx], STRUCTURE_DTYPES["summary"][col])
-
-        all_interpolated = datapath.structured_data
-        cycles_interpolated_dyptes = all_interpolated.dtypes.tolist()
-        cycles_interpolated_columns = all_interpolated.columns.tolist()
-        cycles_interpolated_dyptes = [str(dtyp) for dtyp in cycles_interpolated_dyptes]
-        for indx, col in enumerate(cycles_interpolated_columns):
-            self.assertEqual(
-                cycles_interpolated_dyptes[indx],
-                STRUCTURE_DTYPES["cycles_interpolated"][col],
-            )
-
-    # based on PCRT.test_cycles_to_reach_set_capacities
-    def test_capacities_to_cycles(self):
-        datapath = self.BEEPDatapathChildTest.from_json_file(self.cycle_run_file)
-        cycles = datapath.capacities_to_cycles()
-        self.assertGreaterEqual(cycles.iloc[0, 0], 100)
-
-    # based on PCRT.test_capacities_at_set_cycles
-    def test_cycles_to_capacities(self):
-        datapath = self.BEEPDatapathChildTest.from_json_file(self.cycle_run_file)
-        capacities = datapath.cycles_to_capacities()
-        self.assertLessEqual(capacities.iloc[0, 0], 1.1)
-
-
-class TestBaseEIS(unittest.TestCase):
-    class EISChildGood(EIS):
-        def from_file(self):
-            print("success EISChildGood")
-
-    def setUp(self) -> None:
-        self.raw_data = pd.DataFrame({"a": [1,2,3]})
-        self.metadata = pd.DataFrame({"example": ["metadata"]})
-
-    def test_BEEPDatapathWithEIS(self):
-
-        # Must implement load_eis and from_file
-        class BEEPDatapathWithEISChildTestGood(BEEPDatapathWithEIS):
-            def from_file(self, path):
-                print(f"{path}")
-
-            def load_eis(self, *arg, **kwargs):
-                print("success BEEPDatapathWithEISChildTestGood")
-
-        class BEEPDatapathWithEISChildTestBad(BEEPDatapathWithEIS):
-            def extra_method(self):
-                pass
-
-        example_metadata = {"example": "metadata"}
-
-        BEEPDatapathWithEISChildTestGood(raw_data=self.raw_data, metadata=example_metadata)
-
-        with self.assertRaises(TypeError):
-            BEEPDatapathWithEISChildTestBad(raw_data=self.raw_data, metadata=example_metadata)
-
-    def test_EIS(self):
-        # must implement a from_file method
-        class EISChildBad(EIS):
-            def extra_method(self):
-                pass
-
-        eis = self.EISChildGood(data=self.raw_data, metadata=self.metadata)
-        self.assertTrue(hasattr(eis, "from_dict"))
-        self.assertTrue(hasattr(eis, "as_dict"))
-
-        with self.assertRaises(TypeError):
-            EISChildBad()
-
-    def test_EIS_serialization(self):
-        eis = self.EISChildGood(data=self.raw_data, metadata=self.metadata)
-        d = eis.as_dict()
-
-        eis_test = self.EISChildGood.from_dict(d)
-        self.assertTrue(eis.data.equals(eis_test.data))
-        self.assertTrue(eis.metadata.equals(eis_test.metadata))
-
-
-class TestArbinDatapath(unittest.TestCase):
-    """
-    Tests specific to Arbin cyclers.
-    """
-    def setUp(self) -> None:
-        self.bad_file = os.path.join(
-            TEST_FILE_DIR, "2017-05-09_test-TC-contact_CH33.csv"
-        )
-
-        self.good_file = os.path.join(
-            TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29.csv"
-        )
-
-        self.broken_file = os.path.join(
-            TEST_FILE_DIR, "Talos_001385_NCR18650618003_CH33_truncated.csv"
-
-        )
-
-        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-
-
-    # from RCRT.test_serialization
-    def test_serialization(self):
-        smaller_run = ArbinDatapath.from_file(self.bad_file)
-        with ScratchDir("."):
-            dumpfn(smaller_run, "smaller_cycler_run.json")
-            resurrected = loadfn("smaller_cycler_run.json")
-            self.assertIsInstance(resurrected, BEEPDatapath)
-            self.assertIsInstance(resurrected.raw_data, pd.DataFrame)
-            self.assertEqual(
-                smaller_run.raw_data.voltage.to_list(), resurrected.raw_data.voltage.to_list()
-            )
-            self.assertEqual(
-                smaller_run.raw_data.current.to_list(), resurrected.raw_data.current.to_list()
-            )
-
-    def test_from_file(self):
-        ad = ArbinDatapath.from_file(self.good_file)
-        self.assertEqual(ad.paths.get("raw"), self.good_file)
-        self.assertEqual(ad.paths.get("metadata"), self.good_file.replace(".csv", "_Metadata.csv"))
-        self.assertTupleEqual(ad.raw_data.shape, (251263, 16))
-
-    # based on PCRT.test_from_arbin_insufficient_interpolation_length
-    def test_from_arbin_insufficient_interpolation_length(self):
-        rcycler_run = ArbinDatapath.from_file(self.broken_file)
-        vrange, num_points, nominal_capacity, fast_charge, diag = rcycler_run.determine_structuring_parameters()
-        # print(diag['parameter_set'])
-        self.assertEqual(diag['parameter_set'], 'NCR18650-618')
-        diag_interp = rcycler_run.interpolate_diagnostic_cycles(diag, resolution=1000, v_resolution=0.0005)
-        # print(diag_interp[diag_interp.cycle_index == 1].charge_capacity.median())
-        self.assertEqual(np.around(diag_interp[diag_interp.cycle_index == 1].charge_capacity.median(), 3),
-                         np.around(3.428818545441403, 3))
-
-
-class TestMaccorDatapath(unittest.TestCase):
-    """
-    Tests specific to Maccor cyclers.
-    """
-
-    def setUp(self) -> None:
-        self.good_file = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000019_CH70.070")
-        self.diagnostics_file = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000020_CH71.071")
-        self.waveform_file = os.path.join(TEST_FILE_DIR, "test_drive_071620.095")
-        self.broken_file = os.path.join(TEST_FILE_DIR, "PreDiag_000229_000229_truncated.034")
-        self.timezone_file = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010")
-        self.timestamp_file = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000151_test.052")
-
-        # Note: this is a legacy file
-        self.diagnostic_interpolation_file = os.path.join(TEST_FILE_DIR,
-                                                          "PredictionDiagnostics_000132_00004C_structure.json")
-        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-
-    # based on RCRT.test_ingestion_maccor
-    # based on RCRT.test_timezone_maccor
-    # based on RCRT.test_timestamp_maccor
-    def test_from_file(self):
-
-        for file in (self.good_file, self.timestamp_file, self.timezone_file):
-            md = MaccorDatapath.from_file(file)
-            self.assertEqual(md.paths.get("raw"), file)
-            self.assertEqual(md.paths.get("metadata"), file)
-
-            if file == self.good_file:
-                self.assertTupleEqual(md.raw_data.shape, (11669, 40))
-                self.assertEqual(70, md.metadata.channel_id)
-            elif file == self.timestamp_file:
-                self.assertTupleEqual(md.raw_data.shape, (333, 44))
-                self.assertEqual(52, md.metadata.channel_id)
-            else:
-                self.assertTupleEqual(md.raw_data.shape, (2165, 44))
-                self.assertEqual(10, md.metadata.channel_id)
-
-            self.assertEqual(
-                set(md.metadata.raw.keys()),
-                {
-                    "barcode",
-                    "_today_datetime",
-                    "start_datetime",
-                    "filename",
-                    "protocol",
-                    "channel_id",
-                },
-            )
-
-            # Quick test to see whether columns get recasted
-            self.assertTrue(
-                {
-                    "data_point",
-                    "cycle_index",
-                    "step_index",
-                    "voltage",
-                    "current",
-                    "charge_capacity",
-                    "discharge_capacity",
-                }
-                < set(md.raw_data.columns)
-            )
-
-    # based on RCRT.test_quantity_sum_maccor
-    def test_get_quantity_sum(self):
-        md = MaccorDatapath.from_file(self.diagnostics_file)
-
-        cycle_sign = np.sign(np.diff(md.raw_data["cycle_index"]))
-        capacity_sign = np.sign(np.diff(md.raw_data["charge_capacity"]))
-        self.assertTrue(
-            np.all(capacity_sign >= -cycle_sign)
-        )  # Capacity increases throughout cycle
-        capacity_sign = np.sign(np.diff(md.raw_data["discharge_capacity"]))
-        self.assertTrue(
-            np.all(capacity_sign >= -cycle_sign)
-        )  # Capacity increases throughout cycle
-
-    # based on RCRT.test_whether_step_is_waveform
-    def test_step_is_waveform(self):
-        md = MaccorDatapath.from_file(self.waveform_file)
-        df = md.raw_data
-        self.assertTrue(df.loc[df.cycle_index == 6].
-                        groupby("step_index").apply(step_is_waveform_dchg).any())
-        self.assertFalse(df.loc[df.cycle_index == 6].
-                        groupby("step_index").apply(step_is_waveform_chg).any())
-        self.assertFalse(df.loc[df.cycle_index == 3].
-                        groupby("step_index").apply(step_is_waveform_dchg).any())
-
-    # based on RCRT.test_get_interpolated_waveform_discharge_cycles
-    def test_interpolate_waveform_discharge_cycles(self):
-        md = MaccorDatapath.from_file(self.waveform_file)
-        all_interpolated = md.interpolate_cycles()
-        all_interpolated = all_interpolated[(all_interpolated.step_type == "discharge")]
-        self.assertTrue(all_interpolated.columns[0] == 'test_time')
-        subset_interpolated = all_interpolated[all_interpolated.cycle_index==6]
-
-        df = md.raw_data
-        self.assertEqual(subset_interpolated.test_time.min(),
-                         df.loc[(df.cycle_index == 6) &
-                                (df.step_index == 33)].test_time.min())
-        self.assertEqual(subset_interpolated[subset_interpolated.cycle_index == 6].shape[0], 1000)
-
-    # based on RCRT.test_waveform_charge_discharge_capacity
-    def test_waveform_charge_discharge_capacity(self):
-        md = MaccorDatapath.from_file(self.waveform_file)
-        df = md.raw_data
-        cycle_sign = np.sign(np.diff(df["cycle_index"]))
-        capacity_sign = np.sign(np.diff(df["charge_capacity"]))
-        self.assertTrue(
-            np.all(capacity_sign >= -cycle_sign)
-        )  # Capacity increases throughout cycle
-        capacity_sign = np.sign(np.diff(df["discharge_capacity"]))
-        self.assertTrue(
-            np.all(capacity_sign >= -cycle_sign)
-        )
-
-    # based on RCRT.test_get_interpolated_cycles_maccor
-    def test_interpolate_cycles(self):
-        md = MaccorDatapath.from_file(self.good_file)
-        all_interpolated = md.interpolate_cycles(
-            v_range=[3.0, 4.2], resolution=10000
-        )
-
-        self.assertSetEqual(set(all_interpolated.columns.tolist()),
-                            {'voltage',
-                             'test_time',
-                             'discharge_capacity',
-                             'discharge_energy',
-                             'current',
-                             'charge_capacity',
-                             'charge_energy',
-                             'internal_resistance',
-                             'temperature',
-                             'cycle_index',
-                             'step_type'}
-                            )
-        interp2 = all_interpolated[
-            (all_interpolated.cycle_index == 2)
-            & (all_interpolated.step_type == "discharge")
-            ].sort_values("discharge_capacity")
-        interp3 = all_interpolated[
-            (all_interpolated.cycle_index == 1)
-            & (all_interpolated.step_type == "charge")
-            ].sort_values("charge_capacity")
-
-        self.assertTrue(interp3.current.mean() > 0)
-        self.assertEqual(len(interp3.voltage), 10000)
-        self.assertEqual(interp3.voltage.max(), np.float32(4.100838))
-        self.assertEqual(interp3.voltage.min(), np.float32(3.3334765))
-        np.testing.assert_almost_equal(
-            interp3[
-                interp3.charge_capacity <= interp3.charge_capacity.median()
-                ].current.iloc[0],
-            2.423209,
-            decimal=6,
-        )
-
-        df = md.raw_data
-        cycle_2 = df[df["cycle_index"] == 2]
-        discharge = cycle_2[cycle_2.step_index == 12]
-        discharge = discharge.sort_values("discharge_capacity")
-
-        acceptable_error = 0.01
-        acceptable_error_offest = 0.001
-        voltages_to_check = [3.3, 3.2, 3.1]
-        columns_to_check = [
-            "voltage",
-            "current",
-            "discharge_capacity",
-            "charge_capacity",
-        ]
-        for voltage_check in voltages_to_check:
-            closest_interp2_index = interp2.index[
-                (interp2["voltage"] - voltage_check).abs().min()
-                == (interp2["voltage"] - voltage_check).abs()
-                ]
-            closest_interp2_match = interp2.loc[closest_interp2_index]
-            closest_discharge_index = discharge.index[
-                (discharge["voltage"] - voltage_check).abs().min()
-                == (discharge["voltage"] - voltage_check).abs()
-                ]
-            closest_discharge_match = discharge.loc[closest_discharge_index]
-            for column_check in columns_to_check:
-                off_by = (
-                        closest_interp2_match.iloc[0][column_check]
-                        - closest_discharge_match.iloc[0][column_check]
-                )
-                self.assertLessEqual(np.abs(off_by),
-                        np.abs(closest_interp2_match.iloc[0][column_check])
-                        * acceptable_error
-                        + acceptable_error_offest)
-
-    # based on PCRT.test_from_maccor_insufficient_interpolation_length
-    def test_from_maccor_insufficient_interpolation_length(self):
-        md = MaccorDatapath.from_file(self.broken_file)
-        vrange, num_points, nominal_capacity, fast_charge, diag = md.determine_structuring_parameters()
-        self.assertEqual(diag['parameter_set'], 'Tesla21700')
-        diag_interp = md.interpolate_diagnostic_cycles(diag, resolution=1000, v_resolution=0.0005)
-        self.assertEqual(np.around(diag_interp[diag_interp.cycle_index == 1].charge_capacity.median(), 3),
-                         np.around(0.6371558214610992, 3))
-
     # based on RCRT.test_get_diagnostic
-    # though it is based on maccor files
+    # though it is based on maccor files this test is designed to
+    # check structuring of diagnostic cycles
     @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_get_diagnostic(self):
-        # md = MaccorDatapath.from_json_file(self.diagnostic_interpolation_file)
-        # md.paths["raw"] = self.
-
         maccor_file_w_parameters_s3 = {
             "bucket": "beep-sync-test-stage",
             "key": "big_file_tests/PreDiag_000287_000128.092"
@@ -815,7 +442,6 @@ class TestMaccorDatapath(unittest.TestCase):
         download_s3_object(bucket=maccor_file_w_parameters_s3["bucket"],
                            key=maccor_file_w_parameters_s3["key"],
                            destination_path=maccor_file_w_parameters)
-
 
         md = MaccorDatapath.from_file(maccor_file_w_parameters)
 
@@ -988,246 +614,107 @@ class TestMaccorDatapath(unittest.TestCase):
 
         os.remove(processed_cycler_run_loc)
 
-    # based on EISpectrumTest.test_from_maccor
-    # todo: needs testing for the entire maccor object
-    def test_eis(self):
-        path = os.path.join(TEST_FILE_DIR, "maccor_test_file_4267-66-6519.EDA0001.041")
-        d = MaccorDatapath.MaccorEIS.from_file(path)
+    # based on PCRT.test_from_raw_cycler_run_parameters
+    def test_structure(self):
+        self.datapath_small_params.structure()
+        self.assertEqual(self.datapath_small_params.metadata.barcode, "0001BC")
+        self.assertEqual(self.datapath_small_params.metadata.protocol, "PredictionDiagnostics_000109.000")
+        self.assertEqual(self.datapath_small_params.metadata.channel_id, 10)
+        self.assertTrue(self.datapath_small_params.is_structured)
 
+    def test_autostructure(self):
+        pass
 
-class TestIndigoDatapath(unittest.TestCase):
-    # based on RCRT.test_ingestion_indigo
-    def test_from_file(self):
-        indigo_file = os.path.join(TEST_FILE_DIR, "indigo_test_sample.h5")
-        md = IndigoDatapath.from_file(indigo_file)
-        self.assertTrue(
-            {
-                "data_point",
-                "cycle_index",
-                "step_index",
-                "voltage",
-                "temperature",
-                "current",
-                "charge_capacity",
-                "discharge_capacity",
-            }
-            < set(md.raw_data.columns)
-        )
+    # based on PCRT.test_get_cycle_life
+    def test_get_cycle_life(self):
+        datapath = self.BEEPDatapathChildTest.from_json_file(self.cycle_run_file)
+        self.assertEqual(datapath.get_cycle_life(30, 0.99), 82)
+        self.assertEqual(datapath.get_cycle_life(40, 0.0), 189)
 
-        self.assertEqual(
-            set(md.metadata.raw.keys()),
-            {"indigo_cell_id", "_today_datetime", "start_datetime", "filename"},
-        )
+    # based on PCRT.test_data_types_old_processed
+    def test_data_types_old_processed(self):
+        datapath = self.BEEPDatapathChildTest.from_json_file(self.cycle_run_file)
 
+        all_summary = datapath.structured_summary
+        reg_dyptes = all_summary.dtypes.tolist()
+        reg_columns = all_summary.columns.tolist()
+        reg_dyptes = [str(dtyp) for dtyp in reg_dyptes]
+        for indx, col in enumerate(reg_columns):
+            self.assertEqual(reg_dyptes[indx], STRUCTURE_DTYPES["summary"][col])
 
-class TestBioLogicDatapath(unittest.TestCase):
-    # based on RCRT.test_ingestion_biologic
-    def test_from_file(self):
-
-        biologic_file = os.path.join(
-            TEST_FILE_DIR, "raw", "biologic_test_file_short.mpt"
-        )
-        dp = BiologicDatapath.from_file(biologic_file)
-
-        self.assertTrue(
-            {
-                "cycle_index",
-                "step_index",
-                "voltage",
-                "current",
-                "discharge_capacity",
-                "charge_capacity",
-                "data_point",
-                "charge_energy",
-                "discharge_energy",
-            }
-            < set(dp.raw_data.columns),
-        )
-
-        self.assertEqual(
-            {"_today_datetime", "filename", "barcode", "protocol", "channel_id"},
-            set(dp.metadata.raw.keys()),
-        )
-
-
-class TestNewareDatapath(unittest.TestCase):
-    # based on RCRT.test_ingestion_neware
-    def test_from_file(self):
-        neware_file = os.path.join(TEST_FILE_DIR, "raw", "neware_test.csv")
-        md = NewareDatapath.from_file(neware_file)
-        self.assertEqual(md.raw_data.columns[22], "internal_resistance")
-        self.assertTrue(md.raw_data["test_time"].is_monotonic_increasing)
-        summary = md.summarize_cycles(nominal_capacity=4.7, full_fast_charge=0.8)
-        self.assertEqual(summary["discharge_capacity"].head(5).round(4).tolist(),
-                         [2.4393, 2.4343, 2.4255, 2.4221, 2.4210])
-        self.assertEqual(summary[summary["cycle_index"] == 55]["discharge_capacity"].round(4).tolist(),
-                         [2.3427])
-
-
-class TestCLI(unittest.TestCase):
-    def setUp(self):
-        self.arbin_file = os.path.join(
-            TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29.csv"
-        )
-
-    # based on CliTest.test_simple_conversion
-    def test_structure_command_simple_conversion(self):
-        with ScratchDir("."):
-            # Set root env
-            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
-            # Make necessary directories
-            os.mkdir("data-share")
-            os.mkdir(os.path.join("data-share", "structure"))
-            # Create dummy json obj
-            json_obj = {
-                "file_list": [self.arbin_file],
-                "run_list": [0],
-                "validity": ["valid"],
-            }
-            json_string = json.dumps(json_obj)
-
-            command = "structure {}".format(os_format(json_string))
-            result = subprocess.check_call(command, shell=True)
-            self.assertEqual(result, 0)
-            # print(os.listdir(os.path.join("data-share", "structure")))
-            processed = loadfn(
-                os.path.join(
-                    "data-share",
-                    "structure",
-                    "2017-12-04_4_65C-69per_6C_CH29_structure.json",
-                )
+        all_interpolated = datapath.structured_data
+        cycles_interpolated_dyptes = all_interpolated.dtypes.tolist()
+        cycles_interpolated_columns = all_interpolated.columns.tolist()
+        cycles_interpolated_dyptes = [str(dtyp) for dtyp in cycles_interpolated_dyptes]
+        for indx, col in enumerate(cycles_interpolated_columns):
+            self.assertEqual(
+                cycles_interpolated_dyptes[indx],
+                STRUCTURE_DTYPES["cycles_interpolated"][col],
             )
 
-        self.assertIsInstance(processed, BEEPDatapath)
+    # based on PCRT.test_cycles_to_reach_set_capacities
+    def test_capacities_to_cycles(self):
+        datapath = self.BEEPDatapathChildTest.from_json_file(self.cycle_run_file)
+        cycles = datapath.capacities_to_cycles()
+        self.assertGreaterEqual(cycles.iloc[0, 0], 100)
 
-    # based on PCRT.test_json_processing
-    def test_json_processing(self):
-
-        with ScratchDir("."):
-            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
-            os.mkdir("data-share")
-            os.mkdir(os.path.join("data-share", "structure"))
-
-            # Create dummy json obj
-            json_obj = {
-                "file_list": [self.arbin_file, "garbage_file"],
-                "run_list": [0, 1],
-                "validity": ["valid", "invalid"],
-            }
+    # based on PCRT.test_capacities_at_set_cycles
+    def test_cycles_to_capacities(self):
+        datapath = self.BEEPDatapathChildTest.from_json_file(self.cycle_run_file)
+        capacities = datapath.cycles_to_capacities()
+        self.assertLessEqual(capacities.iloc[0, 0], 1.1)
 
 
-            json_string = json.dumps(json_obj)
-
-            test_fname = "test.json"
-            dumpfn(json_obj, test_fname)
-
-
-            # test both raw json input and json from a file
-            for json_rep in (json_string, test_fname):
-
-                if json_rep == test_fname:
-                    print("Testing json processing from file")
-                else:
-                    print("Testing json processing from string")
-
-                # Get json output from method
-                json_output = process_file_list_from_json(json_rep)
-                reloaded = json.loads(json_output)
-
-                # Actual tests here
-                # Ensure garbage file doesn't have output string
-                self.assertEqual(reloaded["invalid_file_list"][0], "garbage_file")
-
-                # Ensure first is correct
-                loaded_datapath = loadfn(reloaded["file_list"][0])
-                loaded_from_raw = ArbinDatapath.from_file(
-                    json_obj["file_list"][0]
-                )
-
-                loaded_from_raw.structure()
-
-                self.assertTrue(
-                    np.all(loaded_datapath.structured_summary == loaded_from_raw.structured_summary),
-                    "Loaded processed cycler_run is not equal to that loaded from raw file",
-                )
-
-                # Workflow output
-                output_file_path = Path(tempfile.gettempdir()) / "results.json"
-                self.assertTrue(output_file_path.exists())
-
-                output_json = json.loads(output_file_path.read_text())
-
-                self.assertEqual(reloaded["file_list"][0], output_json["filename"])
-                self.assertEqual(os.path.getsize(output_json["filename"]), output_json["size"])
-                self.assertEqual(0, output_json["run_id"])
-                self.assertEqual("structuring", output_json["action"])
-                self.assertEqual("success", output_json["status"])
-
-    # todo: could be more comprehensive
-    # based on PCRT.test_auto_load
-    def test_auto_load(self):
-        dp = auto_load(self.arbin_file)
-        self.assertIsInstance(dp, ArbinDatapath)
-
-
-# todo: Either these tested functions should be moved into structuring
-# todo: Or these tests should be moved into a separate utils file
-class TestStructuringUtils(unittest.TestCase):
-    """
-    Tests related to utils only used in structuring.
-    """
+class TestBaseEIS(unittest.TestCase):
+    class EISChildGood(EIS):
+        def from_file(self):
+            print("success EISChildGood")
 
     def setUp(self) -> None:
-        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+        self.raw_data = pd.DataFrame({"a": [1,2,3]})
+        self.metadata = pd.DataFrame({"example": ["metadata"]})
 
+    def test_BEEPDatapathWithEIS(self):
 
-    # based on RCRT.test_get_protocol_parameters
-    def test_get_protocol_parameters(self):
-        filepath = os.path.join(
-            TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010"
-        )
-        test_path = os.path.join("data-share", "raw", "parameters")
-        parameters, _ = parameters_lookup.get_protocol_parameters(filepath, parameters_path=test_path)
+        # Must implement load_eis and from_file
+        class BEEPDatapathWithEISChildTestGood(BEEPDatapathWithEIS):
+            def from_file(self, path):
+                print(f"{path}")
 
-        self.assertEqual(parameters["diagnostic_type"].iloc[0], "HPPC+RPT")
-        self.assertEqual(parameters["diagnostic_parameter_set"].iloc[0], "Tesla21700")
-        self.assertEqual(parameters["seq_num"].iloc[0], 109)
-        self.assertEqual(len(parameters.index), 1)
+            def load_eis(self, *arg, **kwargs):
+                print("success BEEPDatapathWithEISChildTestGood")
 
-        parameters_missing, project_missing = parameters_lookup.get_protocol_parameters(
-            "Fake", parameters_path=test_path
-        )
-        self.assertEqual(parameters_missing, None)
-        self.assertEqual(project_missing, None)
+        class BEEPDatapathWithEISChildTestBad(BEEPDatapathWithEIS):
+            def extra_method(self):
+                pass
 
-        filepath = os.path.join(TEST_FILE_DIR, "PreDiag_000292_tztest.010")
-        parameters, _ = parameters_lookup.get_protocol_parameters(filepath, parameters_path=test_path)
-        self.assertEqual(parameters["diagnostic_type"].iloc[0], "HPPC+RPT")
-        self.assertEqual(parameters["seq_num"].iloc[0], 292)
+        example_metadata = {"example": "metadata"}
 
-    # based on RCRT.test_get_project_name
-    def test_get_project_name(self):
-        project_name_parts = parameters_lookup.get_project_sequence(
-            os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010")
-        )
-        project_name = project_name_parts[0]
-        self.assertEqual(project_name, "PredictionDiagnostics")
+        BEEPDatapathWithEISChildTestGood(raw_data=self.raw_data, metadata=example_metadata)
 
-    # based on RCRT.test_get_diagnostic_parameters
-    def test_get_diagnostic_parameters(self):
-        diagnostic_available = {
-            "parameter_set": "Tesla21700",
-            "cycle_type": ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"],
-            "length": 5,
-            "diagnostic_starts_at": [1, 36, 141],
-        }
-        diagnostic_parameter_path = os.path.join(MODULE_DIR, "procedure_templates")
-        project_name = "PreDiag"
-        v_range = parameters_lookup.get_diagnostic_parameters(
-            diagnostic_available, diagnostic_parameter_path, project_name
-        )
-        self.assertEqual(v_range, [2.7, 4.2])
+        with self.assertRaises(TypeError):
+            BEEPDatapathWithEISChildTestBad(raw_data=self.raw_data, metadata=example_metadata)
 
+    def test_EIS(self):
+        # must implement a from_file method
+        class EISChildBad(EIS):
+            def extra_method(self):
+                pass
+
+        eis = self.EISChildGood(data=self.raw_data, metadata=self.metadata)
+        self.assertTrue(hasattr(eis, "from_dict"))
+        self.assertTrue(hasattr(eis, "as_dict"))
+
+        with self.assertRaises(TypeError):
+            EISChildBad()
+
+    def test_EIS_serialization(self):
+        eis = self.EISChildGood(data=self.raw_data, metadata=self.metadata)
+        d = eis.as_dict()
+
+        eis_test = self.EISChildGood.from_dict(d)
+        self.assertTrue(eis.data.equals(eis_test.data))
+        self.assertTrue(eis.metadata.equals(eis_test.metadata))
 
 
 if __name__ == "__main__":

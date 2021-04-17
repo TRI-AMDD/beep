@@ -14,10 +14,15 @@
 """Unit tests related to Splicing files"""
 
 import os
-import unittest
 import numpy as np
 from beep.utils import MaccorSplice
+import unittest
+from beep.utils.s3 import download_s3_object
+from beep import MODULE_DIR
+from beep.utils import parameters_lookup
 
+BIG_FILE_TESTS = os.environ.get("BIG_FILE_TESTS", None) == "True"
+SKIP_MSG = "Tests requiring S3 access are disabled, set BIG_FILE_TESTS=True to run full tests"
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 
@@ -51,3 +56,78 @@ class SpliceTest(unittest.TestCase):
         data_1, data_2 = splicer.column_increment(data_1, data_2)
 
         assert data_1["Rec#"].max() < data_2["Rec#"].min()
+
+
+@unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
+class S3Test(unittest.TestCase):
+
+    bucket = "beep-sync-test-stage"
+    key = "test_util/test_file.txt"
+    destination_path = "test_util_s3_file.txt"
+
+    def test_download_s3_object(self):
+
+        download_s3_object(bucket=self.bucket,
+                           key=self.key,
+                           destination_path=self.destination_path)
+
+        os._exists(self.destination_path)
+
+    def tearDown(self) -> None:
+        os.remove(self.destination_path)
+
+
+class TestStructuringUtils(unittest.TestCase):
+    """
+    Tests related to utils only used in structuring.
+    """
+
+    def setUp(self) -> None:
+        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+
+    # based on RCRT.test_get_protocol_parameters
+    def test_get_protocol_parameters(self):
+        filepath = os.path.join(
+            TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010"
+        )
+        test_path = os.path.join("data-share", "raw", "parameters")
+        parameters, _ = parameters_lookup.get_protocol_parameters(filepath, parameters_path=test_path)
+
+        self.assertEqual(parameters["diagnostic_type"].iloc[0], "HPPC+RPT")
+        self.assertEqual(parameters["diagnostic_parameter_set"].iloc[0], "Tesla21700")
+        self.assertEqual(parameters["seq_num"].iloc[0], 109)
+        self.assertEqual(len(parameters.index), 1)
+
+        parameters_missing, project_missing = parameters_lookup.get_protocol_parameters(
+            "Fake", parameters_path=test_path
+        )
+        self.assertEqual(parameters_missing, None)
+        self.assertEqual(project_missing, None)
+
+        filepath = os.path.join(TEST_FILE_DIR, "PreDiag_000292_tztest.010")
+        parameters, _ = parameters_lookup.get_protocol_parameters(filepath, parameters_path=test_path)
+        self.assertEqual(parameters["diagnostic_type"].iloc[0], "HPPC+RPT")
+        self.assertEqual(parameters["seq_num"].iloc[0], 292)
+
+    # based on RCRT.test_get_project_name
+    def test_get_project_name(self):
+        project_name_parts = parameters_lookup.get_project_sequence(
+            os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010")
+        )
+        project_name = project_name_parts[0]
+        self.assertEqual(project_name, "PredictionDiagnostics")
+
+    # based on RCRT.test_get_diagnostic_parameters
+    def test_get_diagnostic_parameters(self):
+        diagnostic_available = {
+            "parameter_set": "Tesla21700",
+            "cycle_type": ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"],
+            "length": 5,
+            "diagnostic_starts_at": [1, 36, 141],
+        }
+        diagnostic_parameter_path = os.path.join(MODULE_DIR, "procedure_templates")
+        project_name = "PreDiag"
+        v_range = parameters_lookup.get_diagnostic_parameters(
+            diagnostic_available, diagnostic_parameter_path, project_name
+        )
+        self.assertEqual(v_range, [2.7, 4.2])
