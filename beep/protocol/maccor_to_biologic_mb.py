@@ -1265,5 +1265,4 @@ def convert_diagnostic_v5_multi_techniques():
         f.write(file_str.encode("ISO-8859-1"))
         print("created {}".format(fp))
 
-#convert_diagnostic_v5_multi_techniques()
-
+# convert_diagnostic_v5_multi_techniques()
