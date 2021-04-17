@@ -1037,7 +1037,7 @@ def convert_diagnostic_v5_segment_files():
             loop_lens[-1] += 1
 
 
-def convert_diagnostic_v5_multi_techniques():
+def convert_diagnostic_v5_multi_techniques(source_file="BioTest_000001.000"):
     def is_acceptable_goto(end_entry, step_num):
         # remove end entries going to step 70 or 94 unless
         # except when they are the next step
@@ -1079,7 +1079,6 @@ def convert_diagnostic_v5_multi_techniques():
             seq["E range max (V)"] = "4.300"
 
     converter = MaccorToBiologicMb()
-    source_file = "BioTest_000001.000"
     ast = converter.remove_end_entries_by_pred(
         converter.load_maccor_ast(os.path.join(PROCEDURE_TEMPLATE_DIR, source_file)),
         is_acceptable_goto,
@@ -1263,5 +1262,3 @@ def convert_diagnostic_v5_multi_techniques():
     with open(fp, "wb") as f:
         f.write(file_str.encode("ISO-8859-1"))
         print("created {}".format(fp))
-
-# convert_diagnostic_v5_multi_techniques()

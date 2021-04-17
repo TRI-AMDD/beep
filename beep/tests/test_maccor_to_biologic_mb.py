@@ -17,8 +17,9 @@ import os
 import unittest
 import xmltodict
 from collections import OrderedDict
+from monty.tempfile import ScratchDir
 
-from beep.protocol.maccor_to_biologic_mb import MaccorToBiologicMb
+from beep.protocol.maccor_to_biologic_mb import MaccorToBiologicMb, convert_diagnostic_v5_multi_techniques
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
@@ -672,3 +673,7 @@ class ConversionTest(unittest.TestCase):
             "070"
         )
         pass
+
+    def test_convert_diagnostic(self):
+        with ScratchDir("."):
+            convert_diagnostic_v5_multi_techniques(source_file="diagnosticV5.000")
