@@ -89,7 +89,8 @@ class TestBEEPDatapath(unittest.TestCase):
 
         # Small maccor file with parameters
         maccor_small_params_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_parameterized_memloaded.csv")
-        maccor_small_params_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_parameterized_metadata_memloaded.json")
+        maccor_small_params_meta_fname = os.path.join(TEST_FILE_DIR,
+                                                      "BEEPDatapath_maccor_parameterized_metadata_memloaded.json")
         cls.data_small_params = pd.read_csv(maccor_small_params_fname, index_col=0)
         cls.metadata_small_params = loadfn(maccor_small_params_meta_fname)
         cls.datapath_small_params = cls.BEEPDatapathChildTest(
@@ -101,7 +102,8 @@ class TestBEEPDatapath(unittest.TestCase):
         # Maccor with various diagnostics from memory
         # For testing determine_structuring_parameters
         maccor_diag_normal_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_diagnostic_normal_memloaded.csv")
-        maccor_diag_normal_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_diagnostic_normal_metadata_memloaded.json")
+        maccor_diag_normal_meta_fname = os.path.join(TEST_FILE_DIR,
+                                                     "BEEPDatapath_maccor_diagnostic_normal_metadata_memloaded.json")
         maccor_diag_normal_original_fname = os.path.join(TEST_FILE_DIR, "PreDiag_000287_000128short.092")
         cls.data_diag_normal = pd.read_csv(maccor_diag_normal_fname, index_col=0)
         cls.metadata_diag_normal = loadfn(maccor_diag_normal_meta_fname)
@@ -110,8 +112,11 @@ class TestBEEPDatapath(unittest.TestCase):
             metadata=cls.metadata_diag_normal,
             paths={"raw": maccor_diag_normal_original_fname, "raw_metadata": maccor_diag_normal_meta_fname}
         )
-        maccor_diag_misplaced_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_diagnostic_misplaced_memloaded.csv")
-        maccor_diag_misplaced_meta_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_diagnostic_misplaced_metadata_memloaded.json")
+        maccor_diag_misplaced_fname = os.path.join(TEST_FILE_DIR,
+                                                   "BEEPDatapath_maccor_diagnostic_misplaced_memloaded.csv")
+        maccor_diag_misplaced_meta_fname = os.path.join(
+            TEST_FILE_DIR, "BEEPDatapath_maccor_diagnostic_misplaced_metadata_memloaded.json"
+        )
         maccor_diag_misplaced_original_fname = os.path.join(TEST_FILE_DIR, "PreDiag_000412_00008Fshort.022")
         cls.data_diag_misplaced = pd.read_csv(maccor_diag_misplaced_fname, index_col=0)
         cls.metadata_diag_misplaced = loadfn(maccor_diag_misplaced_meta_fname)
@@ -623,7 +628,12 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertTrue(self.datapath_small_params.is_structured)
 
     def test_autostructure(self):
-        pass
+        self.datapath_diag_normal.autostructure()
+        self.assertEqual(3448, len(self.datapath_diag_normal.structured_summary))
+        self.assertEqual(4957, self.datapath_diag_normal.structured_summary.paused.iloc[0])
+
+        self.assertEqual("reset", self.datapath_diag_normal.diagnostic_summary.cycle_type.iloc[0])
+        self.assertEqual(4.711819, np.round(self.datapath_diag_normal.diagnostic_summary.discharge_capacity.iloc[0], 6))
 
     # based on PCRT.test_get_cycle_life
     def test_get_cycle_life(self):
