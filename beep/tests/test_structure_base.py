@@ -177,12 +177,12 @@ class TestBEEPDatapath(unittest.TestCase):
         d = truth_datapath.as_dict()
         datapath_from_dict = self.BEEPDatapathChildTest.from_dict(d)
 
-        # Test loading with and without compression, and with and without raw_data via as_legacy
+        # Test loading with and without compression, and with and without raw_data via omit_raw
         for fname_short in ("test_serialization.json", "test_serialization.json.gz"):
-            for as_legacy in (True, False):
+            for omit_raw in (True, False):
 
                 fname = os.path.join(TEST_FILE_DIR, fname_short)
-                truth_datapath.to_json_file(fname, as_legacy=as_legacy)
+                truth_datapath.to_json_file(fname, omit_raw=omit_raw)
                 datapath_from_json = self.BEEPDatapathChildTest.from_json_file(fname)
 
                 for df_name in ("structured_data", "structured_summary", "diagnostic_data", "diagnostic_summary"):
