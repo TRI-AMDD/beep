@@ -23,7 +23,7 @@ except (ImportError, ModuleNotFoundError):
 # Versioning.  The python code version is frequently tagged
 # with a commit hash from the repo, which is supplied via
 # an environment variable by the integration build procedure
-__version__ = "2021.3.4.9"
+__version__ = "2021.3.30.9"
 VERSION_TAG = os.environ.get("BEEP_VERSION_TAG")
 if VERSION_TAG is not None:
     __version__ = "-".join([__version__, VERSION_TAG])
@@ -38,18 +38,14 @@ MAX_RETRIES = 12
 # environment
 ENVIRONMENT = os.getenv(ENV_VAR)
 if ENVIRONMENT is None or ENVIRONMENT not in config.keys():
-    raise ValueError(
-        f"Environment variable {ENV_VAR} must be set and be one "
-        + f'of the following: {", ".join(list(config.keys()))}. '
-        + f"Found: {ENVIRONMENT}"
-    )
+    ENVIRONMENT = "local"
 
 DIR = os.getenv(PROCESSED_DIR)
 if DIR is None:
     if ENVIRONMENT in ["stage", "prod"]:
         os.environ[PROCESSED_DIR] = "/"
     elif ENVIRONMENT in ["local", "dev", "test"]:
-        os.environ[PROCESSED_DIR] = os.path.dirname(__file__)
+        os.environ[PROCESSED_DIR] = os.getcwd()
     else:
         raise ValueError(
             f"The directory for processing cycling data {PROCESSED_DIR} must be set"

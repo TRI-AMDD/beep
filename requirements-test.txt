@@ -2,4 +2,4 @@
 pytest-cov==2.11.1
 coveralls==3.0.1
 memory_profiler==0.58.0
-matplotlib==3.3.4
+matplotlib==3.4.1

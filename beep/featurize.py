@@ -1064,22 +1064,17 @@ class DeltaQFastCharge(BeepFeatures):
         if params_dict is None:
             params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
 
-        conditions = []
+        conditions = list()
 
-        if "cycle_index" in processed_cycler_run.structured_summary.columns:
-            conditions.append(
-                processed_cycler_run.structured_summary.cycle_index.max()
-                > params_dict["final_pred_cycle"]
-            )
-            conditions.append(
-                processed_cycler_run.structured_summary.cycle_index.min()
-                <= params_dict["init_pred_cycle"]
-            )
-        else:
-            conditions.append(
-                len(processed_cycler_run.structured_summary.index)
-                > params_dict["final_pred_cycle"]
-            )
+        conditions.append(
+            processed_cycler_run.structured_summary.index.max()
+            > params_dict["final_pred_cycle"]
+        )
+        conditions.append(
+            processed_cycler_run.structured_summary.index.min()
+            <= params_dict["init_pred_cycle"]
+        )
+        conditions.append("cycle_index" in processed_cycler_run.structured_summary.columns)
         conditions.append("cycle_index" in processed_cycler_run.structured_data.columns)
 
         return all(conditions)
@@ -1376,8 +1371,8 @@ class DiagnosticProperties(BeepFeatures):
                     processed_cycler_run, quantity, cycle_type, parameters_path=parameters_path
                 )
 
-                summary_diag_cycle_type["cycle_type"] = cycle_type
-                summary_diag_cycle_type["metric"] = quantity
+                summary_diag_cycle_type.loc[:, "cycle_type"] = cycle_type
+                summary_diag_cycle_type.loc[:, "metric"] = quantity
                 X = X.append(summary_diag_cycle_type)
 
         return X

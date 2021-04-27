@@ -23,8 +23,8 @@ class DashOrderedDict(OrderedDict):
     def set(self, string, value):
         set_with(self, string, value, lambda x: OrderedDict())
 
-    def get(self, string):
-        return get(self, string)
+    def get_path(self, string, default=None):
+        return get(self, string, default=default)
 
     def unset(self, string):
         unset(self, string)

@@ -1,4 +1,4 @@
-# Commands
+# Command line interface
 
 ## Introduction
 

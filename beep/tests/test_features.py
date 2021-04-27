@@ -155,8 +155,8 @@ class TestFeaturizer(unittest.TestCase):
                 )
                 if featurizer:
                     self.assertEqual(featurizer.metadata["channel_id"], 9)
-                    self.assertEqual(featurizer.metadata["protocol"], None)
-                    self.assertEqual(featurizer.metadata["barcode"], None)
+                    self.assertEqual(featurizer.metadata["protocol"], '2017-06-30_tests\\20170629-2C_10per_6C.sdu')
+                    self.assertEqual(featurizer.metadata["barcode"], 'el150800460605')
                     dumpfn(featurizer, featurizer.name)
                     processed_paths_list.append(featurizer.name)
                     processed_run_list.append(run_id)
@@ -315,146 +315,6 @@ class TestFeaturizer(unittest.TestCase):
                 ["ohmic_r_d0", "D_8"],
             )
 
-    def test_get_hppc_ocv(self):
-        pcycler_run_loc = os.path.join(
-            TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
-        )
-        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-        pcycler_run = auto_load_processed(pcycler_run_loc)
-        hppc_ocv_features = featurizer_helpers.get_hppc_ocv(pcycler_run, 1)
-        self.assertEqual(np.round(hppc_ocv_features['var_ocv'].iloc[0], 6), 0.000016)
-        self.assertEqual(np.round(hppc_ocv_features['min_ocv'].iloc[0], 6), -0.001291)
-        self.assertEqual(np.round(hppc_ocv_features['mean_ocv'].iloc[0], 6), 0.002221)
-        self.assertEqual(np.round(hppc_ocv_features['skew_ocv'].iloc[0], 6), 1.589392)
-        self.assertEqual(np.round(hppc_ocv_features['kurtosis_ocv'].iloc[0], 6), 7.041016)
-        self.assertEqual(np.round(hppc_ocv_features['sum_ocv'].iloc[0], 6), 0.025126)
-        self.assertEqual(np.round(hppc_ocv_features['sum_square_ocv'].iloc[0], 6), 0.000188)
-
-    def test_get_step_index(self):
-        pcycler_run_loc = os.path.join(
-            TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
-        )
-
-        parameters_path = os.path.join(TEST_FILE_DIR, "data-share", "raw", "parameters")
-        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-        pcycler_run = auto_load_processed(pcycler_run_loc)
-        data = pcycler_run.diagnostic_data
-        hppc_cycles = data.loc[data.cycle_type == "hppc"]
-        print(hppc_cycles.step_index.unique())
-        _, protocol_name = os.path.split(pcycler_run.metadata.protocol)
-        parameter_row, _ = parameters_lookup.get_protocol_parameters(protocol_name, parameters_path=parameters_path)
-
-        for cycle in hppc_cycles.cycle_index.unique():
-            hppc_cycle = hppc_cycles[hppc_cycles.cycle_index == cycle]
-            for step in hppc_cycle.step_index.unique():
-                hppc_cycle_step = hppc_cycle[(hppc_cycle.step_index == step)]
-                for step_iter in hppc_cycle_step.step_index_counter.unique():
-                    hppc_cycle_step_iter = hppc_cycle_step[(hppc_cycle_step.step_index_counter == step_iter)]
-                    duration = hppc_cycle_step_iter.test_time.max() - hppc_cycle_step_iter.test_time.min()
-                    median_crate = np.round(hppc_cycle_step.current.median() /
-                                            parameter_row["capacity_nominal"].iloc[0], 2)
-                    print(step, median_crate, duration)
-
-        step_ind = featurizer_helpers.get_step_index(pcycler_run,
-                                                     cycle_type="hppc",
-                                                     diag_pos=0)
-        self.assertEqual(len(step_ind.values()), 6)
-        print([step_ind["hppc_long_rest"],
-               step_ind["hppc_discharge_pulse"],
-               step_ind["hppc_short_rest"],
-               step_ind["hppc_charge_pulse"],
-               step_ind["hppc_discharge_to_next_soc"]])
-
-        self.assertEqual(step_ind, {
-            'hppc_charge_to_soc': 9,
-            'hppc_long_rest': 11,
-            'hppc_discharge_pulse': 12,
-            'hppc_short_rest': 13,
-            'hppc_charge_pulse': 14,
-            'hppc_discharge_to_next_soc': 15
-        })
-        step_ind = featurizer_helpers.get_step_index(pcycler_run,
-                                                     cycle_type="hppc",
-                                                     diag_pos=1)
-        self.assertEqual(len(step_ind.values()), 6)
-        self.assertEqual(step_ind, {
-            'hppc_charge_to_soc': 41,
-            'hppc_long_rest': 43,
-            'hppc_discharge_pulse': 44,
-            'hppc_short_rest': 45,
-            'hppc_charge_pulse': 46,
-            'hppc_discharge_to_next_soc': 47
-        })
-
-    def test_get_step_index_2(self):
-        pcycler_run_loc = os.path.join(
-            TEST_FILE_DIR, "PreDiag_000400_000084_truncated_structure.json"
-        )
-        parameters_path = os.path.join(TEST_FILE_DIR, "data-share", "raw", "parameters")
-        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-        pcycler_run = auto_load_processed(pcycler_run_loc)
-        _, protocol_name = os.path.split(pcycler_run.metadata.protocol)
-        parameter_row, _ = parameters_lookup.get_protocol_parameters(protocol_name, parameters_path=parameters_path)
-
-        step_ind = featurizer_helpers.get_step_index(pcycler_run,
-                                                     cycle_type="hppc",
-                                                     diag_pos=0)
-        self.assertEqual(len(step_ind.values()), 7)
-
-        self.assertEqual(step_ind, {
-            'hppc_charge_to_soc': 9,
-            'hppc_long_rest': 11,
-            'hppc_discharge_pulse': 12,
-            'hppc_short_rest': 13,
-            'hppc_charge_pulse': 14,
-            'hppc_discharge_to_next_soc': 15,
-            'hppc_final_discharge': 17
-        })
-        step_ind = featurizer_helpers.get_step_index(pcycler_run,
-                                                     cycle_type="hppc",
-                                                     diag_pos=1)
-        self.assertEqual(len(step_ind.values()), 7)
-        self.assertEqual(step_ind, {
-            'hppc_charge_to_soc': 41,
-            'hppc_long_rest': 43,
-            'hppc_discharge_pulse': 44,
-            'hppc_short_rest': 45,
-            'hppc_charge_pulse': 46,
-            'hppc_discharge_to_next_soc': 47,
-            'hppc_final_discharge': 49
-        })
-        step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="reset", diag_pos=0)
-        self.assertEqual(step_ind, {'reset_charge': 5, 'reset_discharge': 6})
-        step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="reset", diag_pos=1)
-        self.assertEqual(step_ind, {'reset_charge': 38, 'reset_discharge': 39})
-
-        step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="rpt_0.2C", diag_pos=0)
-        self.assertEqual(step_ind, {'rpt_0.2C_charge': 19, 'rpt_0.2C_discharge': 20})
-        step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="rpt_0.2C", diag_pos=1)
-        self.assertEqual(step_ind, {'rpt_0.2C_charge': 51, 'rpt_0.2C_discharge': 52})
-
-        step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="rpt_1C", diag_pos=0)
-        self.assertEqual(step_ind, {'rpt_1C_charge': 22, 'rpt_1C_discharge': 23})
-        step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="rpt_1C", diag_pos=1)
-        self.assertEqual(step_ind, {'rpt_1C_charge': 54, 'rpt_1C_discharge': 55})
-
-        step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="rpt_2C", diag_pos=0)
-        self.assertEqual(step_ind, {'rpt_2C_charge': 25, 'rpt_2C_discharge': 26})
-        step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="rpt_2C", diag_pos=1)
-        self.assertEqual(step_ind, {'rpt_2C_charge': 57, 'rpt_2C_discharge': 58})
-
-    def test_get_diffusion_coeff(self):
-        with ScratchDir("."):
-            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-            pcycler_run_loc = os.path.join(
-                TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
-            )
-            pcycler_run = auto_load_processed(pcycler_run_loc)
-            diffusion_df = featurizer_helpers.get_diffusion_coeff(pcycler_run, 1)
-            print(np.round(diffusion_df.iloc[0].to_list(), 3))
-            self.assertEqual(np.round(diffusion_df.iloc[0].to_list(), 3)[0], -0.016)
-            self.assertEqual(np.round(diffusion_df.iloc[0].to_list(), 3)[5], -0.011)
-
     def test_HPPCRelaxationFeatures_class(self):
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
@@ -596,12 +456,65 @@ class TestFeaturizer(unittest.TestCase):
                  21.12108276469096, 30, 100, 'reset', 'discharge_energy']
             )
 
+    @unittest.skip
+    def test_features_on_list(self):
+        files = [
+            "PredictionDiagnostics_000102_0001B1_structure.json",
+            "PredictionDiagnostics_000103_0001B3_structure.json",
+            "PredictionDiagnostics_000114_00003C_structure.json",
+            "PredictionDiagnostics_000117_00003E_structure.json",
+            "PredictionDiagnostics_000120_000041_structure.json",
+            "PredictionDiagnostics_000122_000043_structure.json",
+            "PredictionDiagnostics_000124_000049_structure.json",
+            "PredictionDiagnostics_000130_000044_structure.json",
+            "PredictionDiagnostics_000133_00004D_structure (2).json",
+            "PredictionDiagnostics_000136_00002D_structure (1).json",
+            "PredictionDiagnostics_000139_000034_structure.json",
+            "PredictionDiagnostics_000144_00002E_structure.json",
+            "PredictionDiagnostics_000148_000038_structure.json",
+            "PredictionDiagnostics_000150_00003B_structure.json",
+
+            "PredictionDiagnostics_000156_000023_structure.json",
+            "PredictionDiagnostics_000160_000251_structure.json",
+            "PredictionDiagnostics_000163_000022_structure.json",
+            "PredictionDiagnostics_000163_000022_structure.json",
+            "PredictionDiagnostics_000164_000239_structure.json",
+            "PredictionDiagnostics_000167_000255_structure.json",
+            "PredictionDiagnostics_000168_000253_structure.json",
+            "PredictionDiagnostics_000175_000247_structure.json",
+            "PredictionDiagnostics_000178_00023B_structure.json",
+            "PredictionDiagnostics_000181_00023A_structure.json",
+
+            "PredictionDiagnostics_000184_000244_structure.json",
+            "PredictionDiagnostics_000186_00024E_structure.json",
+            "PredictionDiagnostics_000194_000242_structure.json",
+        ]
+        with ScratchDir("."):
+            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+            for file in files:
+                pcycler_run_path = os.path.join(TEST_FILE_DIR, file)
+                json_obj = {
+                    "file_list": [pcycler_run_path],
+                    "run_list": [0],
+                }
+                json_string = json.dumps(json_obj)
+
+                newjsonpaths = process_file_list_from_json(
+                    json_string, processed_dir=os.getcwd()
+                )
+
+
+class TestFeaturizerHelpers(unittest.TestCase):
+    def setUp(self):
+        pass
+
     def test_get_fractional_quantity_remaining_nx(self):
         processed_cycler_run_path_1 = os.path.join(
             TEST_FILE_DIR, "PreDiag_000233_00021F_truncated_structure.json"
         )
         pcycler_run = auto_load_processed(processed_cycler_run_path_1)
-        pcycler_run.structured_summary = pcycler_run.structured_summary[~pcycler_run.structured_summary.cycle_index.isin(pcycler_run.diagnostic_summary.cycle_index)]
+        pcycler_run.structured_summary = pcycler_run.structured_summary[
+            ~pcycler_run.structured_summary.cycle_index.isin(pcycler_run.diagnostic_summary.cycle_index)]
 
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
 
@@ -683,23 +596,29 @@ class TestFeaturizer(unittest.TestCase):
             print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var_v_diff'], decimals=8),
                              np.round(0.00472705, decimals=8))
-            self.assertListEqual(list(v_vars_df.columns), ["var_v_diff", "min_v_diff", "mean_v_diff", "skew_v_diff", "kurtosis_v_diff", "sum_v_diff", "sum_square_v_diff"])
+            self.assertListEqual(list(v_vars_df.columns),
+                                 ["var_v_diff", "min_v_diff", "mean_v_diff", "skew_v_diff", "kurtosis_v_diff",
+                                  "sum_v_diff", "sum_square_v_diff"])
 
-            temp_list = v_vars_df.iloc[0,:].to_list()
-            temp_list = [np.round(np.float(x),8) for x in temp_list]
-            self.assertListEqual(temp_list, [0.00472705,0.0108896,0.13865059,0.59427689,2.36743208,176.50219843,30.4896637])
-            
+            temp_list = v_vars_df.iloc[0, :].to_list()
+            temp_list = [np.round(float(x), 8) for x in temp_list]
+            self.assertListEqual(temp_list,
+                                 [0.00472705, 0.0108896, 0.13865059, 0.59427689, 2.36743208, 176.50219843, 30.4896637])
+
             # processed_cycler_run_path_2
             pcycler_run = auto_load_processed(processed_cycler_run_path_2)
             v_vars_df = featurizer_helpers.get_v_diff(pcycler_run, 1, 8)
             print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var_v_diff'], decimals=8),
                              np.round(2.664e-05, decimals=8))
-            self.assertListEqual(list(v_vars_df.columns), ["var_v_diff", "min_v_diff", "mean_v_diff", "skew_v_diff", "kurtosis_v_diff", "sum_v_diff", "sum_square_v_diff"])
+            self.assertListEqual(list(v_vars_df.columns),
+                                 ["var_v_diff", "min_v_diff", "mean_v_diff", "skew_v_diff", "kurtosis_v_diff",
+                                  "sum_v_diff", "sum_square_v_diff"])
 
-            temp_list = v_vars_df.iloc[0,:].to_list()
-            temp_list = [np.round(np.float(x),8) for x in temp_list]
-            self.assertListEqual(temp_list, [2.664e-05,0.01481062,0.01993318,1.70458503,4.89453871,6.83708111,0.14542267])
+            temp_list = v_vars_df.iloc[0, :].to_list()
+            temp_list = [np.round(float(x), 8) for x in temp_list]
+            self.assertListEqual(temp_list,
+                                 [2.664e-05, 0.01481062, 0.01993318, 1.70458503, 4.89453871, 6.83708111, 0.14542267])
 
             # processed_cycler_run_path_3
             pcycler_run = auto_load_processed(processed_cycler_run_path_3)
@@ -707,11 +626,14 @@ class TestFeaturizer(unittest.TestCase):
             print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var_v_diff'], decimals=8),
                              np.round(4.82e-06, decimals=8))
-            self.assertListEqual(list(v_vars_df.columns), ["var_v_diff", "min_v_diff", "mean_v_diff", "skew_v_diff", "kurtosis_v_diff", "sum_v_diff", "sum_square_v_diff"])
+            self.assertListEqual(list(v_vars_df.columns),
+                                 ["var_v_diff", "min_v_diff", "mean_v_diff", "skew_v_diff", "kurtosis_v_diff",
+                                  "sum_v_diff", "sum_square_v_diff"])
 
-            temp_list = v_vars_df.iloc[0,:].to_list()
-            temp_list = [np.round(np.float(x),8) for x in temp_list]
-            self.assertListEqual(temp_list, [4.82e-06,0.01134005,0.01569094,-0.01052989,3.25562527,4.07964428,0.06526675])
+            temp_list = v_vars_df.iloc[0, :].to_list()
+            temp_list = [np.round(float(x), 8) for x in temp_list]
+            self.assertListEqual(temp_list,
+                                 [4.82e-06, 0.01134005, 0.01569094, -0.01052989, 3.25562527, 4.07964428, 0.06526675])
 
             # processed_cycler_run_path_4
             pcycler_run = auto_load_processed(processed_cycler_run_path_4)
@@ -719,11 +641,163 @@ class TestFeaturizer(unittest.TestCase):
             print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var_v_diff'], decimals=8),
                              np.round(9.71e-06, decimals=8))
-            self.assertListEqual(list(v_vars_df.columns), ["var_v_diff", "min_v_diff", "mean_v_diff", "skew_v_diff", "kurtosis_v_diff", "sum_v_diff", "sum_square_v_diff"])
+            self.assertListEqual(list(v_vars_df.columns),
+                                 ["var_v_diff", "min_v_diff", "mean_v_diff", "skew_v_diff", "kurtosis_v_diff",
+                                  "sum_v_diff", "sum_square_v_diff"])
 
-            temp_list = v_vars_df.iloc[0,:].to_list()
-            temp_list = [np.round(np.float(x),8) for x in temp_list]
-            self.assertListEqual(temp_list, [9.71e-06,-0.01138431,0.00490308,-3.09586327,13.72199015,2.16744705,0.01306312])
+            temp_list = v_vars_df.iloc[0, :].to_list()
+            temp_list = [np.round(float(x), 8) for x in temp_list]
+            self.assertListEqual(temp_list,
+                                 [9.71e-06, -0.01138431, 0.00490308, -3.09586327, 13.72199015, 2.16744705, 0.01306312])
+
+    def test_get_hppc_ocv(self):
+        pcycler_run_loc = os.path.join(
+            TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
+        )
+        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+        pcycler_run = auto_load_processed(pcycler_run_loc)
+        hppc_ocv_features = featurizer_helpers.get_hppc_ocv(pcycler_run, 1)
+        self.assertEqual(np.round(hppc_ocv_features['var_ocv'].iloc[0], 6), 0.000016)
+        self.assertEqual(np.round(hppc_ocv_features['min_ocv'].iloc[0], 6), -0.001291)
+        self.assertEqual(np.round(hppc_ocv_features['mean_ocv'].iloc[0], 6), 0.002221)
+        self.assertEqual(np.round(hppc_ocv_features['skew_ocv'].iloc[0], 6), 1.589392)
+        self.assertEqual(np.round(hppc_ocv_features['kurtosis_ocv'].iloc[0], 6), 7.041016)
+        self.assertEqual(np.round(hppc_ocv_features['sum_ocv'].iloc[0], 6), 0.025126)
+        self.assertEqual(np.round(hppc_ocv_features['sum_square_ocv'].iloc[0], 6), 0.000188)
+
+    def test_get_step_index(self):
+        pcycler_run_loc = os.path.join(
+            TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
+        )
+
+        parameters_path = os.path.join(TEST_FILE_DIR, "data-share", "raw", "parameters")
+        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+        pcycler_run = auto_load_processed(pcycler_run_loc)
+        data = pcycler_run.diagnostic_data
+        hppc_cycles = data.loc[data.cycle_type == "hppc"]
+        print(hppc_cycles.step_index.unique())
+        _, protocol_name = os.path.split(pcycler_run.metadata.protocol)
+        parameter_row, _ = parameters_lookup.get_protocol_parameters(protocol_name, parameters_path=parameters_path)
+
+        for cycle in hppc_cycles.cycle_index.unique():
+            hppc_cycle = hppc_cycles[hppc_cycles.cycle_index == cycle]
+            for step in hppc_cycle.step_index.unique():
+                hppc_cycle_step = hppc_cycle[(hppc_cycle.step_index == step)]
+                for step_iter in hppc_cycle_step.step_index_counter.unique():
+                    hppc_cycle_step_iter = hppc_cycle_step[(hppc_cycle_step.step_index_counter == step_iter)]
+                    duration = hppc_cycle_step_iter.test_time.max() - hppc_cycle_step_iter.test_time.min()
+                    median_crate = np.round(hppc_cycle_step.current.median() /
+                                            parameter_row["capacity_nominal"].iloc[0], 2)
+                    print(step, median_crate, duration)
+
+        step_ind = featurizer_helpers.get_step_index(pcycler_run,
+                                                     cycle_type="hppc",
+                                                     diag_pos=0)
+        self.assertEqual(len(step_ind.values()), 6)
+        print([step_ind["hppc_long_rest"],
+               step_ind["hppc_discharge_pulse"],
+               step_ind["hppc_short_rest"],
+               step_ind["hppc_charge_pulse"],
+               step_ind["hppc_discharge_to_next_soc"]])
+
+        self.assertEqual(step_ind, {
+            'hppc_charge_to_soc': 9,
+            'hppc_long_rest': 11,
+            'hppc_discharge_pulse': 12,
+            'hppc_short_rest': 13,
+            'hppc_charge_pulse': 14,
+            'hppc_discharge_to_next_soc': 15
+        })
+        step_ind = featurizer_helpers.get_step_index(pcycler_run,
+                                                     cycle_type="hppc",
+                                                     diag_pos=1)
+        self.assertEqual(len(step_ind.values()), 6)
+        self.assertEqual(step_ind, {
+            'hppc_charge_to_soc': 41,
+            'hppc_long_rest': 43,
+            'hppc_discharge_pulse': 44,
+            'hppc_short_rest': 45,
+            'hppc_charge_pulse': 46,
+            'hppc_discharge_to_next_soc': 47
+        })
+
+    def test_get_step_index_2(self):
+        pcycler_run_loc = os.path.join(
+            TEST_FILE_DIR, "PreDiag_000400_000084_truncated_structure.json"
+        )
+        parameters_path = os.path.join(TEST_FILE_DIR, "data-share", "raw", "parameters")
+        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+        pcycler_run = auto_load_processed(pcycler_run_loc)
+        _, protocol_name = os.path.split(pcycler_run.metadata.protocol)
+        parameter_row, _ = parameters_lookup.get_protocol_parameters(protocol_name, parameters_path=parameters_path)
+
+        step_ind = featurizer_helpers.get_step_index(pcycler_run,
+                                                     cycle_type="hppc",
+                                                     diag_pos=0)
+        self.assertEqual(len(step_ind.values()), 7)
+
+        self.assertEqual(step_ind, {
+            'hppc_charge_to_soc': 9,
+            'hppc_long_rest': 11,
+            'hppc_discharge_pulse': 12,
+            'hppc_short_rest': 13,
+            'hppc_charge_pulse': 14,
+            'hppc_discharge_to_next_soc': 15,
+            'hppc_final_discharge': 17
+        })
+        step_ind = featurizer_helpers.get_step_index(pcycler_run,
+                                                     cycle_type="hppc",
+                                                     diag_pos=1)
+        self.assertEqual(len(step_ind.values()), 7)
+        self.assertEqual(step_ind, {
+            'hppc_charge_to_soc': 41,
+            'hppc_long_rest': 43,
+            'hppc_discharge_pulse': 44,
+            'hppc_short_rest': 45,
+            'hppc_charge_pulse': 46,
+            'hppc_discharge_to_next_soc': 47,
+            'hppc_final_discharge': 49
+        })
+        step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="reset", diag_pos=0)
+        self.assertEqual(step_ind, {'reset_charge': 5, 'reset_discharge': 6})
+        step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="reset", diag_pos=1)
+        self.assertEqual(step_ind, {'reset_charge': 38, 'reset_discharge': 39})
+
+        step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="rpt_0.2C", diag_pos=0)
+        self.assertEqual(step_ind, {'rpt_0.2C_charge': 19, 'rpt_0.2C_discharge': 20})
+        step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="rpt_0.2C", diag_pos=1)
+        self.assertEqual(step_ind, {'rpt_0.2C_charge': 51, 'rpt_0.2C_discharge': 52})
+
+        step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="rpt_1C", diag_pos=0)
+        self.assertEqual(step_ind, {'rpt_1C_charge': 22, 'rpt_1C_discharge': 23})
+        step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="rpt_1C", diag_pos=1)
+        self.assertEqual(step_ind, {'rpt_1C_charge': 54, 'rpt_1C_discharge': 55})
+
+        step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="rpt_2C", diag_pos=0)
+        self.assertEqual(step_ind, {'rpt_2C_charge': 25, 'rpt_2C_discharge': 26})
+        step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="rpt_2C", diag_pos=1)
+        self.assertEqual(step_ind, {'rpt_2C_charge': 57, 'rpt_2C_discharge': 58})
+
+    def test_get_step_index_3(self):
+        pcycler_run_loc = os.path.join(
+            TEST_FILE_DIR, "PredictionDiagnostics_000136_00002D_truncated_structure.json"
+        )
+        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+        pcycler_run = auto_load_processed(pcycler_run_loc)
+        step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="hppc", diag_pos=0)
+        self.assertEqual(len(step_ind.values()), 6)
+
+    def test_get_diffusion_coeff(self):
+        with ScratchDir("."):
+            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+            pcycler_run_loc = os.path.join(
+                TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
+            )
+            pcycler_run = auto_load_processed(pcycler_run_loc)
+            diffusion_df = featurizer_helpers.get_diffusion_coeff(pcycler_run, 1)
+            print(np.round(diffusion_df.iloc[0].to_list(), 3))
+            self.assertEqual(np.round(diffusion_df.iloc[0].to_list(), 3)[0], -0.016)
+            self.assertEqual(np.round(diffusion_df.iloc[0].to_list(), 3)[5], -0.011)
 
 
 class TestRawToFeatures(unittest.TestCase):
