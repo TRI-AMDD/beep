@@ -50,7 +50,6 @@ import os
 import json
 
 from docopt import docopt
-from monty.serialization import loadfn, dumpfn
 
 from beep import logger, __version__
 from beep.conversion_schemas import (
