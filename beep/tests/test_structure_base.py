@@ -22,17 +22,11 @@ import matplotlib.pyplot as plt
 from monty.serialization import loadfn, dumpfn
 
 from beep.conversion_schemas import STRUCTURE_DTYPES
-from beep.utils import os_format
 from beep.utils.s3 import download_s3_object
-from beep.structure.base import BEEPDatapath, step_is_waveform_dchg, step_is_waveform_chg
+from beep.structure.base import BEEPDatapath
 from beep.structure.base_eis import EIS, BEEPDatapathWithEIS
 from beep.structure.maccor import MaccorDatapath
-
-
-BIG_FILE_TESTS = os.environ.get("BIG_FILE_TESTS", None) == "True"
-SKIP_MSG = "Tests requiring large files with diagnostic cycles are disabled, set BIG_FILE_TESTS=True to run full tests"
-TEST_DIR = os.path.dirname(os.path.abspath(__file__))
-TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
+from beep.tests.constants import TEST_FILE_DIR, BIG_FILE_TESTS
 
 
 class TestBEEPDatapath(unittest.TestCase):

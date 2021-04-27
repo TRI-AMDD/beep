@@ -14,17 +14,15 @@
 """Unit tests related to Splicing files"""
 
 import os
-import numpy as np
-from beep.utils import MaccorSplice
 import unittest
+
+import numpy as np
+
+from beep.utils import MaccorSplice
 from beep.utils.s3 import download_s3_object
 from beep import MODULE_DIR
 from beep.utils import parameters_lookup
-
-BIG_FILE_TESTS = os.environ.get("BIG_FILE_TESTS", None) == "True"
-SKIP_MSG = "Tests requiring S3 access are disabled, set BIG_FILE_TESTS=True to run full tests"
-TEST_DIR = os.path.dirname(__file__)
-TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
+from beep.tests.constants import BIG_FILE_TESTS, TEST_FILE_DIR, SKIP_MSG
 
 
 class SpliceTest(unittest.TestCase):

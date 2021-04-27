@@ -38,16 +38,13 @@ from beep.utils import parameters_lookup
 from monty.serialization import dumpfn, loadfn
 from monty.tempfile import ScratchDir
 from beep.utils.s3 import download_s3_object
+from beep.tests.constants import TEST_FILE_DIR, BIG_FILE_TESTS
 
-TEST_DIR = os.path.dirname(__file__)
-TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
+
 MACCOR_FILE_W_DIAGNOSTICS = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000020_CH71.071")
 MACCOR_FILE_W_PARAMETERS = os.path.join(
     TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010"
 )
-
-BIG_FILE_TESTS = os.environ.get("BIG_FILE_TESTS", None) == "True"
-SKIP_MSG = "Tests requiring large files with diagnostic cycles are disabled, set BIG_FILE_TESTS to run full tests"
 
 
 class TestFeaturizer(unittest.TestCase):
