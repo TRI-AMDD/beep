@@ -139,7 +139,7 @@ def process_file_list_from_json(file_list_json, processed_dir="data-share/struct
             new_filename = add_suffix_to_filename(new_filename, "_structure")
             structured_run_loc = os.path.join(processed_dir, new_filename)
             structured_run_loc = os.path.abspath(structured_run_loc)
-            dp.to_json_file(structured_run_loc, as_legacy=omit_raw)
+            dp.to_json_file(structured_run_loc, omit_raw)
 
             # Append file loc to list to be returned
             processed_file_list.append(structured_run_loc)

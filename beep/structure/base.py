@@ -282,7 +282,7 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         return cls.from_dict(d)
 
-    def to_json_file(self, filename, as_legacy=False):
+    def to_json_file(self, filename, omit_raw=False):
         """Save a BEEPDatapath to disk as a json.
 
         .json.gz files are supported.
@@ -291,15 +291,14 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         Args:
             filename (str, Pathlike): The filename to save the file to.
-            as_legacy (bool): If True, saves the file as a legacy, meaning
-                only structured (NOT RAW) data will be saved. More efficient
-                for saving/writing to disk.
+            omit_raw (bool): If True, saves only structured (NOT RAW) data.
+                More efficient for saving/writing to disk.
 
         Returns:
             None
         """
         d = self.as_dict()
-        if as_legacy:
+        if omit_raw:
             d.pop("raw_data")
 
         dumpfn(d, filename)
