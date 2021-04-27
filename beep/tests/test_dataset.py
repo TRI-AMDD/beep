@@ -15,29 +15,29 @@
 
 import unittest
 import os
+import shutil
+
+from monty.tempfile import ScratchDir
+from monty.serialization import dumpfn, loadfn
+
+
 from beep.featurize import (
     RPTdQdVFeatures,
     HPPCResistanceVoltageFeatures,
     DiagnosticSummaryStats,
-    DiagnosticProperties
 )
 from beep import MODULE_DIR
 from beep.dataset import BeepDataset, get_threshold_targets
-from monty.tempfile import ScratchDir
-from monty.serialization import dumpfn, loadfn
-import shutil
+from beep.tests.constants import TEST_FILE_DIR
 
-TEST_DIR = os.path.dirname(__file__)
-TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 DIAGNOSTIC_PROCESSED = os.path.join(TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json")
 FASTCHARGE_PROCESSED = os.path.join(TEST_FILE_DIR, '2017-06-30_2C-10per_6C_CH10_structure.json')
 
-BIG_FILE_TESTS = os.environ.get("BEEP_BIG_TESTS", False)
-SKIP_MSG = "Tests requiring large files with diagnostic cycles are disabled, set BIG_FILE_TESTS to run full tests"
 FEATURIZER_CLASSES = [RPTdQdVFeatures, HPPCResistanceVoltageFeatures, DiagnosticSummaryStats]
 FEATURE_HYPERPARAMS = loadfn(
     os.path.join(MODULE_DIR, "features/feature_hyperparameters.yaml")
 )
+
 
 class TestDataset(unittest.TestCase):
     def setUp(self):

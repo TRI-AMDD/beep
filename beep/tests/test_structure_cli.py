@@ -18,23 +18,17 @@ import os
 import subprocess
 import tempfile
 import unittest
-import numpy as np
-
 from pathlib import Path
+
+import numpy as np
 from monty.serialization import loadfn, dumpfn
 from monty.tempfile import ScratchDir
-from beep.utils import os_format
 
+from beep.utils import os_format
 from beep.structure.base import BEEPDatapath
 from beep.structure.arbin import ArbinDatapath
-
 from beep.structure.cli import process_file_list_from_json, auto_load
-
-
-BIG_FILE_TESTS = os.environ.get("BIG_FILE_TESTS", None) == "True"
-SKIP_MSG = "Tests requiring large files with diagnostic cycles are disabled, set BIG_FILE_TESTS=True to run full tests"
-TEST_DIR = os.path.dirname(os.path.abspath(__file__))
-TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
+from beep.tests.constants import TEST_FILE_DIR
 
 
 class TestCLI(unittest.TestCase):

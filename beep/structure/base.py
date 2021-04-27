@@ -12,6 +12,8 @@ import pandas as pd
 import numpy as np
 from scipy import integrate
 from monty.json import MSONable
+from monty.io import zopen
+from monty.serialization import dumpfn
 
 from beep import tqdm
 from beep import MODULE_DIR
@@ -258,6 +260,8 @@ class BEEPDatapath(abc.ABC, MSONable):
     def from_json_file(cls, filename):
         """Load a structured run previously saved to file.
 
+        .json.gz files are supported.
+
         Loads a BEEPDatapath or (legacy) ProcessedCyclerRun structured object from json.
 
         Can be used in combination with files serialized with BEEPDatapath.to_json_file.
@@ -268,7 +272,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         Returns:
             None
         """
-        with open(filename, "r") as f:
+        with zopen(filename, "r") as f:
             d = json.load(f)
 
         # Add this structured file path to the paths dict
@@ -278,19 +282,26 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         return cls.from_dict(d)
 
-    def to_json_file(self, filename):
+    def to_json_file(self, filename, omit_raw=False):
         """Save a BEEPDatapath to disk as a json.
+
+        .json.gz files are supported.
 
         Not named from_json to avoid conflict with MSONable.from_json(*)
 
         Args:
             filename (str, Pathlike): The filename to save the file to.
+            omit_raw (bool): If True, saves only structured (NOT RAW) data.
+                More efficient for saving/writing to disk.
 
         Returns:
             None
         """
-        with open(filename, "w") as f:
-            json.dump(self.as_dict(), f)
+        d = self.as_dict()
+        if omit_raw:
+            d.pop("raw_data")
+
+        dumpfn(d, filename)
 
     @StructuringDecorators.must_not_be_legacy
     def as_dict(self):
@@ -356,6 +367,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         paths = d.get("paths", None)
 
         # support legacy operations
+        # support loads when raw_data not available
         if any([k not in d for k in ("raw_data", "metadata")]):
             raw_data = None
             metadata = {k: d.get(k) for k in ("barcode", "protocol", "channel_id")}

@@ -22,17 +22,11 @@ import matplotlib.pyplot as plt
 from monty.serialization import loadfn, dumpfn
 
 from beep.conversion_schemas import STRUCTURE_DTYPES
-from beep.utils import os_format
 from beep.utils.s3 import download_s3_object
-from beep.structure.base import BEEPDatapath, step_is_waveform_dchg, step_is_waveform_chg
+from beep.structure.base import BEEPDatapath
 from beep.structure.base_eis import EIS, BEEPDatapathWithEIS
 from beep.structure.maccor import MaccorDatapath
-
-
-BIG_FILE_TESTS = os.environ.get("BIG_FILE_TESTS", None) == "True"
-SKIP_MSG = "Tests requiring large files with diagnostic cycles are disabled, set BIG_FILE_TESTS=True to run full tests"
-TEST_DIR = os.path.dirname(os.path.abspath(__file__))
-TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
+from beep.tests.constants import TEST_FILE_DIR, BIG_FILE_TESTS, SKIP_MSG
 
 
 class TestBEEPDatapath(unittest.TestCase):
@@ -150,11 +144,6 @@ class TestBEEPDatapath(unittest.TestCase):
         ]:
             dp.unstructure()
 
-    def tearDown(self) -> None:
-        path = os.path.join(TEST_FILE_DIR, "test_serialization.json")
-        if os.path.exists(path):
-            os.remove(path)
-
     def run_dtypes_check(self, summary):
         reg_dyptes = summary.dtypes.tolist()
         reg_columns = summary.columns.tolist()
@@ -188,23 +177,30 @@ class TestBEEPDatapath(unittest.TestCase):
         d = truth_datapath.as_dict()
         datapath_from_dict = self.BEEPDatapathChildTest.from_dict(d)
 
-        fname = os.path.join(TEST_FILE_DIR, "test_serialization.json")
-        truth_datapath.to_json_file(fname)
-        datapath_from_json = self.BEEPDatapathChildTest.from_json_file(fname)
+        # Test loading with and without compression, and with and without raw_data via omit_raw
+        for fname_short in ("test_serialization.json", "test_serialization.json.gz"):
+            for omit_raw in (True, False):
 
-        for df_name in ("structured_data", "structured_summary", "diagnostic_data", "diagnostic_summary"):
-            df_truth = getattr(truth_datapath, df_name)
-            for datapath_test in (datapath_from_dict, datapath_from_json):
-                df_test = getattr(datapath_test, df_name)
+                fname = os.path.join(TEST_FILE_DIR, fname_short)
+                truth_datapath.to_json_file(fname, omit_raw=omit_raw)
+                datapath_from_json = self.BEEPDatapathChildTest.from_json_file(fname)
 
-                if df_truth is None:
-                    self.assertEqual(df_truth, df_test)
-                else:
-                    self.assertTrue(isinstance(df_test, pd.DataFrame))
-                    self.assertTrue(df_truth.equals(df_test))
+                for df_name in ("structured_data", "structured_summary", "diagnostic_data", "diagnostic_summary"):
+                    df_truth = getattr(truth_datapath, df_name)
+                    for datapath_test in (datapath_from_dict, datapath_from_json):
+                        df_test = getattr(datapath_test, df_name)
 
-        self.assertEqual(datapath_from_json.paths.get("structured"), fname)
-        self.assertEqual(datapath_from_json.paths.get("raw"), self.datapath_diag.paths.get("raw"))
+                        if df_truth is None:
+                            self.assertEqual(df_truth, df_test)
+                        else:
+                            self.assertTrue(isinstance(df_test, pd.DataFrame))
+                            self.assertTrue(df_truth.equals(df_test))
+
+                self.assertEqual(datapath_from_json.paths.get("structured"), fname)
+                self.assertEqual(datapath_from_json.paths.get("raw"), self.datapath_diag.paths.get("raw"))
+
+                if os.path.exists(fname):
+                    os.remove(fname)
 
     # based on RCRT.test_serialization
     def test_serialization_legacy(self):
