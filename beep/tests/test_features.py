@@ -38,7 +38,7 @@ from beep.utils import parameters_lookup
 from monty.serialization import dumpfn, loadfn
 from monty.tempfile import ScratchDir
 from beep.utils.s3 import download_s3_object
-from beep.tests.constants import TEST_FILE_DIR, BIG_FILE_TESTS
+from beep.tests.constants import TEST_FILE_DIR, BIG_FILE_TESTS, SKIP_MSG
 
 
 MACCOR_FILE_W_DIAGNOSTICS = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000020_CH71.071")

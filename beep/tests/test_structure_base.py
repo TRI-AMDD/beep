@@ -26,7 +26,7 @@ from beep.utils.s3 import download_s3_object
 from beep.structure.base import BEEPDatapath
 from beep.structure.base_eis import EIS, BEEPDatapathWithEIS
 from beep.structure.maccor import MaccorDatapath
-from beep.tests.constants import TEST_FILE_DIR, BIG_FILE_TESTS
+from beep.tests.constants import TEST_FILE_DIR, BIG_FILE_TESTS, SKIP_MSG
 
 
 class TestBEEPDatapath(unittest.TestCase):
