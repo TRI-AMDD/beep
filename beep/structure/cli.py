@@ -75,7 +75,7 @@ from beep.collate import add_suffix_to_filename
 SERVICE_CONFIG = {"service": "DataStructurer"}
 
 
-def process_file_list_from_json(file_list_json, processed_dir="data-share/structure/"):
+def process_file_list_from_json(file_list_json, processed_dir="data-share/structure/", omit_raw=True):
     """Function to take a json filename corresponding to a data structure
     with a 'file_list' and a 'validity' attribute, process each file
     with a corresponding True validity, dump the processed file into
@@ -89,6 +89,8 @@ def process_file_list_from_json(file_list_json, processed_dir="data-share/struct
             and loaded, otherwise interpreted as a json string.
         processed_dir (str): location for processed cycler run output
             files to be placed.
+        omit_raw (bool): Omit the raw_data from being saved to file. Creates
+            legacy file structure for all structured datapaths.
 
     Returns:
         (str): json string of processed files (with key "processed_file_list").
@@ -137,7 +139,7 @@ def process_file_list_from_json(file_list_json, processed_dir="data-share/struct
             new_filename = add_suffix_to_filename(new_filename, "_structure")
             structured_run_loc = os.path.join(processed_dir, new_filename)
             structured_run_loc = os.path.abspath(structured_run_loc)
-            dumpfn(dp, structured_run_loc)
+            dp.to_json_file(structured_run_loc, as_legacy=omit_raw)
 
             # Append file loc to list to be returned
             processed_file_list.append(structured_run_loc)

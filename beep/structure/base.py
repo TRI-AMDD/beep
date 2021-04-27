@@ -278,19 +278,26 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         return cls.from_dict(d)
 
-    def to_json_file(self, filename):
+    def to_json_file(self, filename, as_legacy=False):
         """Save a BEEPDatapath to disk as a json.
 
         Not named from_json to avoid conflict with MSONable.from_json(*)
 
         Args:
             filename (str, Pathlike): The filename to save the file to.
+            as_legacy (bool): If True, saves the file as a legacy, meaning
+                only structured (NOT RAW) data will be saved. More efficient
+                for saving/writing to disk.
 
         Returns:
             None
         """
+        d = self.as_dict()
+        if as_legacy:
+            d.pop("raw_data")
+
         with open(filename, "w") as f:
-            json.dump(self.as_dict(), f)
+            json.dump(d, f)
 
     @StructuringDecorators.must_not_be_legacy
     def as_dict(self):
@@ -356,6 +363,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         paths = d.get("paths", None)
 
         # support legacy operations
+        # support loads when raw_data not available
         if any([k not in d for k in ("raw_data", "metadata")]):
             raw_data = None
             metadata = {k: d.get(k) for k in ("barcode", "protocol", "channel_id")}
