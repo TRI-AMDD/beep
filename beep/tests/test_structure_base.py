@@ -144,11 +144,6 @@ class TestBEEPDatapath(unittest.TestCase):
         ]:
             dp.unstructure()
 
-    def tearDown(self) -> None:
-        path = os.path.join(TEST_FILE_DIR, "test_serialization.json")
-        if os.path.exists(path):
-            os.remove(path)
-
     def run_dtypes_check(self, summary):
         reg_dyptes = summary.dtypes.tolist()
         reg_columns = summary.columns.tolist()
@@ -182,23 +177,30 @@ class TestBEEPDatapath(unittest.TestCase):
         d = truth_datapath.as_dict()
         datapath_from_dict = self.BEEPDatapathChildTest.from_dict(d)
 
-        fname = os.path.join(TEST_FILE_DIR, "test_serialization.json")
-        truth_datapath.to_json_file(fname)
-        datapath_from_json = self.BEEPDatapathChildTest.from_json_file(fname)
+        # Test loading with and without compression, and with and without raw_data via as_legacy
+        for fname_short in ("test_serialization.json", "test_serialization.json.gz"):
+            for as_legacy in (True, False):
 
-        for df_name in ("structured_data", "structured_summary", "diagnostic_data", "diagnostic_summary"):
-            df_truth = getattr(truth_datapath, df_name)
-            for datapath_test in (datapath_from_dict, datapath_from_json):
-                df_test = getattr(datapath_test, df_name)
+                fname = os.path.join(TEST_FILE_DIR, fname_short)
+                truth_datapath.to_json_file(fname, as_legacy=as_legacy)
+                datapath_from_json = self.BEEPDatapathChildTest.from_json_file(fname)
 
-                if df_truth is None:
-                    self.assertEqual(df_truth, df_test)
-                else:
-                    self.assertTrue(isinstance(df_test, pd.DataFrame))
-                    self.assertTrue(df_truth.equals(df_test))
+                for df_name in ("structured_data", "structured_summary", "diagnostic_data", "diagnostic_summary"):
+                    df_truth = getattr(truth_datapath, df_name)
+                    for datapath_test in (datapath_from_dict, datapath_from_json):
+                        df_test = getattr(datapath_test, df_name)
 
-        self.assertEqual(datapath_from_json.paths.get("structured"), fname)
-        self.assertEqual(datapath_from_json.paths.get("raw"), self.datapath_diag.paths.get("raw"))
+                        if df_truth is None:
+                            self.assertEqual(df_truth, df_test)
+                        else:
+                            self.assertTrue(isinstance(df_test, pd.DataFrame))
+                            self.assertTrue(df_truth.equals(df_test))
+
+                self.assertEqual(datapath_from_json.paths.get("structured"), fname)
+                self.assertEqual(datapath_from_json.paths.get("raw"), self.datapath_diag.paths.get("raw"))
+
+                if os.path.exists(fname):
+                    os.remove(fname)
 
     # based on RCRT.test_serialization
     def test_serialization_legacy(self):
