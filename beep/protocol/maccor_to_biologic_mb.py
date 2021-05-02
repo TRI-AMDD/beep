@@ -609,7 +609,7 @@ class MaccorToBiologicMb:
                 loop_unroll_status_by_idx[idx] = {"will_unroll": curr_loop_will_unroll}
                 loop_will_unroll_stack.pop()
 
-                if curr_loop_will_unroll:
+                if False: # curr_loop_will_unroll:
                     # add unrolled loop seqs
 
                     # first add tracking data
@@ -632,7 +632,7 @@ class MaccorToBiologicMb:
                 # physical step
 
                 # last step in loop does not advance cycle, must unroll
-                if is_last_step_in_loop:
+                if False: # is_last_step_in_loop:
                     loop_will_unroll_stack[-1] = True
 
                 if get(step, "Limits.Current") or get(step, "Limits.Voltage"):
@@ -678,7 +678,7 @@ class MaccorToBiologicMb:
                 loop_will_unoll = loop_unroll_status_by_idx[idx]["will_unroll"]
                 loop = seq_loop_stack.pop()
 
-                if loop_will_unoll:
+                if False: # loop_will_unoll:
                     unrolled_loop = self._unroll_loop(
                         loop, num_loops, loop_start_seq_num, seq_num
                     )
