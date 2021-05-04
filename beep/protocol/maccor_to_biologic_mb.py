@@ -524,7 +524,7 @@ class MaccorToBiologicMb:
         - a list of biologic seqs
     """
 
-    def maccor_ast_to_biologic_seqs(self, maccor_ast):
+    def maccor_ast_to_biologic_seqs(self, maccor_ast, unroll=False):
         steps = get(maccor_ast, "MaccorTestProcedure.ProcSteps.TestStep")
         if steps is None:
             print(
@@ -532,7 +532,7 @@ class MaccorToBiologicMb:
             )
             return
 
-        seqs, _ = self._maccor_steps_to_biologic_seqs(steps)
+        seqs, _ = self._maccor_steps_to_biologic_seqs(steps, unroll=unroll)
         return seqs
 
     """
@@ -842,8 +842,8 @@ class MaccorToBiologicMb:
     LATIN-1 i.e. ISO-8859-1 encoding
     """
 
-    def maccor_ast_to_protocol_str(self, maccor_ast, col_width=20):
-        seqs = self.maccor_ast_to_biologic_seqs(maccor_ast)
+    def maccor_ast_to_protocol_str(self, maccor_ast, unroll=False, col_width=20):
+        seqs = self.maccor_ast_to_biologic_seqs(maccor_ast, unroll=unroll)
         return self.biologic_seqs_to_protocol_str(seqs, col_width)
 
     """
