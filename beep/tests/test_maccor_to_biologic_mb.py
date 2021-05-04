@@ -675,6 +675,6 @@ class ConversionTest(unittest.TestCase):
         pass
 
     def test_convert_diagnostic(self):
-        # convert_diagnostic_v5_multi_techniques(source_file="BioTest_000001.000")
-        with ScratchDir("."):
-            convert_diagnostic_v5_multi_techniques(source_file="diagnosticV5.000")
+        convert_diagnostic_v5_multi_techniques(source_file="BioTest_000001.000")
+        # with ScratchDir("."):
+        #     convert_diagnostic_v5_multi_techniques(source_file="diagnosticV5.000")
