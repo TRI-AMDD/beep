@@ -25,6 +25,7 @@ from beep.protocol import (
 from monty.serialization import loadfn
 from collections import OrderedDict, deque
 from pydash import get, unset, set_, find_index, clone_deep_with
+import pandas as pd
 
 # magic number for biologic
 END_SEQ_NUM = 9999
@@ -1252,7 +1253,7 @@ def convert_diagnostic_v5_multi_techniques(source_file="BioTest_000001.000"):
             for i in range(0, num_lines):
                 seq_str = seq_lines[i] if i < len(seq_lines) else ""
                 step_str = step_lines[i] if i < len(step_lines) else ""
-                file_str += "{:<40s}{}\r\n".format(seq_str, step_str)
+            file_str += "{:<40s}{}\r\n".format(seq_str, step_str)
             file_str += "\r\n"
 
     file_str += "\r\n"
@@ -1262,3 +1263,103 @@ def convert_diagnostic_v5_multi_techniques(source_file="BioTest_000001.000"):
     with open(fp, "wb") as f:
         f.write(file_str.encode("ISO-8859-1"))
         print("created {}".format(fp))
+
+# Problem statement: 
+# given a series of steps
+# [s1]
+# do 1
+#   [s2]
+#   do 2
+#       [s3]
+#       adv cycle
+#   loop 2
+#   [s4]
+#    adv cycle
+# loop 1
+# [s5]
+# ...
+# 
+# we're going to convert to a series techniques with seqs, and neeed to 
+# figure out the correct cycle number, this can be challenging, consider
+# 
+# [s1]
+# do 1
+#   adv cycle
+#   [s2]
+#   adv cycle
+# loop 1
+#  
+# this generates 1 technique and 3 seqs: 
+# 0      1      2
+# [s1]', [s2]', loop
+# going from 0 to 1 we advance cylce num, going from 2 to 1 we also advance cycle num
+# but 2 does not appear in the data!
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+
+# 
+# 
+
+import math
+
+fp = '/Users/willpowelson/tri/beep/beep/protocol/dummy.csv'
+df = pd.read_csv(fp, sep=";")
+
+technique_cycle_number_rules = {
+  'cycle_advances_by_transition': {
+    (1, 2): 1,
+    (5, 3): 1,
+  },
+  'cycle_advances_on_technique_start': False,
+  'cycle_advances_on_technique_loop': True,
+}
+
+
+def addCycleNumCol(df, technique_cycle_number_rules, cycle_num_offset, tech_num):
+    num_rows = len(df.index)
+    if num_rows < 1:
+        return
+
+
+    cycle_advances_by_transition = technique_cycle_number_rules['cycle_advances_by_transition']
+    cycle_advances_on_technique_start = technique_cycle_number_rules['cycle_advances_on_technique_start']
+    cycle_advances_on_technique_loop = technique_cycle_number_rules['cycle_advances_on_technique_loop']
+
+    
+    cycle_num = cycle_num_offset + 1 if cycle_advances_on_technique_start else cycle_num_offset
+    tech_nums = []
+    cycle_nums = []
+    prev_seq_num = 0
+    prev_loop_num = 0
+    for i, row in df.iterrows():
+        seq_num = int(row['Ns'])
+        loop_num = int(row['Loop'])
+
+        new_seq = seq_num != prev_seq_num
+        if new_seq:
+            transition = (prev_seq_num, seq_num)
+            cycle_num += cycle_advances_by_transition.get(transition, 0)
+            prev_seq_num = seq_num
+
+        new_loop = loop_num != prev_loop_num
+        if new_loop and cycle_advances_on_technique_loop:
+            cycle_num += 1
+            prev_loop_num = loop_num
+        
+        cycle_nums.append(cycle_num)
+        tech_nums.append(tech_num)
+
+    df['cycle_number'] = cycle_nums
+    df['tech_nums'] = tech_nums
+
+addCycleNumCol(df, technique_cycle_number_rules, 0, 1)
+
