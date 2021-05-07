@@ -412,7 +412,7 @@ def res_calc(chosen, soc, r_type):
         charge/discharge resistance value (float) at this specific soc and time scale in hppc cycles
     """
     
-    # unique step indices in the chosen dataframe
+
     steps = chosen.step_index.unique()[1:6]
     
     counters = []
@@ -639,6 +639,7 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window):
 
 # TODO: this is a linear fit, we should use something
 #  from a library, e.g. numpy.polyfit
+# The equation I am using is based on the linear part of the curve 
 def d_curve_fitting(x, y):
     """
     This function fits given data x and y into a linear function.
@@ -687,6 +688,7 @@ def get_diffusion_coeff(processed_cycler_run, diag_pos):
     step_ind = get_step_index(processed_cycler_run,
                               cycle_type="hppc",
                               diag_pos=diag_pos)
+
     steps = [step_ind["hppc_long_rest"],
              step_ind["hppc_discharge_pulse"],
              step_ind["hppc_short_rest"],
@@ -710,7 +712,7 @@ def get_diffusion_coeff(processed_cycler_run, diag_pos):
         x = np.sqrt(t + t_d) - np.sqrt(t)
         y = v - v.min()
         a = d_curve_fitting(
-            x[round(3 * len(x) / 4): len(x)], y[round(3 * len(x) / 4): len(x)]
+            x[round(2 * len(x) / 3): len(x)], y[round(2 * len(x) / 3): len(x)]
         )
         result["D_" + str(i)] = [a]
 
@@ -733,7 +735,8 @@ def get_diffusion_features(processed_cycler_run, diag_pos):
     """
     df_0 = get_diffusion_coeff(processed_cycler_run, 0)
     df = get_diffusion_coeff(processed_cycler_run, diag_pos)
-    result = (df - df_0)/df_0
+    # add in a small number for numerical stability 
+    result = (df - df_0 - 1e-6)/(df_0 + 1e-6)
     return result
 
 
