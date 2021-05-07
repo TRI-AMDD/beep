@@ -456,7 +456,10 @@ def res_calc(chosen, soc, r_type):
         return res
 
     else:
-        index = time_scale
+        if r_type[4] == '0':
+            index = 0.001
+        elif r_type[4] == '3':
+            index = 3
             
         # test time is in the units of s 
         chosen_step_cur_index = chosen_step_cur[(chosen_step_cur.test_time - chosen_step_cur.test_time.min()) <= index]
@@ -464,6 +467,7 @@ def res_calc(chosen, soc, r_type):
         i_dis = chosen_step_cur_index.current.iloc[-1]
         res = (v_dis - v_ocv)/(i_dis-i_ocv)
         return res
+    
     
 def get_resistance_soc_duration_hppc(processed_cycler_run, diag_pos):
     
@@ -724,12 +728,12 @@ def get_diffusion_features(processed_cycler_run, diag_pos):
         if rpt_0.2C, occurs at cycle_index = [2, 37, 142...], <diag_pos>=0 would correspond to cycle_index 2.
 
     Returns:
-        a dataframe contains 8 slope changes.
+        a dataframe contains 8 normalized slope changes.
 
     """
     df_0 = get_diffusion_coeff(processed_cycler_run, 0)
     df = get_diffusion_coeff(processed_cycler_run, diag_pos)
-    result = df_0.subtract(df)
+    result = (df - df_0)/df_0
     return result
 
 
