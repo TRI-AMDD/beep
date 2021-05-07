@@ -309,7 +309,7 @@ class TestFeaturizer(unittest.TestCase):
             self.assertEqual(featurizer.X.shape[1], 76)
             self.assertListEqual(
                 [featurizer.X.columns[0], featurizer.X.columns[-1]],
-                ["ohmic_r_d0", "D_8"],
+                ["r_c_0s_00", "D_8"],
             )
 
     def test_HPPCRelaxationFeatures_class(self):
