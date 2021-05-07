@@ -397,174 +397,120 @@ def get_hppc_ocv(processed_cycler_run, diag_pos):
     return hppc_ocv_features
 
 
-def get_chosen_df(processed_cycler_run, diag_pos):
+def res_calc(chosen, soc, r_type):
+    
     """
-    This function narrows your data down to a dataframe that contains only the diagnostic cycle number you
-    are interested in.
+    This function calculates resistance based on different socs and differnet time scales in hppc cycles.
+    
+    Args:
+        chosen(pd.DataFrame): a dataframe for a specific diagnostic cycle you are interested in.
+        soc (int): step index counter corresponding to the soc window of interest - 0, 1, 2, 3, 4 ... 
+        r_type (str): a string that indicates the time scale of the resistance you are calculating, e.g. 
+        'r_c_0s', 'r_c_3s', 'r_c_end', 'r_d_0s', 'r_d_3s', 'r_d_end'
+    
+    Returns:
+        charge/discharge resistance value (float) at this specific soc and time scale in hppc cycles
+    """
+    
+    # unique step indices in the chosen dataframe
+    steps = chosen.step_index.unique()[1:6]
+    
+    counters = []
+        
+    for step in steps:
+        counters.append(chosen[chosen.step_index == step].step_index_counter.unique().tolist())
+        
+    # for charge 
+    if r_type[2] == 'c':
+        # 40 s short rest 
+        step_ocv = 2
+        step_cur = 3
+    
+    # for discharge 
+    if r_type[2] == 'd':
+        # one hour long rest 
+        step_ocv = 0
+        step_cur = 1
+    
+    # if there is no dataframe for ocv or step cur, it means this step is skipped, so return None directly 
+    try:
+        chosen_step_ocv = chosen[(chosen.step_index_counter == counters[step_ocv][soc])]
+        chosen_step_cur = chosen[chosen.step_index_counter == counters[step_cur][soc]]
+    except:
+        return None
+    
+    # since the data is voltage interpolated, so we want to sort the data based on time 
+    chosen_step_ocv = chosen_step_ocv.sort_values(by ='test_time')
+    chosen_step_cur = chosen_step_cur.sort_values(by ='test_time')
+    
+    # last data point of the rest is the ocv value 
+    v_ocv = chosen_step_ocv.voltage.iloc[-1]
+    # taking the average of the last 5 data points of the current 
+    i_ocv = chosen_step_ocv.current.tail(5).mean()
+    
+    # now we look at the time scales   
+    if r_type[4] == 'e':
+        v_dis = chosen_step_cur.voltage.iloc[-1]
+        i_dis = chosen_step_cur.current.iloc[-1]
+        res = (v_dis - v_ocv)/(i_dis-i_ocv)
+        return res
 
+    else:
+        index = time_scale
+            
+        # test time is in the units of s 
+        chosen_step_cur_index = chosen_step_cur[(chosen_step_cur.test_time - chosen_step_cur.test_time.min()) <= index]
+        v_dis = chosen_step_cur_index.voltage.iloc[-1]
+        i_dis = chosen_step_cur_index.current.iloc[-1]
+        res = (v_dis - v_ocv)/(i_dis-i_ocv)
+        return res
+    
+def get_resistance_soc_duration_hppc(processed_cycler_run, diag_pos):
+    
+    """
+    This function calculates resistances based on different socs and differnet time scales for a targeted hppc cycle.
+    
     Args:
         processed_cycler_run (beep.structure.ProcessedCyclerRun)
         diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
-        if rpt_0.2C, occurs at cycle_index = [2, 37, 142, 244 ...], <diag_pos>=0 would correspond to cycle_index 2.
+        if rpt_0.2C, occurs at cycle_index = [2, 37, 142, 244 ...], <diag_pos>=0 would correspond to cycle_index 2
 
+    
     Returns:
-        a datarame that only has the diagnostic cycle you are interested in, and there is a column called
-        'diagnostic_time[h]' starting from 0 for this dataframe.
+        a dataframe (single row)
+        - and its 54 columns list all the possible resistance names 'r_c_0s_0', 'r_c_3s_0'...
+            - r: resistance
+            - c/d: state (charge or discharge)
+            - timescale: 0s, 3s, or end of the cycle (resistance)
+            - soc_index: an int indicating which soc window in HPPC e.g. 0, 1, 2,...
+            
     """
-
+    
     data = processed_cycler_run.diagnostic_data
-    hppc_cycle = data.loc[data.cycle_type == "hppc"]
+    hppc_cycle = data.loc[data.cycle_type=='hppc']
     hppc_cycle = hppc_cycle.loc[hppc_cycle.current.notna()]
     cycles = hppc_cycle.cycle_index.unique()
-    diag_num = cycles[diag_pos]
 
-    selected_diag_df = hppc_cycle.loc[hppc_cycle.cycle_index == diag_num]
-    selected_diag_df = selected_diag_df.sort_values(by="test_time")
-    selected_diag_df["diagnostic_time"] = (selected_diag_df.test_time - selected_diag_df.test_time.min()) / 3600
+    # a list of strings to get charge/discharge resistances at different time scales
+    names = ['r_c_0s', 'r_c_3s', 'r_c_end', 'r_d_0s', 'r_d_3s', 'r_d_end']
+    
+    output = pd.DataFrame()
 
-    return selected_diag_df
+    chosen = hppc_cycle[hppc_cycle.cycle_index==cycles[diag_pos]]
+    steps = chosen.step_index.unique()[1:6]
 
+    # for each diagnostic cycle, we have a row conatins all the resistances 
+    df_row = pd.DataFrame()  
 
-def res_calc(selected_diag_df, steps, soc, step_ocv, step_cur, index):
-    """
-    This function calculates resistances at different socs and a specific pulse duration for a specified hppc cycle.
+    for name in names:
+        for j in range(9):
+            # full name 
+            f_name = name + '_' + str(j)
+            df_row[f_name] = [res_calc(chosen, j, name)]
 
-    Args:
-        selected_diag_df(pd.DataFrame): a dataframe for a specific diagnostic cycle you are interested in.
-        steps (list): list of step numbers for the specific occurrence of the diagnostic
-        if rpt_0.2C, occurs at cycle_index = [2, 37, 142, 244 ...], <diag_pos>=0 would correspond to cycle_index 2
-        soc (int): step index counter corresponding to the soc window of interest.
-        step_ocv (int): 0 corresponds to the 1h-rest, and 2 corresponds to the 40s-rest.
-        step_cur (int): 1 is for discharge, and 3 is for charge.
-        index (float or str): this will input a time scale for resistance (unit is second), e.g. 0.01, 5 or
-        'last' which is the entire pulse duration.
-
-    Returns:
-        (a number) resistance at a specific soc in hppc cycles
-    """
-
-    counters = []
-
-    for step in steps:
-        counters.append(
-            selected_diag_df[selected_diag_df.step_index == step].step_index_counter.unique().tolist()
-        )
-
-    if (len(counters[step_ocv]) - 1) < soc:
-        return None
-
-    if index == "last":
-        index = -1
-    else:
-        start = selected_diag_df[
-            (selected_diag_df.step_index_counter == counters[step_cur][soc])
-        ].diagnostic_time.min()
-        stop = start + index / 3600
-        index = len(
-            selected_diag_df[
-                (selected_diag_df.step_index_counter == counters[step_cur][soc])
-                & (selected_diag_df.diagnostic_time > start)
-                & (selected_diag_df.diagnostic_time < stop)
-            ]
-        )
-
-    v_ocv = selected_diag_df[(selected_diag_df.step_index_counter == counters[step_ocv][soc])].voltage.iloc[
-        -1
-    ]
-    #     i_ocv = chosen[(chosen.step_index_counter == counters[step_ocv][soc])].current.tail(5).mean()
-    v_dis = selected_diag_df[(selected_diag_df.step_index_counter == counters[step_cur][soc])].voltage.iloc[
-        index
-    ]
-    i_dis = selected_diag_df[(selected_diag_df.step_index_counter == counters[step_cur][soc])].current.iloc[
-        index
-    ]
-    res = (v_dis - v_ocv) / i_dis
-
-    return res
-
-
-def get_resistance_soc_duration_hppc(processed_cycler_run, diag_pos):
-    """
-    This function calculates resistances at different socs and different pulse durations for a specified hppc cycle.
-
-    Args:
-        processed_cycler_run (beep.structure.ProcessedCyclerRun)
-        diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
-        if rpt_0.2C, occurs at cycle_index = [2, 37, 142, 244 ...], <diag_pos>=0 would correspond to cycle_index 2
-
-    Returns:
-        a dataframe contains 54 resistances calculated at diag_pos.
-        6 columns are ohmic, charge transfer and polarization resistances each both for charge and discharge;
-        9 columns from 0 to 8, correspond to state of charge from high to low.
-    """
-
-    resistances = pd.DataFrame()
-    step_dict = get_step_index(processed_cycler_run,
-                               cycle_type="hppc",
-                               diag_pos=diag_pos)
-    steps = [
-        step_dict['hppc_long_rest'],
-        step_dict['hppc_discharge_pulse'],
-        step_dict['hppc_short_rest'],
-        step_dict['hppc_charge_pulse'],
-        step_dict['hppc_discharge_to_next_soc']
-        ]
-
-    selected_diag_df = get_chosen_df(processed_cycler_run, diag_pos)
-
-    resistance = []
-    for i in range(9):
-        res = res_calc(selected_diag_df, steps, i, 0, 1, "last")
-        resistance.append(res)
-    resistances["discharge_pulse_last"] = resistance
-
-    resistance = []
-    for i in range(9):
-        res = res_calc(selected_diag_df, steps, i, 0, 1, 0.001)
-        resistance.append(res)
-    resistances["discharge_pulse_0.001s"] = resistance
-
-    resistance = []
-    for i in range(9):
-        res = res_calc(selected_diag_df, steps, i, 0, 1, 2)
-        resistance.append(res)
-    resistances["discharge_pulse_2s"] = resistance
-
-    resistance = []
-    for i in range(9):
-        res = res_calc(selected_diag_df, steps, i, 2, 3, "last")
-        resistance.append(res)
-    resistances["charge_pulse_last"] = resistance
-
-    resistance = []
-    for i in range(9):
-        res = res_calc(selected_diag_df, steps, i, 2, 3, 2)
-        resistance.append(res)
-    resistances["charge_pulse_2s"] = resistance
-
-    resistance = []
-    for i in range(9):
-        res = res_calc(selected_diag_df, steps, i, 2, 3, 0.001)
-        resistance.append(res)
-    resistances["charge_pulse_0.001s"] = resistance
-
-    result = pd.DataFrame()
-    result["ohmic_r_d"] = resistances["discharge_pulse_0.001s"]
-    result["ohmic_r_c"] = resistances["charge_pulse_0.001s"]
-    result["ct_r_d"] = (
-        resistances["discharge_pulse_2s"] - resistances["discharge_pulse_0.001s"]
-    )
-    result["ct_r_c"] = (
-        resistances["charge_pulse_2s"] - resistances["charge_pulse_0.001s"]
-    )
-    result["polar_r_d"] = (
-        resistances["discharge_pulse_last"] - resistances["discharge_pulse_2s"]
-    )
-    result["polar_r_c"] = (
-        resistances["charge_pulse_last"] - resistances["charge_pulse_2s"]
-    )
-
-    return result
+    output = output.append(df_row, ignore_index=True)
+    
+    return output
 
 
 def get_dr_df(processed_cycler_run, diag_pos):
