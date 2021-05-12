@@ -150,13 +150,16 @@ class MaccorToBiologicMb:
             return "{:.3f}".format(total_time_sec), "s"
 
     def _proc_step_to_seq(
-        self, proc_step, step_num, seq_from_step_num, goto_lower_bound, end_step_num, current_range='10 A'
+        self, proc_step, step_num, seq_from_step_num, goto_lower_bound, end_step_num,
+            current_range='10 A', split_step=None
     ):
         """
         converts steps that are not related to control flow to sequence dicts
         (control flow steps are DO, LOOP, ADV CYCLE)
         """
         seq_num = seq_from_step_num[step_num]
+        if split_step == "pt2":
+            seq_num = seq_num + 1
         assert seq_num is not None
 
         new_seq = self.blank_seq.copy()
@@ -217,7 +220,7 @@ class MaccorToBiologicMb:
             # does this need to be formatted? e.g. 1.0 from Maccor vs 1.000 for biologic
             assert type(step_value) == str
 
-            ctrl1_val, ctrl1_val_unit = self._convert_amps(step_value)
+            ctrl1_val, ctrl1_val_unit = self._convert_volts(step_value)
             new_seq["ctrl1_val"] = ctrl1_val
             new_seq["ctrl1_val_unit"] = ctrl1_val_unit
 
@@ -288,7 +291,10 @@ class MaccorToBiologicMb:
                 )
 
             assert goto_step_num in seq_from_step_num
-            goto_seq = seq_from_step_num[goto_step_num]
+            if split_step == "pt1":
+                goto_seq = seq_num + 1
+            else:
+                goto_seq = seq_from_step_num[goto_step_num]
             new_seq["lim{}_seq".format(lim_num)] = goto_seq
 
             if goto_step_num != step_num + 1:
@@ -330,7 +336,7 @@ class MaccorToBiologicMb:
                 lim_value, lim_value_unit = self._convert_amps(end_value)
 
                 new_seq["lim{0}_comp".format(lim_num)] = operator_map[end_oper]
-                new_seq["lim{0}_type".format(lim_num)] = "I"
+                new_seq["lim{0}_type".format(lim_num)] = "|I|"
                 new_seq["lim{0}_value".format(lim_num)] = lim_value
                 new_seq["lim{0}_value_unit".format(lim_num)] = lim_value_unit
             else:
@@ -431,6 +437,7 @@ class MaccorToBiologicMb:
                 raise NotImplementedError
             step_part1["StepMode"] = "Current"
             step_part1["StepValue"] = step["Limits"]["Current"]
+            set_(step_part1, path + ".EndType", "Voltage")
             set_(step_part1, path + ".Value", step["StepValue"])
             set_(step_part1, path + ".Step", str(step_num + 1).zfill(3))
             step_part1["Limits"] = None
@@ -518,7 +525,7 @@ class MaccorToBiologicMb:
         - a list of biologic seqs
     """
 
-    def maccor_ast_to_biologic_seqs(self, maccor_ast):
+    def maccor_ast_to_biologic_seqs(self, maccor_ast, unroll=False):
         steps = get(maccor_ast, "MaccorTestProcedure.ProcSteps.TestStep")
         if steps is None:
             print(
@@ -526,7 +533,7 @@ class MaccorToBiologicMb:
             )
             return
 
-        seqs, _ = self._maccor_steps_to_biologic_seqs(steps)
+        seqs, _ = self._maccor_steps_to_biologic_seqs(steps, unroll=unroll)
         return seqs
 
     """
@@ -541,7 +548,7 @@ class MaccorToBiologicMb:
           seqs are 0-indexed, steps are 1-indexed
     """
 
-    def _maccor_steps_to_biologic_seqs(self, steps):
+    def _maccor_steps_to_biologic_seqs(self, steps, unroll=False):
 
         # To build our seqs we need to be able to handle GOTOs
         # in order to do that we a mapping between Step Numbers
@@ -610,7 +617,7 @@ class MaccorToBiologicMb:
                 loop_unroll_status_by_idx[idx] = {"will_unroll": curr_loop_will_unroll}
                 loop_will_unroll_stack.pop()
 
-                if curr_loop_will_unroll:
+                if unroll and curr_loop_will_unroll:
                     # add unrolled loop seqs
 
                     # first add tracking data
@@ -633,7 +640,7 @@ class MaccorToBiologicMb:
                 # physical step
 
                 # last step in loop does not advance cycle, must unroll
-                if is_last_step_in_loop:
+                if unroll and is_last_step_in_loop:
                     loop_will_unroll_stack[-1] = True
 
                 if get(step, "Limits.Current") or get(step, "Limits.Voltage"):
@@ -679,7 +686,7 @@ class MaccorToBiologicMb:
                 loop_will_unoll = loop_unroll_status_by_idx[idx]["will_unroll"]
                 loop = seq_loop_stack.pop()
 
-                if loop_will_unoll:
+                if unroll and loop_will_unoll:
                     unrolled_loop = self._unroll_loop(
                         loop, num_loops, loop_start_seq_num, seq_num
                     )
@@ -714,6 +721,7 @@ class MaccorToBiologicMb:
                     seq_num_by_step_num,
                     step_num_goto_lower_bound,
                     end_step_num,
+                    split_step="pt1"
                 )
                 seq_loop_stack[-1].append(seq1)
                 seq2 = self._proc_step_to_seq(
@@ -722,6 +730,7 @@ class MaccorToBiologicMb:
                     seq_num_by_step_num,
                     step_num_goto_lower_bound,
                     end_step_num,
+                    split_step="pt2"
                 )
                 seq_loop_stack[-1].append(seq2)
             else:
@@ -834,8 +843,8 @@ class MaccorToBiologicMb:
     LATIN-1 i.e. ISO-8859-1 encoding
     """
 
-    def maccor_ast_to_protocol_str(self, maccor_ast, col_width=20):
-        seqs = self.maccor_ast_to_biologic_seqs(maccor_ast)
+    def maccor_ast_to_protocol_str(self, maccor_ast, unroll=False, col_width=20):
+        seqs = self.maccor_ast_to_biologic_seqs(maccor_ast, unroll=unroll)
         return self.biologic_seqs_to_protocol_str(seqs, col_width)
 
     """
