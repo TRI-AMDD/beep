@@ -284,8 +284,18 @@ class IntracellAnalysisTest(unittest.TestCase):
                                              'PE_mass', 'NE_upper_voltage', 'NE_lower_voltage', 'NE_upper_SOC',
                                              'NE_lower_SOC', 'NE_mass', 'Li_mass'
                                              ]).T
-        print(degradation_df.iloc[0].to_list())
-        self.assertAlmostEqual(degradation_df['LLI'].iloc[0], -0.027076718049897863, 5)
+        # print(degradation_df.iloc[0].to_list())
+        self.assertAlmostEqual(degradation_df['LLI'].iloc[0], -0.027076, 5)
+        self.assertAlmostEqual(degradation_df['LAM_PE'].iloc[0], 0.06750165, 5)
+        self.assertAlmostEqual(degradation_df['LAM_NE'].iloc[0],  0.3055425, 5)
+        self.assertAlmostEqual(degradation_df['PE_upper_voltage'].iloc[0], 4.25095116, 5)
+        self.assertAlmostEqual(degradation_df['PE_lower_voltage'].iloc[0], 3.62354913951, 5)
+        self.assertAlmostEqual(degradation_df['PE_upper_SOC'].iloc[0], 95.7202505, 5)
+        self.assertAlmostEqual(degradation_df['PE_mass'].iloc[0],  109.24224079, 5)
 
-        # summary_df = degradation_df.merge(lifetime_metric_for_cell, left_index=True, right_on='cycle_index').set_index(
-        #     'cycle_index')
+        self.assertAlmostEqual(degradation_df['NE_upper_voltage'].iloc[0], 0.050515360, 5)
+        self.assertAlmostEqual(degradation_df['NE_lower_voltage'].iloc[0],  0.8564127166, 5)
+        self.assertAlmostEqual(degradation_df['NE_upper_SOC'].iloc[0], 91.832460, 5)
+        self.assertAlmostEqual(degradation_df['NE_mass'].iloc[0],  108.900146, 5)
+
+        self.assertAlmostEqual(degradation_df['Li_mass'].iloc[0], 104.680978, 5)
