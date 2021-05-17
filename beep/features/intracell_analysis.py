@@ -433,8 +433,8 @@ class IntracellAnalysis:
         # Interpolate over V
         voltage_vec = np.linspace(2.7, 4.2, 1001)
         v_dv_dq_interper_real = interp1d(dv_dq_real['Voltage_aligned'].loc[~dv_dq_real['Voltage_aligned'].isna()],
-                                         dv_dq_real['dVdQ'].loc[~dv_dq_real['Voltage_aligned'].isna()]
-                                         , bounds_error=False, fill_value=0)
+                                         dv_dq_real['dVdQ'].loc[~dv_dq_real['Voltage_aligned'].isna()],
+                                         bounds_error=False, fill_value=0)
         v_soc_interper_real = interp1d(dv_dq_real['Voltage_aligned'].loc[~dv_dq_real['Voltage_aligned'].isna()],
                                        dv_dq_real['SOC_aligned'].loc[~dv_dq_real['Voltage_aligned'].isna()],
                                        bounds_error=False, fill_value=(0, 100))
@@ -508,7 +508,6 @@ class IntracellAnalysis:
                                  x_ne_2)
 
         return df_ne
-
 
     def blend_electrodes_robust_v2(self, ne_pristine_matched, ne_2_pos, ne_2_neg, x_ne_2):
         """
@@ -590,8 +589,8 @@ class IntracellAnalysis:
         x: an array of 2 or 3 parameters containing scale_ratio, offset, and optionally NE_2_x
         df_real: dataframe for the first diagnostic (pristine) of the real full cell. Columns for SOC (ev)
         df_pe: dataframe for the positive electrode. Columns for SOC (evenly spaced) and Voltage.
-        self.ne__1pristine: dataframe for the primary material in the negative electrode. Columns for SOC (evenly spaced)
-            and Voltage.
+        self.ne__1pristine: dataframe for the primary material in the negative electrode. Columns for SOC
+            (evenly spaced) and Voltage.
         df_ne_2: dataframe for the secondary material in the negative electrode. Columns for SOC (evenly spaced)
             and Voltage. Supply empty DataFrame if not emulating a blend from two known elelctrodes.
         """
@@ -629,8 +628,8 @@ class IntracellAnalysis:
         soc_vec = np.linspace(min_soc, max_soc, 1001)
 
         df_1_interper = interp1d(df_1['SOC_aligned'],
-                                 df_1['Voltage_aligned']
-                                 , bounds_error=False, fill_value=np.nan)
+                                 df_1['Voltage_aligned'],
+                                 bounds_error=False, fill_value=np.nan)
         df_1['SOC_aligned'] = soc_vec.copy()
         df_1['Voltage_aligned'] = df_1_interper(soc_vec)
 
@@ -645,7 +644,7 @@ class IntracellAnalysis:
         df_3['Voltage_aligned'] = df_1['Voltage_aligned'].subtract(df_2['Voltage_aligned'])
         df_3['SOC_aligned'] = df_2['SOC_aligned']
 
-        ### centering
+        # centering
         centering_value = - np.min(df_3['SOC_aligned'].iloc[np.argmin(np.abs(df_3['Voltage_aligned'] - 2.7))])
 
         emulated_full_cell_centered = df_3.copy()
@@ -657,7 +656,7 @@ class IntracellAnalysis:
         ne_out_centered = df_2.copy()
         ne_out_centered['SOC_aligned'] = df_2['SOC_aligned'] + centering_value
 
-        ### Scaling
+        # Scaling
 
         emulated_full_cell_centered.loc[(emulated_full_cell_centered['Voltage_aligned'] > self.upper_voltage) | (
                     emulated_full_cell_centered['Voltage_aligned'] < self.lower_voltage)] = np.nan
@@ -666,7 +665,8 @@ class IntracellAnalysis:
             'Voltage_aligned'].isna()])  # value to scale emulated back to 100% SOC
 
         emulated_full_cell_centered_scaled = emulated_full_cell_centered.copy()
-        emulated_full_cell_centered_scaled['SOC_aligned'] = emulated_full_cell_centered['SOC_aligned'] / scaling_value * 100
+        emulated_full_cell_centered_scaled['SOC_aligned'] = \
+            emulated_full_cell_centered['SOC_aligned'] / scaling_value * 100
 
         pe_out_centered_scaled = pe_out_centered.copy()
         pe_out_centered_scaled['SOC_aligned'] = pe_out_centered['SOC_aligned'] / scaling_value * 100
@@ -698,18 +698,20 @@ class IntracellAnalysis:
 
         return pe_out_centered_scaled, ne_out_centered_scaled, df_real_interped, emulated_full_cell_interped
 
-
     def halfcell_initial_matching(self, x, *params):
         """
         Augments halfcell voltage profiles by scaling and translating them. Typically used in an optimization
         routine to fit the emulated full cell profile to a real cell profile.
 
-        # Inputs:
-        # x: an array of 4 or 5 parameters containing scale_pe, offset_pe,scale_pe, scale_ne, offset_ne, and optionally ne_2_x
-        # df_real: dataframe for the first diagnostic (pristine) of the real full cell. Columns for SOC (ev)
-        # self.pe_pristine: dataframe for the positive electrode. Columns for SOC (evenly spaced) and Voltage.
-        # df_ne_1: dataframe for the primary material in the negative electrode. Columns for SOC (evenly spaced) and Voltage.
-        # df_ne_2: dataframe for the secondary material in the negative electrode. Columns for SOC (evenly spaced) and Voltage. Supply empty DataFrame if not emulating a blend from two known elelctrodes.
+        Inputs:
+        x: an array of 4 or 5 parameters containing scale_pe, offset_pe,scale_pe, scale_ne, offset_ne,
+            and optionally ne_2_x
+        df_real: dataframe for the first diagnostic (pristine) of the real full cell. Columns for SOC (ev)
+        self.pe_pristine: dataframe for the positive electrode. Columns for SOC (evenly spaced) and Voltage.
+        df_ne_1: dataframe for the primary material in the negative electrode. Columns for SOC (evenly spaced)
+            and Voltage.
+        df_ne_2: dataframe for the secondary material in the negative electrode. Columns for SOC (evenly spaced)
+            and Voltage. Supply empty DataFrame if not emulating a blend from two known elelctrodes.
         """
 
         df_real, df_pe, df_ne_1, df_ne_2 = params
@@ -760,7 +762,7 @@ class IntracellAnalysis:
         df_3.loc[(df_3['Voltage_aligned'] > 4.2) | (df_3['Voltage_aligned'] < 2.7)] = np.nan
         df_3['SOC_aligned'] = df_2['SOC_aligned']
 
-        ### centering
+        # centering
         centering_value = (df_real['SOC_aligned'].loc[(np.argmin(np.abs(df_real['Voltage_aligned'] -
                                                                         np.min(df_3['Voltage_aligned'].loc[
                                                                                    ~df_3['Voltage_aligned'].isna()]))))]
@@ -774,8 +776,6 @@ class IntracellAnalysis:
 
         NE_out_centered = df_2.copy()
         NE_out_centered['SOC_aligned'] = df_2['SOC_aligned'] + centering_value
-
-        ###
 
         # Make new interpolation across SOC for full-cell error calculation
         min_soc_full_cell = np.min((np.min(df_3.loc[~df_3.Voltage_aligned.isna()].SOC_aligned),
@@ -1045,8 +1045,8 @@ class IntracellAnalysis:
                                        (~emulated_full_cell_with_degradation['Voltage_aligned'].isna())
                                    ])
 
-        emulated_full_cell_with_degradation_centered['SOC_aligned'] = (emulated_full_cell_with_degradation['SOC_aligned'] +
-                                                                       centering_value)
+        emulated_full_cell_with_degradation_centered['SOC_aligned'] = \
+            (emulated_full_cell_with_degradation['SOC_aligned'] + centering_value)
 
         pe_out_centered = pe_out.copy()
         pe_out_centered['SOC_aligned'] = pe_out['SOC_aligned'] + centering_value
@@ -1115,8 +1115,8 @@ class IntracellAnalysis:
                              ~emulated_full_cell_with_degradation['Voltage_aligned'].isna()])
         )
 
-        emulated_full_cell_with_degradation_centered['SOC_aligned'] = (emulated_full_cell_with_degradation['SOC_aligned'] +
-                                                                       centering_value)
+        emulated_full_cell_with_degradation_centered['SOC_aligned'] = \
+            (emulated_full_cell_with_degradation['SOC_aligned'] + centering_value)
 
         pe_out_centered = pe_out.copy()
         pe_out_centered['SOC_aligned'] = pe_out['SOC_aligned'] + centering_value
@@ -1187,8 +1187,8 @@ class IntracellAnalysis:
                              ~emulated_full_cell_with_degradation['Voltage_aligned'].isna()])
         )
 
-        emulated_full_cell_with_degradation_centered['SOC_aligned'] = (emulated_full_cell_with_degradation['SOC_aligned'] +
-                                                                       centering_value)
+        emulated_full_cell_with_degradation_centered['SOC_aligned'] = \
+            (emulated_full_cell_with_degradation['SOC_aligned'] + centering_value)
 
         pe_out_centered = pe_out.copy()
         pe_out_centered['SOC_aligned'] = pe_out['SOC_aligned'] + centering_value
@@ -1210,8 +1210,8 @@ class IntracellAnalysis:
              np.max(real_full_cell_with_degradation['SOC_aligned'].loc[
                         ~real_full_cell_with_degradation['Voltage_aligned'].isna()]))
         )
-        emulated_interper = interp1d(emulated_full_cell_with_degradation_centered['SOC_aligned']
-                                     , emulated_full_cell_with_degradation_centered['Voltage_aligned'],
+        emulated_interper = interp1d(emulated_full_cell_with_degradation_centered['SOC_aligned'],
+                                     emulated_full_cell_with_degradation_centered['Voltage_aligned'],
                                      bounds_error=False)
         real_interper = interp1d(real_full_cell_with_degradation['SOC_aligned'],
                                  real_full_cell_with_degradation['Voltage_aligned'],
