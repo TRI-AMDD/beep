@@ -119,6 +119,34 @@ def get_halfcell_voltages(pe_out_centered, ne_out_centered):
             soc_upper, soc_lower, li_mass)
 
 
+def plot_voltage_curves_for_cell(processed_cycler_run,
+                                 cycle_type='rpt_0.2C',
+                                 x_var='capacity',
+                                 step_type=0,
+                                 fig_size_inches=(6, 4)):
+    # Plot a series of voltage profiles over cycles for this cell
+    fig = plt.figure()
+    # Filter down to only cycles of cycle_type
+    diag_type_cycles = processed_cycler_run.diagnostic_interpolated.loc[
+        processed_cycler_run.diagnostic_interpolated['cycle_type'] == cycle_type]
+
+    # Loop across cycles
+    cycle_indexes = diag_type_cycles['cycle_index'].unique()
+    step_type_list = ['charge', 'discharge']
+    for i in cycle_indexes:
+        diag_type_cycle_i = diag_type_cycles.loc[diag_type_cycles.cycle_index == i]
+        x_charge = diag_type_cycle_i[step_type_list[step_type] + '_' + x_var].loc[
+            diag_type_cycles['step_type'] == step_type]
+        y_charge = diag_type_cycle_i.voltage.loc[diag_type_cycles['step_type'] == step_type]
+        plt.plot(x_charge, y_charge,
+                 label='cycle ' + str(i) + ' ' + step_type_list[step_type],
+                 c=cm.winter((i - np.min(cycle_indexes)) / (np.max(cycle_indexes) - np.min(cycle_indexes))),
+                 figure=fig)
+
+    fig.set_size_inches(fig_size_inches)
+    return fig
+
+
 class IntracellAnalysis:
     def __init__(self,
                  pe_pristine_file,
@@ -1156,114 +1184,6 @@ class IntracellAnalysis:
         real_aligned['Voltage_aligned'] = real_interper(soc_vec)
 
         return pe_out_centered, ne_out_centered, real_aligned, emulated_aligned
-
-    def halfcell_degradation_matching(self, x, *params):
-        lli = x[0]
-        lam_pe = x[1]
-        lam_ne = x[2]
-
-        pe_pristine, ne_pristine, real_full_cell_with_degradation = params
-
-        pe_out, ne_out = self._impose_degradation(pe_pristine, ne_pristine, lli, lam_pe, lam_ne)
-        emulated_full_cell_with_degradation = pd.DataFrame()
-        emulated_full_cell_with_degradation['SOC_aligned'] = pe_out['SOC_aligned'].copy()
-        emulated_full_cell_with_degradation['Voltage_aligned'] = pe_out['Voltage_aligned'] - ne_out['Voltage_aligned']
-
-        emulated_full_cell_with_degradation_centered = pd.DataFrame()
-
-        emulated_full_cell_with_degradation_centered['Voltage_aligned'] = emulated_full_cell_with_degradation[
-            'Voltage_aligned']
-        emulated_full_cell_with_degradation_centered['Voltage_aligned'].loc[
-            (emulated_full_cell_with_degradation_centered['Voltage_aligned'] > 4.2) |
-            (emulated_full_cell_with_degradation_centered['Voltage_aligned'] < 2.7)] = np.nan
-
-        centering_value = (
-                real_full_cell_with_degradation['SOC_aligned'].loc[
-                    (np.argmin(np.abs(real_full_cell_with_degradation['Voltage_aligned']
-                                      - np.min(emulated_full_cell_with_degradation['Voltage_aligned'].loc[
-                                                   ~emulated_full_cell_with_degradation['Voltage_aligned'].isna()]))))
-                ]
-                - np.min(emulated_full_cell_with_degradation['SOC_aligned'].loc[
-                             ~emulated_full_cell_with_degradation['Voltage_aligned'].isna()])
-        )
-
-        emulated_full_cell_with_degradation_centered['SOC_aligned'] = \
-            (emulated_full_cell_with_degradation['SOC_aligned'] + centering_value)
-
-        pe_out_centered = pe_out.copy()
-        pe_out_centered['SOC_aligned'] = pe_out['SOC_aligned'] + centering_value
-
-        ne_out_centered = ne_out.copy()
-        ne_out_centered['SOC_aligned'] = ne_out['SOC_aligned'] + centering_value
-
-        # Interpolate full profiles across same SOC range
-        min_soc = np.min(
-            (np.min(emulated_full_cell_with_degradation_centered['SOC_aligned'].loc[
-                        ~emulated_full_cell_with_degradation_centered['Voltage_aligned'].isna()]),
-             np.min(real_full_cell_with_degradation['SOC_aligned'].loc[
-                        ~real_full_cell_with_degradation['Voltage_aligned'].isna()])
-             )
-        )
-        max_soc = np.max(
-            (np.max(emulated_full_cell_with_degradation_centered['SOC_aligned'].loc[
-                        ~emulated_full_cell_with_degradation_centered['Voltage_aligned'].isna()]),
-             np.max(real_full_cell_with_degradation['SOC_aligned'].loc[
-                        ~real_full_cell_with_degradation['Voltage_aligned'].isna()]))
-        )
-        emulated_interper = interp1d(emulated_full_cell_with_degradation_centered['SOC_aligned'],
-                                     emulated_full_cell_with_degradation_centered['Voltage_aligned'],
-                                     bounds_error=False)
-        real_interper = interp1d(real_full_cell_with_degradation['SOC_aligned'],
-                                 real_full_cell_with_degradation['Voltage_aligned'],
-                                 bounds_error=False)
-
-        soc_vec = np.linspace(min_soc, max_soc, 1001)
-
-        emulated_aligned = pd.DataFrame()
-        emulated_aligned['SOC_aligned'] = soc_vec
-        emulated_aligned['Voltage_aligned'] = emulated_interper(soc_vec)
-
-        real_aligned = pd.DataFrame()
-        real_aligned['SOC_aligned'] = soc_vec
-        real_aligned['Voltage_aligned'] = real_interper(soc_vec)
-
-        # Calculate distance between lines
-        # Dynamic time warping error metric
-        alignment = dtw(emulated_aligned['Voltage_aligned'].dropna(),
-                        real_aligned['Voltage_aligned'].dropna(),
-                        keep_internals=True, open_begin=False, open_end=True, step_pattern='asymmetric')
-        error = alignment.distance + 0.01 * len(emulated_aligned['Voltage_aligned'].loc[
-                                                    emulated_aligned['Voltage_aligned'].isna()])
-
-        return error, emulated_aligned, real_aligned, pe_out_centered, ne_out_centered
-
-    def plot_voltage_curves_for_cell(self,
-                                     processed_cycler_run,
-                                     cycle_type='rpt_0.2C',
-                                     x_var='capacity',
-                                     step_type=0,
-                                     fig_size_inches=(6, 4)):
-        # Plot a series of voltage profiles over cycles for this cell
-        fig = plt.figure()
-        # Filter down to only cycles of cycle_type
-        diag_type_cycles = processed_cycler_run.diagnostic_interpolated.loc[
-            processed_cycler_run.diagnostic_interpolated['cycle_type'] == cycle_type]
-
-        # Loop across cycles
-        cycle_indexes = diag_type_cycles['cycle_index'].unique()
-        step_type_list = ['charge', 'discharge']
-        for i in cycle_indexes:
-            diag_type_cycle_i = diag_type_cycles.loc[diag_type_cycles.cycle_index == i]
-            x_charge = diag_type_cycle_i[step_type_list[step_type] + '_' + x_var].loc[
-                diag_type_cycles['step_type'] == step_type]
-            y_charge = diag_type_cycle_i.voltage.loc[diag_type_cycles['step_type'] == step_type]
-            plt.plot(x_charge, y_charge,
-                     label='cycle ' + str(i) + ' ' + step_type_list[step_type],
-                     c=cm.winter((i - np.min(cycle_indexes)) / (np.max(cycle_indexes) - np.min(cycle_indexes))),
-                     figure=fig)
-
-        fig.set_size_inches(fig_size_inches)
-        return fig
 
     def get_voltage_curves_for_cell(self, processed_cycler_run, cycle_type='rpt_0.2C'):
         # Filter down to only cycles of cycle_type
