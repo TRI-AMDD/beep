@@ -613,13 +613,17 @@ class IntracellAnalysis:
         """
         Augments halfcell voltage profiles by scaling and translating them. Typically used in an optimization routine
         to fit the emulated full cell profile to a real cell profile. Alternatively, this function can be used for
-        emulation of full cell voltage profiles from its electrode constituents with specified capacity ratio and offset of the two electrodes.
+        emulation of full cell voltage profiles from its electrode constituents with specified capacity ratio and
+        offset of the two electrodes.
 
         Inputs:
-        x: an array of 2 or 3 parameters containing scale_ratio, offset, and optionally NE_2_x. scale_ratio is equal to the capacity of the 
-        cathode divided by the capacity of the anode. offset is defined as the SOC between the cathode at zero capacity and the anode at zero
+        x: an array of 2 or 3 parameters containing scale_ratio, offset, and optionally NE_2_x. scale_ratio is equal
+            to the capacity of the
+        cathode divided by the capacity of the anode. offset is defined as the SOC between the cathode at zero capacity
+            and the anode at zero
         capacity. NE_2_x is the fraction of the secondary electrode material in the anode.
-        df_real: dataframe for the first diagnostic (pristine) of the real full cell. Columns for SOC (evenly spaced) and Voltage.
+        df_real: dataframe for the first diagnostic (pristine) of the real full cell. Columns for SOC (evenly spaced)
+            and Voltage.
         df_pe: dataframe for the positive electrode. Columns for SOC (evenly spaced) and Voltage.
         self.ne_1_pristine: dataframe for the primary material in the negative electrode. Columns for SOC
             (evenly spaced) and Voltage.

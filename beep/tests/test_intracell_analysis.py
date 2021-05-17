@@ -142,14 +142,10 @@ class IntracellAnalysisTest(unittest.TestCase):
     @unittest.skip
     def test_process_beep_cycle_data_for_initial_halfcell_analysis(self):
         ia = IntracellAnalysis(os.path.join(TEST_FILE_DIR, 'cathode_clean_cc_charge_exptl_aligned.csv'),
-                               'anode_secondMeasure_clean_cc_charge_exptl_aligned.csv',
+                               os.path.join(TEST_FILE_DIR, 'anode_secondMeasure_clean_cc_charge_exptl_aligned.csv'),
                                cycle_type='rpt_0.2C',
                                step_type=0
                                )
-        # run = os.path.join(TEST_FILE_DIR, 'PreDiag_000220_00005E_structure.json')
-        # cell_struct = auto_load_processed(run)
-        # diag_type_cycles = cell_struct.diagnostic_data.loc[cell_struct.diagnostic_data['cycle_type'] == cycle_type]
-        #
         real_cell_initial_charge_profile_aligned, real_cell_initial_charge_profile = \
             ia.process_beep_cycle_data_for_initial_halfcell_analysis(self.cell_struct, step_type=0)
         self.assertAlmostEqual(real_cell_initial_charge_profile_aligned['Voltage_aligned'].min(), 2.742084, 5)
@@ -161,16 +157,15 @@ class IntracellAnalysisTest(unittest.TestCase):
 
     @unittest.skip
     def test_intracell(self):
-        ia = IntracellAnalysis('cathode_clean_cc_charge_exptl_aligned.csv',
-                               'anode_secondMeasure_clean_cc_charge_exptl_aligned.csv',
+        ia = IntracellAnalysis(os.path.join(TEST_FILE_DIR, 'cathode_clean_cc_charge_exptl_aligned.csv'),
+                               os.path.join(TEST_FILE_DIR, 'anode_secondMeasure_clean_cc_charge_exptl_aligned.csv'),
                                cycle_type='rpt_0.2C',
                                step_type=0
                                )
-#
         real_cell_initial_charge_profile_aligned, real_cell_initial_charge_profile = \
             ia.process_beep_cycle_data_for_initial_halfcell_analysis(self.cell_struct)
-#
-#         # Solving initial electrode matching to real full cell
+
+        # Solving initial electrode matching to real full cell
         electrode_matching_bounds = ((0.8, 1.2), (-20.0, 20.0), (1, 1), (0.1, 0.1), (0.1, 0.1))
         # (-1,1),(0.01,0.1),(0.01,0.1)
         opt_result_halfcell_initial_matching = differential_evolution(ia._get_error_from_halfcell_initial_matching,
