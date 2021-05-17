@@ -157,7 +157,7 @@ class IntracellAnalysis:
                  ne_2neg_file=None):
         """
         Invokes the cell electrode analysis class. This is a class designed to fit the cell and electrode
-        parameters in order to determine
+        parameters in order to determine changes of electrodes within the full cell from only full cell cycling data.
 
         Args:
             pe_pristine_file (str): file name for the half cell data of the pristine (uncycled) positive
@@ -220,11 +220,12 @@ class IntracellAnalysis:
 
         Inputs:
         diag_type_cycles: beep cell_struct.diagnostic_interpolated filtered to one diagnostic type
-        real_cell_initial_charge_profile_aligned: dataframe containing SOC and voltage columns
+        real_cell_initial_charge_profile_aligned: dataframe containing SOC (equally spaced) and voltage columns
+        real_cell_initial_charge_profile: dataframe containing SOC and voltage columns
         cycle_index: cycle number to evaluate at
 
         Outputs
-        real_cell_initial_charge_profile_aligned: a dataframe containing columns SOC_aligned (evenly spaced) and 
+        real_cell_candidate_charge_profile_aligned: a dataframe containing columns SOC_aligned (evenly spaced) and 
         Voltage_aligned
         """
 
@@ -264,8 +265,8 @@ class IntracellAnalysis:
                                                               cell_struct,
                                                               step_type=0):
         """
-        This function creates the initial (un-degraded) voltage and soc profiles for the cell with columns
-        interpolated on voltage and soc. This function works off of the
+        This function extracts the initial (non-degraded) voltage and soc profiles for the cell with columns
+        interpolated on voltage and soc.
 
         Inputs
         cell_struct: beep cell_struct.diagnostic_interpolated filtered to one diagnostic type
@@ -611,13 +612,16 @@ class IntracellAnalysis:
     def halfcell_initial_matching_v2(self, x, *params):
         """
         Augments halfcell voltage profiles by scaling and translating them. Typically used in an optimization routine
-        to fit the emulated full cell profile to a real cell profile.
+        to fit the emulated full cell profile to a real cell profile. Alternatively, this function can be used for
+        emulation of full cell voltage profiles from its electrode constituents with specified capacity ratio and offset of the two electrodes.
 
         Inputs:
-        x: an array of 2 or 3 parameters containing scale_ratio, offset, and optionally NE_2_x
-        df_real: dataframe for the first diagnostic (pristine) of the real full cell. Columns for SOC (ev)
+        x: an array of 2 or 3 parameters containing scale_ratio, offset, and optionally NE_2_x. scale_ratio is equal to the capacity of the 
+        cathode divided by the capacity of the anode. offset is defined as the SOC between the cathode at zero capacity and the anode at zero
+        capacity. NE_2_x is the fraction of the secondary electrode material in the anode.
+        df_real: dataframe for the first diagnostic (pristine) of the real full cell. Columns for SOC (evenly spaced) and Voltage.
         df_pe: dataframe for the positive electrode. Columns for SOC (evenly spaced) and Voltage.
-        self.ne__1pristine: dataframe for the primary material in the negative electrode. Columns for SOC
+        self.ne_1_pristine: dataframe for the primary material in the negative electrode. Columns for SOC
             (evenly spaced) and Voltage.
         df_ne_2: dataframe for the secondary material in the negative electrode. Columns for SOC (evenly spaced)
             and Voltage. Supply empty DataFrame if not emulating a blend from two known elelctrodes.
