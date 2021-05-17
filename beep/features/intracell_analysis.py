@@ -151,7 +151,7 @@ class IntracellAnalysis:
     def __init__(self,
                  pe_pristine_file,
                  ne_pristine_file,
-                 cycle_type='rtp_0.2C',
+                 cycle_type='rpt_0.2C',
                  step_type=0,
                  ne_2pos_file=None,
                  ne_2neg_file=None):
