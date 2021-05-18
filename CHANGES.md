@@ -1,5 +1,12 @@
 
 
+v2021.5.18.10
+-------------
+* Add ability to fit cell half data and extract cell parameters from full cell data - Thanks Patrick Asinger!
+* Change structuring to omit raw data in the data pipeline - Thanks Alex Dunn!
+* Fixes to biologic settings conversion function - Thanks Patrick Herring
+* Create Biologic conversion to split into different techniques - Thanks Will Powelson
+
 v2021.3.30.9
 ------------
 * Add service information into the base class for the logger
