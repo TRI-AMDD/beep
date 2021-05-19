@@ -1,5 +1,10 @@
 
 
+v2021.5.19.17
+-------------
+* Remove tests from coverage
+* Add beep.test as module
+
 v2021.5.18.10
 -------------
 * Add ability to fit cell half data and extract cell parameters from full cell data - Thanks Patrick Asinger!
