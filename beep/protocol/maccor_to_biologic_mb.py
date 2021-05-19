@@ -921,6 +921,178 @@ class MaccorToBiologicMb:
         return new_ast
 
 
+
+# Will Powelson May 18, 2021
+# The problem:
+# We need a way to calculate cycle index from a maccor protocol, not all protocols
+# are representable in biolgic. Nested loops require breaking the conversion into
+# multiple techniques which may break certain GOTO functionality, which we are accepting.
+# 
+# Biologic also lacks the ability to control cycles, we need to infer cycle index from
+# the output data using changes to sequence number, technique number, technique loops
+# and number of changes in sequence number.
+# 
+# The plan:
+# How splitting works
+# Given a list of steps we want to break out any nested loop into a technique
+# consider this beautful ascii art visualizing a maccor protocol's control flow
+# sans GOTOs
+# 1 |\
+# 2 | |
+# 3 |/
+# 4 |\
+# 5 |  \
+# 6 |\  |
+# 7 | | |
+# 8 |/  |
+# 9 |  /
+# 10|/
+# 11|
+# 12|
+# 13|
+# 
+# the loop from 4-10 has an inner loop which is not easily representable in
+# in a single biologic technique, we will break this into a single technique,
+# and use a loop technique in place of the outer loop, so we end up with
+# 
+# technique 1 
+# 1 |\
+# 2 | |
+# 3 |/
+# 
+# technique 2
+# 4 |
+# 5 |
+# 6 |\
+# 7 | |
+# 8 |/
+# 9 | 
+# 10|
+# 
+# technique 3 loops back to technique 2
+# 
+# technique 4
+# 11|
+# 12|
+# 13|
+# 
+# Now we can calculate how many cycle advances there are between techniques
+# or when a technique loops based on analysis of a much simpler structure,
+# each technique only needs to know if there were any cycle advances not applied from
+# its predecessor. 
+# 
+def get_cycle_adv_data_by_tech_num(maccor_test_steps):
+    assert get(maccor_test_steps[-1], 'StepType') == 'End'
+    maccor_test_steps = maccor_test_steps[:-1]
+
+    tech_edges = []
+    techs_that_loop = set()
+    loop_1_start = -1
+    new_tech_flag = False
+    for i, step in enumerate(maccor_test_steps):
+        step_type = get(step, 'StepType')
+        if step_type == 'Do 1':
+            loop_1_start = i
+        elif step_type == 'Do 2':
+            new_tech_flag = True
+        elif step_type == 'Loop 1' and new_tech_flag:
+            # if two nested loops were back to back, edge was already added
+            if len(tech_edges) == 0 or tech_edges[-1] != loop_1_start:
+                tech_edges.append(loop_1_start)
+            techs_that_loop.add(len(tech_edges))
+            tech_edges.append(i + 1)
+
+            new_tech_flag = False
+    
+    techs = []
+    
+    remaining = list(map(lambda x: (x[0] + 1, x[1]), enumerate(steps)))
+    for edge in reversed(tech_edges):
+        tech = remaining[edge:]
+        techs.insert(0, remaining[edge:])
+        remaining = remaining[:edge]
+    
+    if len(remaining) > 0:
+        techs.insert(0, remaining)
+    
+    
+    loop_open_types = ['Do 1', 'Do 2']
+    loop_types = ['Loop 1', 'Loop 2']
+    
+    cycle_adv_data_by_tech_num = {}
+    open_adv_cycles = 0
+    tech_num = 1
+    for i, tech in enumerate(techs):
+        tech_loops = i in techs_that_loop
+        cycle_data = {
+            'tech_num': tech_num,
+            'tech_loops': tech_loops,
+            'adv_cycle_on_start': open_adv_cycles,
+            'adv_cycle_on_tech_loop': 0,
+            'adv_cycle_transitions': {},
+        }
+
+        open_adv_cycles = 0
+        prev_physical_step_num = -1
+        # remove outer loop edges for loop tech, we don't need them
+        enumerable_steps = tech[1:-1] if tech_loops else tech 
+        loop_to_idx = -1
+        for curr_idx, (step_num, step) in enumerate(enumerable_steps):
+            step_type = get(step, 'StepType')
+
+            if step_type in loop_open_types:
+                loop_to_idx = curr_idx + 1
+            elif step_type in loop_types:
+                if prev_physical_step_num == -1:
+                    # can probably be handled if necessary, but don't want to deal rn
+                    # add adv cyles from loop to cycle start, and cycle loop (if necessary)
+                    raise Exception("step {} is a loop with no physical steps".format(step_num).format(step_num))
+                
+                # use the previously recorded open loop idx to figure out
+                # where we loop to, find the next physical step after a loop
+                # and calculate the number of cycles to advance (if any)
+                looped_physical_step_num = -1
+                loop_adv_cycles = open_adv_cycles
+                for looped_step_num, looped_step in enumerable_steps[loop_to_idx + 1:curr_idx]:
+                    step_type = get(looped_step, 'StepType')
+                    if step_type == 'AdvCycle':
+                        loop_adv_cycles += 1
+                    else:
+                        # inner loops not possible within a loop since we split
+                        # out nested loops into different techniques so step is physical
+                        looped_physical_step_num = looped_step_num
+                        break
+                
+                if looped_physical_step_num == -1:
+                    # can probably just increase open advanced cycles, but don't want to deal rn
+                    raise Exception("step {} is a loop with no physical steps".format(step_num).format(step_num))
+                elif loop_adv_cycles > 0:
+                    transition = (prev_physical_step_num, looped_physical_step_num)
+                    cycle_data['adv_cycle_transitions'][transition] = loop_adv_cycles
+            elif step_type == 'AdvCycle' and prev_physical_step_num == -1:
+                cycle_data['adv_cycle_on_start'] += 1
+                if tech_loops:
+                    cycle_data['adv_cycle_on_loop'] += 1
+            elif step_type == 'AdvCycle':
+                open_adv_cycles += 1
+            else:
+                if prev_physical_step_num != - 1 and open_adv_cycles > 0:
+                    transition = (prev_physical_step_num, step_num)
+                    cycle_data['adv_cycle_transitions'][transition] = open_adv_cycles
+                    # exhaust the adv cycle
+                    open_adv_cycles = 0
+                prev_physical_step_num = step_num
+    
+        if tech_loops:
+            cycle_data['adv_cycle_on_loop'] = open_adv_cycles
+        cycle_adv_data_by_tech_num[tech_num] = cycle_data
+
+        tech_num += 1
+        if tech_loops:
+            tech_num += 1
+
+    return cycle_adv_data_by_tech_num    
+
 """
 helper function for converting diagnosticV5.000
 """
@@ -1372,3 +1544,12 @@ def addCycleNumCol(df, technique_cycle_number_rules, cycle_num_offset, tech_num)
 
 addCycleNumCol(df, technique_cycle_number_rules, 0, 1)
 
+
+
+
+converter = MaccorToBiologicMb()
+ast = converter.load_maccor_ast(
+    os.path.join(PROCEDURE_TEMPLATE_DIR, "diagnosticV5.000")
+)
+steps = get(ast, 'MaccorTestProcedure.ProcSteps.TestStep')
+get_cycle_adv_data_by_tech_num(steps)
