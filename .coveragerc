@@ -1,2 +1,2 @@
 [run]
-omit = beep/tests/*
+omit = */beep/tests/*
