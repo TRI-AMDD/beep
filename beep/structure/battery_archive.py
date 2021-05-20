@@ -96,7 +96,7 @@ class BatteryArchiveDatapath(BEEPDatapath):
         final_ix = [df.shape[0] - 1]
         step_change_ix_buffered = np.append(step_change_ix[1:], final_ix)
 
-        for i, scix in tqdm.tqdm(enumerate(step_change_ix_buffered)):
+        for i, scix in enumerate(step_change_ix_buffered):
             prev_scix = step_change_ix[i]
             n_repeats = scix - prev_scix
             arrays[i] = np.repeat(start_times.loc[prev_scix], n_repeats)
@@ -139,38 +139,3 @@ def decide_step_index(i):
         return 3
     else:
         return 2
-
-
-if __name__ == "__main__":
-    pd.set_option('display.max_rows', 500)
-    pd.set_option('display.max_columns', 500)
-    pd.set_option('display.width', 1000)
-
-    # ba_cycle_file = "/Users/ardunn/alex/tri/code/beep/alex_scripts/extra_df_files_chirru/SNL_18650_LFP_15C_0-100_0.5-1C_a_cycle_data.csv"
-    ba_ts_file = "/Users/ardunn/alex/tri/code/beep/alex_scripts/extra_data_files_chirru/SNL_18650_LFP_15C_0-100_0.5-1C_a_timeseries.csv"
-    import matplotlib.pyplot as plt
-
-    t0 = time.time()
-    bad = BatteryArchiveDatapath.from_file(ba_ts_file)
-    t1 = time.time()
-
-    print(f"time taken: {t1 - t0}")
-
-    print(bad.raw_data)
-
-
-    # relevant_columns = ["test_time (s)", "current (a)", "cycle_index", "step_index", "step_time"]
-    # print(df[relevant_columns].loc[:20])
-    #
-    # print(df[relevant_columns].tail(20))
-    #
-    # print(df[relevant_columns].loc[660:680])
-    #
-    # raise ValueError
-    # df = df.loc[:]
-    #
-    # # plt.plot(df["test_time (s)"], df["current (a)"])
-    # plt.plot(df["test_time (s)"], df["step_index"])
-    #
-    # plt.show()
-    # print(df)
