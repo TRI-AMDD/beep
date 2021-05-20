@@ -377,10 +377,6 @@ class TestBatteryArchiveDatapath(unittest.TestCase):
         self.assertEqual(bd.raw_data.columns[0], "date_time")
         self.assertTrue(bd.raw_data["test_time"].is_monotonic_increasing)
 
-        pd.set_option('display.max_rows', 500)
-        pd.set_option('display.max_columns', 500)
-        pd.set_option('display.width', 1000)
-
         summary = bd.summarize_cycles()
         self.assertAlmostEqual(summary["temperature_maximum"].loc[3], 16.832001, places=4)
         self.assertAlmostEqual(summary["charge_duration"].loc[4548], 5773.640137, places=4)
