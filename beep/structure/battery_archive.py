@@ -7,11 +7,13 @@ from datetime import datetime
 import pytz
 import pandas as pd
 import numpy as np
+import tqdm
+import time
 
 from beep.conversion_schemas import ARBIN_CONFIG
 from beep import logger
 from beep.structure.base import BEEPDatapath
-
+from multiprocessing import Pool, cpu_count
 
 
 
@@ -29,9 +31,47 @@ class BatteryArchiveDatapath(BEEPDatapath):
         All from BEEPDatapath
     """
 
+    # Mapping of raw data file columns to BEEP columns
+    COLUMN_MAPPING = {
+        "test_time (s)": "test_time",
+        "cycle_index": "cycle_index",
+        "current (a)": "current",
+        "voltage (v)": "voltage",
+        "charge_capacity (ah)": "charge_capacity",
+        "discharge_capacity (ah)": "discharge_capacity",
+        "charge_energy (wh)": "charge_energy",
+        "discharge_energy (wh)": "discharge_energy",
+        "cell_temperature (c)": "temperature",
+        "date_time": "date_time"
+    }
+
+    # Columns to ignore
+    COLUMNS_IGNORE = ["environment_temperature (c)"]
+
+    # Mapping of data types for BEEP columns
+    DATA_TYPES = {
+        "test_time": "float32",
+        "cycle_index": "int32",
+        "current": "float32",
+        "voltage": "float32",
+        "charge_capacity": "float64",
+        "discharge_capacity": "float64",
+        "charge_energy": "float64",
+        "discharge_energy": "float64",
+        "temperature": "float32",
+        "date_time": "float32",
+    }
+
     @classmethod
-    def from_file(cls, path, metadata_path=None):
-        """Load an Arbin file to a datapath.
+    def from_file(cls, path):
+        """Load a Battery Archive cycler file from raw file.
+
+        Step indices and times are not given, so they are reverse engineered
+        based on current. Three main steps are assigned for each cycle:
+
+        1. Rest
+        2. Charge
+        3. Discharge
 
         Args:
             path (str, Pathlike): Path to the raw data csv.
@@ -39,83 +79,64 @@ class BatteryArchiveDatapath(BEEPDatapath):
         Returns:
             (ArbinDatapath)
         """
-        data = pd.read_csv(path)
-        data.rename(str.lower, axis="columns", inplace=True)
+        df = pd.read_csv(path)
+        df.rename(str.lower, axis="columns", inplace=True)
+        df.drop(columns=[c for c in cls.COLUMNS_IGNORE if c in df.columns], inplace=True)
+        df["step_index"] = 0
 
-        cycles = df["cycle_index"].unique()
+        df["step_index"] = df["current (a)"].apply(decide_step_index)
 
-        step = 1
-        tol = 1e-6
-        for c in cycles:
-            df_cyc = df[df["cycle_index"] == c]
-            df_cyc["step_index"]
-            df_has_chg_state = df_cyc[df_cyc["current (a)"].abs() > tol]
+        step_change_ix = np.where(np.diff(df["step_index"], prepend=np.nan))[0]
 
-            sign = df_has_chg_state["current (a)"].map(np.sign)
-            sign_changes = sign.diff(periods=1).fillna(0)
+        # get list of start times to subtract
+        start_times = df["test_time (s)"].loc[step_change_ix]
+        arrays = [None] * len(step_change_ix)
 
-            # ix where step change occurs is one after sign is changed
-            step_change_ix = df_has_chg_state[sign_changes == 2] + 1
+        final_ix = [df.shape[0] - 1]
+        step_change_ix_buffered = np.append(step_change_ix[1:], final_ix)
+
+        for i, scix in tqdm.tqdm(enumerate(step_change_ix_buffered)):
+            prev_scix = step_change_ix[i]
+            n_repeats = scix - prev_scix
+            arrays[i] = np.repeat(start_times.loc[prev_scix], n_repeats)
+
+        # include the final data point, which is not a real step change
+        subtractor = np.concatenate(arrays, axis=0)
+        subtractor = np.append(subtractor, [subtractor[-1]])
+
+        df["step_time"] = df["test_time (s)"] - subtractor
+
+        df.rename(columns=cls.COLUMN_MAPPING, inplace=True)
+        dtfmt = '%Y-%m-%d %H:%M:%S.%f'
+        # convert date time string to
+        dts = df["date_time"].apply(lambda x: datetime.strptime(x, dtfmt))
+
+        df["date_time"] = dts.apply(lambda x: x.timestamp())
+        df["date_time_iso"] = dts.apply(lambda x: x.replace(tzinfo=pytz.UTC).isoformat())
+
+        for column, dtype in cls.DATA_TYPES.items():
+            if column in df:
+                if not df[column].isnull().values.any():
+                    df[column] = df[column].astype(dtype)
+
+        paths = {
+            "raw": path,
+            "metadata": None
+
+        }
+
+        metadata = {}
+
+        return cls(df, metadata, paths)
 
 
-            is_chg_pre_stepchange = df_has_chg_state.loc[step_change_ix - 10:step_change_ix].mean() > 0.0
-            is_chg_post_stepchange = df_has_chg_state.loc[step_change_ix + 1: step_change_ix + 11].mean() > 0.0
-
-            if is_chg_pre_stepchange and not is_chg_post_stepchange:
-                df_cyc.loc[step_change_ix:] = step
-                df_cyc.loc[0:step_change_ix] = step + 1
-
-            df2 = df.loc[diff2[diff2 != 0].index]
-            idx = np.where(abs(df1.value.values) < abs(df2.value.values),
-                           df1.index.values, df2.index.values)
-            df.loc[idx]
-
-
-
-
-
-
-        # print(data[(data["current (a)"] > 0.0) & (data["charge_energy (wh)"] != 0)].shape)
-
-        print(data)
-
-        raise ValueError
-
-        # for column, dtype in ARBIN_CONFIG["data_types"].items():
-        #     if column in data:
-        #         if not data[column].isnull().values.any():
-        #             data[column] = data[column].astype(dtype)
-        #
-        # data.rename(ARBIN_CONFIG["data_columns"], axis="columns", inplace=True)
-        #
-        # metadata_path = metadata_path if metadata_path else path.replace(".csv",
-        #                                                                  "_Metadata.csv")
-        #
-        # if os.path.exists(metadata_path):
-        #     metadata = pd.read_csv(metadata_path)
-        #     metadata.rename(str.lower, axis="columns", inplace=True)
-        #     metadata.rename(ARBIN_CONFIG["metadata_fields"], axis="columns",
-        #                     inplace=True)
-        #     # Note the to_dict, which scrubs numpy typing
-        #     metadata = {col: item[0] for col, item in
-        #                 metadata.to_dict("list").items()}
-        # else:
-        #     logger.warning(f"No associated metadata file for Arbin: "
-        #                    f"'{metadata_path}'. No metadata loaded.")
-        #     metadata = {}
-        #
-        # # standardizing time format
-        # data["date_time_iso"] = data["date_time"].apply(
-        #     lambda x: datetime.utcfromtimestamp(x).replace(
-        #         tzinfo=pytz.UTC).isoformat()
-        # )
-        #
-        # paths = {
-        #     "raw": path,
-        #     "metadata": metadata_path if metadata else None
-        # }
-        #
-        # return cls(data, metadata, paths)
+def decide_step_index(i):
+    if np.abs(i) < 1e-6:
+        return 1
+    elif i < 0:
+        return 3
+    else:
+        return 2
 
 
 if __name__ == "__main__":
@@ -123,58 +144,31 @@ if __name__ == "__main__":
     pd.set_option('display.max_columns', 500)
     pd.set_option('display.width', 1000)
 
-    ba_cycle_file = "/Users/ardunn/alex/tri/code/beep/alex_scripts/extra_data_files_chirru/SNL_18650_LFP_15C_0-100_0.5-1C_a_cycle_data.csv"
+    # ba_cycle_file = "/Users/ardunn/alex/tri/code/beep/alex_scripts/extra_df_files_chirru/SNL_18650_LFP_15C_0-100_0.5-1C_a_cycle_data.csv"
     ba_ts_file = "/Users/ardunn/alex/tri/code/beep/alex_scripts/extra_data_files_chirru/SNL_18650_LFP_15C_0-100_0.5-1C_a_timeseries.csv"
     import matplotlib.pyplot as plt
 
+    t0 = time.time()
+    bad = BatteryArchiveDatapath.from_file(ba_ts_file)
+    t1 = time.time()
+
+    print(f"time taken: {t1 - t0}")
+
+    print(bad.raw_data)
 
 
-    # df = pd.read_csv(ba_cycle_file)
+    # relevant_columns = ["test_time (s)", "current (a)", "cycle_index", "step_index", "step_time"]
+    # print(df[relevant_columns].loc[:20])
     #
+    # print(df[relevant_columns].tail(20))
+    #
+    # print(df[relevant_columns].loc[660:680])
+    #
+    # raise ValueError
+    # df = df.loc[:]
+    #
+    # # plt.plot(df["test_time (s)"], df["current (a)"])
+    # plt.plot(df["test_time (s)"], df["step_index"])
+    #
+    # plt.show()
     # print(df)
-    #
-    # df = pd.read_csv(ba_ts_file)
-    #
-    # print(df)
-
-
-
-    from beep.structure.arbin import ArbinDatapath
-
-
-    # ad = ArbinDatapath.from_file("/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/2017-08-14_8C-5per_3_47C_CH44.csv")
-
-
-    # df = ad.raw_data
-    # plt.plot(df["cycle_index"], df["step_index"])
-    #
-    # print("arbin")
-    # print(ad.raw_data)
-    # print(ad.raw_data["step_index"].isna().all())
-    #
-    #
-    #
-    # print("ba")
-    # bad = BatteryArchiveDatapath.from_file(ba_ts_file)
-
-
-
-
-    df = pd.read_csv(ba_ts_file)
-    df.rename(str.lower, axis="columns", inplace=True)
-    df = df[df["cycle_index"] == 1.0]
-
-
-    print(df)
-
-
-    # plt.plot(df["test_time (s)"], df["charge_capacity (ah)"], label="charge")
-    # plt.plot(df["test_time (s)"], df["discharge_capacity (ah)"], label="discharge")
-    # plt.legend()
-
-
-    plt.plot(df["test_time (s)"], df["current (a)"])
-    plt.plot(df["test_time (s)"], df["voltage (v)"])
-
-    plt.show()
-
