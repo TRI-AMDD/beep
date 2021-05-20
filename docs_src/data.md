@@ -132,7 +132,7 @@ Indigo files are single hierarchical data files (`*.h5`) with the mandatory grou
 
 BioLogic files are ASCII text files of the form `*.mpt` with matching `*.mpl` log/metadata files.
 
-*BioLogic cycler data is currently only supported for raw operations (e.g., ingestion via `RawCyclerRun` analysis) and is not supported for downstream processing.*
+*BioLogic cycler data is currently only supported for structuring operations (e.g., ingestion via `BioLogicDatapath` analysis) and is not supported for downstream processing.*
 
 | Column name | Required |   Explanation  | Unit |  Data Type |
 |-------------|----------|-------------|------|------------|
@@ -180,3 +180,26 @@ Neware files are singular `*.csv` files.
 | `dQ/dV(mAh/V)` | ✓  | differential capacity  | mAmp-hr/Volt  |  |
 | `dQm/dV(mAh/V.g)` | ✓  | differential capacity density  | mAmp-hr/Volt-gram  |  |
 | `Temperature(C)` | ✓  |  temperature (alternate sensor) |  °Celsius  | `float32` |
+
+
+## Battery Archive
+
+Battery Archive files are singular csvs matching the file pattern `*timeseries*.csv`.
+
+
+| Column name (case insensitive) | Required |   Explanation  | Unit |  Data Type |
+|-------------|----------|-------------|------|------------|
+| `Cycle_Index ` | ✓  |  index of this cycle |   | `int` |
+| `Current (A)` | ✓  | cell current  |  Amps | `float` |
+| `Voltage (V)` | ✓  | cell potential  |  Volts | `float` |
+| `Charge_Capacity (Ah)` | ✓  | charge capacity  |  amp-hr | `float` |
+| `Discharge_Capacity (Ah)` | ✓  | discharge capacity  |  amp-hr | `float` |
+| `Charge_Energy (Wh)` | ✓  | charge energy  |  watt-hr | `float` |
+| `Discharge_Energy (Wh)` | ✓  | discharge energy  |  watt-hr | `float` |
+| `Cell_Temperature (C)` | ✓  | temperature of the cell | °Celsius | `float` |
+| `Environmental_Temperature (C)` |   | environmental temperature | °Celsius | `float` |
+| `Test_Time (s)` | ✓ | test time | seconds | `float` |
+| `Date_Time` | ✓ | datetime string, in `'%Y-%m-%d %H:%M:%S.%f'` format |  | `str` |
+
+
+No metadata ingestion is supported for Battery Archive files at this time.
