@@ -10,7 +10,6 @@ import numpy as np
 import tqdm
 import time
 
-from beep.conversion_schemas import ARBIN_CONFIG
 from beep import logger
 from beep.structure.base import BEEPDatapath
 from multiprocessing import Pool, cpu_count
@@ -61,6 +60,8 @@ class BatteryArchiveDatapath(BEEPDatapath):
         "temperature": "float32",
         "date_time": "float32",
     }
+
+    FILE_PATTERN = ".*timeseries\\.csv"
 
     @classmethod
     def from_file(cls, path):
@@ -125,6 +126,7 @@ class BatteryArchiveDatapath(BEEPDatapath):
 
         }
 
+        # there is no metadata given in the BA files
         metadata = {}
 
         return cls(df, metadata, paths)
