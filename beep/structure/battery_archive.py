@@ -7,13 +7,8 @@ from datetime import datetime
 import pytz
 import pandas as pd
 import numpy as np
-import tqdm
-import time
 
-from beep import logger
 from beep.structure.base import BEEPDatapath
-from multiprocessing import Pool, cpu_count
-
 
 
 class BatteryArchiveDatapath(BEEPDatapath):
@@ -121,9 +116,8 @@ class BatteryArchiveDatapath(BEEPDatapath):
                     df[column] = df[column].astype(dtype)
 
         paths = {
-            "raw": path,
+            "raw": os.path.abspath(path),
             "metadata": None
-
         }
 
         # there is no metadata given in the BA files
