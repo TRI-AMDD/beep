@@ -27,6 +27,7 @@ from beep.structure.maccor import MaccorDatapath
 from beep.structure.neware import NewareDatapath
 from beep.structure.indigo import IndigoDatapath
 from beep.structure.biologic import BiologicDatapath
+from beep.structure.battery_archive import BatteryArchiveDatapath
 from beep.tests.constants import TEST_FILE_DIR
 
 
@@ -362,6 +363,23 @@ class TestNewareDatapath(unittest.TestCase):
                          [2.4393, 2.4343, 2.4255, 2.4221, 2.4210])
         self.assertEqual(summary[summary["cycle_index"] == 55]["discharge_capacity"].round(4).tolist(),
                          [2.3427])
+
+
+
+class TestBatteryArchiveDatapath(unittest.TestCase):
+
+    def test_from_file(self):
+        ba_file = os.path.join(TEST_FILE_DIR,
+                               "SNL_18650_LFP_15C_0-100_0.5-1C_a_timeseries.csv")
+        bd = BatteryArchiveDatapath.from_file(ba_file)
+
+        self.assertEqual(bd.raw_data.columns[-1], "internal_resistance")
+        self.assertEqual(bd.raw_data.columns[0], "date_time")
+        self.assertTrue(bd.raw_data["test_time"].is_monotonic_increasing)
+
+        summary = bd.summarize_cycles()
+        self.assertAlmostEqual(summary["temperature_maximum"].loc[3], 16.832001, places=4)
+        self.assertAlmostEqual(summary["charge_duration"].loc[4548], 5773.640137, places=4)
 
 
 if __name__ == "__main__":

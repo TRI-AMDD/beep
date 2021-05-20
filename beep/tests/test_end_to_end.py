@@ -23,11 +23,9 @@ import pandas as pd
 from tempfile import mkdtemp
 from monty.serialization import loadfn
 
-from beep import collate, validate, structure, featurize, run_model
+from beep import collate, validate, structure, featurize
 from beep.utils import os_format
-
-TEST_DIR = os.path.dirname(__file__)
-TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
+from beep.tests.constants import TEST_FILE_DIR
 
 
 class EndToEndTest(unittest.TestCase):

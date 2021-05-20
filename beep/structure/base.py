@@ -174,7 +174,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         # paths may include "raw", "metadata", and "structured", as well as others.
         if paths:
             for path_ref, path in paths.items():
-                if not os.path.isabs(path):
+                if path and not os.path.isabs(path):
                     raise ValueError(f"{path_ref}: '{path}' is not absolute! All paths must be absolute.")
             self.paths = paths
         else:

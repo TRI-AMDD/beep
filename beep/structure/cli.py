@@ -67,6 +67,7 @@ from beep.structure.maccor import MaccorDatapath
 from beep.structure.neware import NewareDatapath
 from beep.structure.indigo import IndigoDatapath
 from beep.structure.biologic import BiologicDatapath
+from beep.structure.battery_archive import BatteryArchiveDatapath
 from beep.structure.base import BEEPDatapath
 from beep.utils import WorkflowOutputs
 from beep.collate import add_suffix_to_filename
@@ -206,6 +207,8 @@ def auto_load(filename):
         return BiologicDatapath.from_file(filename)
     elif re.match(NEWARE_CONFIG["file_pattern"], filename):
         return NewareDatapath.from_file(filename)
+    elif re.match(BatteryArchiveDatapath.FILE_PATTERN, filename):
+        return BatteryArchiveDatapath.from_file(filename)
     else:
         raise ValueError("{} does not match any known file pattern".format(filename))
 
