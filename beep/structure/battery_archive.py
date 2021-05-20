@@ -1,4 +1,4 @@
-"""Classes and functions for handling Arbin battery cycler data.
+"""Classes and functions for handling Battery Archive cycler data.
 
 """
 import os
@@ -12,14 +12,11 @@ from beep.structure.base import BEEPDatapath
 
 
 class BatteryArchiveDatapath(BEEPDatapath):
-    """A datapath for Arbin cycler data.
+    """A datapath for Battery Archive cycler data.
 
-    Arbin cycler data contains two files:
 
-    - Raw data: A raw CSV
-    - Metadata: Typically the filename of the raw data + "_Metadata" at the end.
-
-    The metadata file is optional but strongly recommended.
+    One file is required - a *timeseries.csv data file
+    from the Battery Archive. No metadata is supported.
 
     Attributes:
         All from BEEPDatapath
@@ -127,6 +124,14 @@ class BatteryArchiveDatapath(BEEPDatapath):
 
 
 def decide_step_index(i):
+    """
+    Decide a step index based on current values.
+    Args:
+        i (float): Current value
+
+    Returns:
+        (int): Step index
+    """
     if np.abs(i) < 1e-6:
         return 1
     elif i < 0:
