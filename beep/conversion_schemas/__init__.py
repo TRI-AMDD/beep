@@ -7,7 +7,6 @@ from monty.serialization import loadfn
 
 
 ARBIN_CONFIG = loadfn(os.path.join(CONVERSION_SCHEMA_DIR, "arbin_conversion.yaml"))
-BA_CONFIG = loadfn(os.path.join(CONVERSION_SCHEMA_DIR, "battery_archive_conversion.yaml"))
 MACCOR_CONFIG = loadfn(os.path.join(CONVERSION_SCHEMA_DIR, "maccor_conversion.yaml"))
 FastCharge_CONFIG = loadfn(
     os.path.join(CONVERSION_SCHEMA_DIR, "FastCharge_conversion.yaml")
