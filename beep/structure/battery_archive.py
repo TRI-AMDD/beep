@@ -138,3 +138,22 @@ def decide_step_index(i):
         return 3
     else:
         return 2
+
+
+if __name__ == "__main__":
+    ba = BatteryArchiveDatapath.from_file("/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/SNL_18650_LFP_15C_0-100_0.5-1C_a_timeseries.csv")
+
+    import matplotlib.pyplot as plt
+
+    pd.set_option('display.max_rows', 500)
+    pd.set_option('display.max_columns', 500)
+    pd.set_option('display.width', 1000)
+
+    summary = ba.summarize_cycles()
+
+    plt.plot(summary["cycle_index"], summary["charge_capacity"], label="Charge capacity")
+    plt.xlabel("Cycle number")
+    plt.ylabel("Capacity")
+    plt.legend()
+    print(summary)
+    plt.show()
