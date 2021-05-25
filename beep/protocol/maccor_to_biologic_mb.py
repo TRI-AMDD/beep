@@ -1682,7 +1682,7 @@ def add_cycle_nums_to_csvs(csv_and_transition_rule_file_paths):
             cycle_nums.append(cycle_num)
 
         df["cycle_number"] = cycle_nums
-        df.to_csv(csv_outpath)
+        df.to_csv(csv_outpath, sep=";")
 
 
 # csv_and_transition_rule_file_paths = [
