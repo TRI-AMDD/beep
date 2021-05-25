@@ -934,7 +934,7 @@ class MaccorToBiologicMb:
         return new_ast
 
 
-class CycleTransitionData:
+class CycleTransitionRules:
     def __init__(
         self,
         tech_num,
@@ -968,13 +968,13 @@ class CycleTransitionData:
         )
 
 
-class CycleTransitionDataSerializer:
-    def json(self, cycle_transition_data, indent=2):
+class CycleTransitionRulesSerializer:
+    def json(self, cycle_transition_rules, indent=2):
         parseable_adv_cycle_seq_transitions = []
         for (
             s,
             t,
-        ), adv_cycle_count in cycle_transition_data.adv_cycle_seq_transitions.items():
+        ), adv_cycle_count in cycle_transition_rules.adv_cycle_seq_transitions.items():
             parseable_adv_cycle_seq_transitions.append(
                 {
                     "source": s,
@@ -988,7 +988,7 @@ class CycleTransitionDataSerializer:
             s,
             t,
         ), adv_cycle_count in (
-            cycle_transition_data.debug_adv_cycle_on_step_transitions.items()
+            cycle_transition_rules.debug_adv_cycle_on_step_transitions.items()
         ):
             parseable_debug_adv_cycle_on_step_transitions.append(
                 {
@@ -999,10 +999,10 @@ class CycleTransitionDataSerializer:
             )
 
         obj = {
-            "tech_num": cycle_transition_data.tech_num,
-            "tech_does_loop": cycle_transition_data.tech_does_loop,
-            "adv_cycle_on_start": cycle_transition_data.adv_cycle_on_start,
-            "adv_cycle_on_tech_loop": cycle_transition_data.adv_cycle_on_tech_loop,
+            "tech_num": cycle_transition_rules.tech_num,
+            "tech_does_loop": cycle_transition_rules.tech_does_loop,
+            "adv_cycle_on_start": cycle_transition_rules.adv_cycle_on_start,
+            "adv_cycle_on_tech_loop": cycle_transition_rules.adv_cycle_on_tech_loop,
             # these are (int, int) -> int maps, tuples cannot be represented in json
             "adv_cycle_seq_transitions": parseable_adv_cycle_seq_transitions,
             "debug_adv_cycle_on_step_transitions": parseable_debug_adv_cycle_on_step_transitions,
@@ -1028,7 +1028,7 @@ class CycleTransitionDataSerializer:
             transition = (d["source"], d["target"])
             debug_adv_cycle_on_step_transitions[transition] = d["adv_cycle_count"]
 
-        return CycleTransitionData(
+        return CycleTransitionRules(
             tech_num,
             tech_does_loop,
             adv_cycle_on_start,
@@ -1255,7 +1255,7 @@ def create_seq_num_adv_cycle_data(cycle_adv_data, step_num_by_seq_num, step_num_
 
         adv_cycle_seq_transitions[transition] = num_adv_cycles
 
-    return CycleTransitionData(
+    return CycleTransitionRules(
         tech_num,
         tech_loops,
         adv_cycle_on_start,
@@ -1573,13 +1573,13 @@ def convert_diagnostic_v5_multi_techniques(source_file="BioTest_000001.000"):
         step_trans_data[4], tech4_seq_map, tech4_start_i
     )
 
-    serializer = CycleTransitionDataSerializer()
-    for tech_num, cycle_transition_data in [
+    serializer = CycleTransitionRulesSerializer()
+    for tech_num, cycle_transition_rules in [
         (1, t1_trans),
         (2, t2_trans),
         (4, t4_trans),
     ]:
-        file_str = serializer.json(cycle_transition_data)
+        file_str = serializer.json(cycle_transition_rules)
         print(serializer.parse_json(file_str))
 
         filename = "{}.technique_{}_cycle_rules.json".format(source_file, tech_num)
@@ -1634,7 +1634,8 @@ def convert_diagnostic_v5_multi_techniques(source_file="BioTest_000001.000"):
             for i in range(0, num_lines):
                 seq_str = seq_lines[i] if i < len(seq_lines) else ""
                 step_str = step_lines[i] if i < len(step_lines) else ""
-            file_str += "{:<40s}{}\r\n".format(seq_str, step_str)
+                file_str += "{:<40s}{}\r\n".format(seq_str, step_str)
+
             file_str += "\r\n"
 
     file_str += "\r\n"
@@ -1646,11 +1647,62 @@ def convert_diagnostic_v5_multi_techniques(source_file="BioTest_000001.000"):
         print("created {}".format(fp))
 
 
-def add_cycle_nums_to_csvs(csv_and_transition_rule_file_paths):
-    serializer = CycleTransitionDataSerializer()
+"""
+Processes CSV files generated from several biologic techniques
+and creates a new set of CSVs with an additional "cycle_index" column.
+
+accepts
+  - technique_csv_file_paths: list of file paths to Biologic CSVs
+  - technique_serialized_transition_rules_file_paths: list of file paths to serialized CycleTransitionRules
+  - technique_csv_out_file_paths: list of filepaths to write new data to
+
+side-effects
+   - writes a new CSV file for every entry in csv_and_transition_rules_file_paths
+
+invariants
+    - all arguments must be of the same length
+    - the i-th entry form a logical tuple
+    - technique files appear in the order in which they were created
+      e.g. technique 1, then technique 2 etc.
+
+example call:
+add_cycle_nums_to_csvs(
+    [
+        os.path.join(MY_DIR, "protocol1_2a_technique_1.csv"),
+        os.path.join(MY_DIR, "protocol1_2a_technique_2.csv"),
+    ]
+    [
+        os.path.join(MY_DIR, "protocol1_technique_1_transiton_rules.json"),
+        os.path.join(MY_DIR, "protocol1_technique_2_transiton_rules.json"),
+    ]
+    [
+        os.path.join(MY_DIR, "protocol1_2a_technique_1_processed.csv"),
+        os.path.join(MY_DIR, "protocol1_2a_technique_2_processed.csv"),
+    ]
+)
+"""
+
+
+def add_cycle_nums_to_csvs(
+    technique_csv_file_paths,
+    technique_serialized_transition_rules_file_paths,
+    technique_csv_out_file_paths,
+):
+    assert len(technique_csv_file_paths) == len(technique_csv_out_file_paths)
+    assert len(technique_csv_file_paths) == len(
+        technique_serialized_transition_rules_file_paths
+    )
+
+    technique_conversion_filepaths = zip(
+        technique_csv_file_paths,
+        technique_serialized_transition_rules_file_paths,
+        technique_csv_out_file_paths,
+    )
+
+    serializer = CycleTransitionRulesSerializer()
     cycle_num = 1
-    for csv_fp, transition_json_fp, csv_outpath in csv_and_transition_rule_file_paths:
-        with open(transition_json_fp, "r") as f:
+    for csv_fp, serialized_transtion_fp, csv_out_fp in technique_conversion_filepaths:
+        with open(serialized_transtion_fp, "r") as f:
             data = f.read()
             cycle_transition_rules = serializer.parse_json(data)
 
@@ -1681,33 +1733,16 @@ def add_cycle_nums_to_csvs(csv_and_transition_rule_file_paths):
 
             cycle_nums.append(cycle_num)
 
-        df["cycle_number"] = cycle_nums
-        df.to_csv(csv_outpath, sep=";")
+        df["cycle_index"] = cycle_nums
+        df.to_csv(csv_out_fp, sep=";")
 
 
-# csv_and_transition_rule_file_paths = [
-#     (
-#         technique_1_csv_filepath,
-#         technique_1_transition_json_file_path,
-#         technique_1_csv_out_filepath
-#     )
-#     (
-#         technique_2_csv_filepath,
-#         technique_2_transition_json_file_path,
-#         technique_2_csv_out_filepath
-#     ),
-#     (
-#         technique_4_csv_filepath,
-#         technique_4_transition_json_file_path,
-#         technique_4_csv_out_filepath
-#     ),
-# ]
-
-convert_diagnostic_v5_multi_techniques()
-
-converter = MaccorToBiologicMb()
-ast = converter.load_maccor_ast(
-    os.path.join(PROCEDURE_TEMPLATE_DIR, "diagnosticV5.000")
+add_cycle_nums_to_csvs(
+    [os.path.join(BIOLOGIC_TEMPLATE_DIR, "../dummy.csv")],
+    [
+        os.path.join(
+            BIOLOGIC_TEMPLATE_DIR, "diagnosticV5.000.technique_1_cycle_rules.json"
+        )
+    ],
+    [os.path.join(BIOLOGIC_TEMPLATE_DIR, "../dummy-out.csv")],
 )
-steps = get(ast, "MaccorTestProcedure.ProcSteps.TestStep")
-get_cycle_adv_data_by_tech_num(steps)
