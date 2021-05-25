@@ -1,0 +1,80 @@
+{
+  "tech_num": 1,
+  "tech_does_loop": false,
+  "adv_cycle_on_start": 0,
+  "adv_cycle_on_tech_loop": 0,
+  "adv_cycle_seq_transitions": [
+    {
+      "source": 5,
+      "target": 3,
+      "adv_cycle_count": 1
+    },
+    {
+      "source": 5,
+      "target": 7,
+      "adv_cycle_count": 1
+    },
+    {
+      "source": 16,
+      "target": 19,
+      "adv_cycle_count": 1
+    },
+    {
+      "source": 21,
+      "target": 24,
+      "adv_cycle_count": 1
+    },
+    {
+      "source": 26,
+      "target": 29,
+      "adv_cycle_count": 1
+    },
+    {
+      "source": 31,
+      "target": 34,
+      "adv_cycle_count": 1
+    },
+    {
+      "source": 39,
+      "target": 34,
+      "adv_cycle_count": 1
+    }
+  ],
+  "debug_adv_cycle_on_step_transitions": [
+    {
+      "source": 6,
+      "target": 5,
+      "adv_cycle_count": 1
+    },
+    {
+      "source": 6,
+      "target": 9,
+      "adv_cycle_count": 1
+    },
+    {
+      "source": 17,
+      "target": 19,
+      "adv_cycle_count": 1
+    },
+    {
+      "source": 20,
+      "target": 22,
+      "adv_cycle_count": 1
+    },
+    {
+      "source": 23,
+      "target": 25,
+      "adv_cycle_count": 1
+    },
+    {
+      "source": 26,
+      "target": 29,
+      "adv_cycle_count": 1
+    },
+    {
+      "source": 34,
+      "target": 29,
+      "adv_cycle_count": 1
+    }
+  ]
+}
