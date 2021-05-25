@@ -26,6 +26,7 @@ from monty.serialization import loadfn
 from collections import OrderedDict, deque
 from pydash import get, unset, set_, find_index, clone_deep_with
 import pandas as pd
+import json
 
 # magic number for biologic
 END_SEQ_NUM = 9999
@@ -920,6 +921,91 @@ class MaccorToBiologicMb:
 
         return new_ast
 
+class CycleTransitionData:
+    def __init__(
+        self,
+        tech_num,
+        tech_does_loop,
+        adv_cycle_on_start,
+        adv_cycle_on_tech_loop,
+        adv_cycle_seq_transitions,
+        debug_adv_cycle_on_step_transitions = {},
+    ):
+        self.tech_num = tech_num
+        self.tech_does_loop = tech_does_loop
+        self.adv_cycle_on_start = adv_cycle_on_start
+        self.adv_cycle_on_tech_loop = adv_cycle_on_tech_loop
+        self.adv_cycle_seq_transitions = adv_cycle_seq_transitions
+        self.debug_adv_cycle_on_step_transitions = debug_adv_cycle_on_step_transitions
+    
+    def __repr__(self):
+        return (
+            "{\n"
+            + "  tech_num: {},\n".format(self.tech_num)
+            + "  tech_does_loop: {},\n".format(self.tech_does_loop)
+            + "  adv_cycle_on_start: {},\n".format(self.adv_cycle_on_start)
+            + "  adv_cycle_on_tech_loop: {},\n".format(self.adv_cycle_on_tech_loop)
+            + "  adv_cycle_seq_transitions: {},\n".format(self.adv_cycle_seq_transitions)
+            + "  debug_adv_cycle_on_step_transitions: {},\n".format(self.debug_adv_cycle_on_step_transitions)
+            + "}\n"
+        )
+
+class CycleTransitionDataSerializer:
+    def json(self, cycle_transition_data, indent = 2):
+        parseable_adv_cycle_seq_transitions = []
+        for (s, t), adv_cycle_count in cycle_transition_data.adv_cycle_seq_transitions.items():
+            parseable_adv_cycle_seq_transitions.append({
+                'source': s,
+                'target': t,
+                'adv_cycle_count': adv_cycle_count,
+            })
+
+        parseable_debug_adv_cycle_on_step_transitions = []
+        for (s, t), adv_cycle_count in cycle_transition_data.debug_adv_cycle_on_step_transitions.items():
+            parseable_debug_adv_cycle_on_step_transitions.append({
+                'source': s,
+                'target': t,
+                'adv_cycle_count': adv_cycle_count,
+            })
+        
+        obj = {
+            'tech_num': cycle_transition_data.tech_num,
+            'tech_does_loop': cycle_transition_data.tech_does_loop,
+            'adv_cycle_on_start': cycle_transition_data.adv_cycle_on_start,
+            'adv_cycle_on_tech_loop': cycle_transition_data.adv_cycle_on_tech_loop,
+            # these are (int, int) -> int maps, tuples cannot be represented in json 
+            'adv_cycle_seq_transitions': parseable_adv_cycle_seq_transitions,
+            'debug_adv_cycle_on_step_transitions':  parseable_debug_adv_cycle_on_step_transitions,
+        }
+
+        return json.dumps(obj, indent = indent)
+    
+    def parse_json(self, serialized):
+        data = json.loads(serialized)
+        
+        tech_num = data['tech_num']
+        tech_does_loop = data['tech_does_loop']
+        adv_cycle_on_start = data['adv_cycle_on_start']
+        adv_cycle_on_tech_loop = data['adv_cycle_on_tech_loop']
+
+        adv_cycle_seq_transitions = {}
+        for d in data['adv_cycle_seq_transitions']:
+            transition = (d['source'], d['target'])
+            adv_cycle_seq_transitions[transition] = d['adv_cycle_count']
+
+        debug_adv_cycle_on_step_transitions = {}
+        for d in data['debug_adv_cycle_on_step_transitions']:
+            transition = (d['source'], d['target'])
+            debug_adv_cycle_on_step_transitions[transition] = d['adv_cycle_count']
+        
+        return CycleTransitionData(
+            tech_num,
+            tech_does_loop,
+            adv_cycle_on_start,
+            adv_cycle_on_tech_loop,
+            adv_cycle_seq_transitions,
+            debug_adv_cycle_on_step_transitions
+        )
 
 
 # Will Powelson May 18, 2021
@@ -1006,7 +1092,7 @@ def get_cycle_adv_data_by_tech_num(maccor_test_steps):
     
     techs = []
     
-    remaining = list(map(lambda x: (x[0] + 1, x[1]), enumerate(steps)))
+    remaining = list(map(lambda x: (x[0] + 1, x[1]), enumerate(maccor_test_steps)))
     for edge in reversed(tech_edges):
         tech = remaining[edge:]
         techs.insert(0, remaining[edge:])
@@ -1029,7 +1115,7 @@ def get_cycle_adv_data_by_tech_num(maccor_test_steps):
             'tech_loops': tech_loops,
             'adv_cycle_on_start': open_adv_cycles,
             'adv_cycle_on_tech_loop': 0,
-            'adv_cycle_transitions': {},
+            'adv_cycle_step_transitions': {},
         }
 
         open_adv_cycles = 0
@@ -1053,7 +1139,7 @@ def get_cycle_adv_data_by_tech_num(maccor_test_steps):
                 # and calculate the number of cycles to advance (if any)
                 looped_physical_step_num = -1
                 loop_adv_cycles = open_adv_cycles
-                for looped_step_num, looped_step in enumerable_steps[loop_to_idx + 1:curr_idx]:
+                for looped_step_num, looped_step in enumerable_steps[loop_to_idx :curr_idx]:
                     step_type = get(looped_step, 'StepType')
                     if step_type == 'AdvCycle':
                         loop_adv_cycles += 1
@@ -1068,7 +1154,7 @@ def get_cycle_adv_data_by_tech_num(maccor_test_steps):
                     raise Exception("step {} is a loop with no physical steps".format(step_num).format(step_num))
                 elif loop_adv_cycles > 0:
                     transition = (prev_physical_step_num, looped_physical_step_num)
-                    cycle_data['adv_cycle_transitions'][transition] = loop_adv_cycles
+                    cycle_data['adv_cycle_step_transitions'][transition] = loop_adv_cycles
             elif step_type == 'AdvCycle' and prev_physical_step_num == -1:
                 cycle_data['adv_cycle_on_start'] += 1
                 if tech_loops:
@@ -1078,7 +1164,7 @@ def get_cycle_adv_data_by_tech_num(maccor_test_steps):
             else:
                 if prev_physical_step_num != - 1 and open_adv_cycles > 0:
                     transition = (prev_physical_step_num, step_num)
-                    cycle_data['adv_cycle_transitions'][transition] = open_adv_cycles
+                    cycle_data['adv_cycle_step_transitions'][transition] = open_adv_cycles
                     # exhaust the adv cycle
                     open_adv_cycles = 0
                 prev_physical_step_num = step_num
@@ -1092,6 +1178,47 @@ def get_cycle_adv_data_by_tech_num(maccor_test_steps):
             tech_num += 1
 
     return cycle_adv_data_by_tech_num    
+
+# have unalloyed transition pairs (66, 67) | (s, t)
+# have (offset_step_num, [tech_nums])
+# without loop unrolling, [tech_nums] is contiguous sequence of integers
+# 
+# translate (s, t) -> (s', t')
+def create_seq_num_adv_cycle_data(cycle_adv_data, step_num_by_seq_num, step_num_offset):
+    seq_nums_by_step_num = {}
+    # we want the first seq num a step was split into to appear at index 0, last and -1
+    for seq_num, step_num in sorted(step_num_by_seq_num.items(), key=lambda x: (x[1], x[0])):
+        if step_num not in seq_nums_by_step_num:
+            seq_nums_by_step_num[step_num] = []
+        seq_nums_by_step_num[step_num].append(seq_num)
+    
+    tech_num = cycle_adv_data['tech_num']
+    tech_loops = cycle_adv_data['tech_loops']
+    adv_cycle_on_start = cycle_adv_data['adv_cycle_on_start']
+    adv_cycle_on_tech_loop = cycle_adv_data['adv_cycle_on_tech_loop']
+    adv_cycle_step_transitions = cycle_adv_data['adv_cycle_step_transitions']
+
+    adv_cycle_seq_transitions = {}
+    for (s_, t_), num_adv_cycles in adv_cycle_step_transitions.items():
+        s = s_ - step_num_offset
+        t = t_ - step_num_offset
+        s_seq = seq_nums_by_step_num[s][-1]
+        t_seq = seq_nums_by_step_num[t][0]
+
+        transition = (s_seq, t_seq)
+
+        adv_cycle_seq_transitions[transition] = num_adv_cycles
+        
+    return CycleTransitionData(
+        tech_num,
+        tech_loops,
+        adv_cycle_on_start,
+        adv_cycle_on_tech_loop,
+        adv_cycle_seq_transitions,
+        adv_cycle_step_transitions,
+    )
+
+
 
 """
 helper function for converting diagnosticV5.000
@@ -1387,6 +1514,23 @@ def convert_diagnostic_v5_multi_techniques(source_file="BioTest_000001.000"):
         (tech1_seqs, tech2_seq_map, tech2_start_i, "Technique 2:"),
         (tech2_seqs, tech4_seq_map, tech4_start_i, "Technique 4:"),
     ]
+    print("creating transition objects")
+    step_trans_data = get_cycle_adv_data_by_tech_num(steps)
+    t1_trans = create_seq_num_adv_cycle_data(step_trans_data[1], tech1_seq_map, 0)
+    t2_trans = create_seq_num_adv_cycle_data(step_trans_data[2], tech2_seq_map, tech2_start_i)
+    t4_trans = create_seq_num_adv_cycle_data(step_trans_data[4], tech4_seq_map, tech4_start_i)
+
+
+    serializer = CycleTransitionDataSerializer()
+    for tech_num, cycle_transition_data in [(1, t1_trans), (2, t2_trans), (4, t4_trans)]:
+        file_str = serializer.json(cycle_transition_data)
+        print(serializer.parse_json(file_str))
+
+        filename = "{}.technique_{}_cycle_rules.json".format(source_file, tech_num)
+        fp = os.path.join(BIOLOGIC_TEMPLATE_DIR, filename)
+        with open(fp, "wb") as f:
+            f.write(file_str.encode("utf-8"))
+            print("created {}".format(fp))
 
     file_str = ""
     for _, tech_map, step_num_offset, header in mappings:
@@ -1545,7 +1689,7 @@ def addCycleNumCol(df, technique_cycle_number_rules, cycle_num_offset, tech_num)
 addCycleNumCol(df, technique_cycle_number_rules, 0, 1)
 
 
-
+convert_diagnostic_v5_multi_techniques()
 
 converter = MaccorToBiologicMb()
 ast = converter.load_maccor_ast(
@@ -1553,3 +1697,9 @@ ast = converter.load_maccor_ast(
 )
 steps = get(ast, 'MaccorTestProcedure.ProcSteps.TestStep')
 get_cycle_adv_data_by_tech_num(steps)
+
+dien = {
+    (1, 2): 3
+}
+
+# print(json.dumps(dien))
