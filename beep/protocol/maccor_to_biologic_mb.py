@@ -1589,105 +1589,62 @@ def convert_diagnostic_v5_multi_techniques(source_file="BioTest_000001.000"):
         f.write(file_str.encode("ISO-8859-1"))
         print("created {}".format(fp))
 
-# Problem statement: 
-# given a series of steps
-# [s1]
-# do 1
-#   [s2]
-#   do 2
-#       [s3]
-#       adv cycle
-#   loop 2
-#   [s4]
-#    adv cycle
-# loop 1
-# [s5]
-# ...
-# 
-# we're going to convert to a series techniques with seqs, and neeed to 
-# figure out the correct cycle number, this can be challenging, consider
-# 
-# [s1]
-# do 1
-#   adv cycle
-#   [s2]
-#   adv cycle
-# loop 1
-#  
-# this generates 1 technique and 3 seqs: 
-# 0      1      2
-# [s1]', [s2]', loop
-# going from 0 to 1 we advance cylce num, going from 2 to 1 we also advance cycle num
-# but 2 does not appear in the data!
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
 
-# 
-# 
-
-import math
-
-fp = '/Users/willpowelson/tri/beep/beep/protocol/dummy.csv'
-df = pd.read_csv(fp, sep=";")
-
-technique_cycle_number_rules = {
-  'cycle_advances_by_transition': {
-    (1, 2): 1,
-    (5, 3): 1,
-  },
-  'cycle_advances_on_technique_start': False,
-  'cycle_advances_on_technique_loop': True,
-}
-
-
-def addCycleNumCol(df, technique_cycle_number_rules, cycle_num_offset, tech_num):
-    num_rows = len(df.index)
-    if num_rows < 1:
-        return
-
-
-    cycle_advances_by_transition = technique_cycle_number_rules['cycle_advances_by_transition']
-    cycle_advances_on_technique_start = technique_cycle_number_rules['cycle_advances_on_technique_start']
-    cycle_advances_on_technique_loop = technique_cycle_number_rules['cycle_advances_on_technique_loop']
+def add_cycle_nums_to_csvs(csv_and_transition_rule_file_paths):
+    serializer = CycleTransitionDataSerializer()
+    cycle_num = 1
+    for csv_fp, transition_json_fp, csv_outpath in csv_and_transition_rule_file_paths:
+        with open(transition_json_fp, 'r') as f:
+           data = f.read()
+           cycle_transition_rules = serializer.parse_json(data)
 
     
-    cycle_num = cycle_num_offset + 1 if cycle_advances_on_technique_start else cycle_num_offset
-    tech_nums = []
-    cycle_nums = []
-    prev_seq_num = 0
-    prev_loop_num = 0
-    for i, row in df.iterrows():
-        seq_num = int(row['Ns'])
-        loop_num = int(row['Loop'])
+        df = pd.read_csv(csv_fp, sep=";")
 
-        new_seq = seq_num != prev_seq_num
-        if new_seq:
-            transition = (prev_seq_num, seq_num)
-            cycle_num += cycle_advances_by_transition.get(transition, 0)
-            prev_seq_num = seq_num
-
-        new_loop = loop_num != prev_loop_num
-        if new_loop and cycle_advances_on_technique_loop:
-            cycle_num += 1
-            prev_loop_num = loop_num
+        cycle_num += cycle_transition_rules.adv_cycle_on_start
         
-        cycle_nums.append(cycle_num)
-        tech_nums.append(tech_num)
+        prev_seq_num = int(df.iloc[0]["Ns"])
+        prev_loop_num = int(df.iloc[0]["Loop"])
+        cycle_nums = []
+        for _, row in df.iterrows():
+            seq_num = int(row["Ns"])
+            loop_num = int(row["Loop"])
 
-    df['cycle_number'] = cycle_nums
-    df['tech_nums'] = tech_nums
+            # a transition may occur because of a loop technique or a loop seq,
+            # it is possible to double count cycle advances if we don't handle them separately
+            if loop_num != prev_loop_num:
+                cycle_num += cycle_transition_rules.adv_cycle_on_tech_loop
+                
+            elif seq_num != prev_seq_num:
+                transition = (prev_seq_num, seq_num)
+                cycle_num += cycle_transition_rules.adv_cycle_seq_transitions.get(transition, 0)
+            
+            prev_loop_num = loop_num
+            prev_seq_num = seq_num
+            
+            cycle_nums.append(cycle_num)
+        
+        df["cycle_number"] = cycle_nums
+        df.to_csv(csv_outpath)
 
-addCycleNumCol(df, technique_cycle_number_rules, 0, 1)
 
+# csv_and_transition_rule_file_paths = [
+#     (
+#         technique_1_csv_filepath,
+#         technique_1_transition_json_file_path,
+#         technique_1_csv_out_filepath
+#     )
+#     (
+#         technique_2_csv_filepath,
+#         technique_2_transition_json_file_path,
+#         technique_2_csv_out_filepath
+#     ),
+#     (
+#         technique_4_csv_filepath,
+#         technique_4_transition_json_file_path,
+#         technique_4_csv_out_filepath
+#     ),
+# ]
 
 convert_diagnostic_v5_multi_techniques()
 
@@ -1698,8 +1655,3 @@ ast = converter.load_maccor_ast(
 steps = get(ast, 'MaccorTestProcedure.ProcSteps.TestStep')
 get_cycle_adv_data_by_tech_num(steps)
 
-dien = {
-    (1, 2): 3
-}
-
-# print(json.dumps(dien))
