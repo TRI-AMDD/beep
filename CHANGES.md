@@ -1,5 +1,9 @@
 
 
+v2021.5.25.11
+-------------
+* Add datapath for battery archive data - Thanks Alex Dunn!
+
 v2021.5.19.17
 -------------
 * Remove tests from coverage
