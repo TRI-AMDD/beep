@@ -299,6 +299,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#battery-archive" class="md-nav__link">
+    Battery Archive
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -326,6 +333,18 @@
   <li class="md-nav__item">
     <a href="../tutorial2/" class="md-nav__link">
       Python tutorial 2: Next steps
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../writing_your_own/" class="md-nav__link">
+      Unsupported Cyclers - Writing your own `BEEPDatapath`
     </a>
   </li>
 
@@ -404,6 +423,13 @@
         <li class="md-nav__item">
   <a href="#neware" class="md-nav__link">
     Neware
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#battery-archive" class="md-nav__link">
+    Battery Archive
   </a>
   
 </li>
@@ -1010,7 +1036,7 @@ cycler. BEEP currently supports five brands of battery cyclers:</p>
 </table>
 <h2 id="biologic">BioLogic<a class="headerlink" href="#biologic" title="Permanent link">&para;</a></h2>
 <p>BioLogic files are ASCII text files of the form <code>*.mpt</code> with matching <code>*.mpl</code> log/metadata files.</p>
-<p><em>BioLogic cycler data is currently only supported for raw operations (e.g., ingestion via <code>RawCyclerRun</code> analysis) and is not supported for downstream processing.</em></p>
+<p><em>BioLogic cycler data is currently only supported for structuring operations (e.g., ingestion via <code>BioLogicDatapath</code> analysis) and is not supported for downstream processing.</em></p>
 <table>
 <thead>
 <tr>
@@ -1258,6 +1284,99 @@ cycler. BEEP currently supports five brands of battery cyclers:</p>
 </tr>
 </tbody>
 </table>
+<h2 id="battery-archive">Battery Archive<a class="headerlink" href="#battery-archive" title="Permanent link">&para;</a></h2>
+<p>Battery Archive files are singular csvs matching the file pattern <code>*timeseries*.csv</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Column name (case insensitive)</th>
+<th>Required</th>
+<th>Explanation</th>
+<th>Unit</th>
+<th>Data Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Cycle_Index</code></td>
+<td>✓</td>
+<td>index of this cycle</td>
+<td></td>
+<td><code>int</code></td>
+</tr>
+<tr>
+<td><code>Current (A)</code></td>
+<td>✓</td>
+<td>cell current</td>
+<td>Amps</td>
+<td><code>float</code></td>
+</tr>
+<tr>
+<td><code>Voltage (V)</code></td>
+<td>✓</td>
+<td>cell potential</td>
+<td>Volts</td>
+<td><code>float</code></td>
+</tr>
+<tr>
+<td><code>Charge_Capacity (Ah)</code></td>
+<td>✓</td>
+<td>charge capacity</td>
+<td>amp-hr</td>
+<td><code>float</code></td>
+</tr>
+<tr>
+<td><code>Discharge_Capacity (Ah)</code></td>
+<td>✓</td>
+<td>discharge capacity</td>
+<td>amp-hr</td>
+<td><code>float</code></td>
+</tr>
+<tr>
+<td><code>Charge_Energy (Wh)</code></td>
+<td>✓</td>
+<td>charge energy</td>
+<td>watt-hr</td>
+<td><code>float</code></td>
+</tr>
+<tr>
+<td><code>Discharge_Energy (Wh)</code></td>
+<td>✓</td>
+<td>discharge energy</td>
+<td>watt-hr</td>
+<td><code>float</code></td>
+</tr>
+<tr>
+<td><code>Cell_Temperature (C)</code></td>
+<td>✓</td>
+<td>temperature of the cell</td>
+<td>°Celsius</td>
+<td><code>float</code></td>
+</tr>
+<tr>
+<td><code>Environmental_Temperature (C)</code></td>
+<td></td>
+<td>environmental temperature</td>
+<td>°Celsius</td>
+<td><code>float</code></td>
+</tr>
+<tr>
+<td><code>Test_Time (s)</code></td>
+<td>✓</td>
+<td>test time</td>
+<td>seconds</td>
+<td><code>float</code></td>
+</tr>
+<tr>
+<td><code>Date_Time</code></td>
+<td>✓</td>
+<td>datetime string, in <code>'%Y-%m-%d %H:%M:%S.%f'</code> format</td>
+<td></td>
+<td><code>str</code></td>
+</tr>
+</tbody>
+</table>
+<p>No metadata ingestion is supported for Battery Archive files at this time.</p>
                 
               
               
