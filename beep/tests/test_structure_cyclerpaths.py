@@ -365,9 +365,7 @@ class TestNewareDatapath(unittest.TestCase):
                          [2.3427])
 
 
-
 class TestBatteryArchiveDatapath(unittest.TestCase):
-
     def test_from_file(self):
         ba_file = os.path.join(TEST_FILE_DIR,
                                "SNL_18650_LFP_15C_0-100_0.5-1C_a_timeseries.csv")
