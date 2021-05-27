@@ -1735,14 +1735,3 @@ def add_cycle_nums_to_csvs(
 
         df["cycle_index"] = cycle_nums
         df.to_csv(csv_out_fp, sep=";")
-
-
-add_cycle_nums_to_csvs(
-    [os.path.join(BIOLOGIC_TEMPLATE_DIR, "../dummy.csv")],
-    [
-        os.path.join(
-            BIOLOGIC_TEMPLATE_DIR, "diagnosticV5.000.technique_1_cycle_rules.json"
-        )
-    ],
-    [os.path.join(BIOLOGIC_TEMPLATE_DIR, "../dummy-out.csv")],
-)
