@@ -17,6 +17,7 @@ from scipy.optimize import curve_fit
 from scipy.stats import skew, kurtosis
 from beep.utils import parameters_lookup
 import os
+import time
 
 
 # TODO: document these params
@@ -959,7 +960,7 @@ def get_fractional_quantity_remaining_nx(
     summary_diag_cycle_type = processed_cycler_run.diagnostic_summary[
         (processed_cycler_run.diagnostic_summary.cycle_type == diagnostic_cycle_type)
     ].reset_index()
-    summary_diag_cycle_type = summary_diag_cycle_type[["cycle_index", metric]]
+    summary_diag_cycle_type = summary_diag_cycle_type[["cycle_index", "date_time_iso", metric]]
 
     # For the nx addition
     if 'energy' in metric:
@@ -1022,11 +1023,20 @@ def get_fractional_quantity_remaining_nx(
 
     summary_diag_cycle_type.loc[:, 'diagnostic_start_cycle'] = parameter_row['diagnostic_start_cycle'].values[0]
     summary_diag_cycle_type.loc[:, 'diagnostic_interval'] = parameter_row['diagnostic_interval'].values[0]
-    # TODO add number of initial regular cycles and interval to the dataframe
+
+    # Calculate the epoch time stamp at each of the measurements for later comparison
+    date_time_objs = pd.to_datetime(summary_diag_cycle_type["date_time_iso"])
+    date_time_float = [
+        time.mktime(t.timetuple()) if t is not pd.NaT else float("nan")
+        for t in date_time_objs
+    ]
+    summary_diag_cycle_type.drop(columns=["date_time_iso"], inplace=True)
+    summary_diag_cycle_type.loc[:, "epoch_time"] = date_time_float
+
     summary_diag_cycle_type.columns = ["cycle_index", "fractional_metric",
                                        "initial_regular_throughput", "normalized_regular_throughput",
                                        "normalized_diagnostic_throughput", "diagnostic_start_cycle",
-                                       "diagnostic_interval"]
+                                       "diagnostic_interval", "epoch_time"]
     return summary_diag_cycle_type
 
 
