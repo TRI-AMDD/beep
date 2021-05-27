@@ -17,7 +17,7 @@ from scipy.optimize import curve_fit
 from scipy.stats import skew, kurtosis
 from beep.utils import parameters_lookup
 import os
-import time
+import calendar
 
 
 # TODO: document these params
@@ -1027,7 +1027,7 @@ def get_fractional_quantity_remaining_nx(
     # Calculate the epoch time stamp at each of the measurements for later comparison
     date_time_objs = pd.to_datetime(summary_diag_cycle_type["date_time_iso"])
     date_time_float = [
-        time.mktime(t.timetuple()) if t is not pd.NaT else float("nan")
+        calendar.timegm(t.timetuple()) if t is not pd.NaT else float("nan")
         for t in date_time_objs
     ]
     summary_diag_cycle_type.drop(columns=["date_time_iso"], inplace=True)
