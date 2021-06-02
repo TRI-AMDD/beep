@@ -735,8 +735,7 @@ def get_diffusion_features(processed_cycler_run, diag_pos):
     """
     df_0 = get_diffusion_coeff(processed_cycler_run, 0)
     df = get_diffusion_coeff(processed_cycler_run, diag_pos)
-    # add in a small number for numerical stability 
-    result = (df - df_0 - 1e-6)/(df_0 + 1e-6)
+    result = (df - df_0)/(df_0)
     return result
 
 
