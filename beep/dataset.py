@@ -344,6 +344,7 @@ class BeepDataset(MSONable):
 def get_threshold_targets(dataset_diagnostic_properties,
                           cycle_type="rpt_1C",
                           metric="discharge_energy",
+                          x_axis_types=None,
                           threshold=0.80,
                           filter_kinks=None,
                           extrapolate_threshold=True):
@@ -361,6 +362,7 @@ def get_threshold_targets(dataset_diagnostic_properties,
             DiagnosticProperties feature
         cycle_type (str): Type of diagnostic cycle being used to measure the fractional metric
         metric (str): The metric being used for fractional capacity
+        x_axis_types (list): List of column names to use for x_axis interpolation (distance to threshold)
         threshold (float): Value for the fractional metric to be considered above or below threshold
         filter_kinks (float): If set, cutoff value for the second derivative of the fractional metric (cells with an
             abrupt change in degradation rate might have something else going on). Typical value might be 0.04
@@ -370,14 +372,19 @@ def get_threshold_targets(dataset_diagnostic_properties,
     Returns:
          pd.DataFrame: Each row is a seq_num and contains the interpolated throughput and cycle number at which
             that particular run crossed the threshold.
+            :param x_axis_types:
 
     """
+    # Set the x axis types for the calculating the distance to the threshold
+    if x_axis_types is None:
+        x_axis_types = ["normalized_regular_throughput", "cycle_index"]
     threshold_values_df_list = []
     # Only use the target cycle type and basis for calculation
     cycle_type_target_df = dataset_diagnostic_properties[dataset_diagnostic_properties.cycle_type == cycle_type]
     cycle_type_target_df = cycle_type_target_df[cycle_type_target_df['metric'] == metric]
 
     for indx, run in enumerate(dataset_diagnostic_properties['file'].unique()):
+        run_x_axis_types = x_axis_types.copy()
         # Look at one run at a time
         run_target_df = cycle_type_target_df[cycle_type_target_df['file'] == run]
 
@@ -389,8 +396,9 @@ def get_threshold_targets(dataset_diagnostic_properties,
             #         print(last_good_cycle)
             run_target_df = run_target_df[run_target_df['cycle_index'] < last_good_cycle]
 
-        x_throughput_axis = run_target_df['normalized_regular_throughput']
-        x_cycle_axis = run_target_df['cycle_index']
+        x_axes = []
+        for type in run_x_axis_types:
+            x_axes.append(run_target_df[type])
         y_interpolation_axis = run_target_df['fractional_metric']
 
         # Logic around how to deal with cells that have not crossed the threshold
@@ -400,38 +408,44 @@ def get_threshold_targets(dataset_diagnostic_properties,
         elif run_target_df['fractional_metric'].min() > threshold and extrapolate_threshold:
             fill_value = "extrapolate"
             bounds_error = False
-            x_throughput_linspace = np.linspace(x_throughput_axis.min(), 2 * x_throughput_axis.max(), num=1000)
-            x_cycle_linspace = np.linspace(x_cycle_axis.min(), 2 * x_cycle_axis.max(), num=1000)
+            x_linspaces = []
+            for axis in x_axes:
+                x_linspaces.append(np.linspace(axis.min(), 2 * axis.max(), num=1000))
         else:
             fill_value = np.nan
             bounds_error = True
-            x_throughput_linspace = np.linspace(x_throughput_axis.min(), x_throughput_axis.max(), num=1000)
-            x_cycle_linspace = np.linspace(x_cycle_axis.min(), x_cycle_axis.max(), num=1000)
+            x_linspaces = []
+            for axis in x_axes:
+                x_linspaces.append(np.linspace(axis.min(), axis.max(), num=1000))
 
-        f_throughput = interpolate.interp1d(x_throughput_axis, y_interpolation_axis, kind='linear',
-                                            bounds_error=bounds_error, fill_value=fill_value)
-        f_cycle = interpolate.interp1d(x_cycle_axis, y_interpolation_axis, kind='linear', bounds_error=bounds_error,
-                                       fill_value=fill_value)
+        f_axis = []
+        for axis in x_axes:
+            f_axis.append(interpolate.interp1d(axis, y_interpolation_axis, kind='linear',
+                                               bounds_error=bounds_error, fill_value=fill_value))
 
-        throughput_crossing_array = abs(f_throughput(x_throughput_linspace) - threshold)
-        cycle_crossing_array = abs(f_cycle(x_cycle_linspace) - threshold)
-        throughput_to_threshold = x_throughput_linspace[np.argmin(throughput_crossing_array)]
-        cycles_to_threshold = x_cycle_linspace[np.argmin(cycle_crossing_array)]
+        x_to_threshold = []
+        for indx, x_linspace in enumerate(x_linspaces):
+            crossing_array = abs(f_axis[indx](x_linspace) - threshold)
+            x_to_threshold.append(x_linspace[np.argmin(crossing_array)])
 
-        if ~(throughput_to_threshold > 0) or ~(cycles_to_threshold > 0):
+        if ~(x_to_threshold[0] > 0) or ~(x_to_threshold[1] > 0):
             print(run, " does not have a positive value to threshold")
             continue
 
-        real_throughput_to_threshold = throughput_to_threshold * run_target_df['initial_regular_throughput'].values[0]
+        if "normalized_regular_throughput" in run_x_axis_types:
+            real_throughput_to_threshold = x_to_threshold[run_x_axis_types.index("normalized_regular_throughput")] * \
+                                           run_target_df['initial_regular_throughput'].values[0]
+            x_to_threshold.append(real_throughput_to_threshold)
+            run_x_axis_types.append("real_regular_throughput")
 
         threshold_dict = {
             "file": [run],
             "seq_num": [int(run.split("_")[1])],
             'initial_regular_throughput': run_target_df['initial_regular_throughput'].values[0],
-            cycle_type + metric + str(threshold) + "_normalized_reg_throughput": [throughput_to_threshold],
-            cycle_type + metric + str(threshold) + "_real_reg_throughput": [real_throughput_to_threshold],
-            cycle_type + metric + str(threshold) + "_cycles": [cycles_to_threshold]
         }
+
+        for indx, x_axis in enumerate(run_x_axis_types):
+            threshold_dict[cycle_type + metric + str(threshold) + '_' + x_axis] = [x_to_threshold[indx]]
 
         threshold_values_df_list.append(pd.DataFrame(threshold_dict))
     threshold_targets_df = pd.concat(threshold_values_df_list)

@@ -214,7 +214,7 @@ class TestFeaturizer(unittest.TestCase):
             self.assertListEqual(
                 list(features_reloaded.X.iloc[2, :]),
                 [141, 0.9859837086597274, 7.885284043, 4.323121513988055,
-                 21.12108276469096, 30, 100, 'reset', 'discharge_energy'],
+                 21.12108276469096, 30, 100, 1577338063, 'reset', 'discharge_energy'],
             )
 
             # Workflow output
@@ -445,12 +445,12 @@ class TestFeaturizer(unittest.TestCase):
             folder = os.path.split(path)[-1]
             dumpfn(featurizer, featurizer.name)
             self.assertEqual(folder, "DiagnosticProperties")
-            self.assertEqual(featurizer.X.shape, (30, 9))
+            self.assertEqual(featurizer.X.shape, (30, 10))
             print(list(featurizer.X.iloc[2, :]))
             self.assertListEqual(
                 list(featurizer.X.iloc[2, :]),
                 [141, 0.9859837086597274, 7.885284043, 4.323121513988055,
-                 21.12108276469096, 30, 100, 'reset', 'discharge_energy']
+                 21.12108276469096, 30, 100, 1577338063, 'reset', 'discharge_energy']
             )
 
     @unittest.skip
@@ -527,6 +527,7 @@ class TestFeaturizerHelpers(unittest.TestCase):
         self.assertFalse(sum_diag.isnull().values.any())
         self.assertEqual(sum_diag['diagnostic_start_cycle'].iloc[0], 30)
         self.assertEqual(sum_diag['diagnostic_interval'].iloc[0], 100)
+        self.assertEqual(sum_diag['epoch_time'].iloc[0], 1576641695)
 
         sum_diag = featurizer_helpers.get_fractional_quantity_remaining_nx(pcycler_run,
                                                                            metric="discharge_energy",
@@ -538,6 +539,7 @@ class TestFeaturizerHelpers(unittest.TestCase):
         self.assertEqual(np.around(sum_diag["normalized_diagnostic_throughput"].iloc[15], 3), np.around(5.229, 3))
         self.assertEqual(sum_diag['diagnostic_start_cycle'].iloc[0], 30)
         self.assertEqual(sum_diag['diagnostic_interval'].iloc[0], 100)
+        self.assertEqual(sum_diag['epoch_time'].iloc[0], 1576736230)
 
         processed_cycler_run_path_2 = os.path.join(
             TEST_FILE_DIR, "Talos_001383_NCR18650618001_CH31_truncated_structure.json"
@@ -556,6 +558,7 @@ class TestFeaturizerHelpers(unittest.TestCase):
         self.assertEqual(np.around(sum_diag["normalized_diagnostic_throughput"].iloc[2], 3), np.around(0.385, 3))
         self.assertEqual(sum_diag['diagnostic_start_cycle'].iloc[0], 30)
         self.assertEqual(sum_diag['diagnostic_interval'].iloc[0], 200)
+        self.assertEqual(sum_diag['epoch_time'].iloc[0], 1598156928)
 
     def test_generate_dQdV_peak_fits(self):
         processed_cycler_run_path = os.path.join(
