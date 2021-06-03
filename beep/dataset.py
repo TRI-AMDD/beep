@@ -393,7 +393,6 @@ def get_threshold_targets(dataset_diagnostic_properties,
         if filter_kinks and np.any(run_target_df['fractional_metric'].diff().diff() < filter_kinks):
             last_good_cycle = run_target_df[run_target_df['fractional_metric'].diff().diff() < filter_kinks][
                 'cycle_index'].min()
-            #         print(last_good_cycle)
             run_target_df = run_target_df[run_target_df['cycle_index'] < last_good_cycle]
 
         x_axes = []
@@ -409,18 +408,23 @@ def get_threshold_targets(dataset_diagnostic_properties,
             fill_value = "extrapolate"
             bounds_error = False
             x_linspaces = []
-            for axis in x_axes:
-                x_linspaces.append(np.linspace(axis.min(), 2 * axis.max(), num=1000))
+            for x_axis in x_axes:
+                y1 = y_interpolation_axis.iloc[-2]
+                y2 = y_interpolation_axis.iloc[-1]
+                x1 = x_axis.iloc[-2]
+                x2 = x_axis.iloc[-1]
+                x_thresh_extrap = (threshold - 0.1 - y1) * (x2 - x1) / (y2 - y1) + x1
+                x_linspaces.append(np.linspace(x_axis.min(), x_thresh_extrap, num=1000))
         else:
             fill_value = np.nan
             bounds_error = True
             x_linspaces = []
-            for axis in x_axes:
-                x_linspaces.append(np.linspace(axis.min(), axis.max(), num=1000))
+            for x_axis in x_axes:
+                x_linspaces.append(np.linspace(x_axis.min(), x_axis.max(), num=1000))
 
         f_axis = []
-        for axis in x_axes:
-            f_axis.append(interpolate.interp1d(axis, y_interpolation_axis, kind='linear',
+        for x_axis in x_axes:
+            f_axis.append(interpolate.interp1d(x_axis, y_interpolation_axis, kind='linear',
                                                bounds_error=bounds_error, fill_value=fill_value))
 
         x_to_threshold = []
