@@ -1,5 +1,12 @@
 
 
+v2021.6.3.21
+------------
+* Update threshold method per Patrick Asinger's suggestion
+* Adding the abilty to make the x axis calculations extensible
+* Create method for adding cycle index to Biologic files - Thanks Will Powelson!
+* Documentation for battery archive datapath - Thanks Alex Dunn
+
 v2021.5.25.11
 -------------
 * Add datapath for battery archive data - Thanks Alex Dunn!
