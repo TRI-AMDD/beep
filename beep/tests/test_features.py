@@ -308,8 +308,8 @@ class TestFeaturizer(unittest.TestCase):
             self.assertEqual(folder, "HPPCResistanceVoltageFeatures")
             self.assertEqual(featurizer.X.shape[1], 76)
             self.assertListEqual(
-                [featurizer.X.columns[0], featurizer.X.columns[-1]],
-                ["r_c_0s_00", "D_8"],
+                [featurizer.X.columns[0], featurizer.X.columns[-1], featurizer.X.iloc[0, 0]],
+                ["r_c_0s_00", "D_8", -0.097],
             )
 
     def test_HPPCRelaxationFeatures_class(self):
