@@ -436,7 +436,7 @@ def res_calc(chosen, soc, r_type):
     try:
         chosen_step_ocv = chosen[(chosen.step_index_counter == counters[step_ocv][soc])]
         chosen_step_cur = chosen[chosen.step_index_counter == counters[step_cur][soc]]
-    except:
+    except IndexError:
         return None
     
     # since the data is voltage interpolated, so we want to sort the data based on time 
@@ -500,7 +500,7 @@ def get_resistance_soc_duration_hppc(processed_cycler_run, diag_pos):
     
     output = pd.DataFrame()
 
-    chosen = hppc_cycle[hppc_cycle.cycle_index==cycles[diag_pos]]
+    chosen = hppc_cycle[hppc_cycle.cycle_index == cycles[diag_pos]]
     steps = chosen.step_index.unique()[1:6]
 
     # for each diagnostic cycle, we have a row conatins all the resistances 
