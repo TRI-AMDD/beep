@@ -411,10 +411,8 @@ def res_calc(chosen, soc, r_type):
     Returns:
         charge/discharge resistance value (float) at this specific soc and time scale in hppc cycles
     """
-    
-
     steps = chosen.step_index.unique()[1:6]
-    
+
     counters = []
         
     for step in steps:
@@ -440,8 +438,8 @@ def res_calc(chosen, soc, r_type):
         return None
     
     # since the data is voltage interpolated, so we want to sort the data based on time 
-    chosen_step_ocv = chosen_step_ocv.sort_values(by ='test_time')
-    chosen_step_cur = chosen_step_cur.sort_values(by ='test_time')
+    chosen_step_ocv = chosen_step_ocv.sort_values(by='test_time')
+    chosen_step_cur = chosen_step_cur.sort_values(by='test_time')
     
     # last data point of the rest is the ocv value 
     v_ocv = chosen_step_ocv.voltage.iloc[-1]
@@ -491,7 +489,7 @@ def get_resistance_soc_duration_hppc(processed_cycler_run, diag_pos):
     """
     
     data = processed_cycler_run.diagnostic_data
-    hppc_cycle = data.loc[data.cycle_type=='hppc']
+    hppc_cycle = data.loc[data.cycle_type == 'hppc']
     hppc_cycle = hppc_cycle.loc[hppc_cycle.current.notna()]
     cycles = hppc_cycle.cycle_index.unique()
 
