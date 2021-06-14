@@ -29,16 +29,20 @@ setup(name="beep",
       packages=find_packages(),
       install_requires=reqs,
       extras_require={"tests": reqs_test},
-      entry_points={
-          "console_scripts": [
-              "collate = beep.collate:main",
-              "validate = beep.validate:main",
-              "structure = beep.structure.cli:main",
-              "featurize = beep.featurize:main",
-              "run_model = beep.run_model:main",
-              "generate_protocol = beep.generate_protocol:main"
-          ]
-      },
+      # entry_points={
+      # "console_scripts": [
+      #     "collate = beep.collate:main",
+      #     "validate = beep.validate:main",
+      #     "structure = beep.structure.cli:main",
+      #     "featurize = beep.featurize:main",
+      #     "run_model = beep.run_model:main",
+      #     "generate_protocol = beep.generate_protocol:main"
+      # ]
+      # },
+      entry_points='''
+        [console_scripts]
+        beep=beep.cmd:cli
+        ''',
       classifiers=[
           "Programming Language :: Python :: 3",
           "License :: OSI Approved :: Apache Software License",
