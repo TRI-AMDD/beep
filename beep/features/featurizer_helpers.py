@@ -398,23 +398,19 @@ def get_hppc_ocv(processed_cycler_run, diag_pos):
 
 
 def res_calc(chosen, soc, r_type):
-    
+
     """
     This function calculates resistance based on different socs and differnet time scales in hppc cycles.
-    
     Args:
         chosen(pd.DataFrame): a dataframe for a specific diagnostic cycle you are interested in.
         soc (int): step index counter corresponding to the soc window of interest - 0, 1, 2, 3, 4 ... 
         r_type (str): a string that indicates the time scale of the resistance you are calculating, e.g. 
         'r_c_0s', 'r_c_3s', 'r_c_end', 'r_d_0s', 'r_d_3s', 'r_d_end'
-    
     Returns:
         charge/discharge resistance value (float) at this specific soc and time scale in hppc cycles
     """
     steps = chosen.step_index.unique()[1:6]
-
     counters = []
-        
     for step in steps:
         counters.append(chosen[chosen.step_index == step].step_index_counter.unique().tolist())
         
@@ -468,10 +464,8 @@ def res_calc(chosen, soc, r_type):
     
     
 def get_resistance_soc_duration_hppc(processed_cycler_run, diag_pos):
-    
     """
     This function calculates resistances based on different socs and differnet time scales for a targeted hppc cycle.
-    
     Args:
         processed_cycler_run (beep.structure.ProcessedCyclerRun)
         diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
@@ -495,23 +489,16 @@ def get_resistance_soc_duration_hppc(processed_cycler_run, diag_pos):
 
     # a list of strings to get charge/discharge resistances at different time scales
     names = ['r_c_0s', 'r_c_3s', 'r_c_end', 'r_d_0s', 'r_d_3s', 'r_d_end']
-    
     output = pd.DataFrame()
-
     chosen = hppc_cycle[hppc_cycle.cycle_index == cycles[diag_pos]]
-    steps = chosen.step_index.unique()[1:6]
-
     # for each diagnostic cycle, we have a row conatins all the resistances 
-    df_row = pd.DataFrame()  
-
+    df_row = pd.DataFrame()
     for name in names:
         for j in range(9):
             # full name 
             f_name = name + '_' + str(j)
             df_row[f_name] = [res_calc(chosen, j, name)]
-
     output = output.append(df_row, ignore_index=True)
-    
     return output
 
 
