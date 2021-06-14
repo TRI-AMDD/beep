@@ -1,9 +1,6 @@
 import click
 
-
 from beep.structure import process_file_list_from_json
-
-
 
 CLICK_FILE = click.Path(file_okay=True, dir_okay=False, writable=False, readable=True)
 CLICK_DIR = click.Path(file_okay=False, dir_okay=True, writable=True, readable=True)
@@ -129,6 +126,19 @@ def cli(ctx):
          "determine structuring parameters. Will override all"
          "manually set structuring parameters."
 )
+@click.option(
+    '--validation-only',
+    is_flag=True,
+    default=False,
+    help='Skips structuring, only validates files.'
+)
+@click.option(
+    '--s3',
+    is_flag=True,
+    default=False,
+    help="Expands file paths to include those in s3 buckets."
+         "s3 must be preconfigured on system."
+)
 def structure(
         ctx,
         files_glob,
@@ -143,11 +153,8 @@ def structure(
         full_fast_charge,
         chg_axis,
         dchg_axis,
-        automatic,
-
-
-
+        automatic_flag,
+        validation_only_flag,
+        s3_flag
 ):
     click.echo("Running structure ok.")
-
-#
