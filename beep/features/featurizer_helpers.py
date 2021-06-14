@@ -454,6 +454,7 @@ def res_calc(chosen, soc, r_type):
         res = (v_dis - v_ocv)/(i_dis-i_ocv)
         return res
 
+
 def get_resistance_soc_duration_hppc(processed_cycler_run, diag_pos):
     """
     This function calculates resistances based on different socs and differnet time scales for a targeted hppc cycle.
@@ -487,6 +488,7 @@ def get_resistance_soc_duration_hppc(processed_cycler_run, diag_pos):
     output = output.append(df_row, ignore_index=True)
     return output
 
+
 def get_dr_df(processed_cycler_run, diag_pos):
     """
     This function calculates resistance changes between a hppc cycle specified by and the first one under different
@@ -503,6 +505,7 @@ def get_dr_df(processed_cycler_run, diag_pos):
     r_df_i = get_resistance_soc_duration_hppc(processed_cycler_run, diag_pos)
     dr_df = (r_df_i - r_df_0) / r_df_0
     return dr_df
+
 
 def get_V_I(df):
     """
