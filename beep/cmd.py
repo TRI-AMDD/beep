@@ -1,10 +1,14 @@
 import os
+import sys
 import glob
 import pprint
+import traceback
 
 import click
 
 from beep import logger
+from beep.structure.cli import auto_load
+from beep.validate import BeepValidationError
 from beep.structure import process_file_list_from_json
 
 CLICK_FILE = click.Path(file_okay=True, dir_okay=False, writable=False, readable=True)
@@ -141,7 +145,7 @@ def cli(ctx):
     is_flag=True,
     default=False,
     help="If --protocol-parameters-path or the BEEP_PARAMETERS_"
-         "PATH environment variable is specified, will automatically"
+         "PATH environment variable is specified, will automatically "
          "determine structuring parameters. Will override all"
          "manually set structuring parameters."
 )
@@ -180,7 +184,15 @@ def structure(
     files = [os.path.abspath(f) for f in files]
 
 
-    for
+    for f in files:
+        try:
+            dp = auto_load(f)
+            dp.validate()
+        except BeepValidationError:
+            exc_type, exc_value, exc_traceback = sys.exc_info(
+
+
+        logger.info()
 
 
     # cwd = ctx.obj.cwd
