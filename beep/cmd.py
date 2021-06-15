@@ -1,3 +1,6 @@
+import os
+from enum import Enum
+
 import click
 
 from beep.structure import process_file_list_from_json
@@ -7,15 +10,28 @@ CLICK_DIR = click.Path(file_okay=False, dir_okay=True, writable=True, readable=T
 BEEP_CMDS = ["structure", "featurize", "run_model"]
 
 
+class ContextPersister:
+    """
+    Class to hold persisting objects for downstream
+    BEEP tasks.
+    """
+    def __init__(self, cwd=None):
+        self.cwd = cwd
+
+
 def parse_files_glob(files_glob):
     files_sep = files_glob.split(files_glob)
-
 
 
 @click.group(invoke_without_command=False)
 @click.pass_context
 def cli(ctx):
-    ctx.ensure_object(dict)
+    """
+    Base command for all BEEP subcommands. Sets CWD and persistent
+    context.
+    """
+    ctx.ensure_object(ContextPersister)
+    ctx.obj.cwd = os.getcwd()
 
 
 @cli.command(
@@ -159,4 +175,5 @@ def structure(
         s3
 ):
     click.echo("Running structure ok.")
-    click.echo(dict(ctx))
+    cwd = ctx.obj.cwd
+    click.echo(cwd)
