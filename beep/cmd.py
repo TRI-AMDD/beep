@@ -145,12 +145,20 @@ def cli(ctx):
          "--automatic."
 )
 @click.option(
+    '--s3-bucket',
+    '-b',
+    default=None,
+    type=click.STRING,
+    help="Expands file paths to include those in the s3 bucket specified. " \
+         "File paths specify s3 keys. Keys can be globbed/wildcarded."
+)
+@click.option(
     '--halt-on-error',
     is_flag=True,
+    default=False,
     help="Set to halt BEEP if critical structuring"
          "errors are encountered on any file. Otherwise, logs "
          "critical errors to the status json.",
-    default="log"
 )
 @click.option(
     '--automatic',
@@ -174,13 +182,6 @@ def cli(ctx):
     help="Does not save raw cycler data to disk. Saves disk space, but"
          "prevents files from being partially restructued."
 )
-@click.option(
-    '--s3',
-    is_flag=True,
-    default=False,
-    help="Expands file paths to include those in s3 buckets. "
-         "s3 must be preconfigured on system."
-)
 @click.pass_context
 def structure(
         ctx,
@@ -195,12 +196,19 @@ def structure(
         full_fast_charge,
         charge_axis,
         discharge_axis,
+        s3_bucket,
         halt_on_error,
         automatic,
         validation_only,
         no_raw,
-        s3
 ):
+
+    # download from s3 first, if needed
+    if s3:
+        logger.info("Fetching file list from s3")
+
+
+
     files = [os.path.abspath(f) for f in files]
     n_files = len(files)
 
