@@ -9,7 +9,7 @@ import traceback
 import click
 from monty.serialization import dumpfn
 
-from beep import logger, ENV_PARAMETERS_DIR
+from beep import logger, ENV_PARAMETERS_DIR, S3_CACHE
 from beep.structure.cli import auto_load
 from beep.utils.s3 import list_s3_objects, download_s3_object
 
@@ -187,6 +187,13 @@ def cli(ctx):
     help="Does not save raw cycler data to disk. Saves disk space, but "
          "prevents files from being partially restructued."
 )
+@click.option(
+    '--s3-use-cache',
+    is_flag=True,
+    default=False,
+    help="Use s3 cache defined with environment variable BEEP_S3_CACHE "
+         "instead of downloading files directly to the CWD."
+)
 @click.pass_context
 def structure(
         ctx,
@@ -206,7 +213,9 @@ def structure(
         automatic,
         validation_only,
         no_raw,
+        s3_use_cache
 ):
+
     # download from s3 first, if needed
     if s3_bucket:
         logger.info(f"Fetching file list from s3 bucket {s3_bucket}...")
@@ -239,7 +248,8 @@ def structure(
         local_files_from_s3 = []
         for s3k in s3_keys_matched:
             s3k_basename = os.path.basename(s3k)
-            s3k_local_fullname = os.path.join(ctx.obj.cwd, s3k_basename)
+            pardir = S3_CACHE if s3_use_cache else ctx.obj.cwd
+            s3k_local_fullname = os.path.join(pardir, s3k_basename)
             logger.info(f"Fetching {s3k} from {s3_bucket}")
             download_s3_object(s3_bucket, s3k, s3k_local_fullname)
             logger.info(f"Fetched s3 file {s3k_basename} to {s3k_local_fullname}")

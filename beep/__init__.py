@@ -32,7 +32,6 @@ if VERSION_TAG is not None:
 tqdm = partial(_tqdm, disable=bool(os.environ.get("TQDM_OFF")))
 
 ENV_VAR = "BEEP_ENV"
-PROCESSED_DIR = "BEEP_PROCESSING_DIR"
 ENV_PARAMETERS_DIR = os.environ.get("BEEP_PARAMETERS_PATH", "")
 MAX_RETRIES = 12
 
@@ -41,17 +40,17 @@ ENVIRONMENT = os.getenv(ENV_VAR)
 if ENVIRONMENT is None or ENVIRONMENT not in config.keys():
     ENVIRONMENT = "local"
 
-DIR = os.getenv(PROCESSED_DIR)
-if DIR is None:
-    if ENVIRONMENT in ["stage", "prod"]:
-        os.environ[PROCESSED_DIR] = "/"
-    elif ENVIRONMENT in ["local", "dev", "test"]:
-        os.environ[PROCESSED_DIR] = os.getcwd()
-    else:
-        raise ValueError(
-            f"The directory for processing cycling data {PROCESSED_DIR} must be set"
-            + f" eg. /Users/Bob/cycling"
-        )
+# DIR = os.getenv(PROCESSED_DIR)
+# if DIR is None:
+#     if ENVIRONMENT in ["stage", "prod"]:
+#         os.environ[PROCESSED_DIR] = "/"
+#     elif ENVIRONMENT in ["local", "dev", "test"]:
+#         os.environ[PROCESSED_DIR] = os.getcwd()
+#     else:
+#         raise ValueError(
+#             f"The directory for processing cycling data {PROCESSED_DIR} must be set"
+#             + f" eg. /Users/Bob/cycling"
+#         )
 
 MODULE_DIR = os.path.dirname(__file__)
 CONVERSION_SCHEMA_DIR = os.path.join(MODULE_DIR, "conversion_schemas")

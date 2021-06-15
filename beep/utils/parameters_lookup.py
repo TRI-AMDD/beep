@@ -26,7 +26,7 @@ def get_project_sequence(path):
     return file_parts
 
 
-def get_protocol_parameters(filepath, parameters_path="data-share/raw/parameters"):
+def get_protocol_parameters(filepath, parameters_path):
     """
     Helper function to get the project parameters for a file given the filename
 
@@ -41,7 +41,7 @@ def get_protocol_parameters(filepath, parameters_path="data-share/raw/parameters
     """
     project_name_list = get_project_sequence(filepath)
     project_name = project_name_list[0]
-    path = os.path.join(os.environ.get("BEEP_PROCESSING_DIR", "/"), parameters_path)
+    path = os.path.abspath(parameters_path)
     project_parameter_files = glob(os.path.join(path, project_name + "*"))
     assert len(project_parameter_files) <= 1, (
         "Found too many parameter files for: " + project_name
