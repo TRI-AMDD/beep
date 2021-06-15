@@ -1,6 +1,5 @@
 import os
 import sys
-import glob
 import time
 import pprint
 import traceback
@@ -8,19 +7,14 @@ import traceback
 import click
 from monty.serialization import dumpfn
 
-from beep import logger
+from beep import logger, ENV_PARAMETERS_DIR
 from beep.structure.cli import auto_load
-from beep.validate import BeepValidationError
-from beep.structure import process_file_list_from_json
 
 CLICK_FILE = click.Path(file_okay=True, dir_okay=False, writable=False, readable=True)
 CLICK_DIR = click.Path(file_okay=False, dir_okay=True, writable=True, readable=True)
 BEEP_CMDS = ["structure", "featurize", "run_model"]
-FILE_DELIMITER = ","
-FILE_DELIMITER_ESC_SEQ = '\,'
-FILE_DELIMITER_UNICODE_PLACEHOLDER = "ʤ"
 STRUCTURED_SUFFIX = "-structured"
-
+FEATURIZED_SUFFIX = "-featurized"
 
 STRUCTURE_CONFIG = {"service": "DataStructurer"}
 
@@ -94,10 +88,10 @@ def cli(ctx):
          "--output-filenames is not specified."
 )
 @click.option(
-    '--protocol-parameters-file',
+    '--protocol-parameters-dir',
     '-p',
     type=CLICK_FILE,
-    help="File path of a protocol parameters file to use for "
+    help="Directory of a protocol parameters files to use for "
          "auto-structuring. If not specified, BEEP cannot auto-"
          "structure. Use with --automatic. Can alternatively"
          "be set via environment variable BEEP_PARAMETERS_PATH."
@@ -139,7 +133,7 @@ def cli(ctx):
     type=click.STRING,
     default='charge_axis',
     help="Axis to use for charge step interpolation. Must be found"
-         "inside the loaded dataframe."
+         "inside the loaded dataframe. Can be used with --automatic."
 )
 @click.option(
     '--discharge-axis',
@@ -147,7 +141,8 @@ def cli(ctx):
     type=click.STRING,
     default='voltage',
     help="Axis to use for discharge step interpolation. Must be "
-         "found inside the loaded dataframe."
+         "found inside the loaded dataframe. Can be used with"
+         "--automatic."
 )
 @click.option(
     '--halt-on-error',
@@ -193,7 +188,7 @@ def structure(
         output_status_json,
         output_filenames,
         output_dir,
-        protocol_parameters_file,
+        protocol_parameters_dir,
         v_range,
         resolution,
         nominal_capacity,
@@ -242,7 +237,27 @@ def structure(
     logger.info(f"Input files: {pprint.pformat(files)}", extra=STRUCTURE_CONFIG)
     logger.info(f"Output files: {pprint.pformat(output_files)}", extra=STRUCTURE_CONFIG)
 
-    if protocol_parameters_file
+
+    if protocol_parameters_dir and ENV_PARAMETERS_DIR:
+        logger.warning(
+            "Both --protocol-parameters-dir and $BEEP_PARAMETERS_PATH were specified. "
+            "Defaulting to path from --protocol-parameters-dir."
+        )
+        params_dir = protocol_parameters_dir
+    elif protocol_parameters_dir and not ENV_PARAMETERS_DIR:
+        params_dir = protocol_parameters_dir
+    elif not protocol_parameters_dir and ENV_PARAMETERS_DIR:
+        params_dir = ENV_PARAMETERS_DIR
+    else:
+        # neither are defined
+        params_dir = None
+
+    if automatic and not params_dir:
+        logger.warning(
+            "--automatic was passed but no protocol parameters "
+            "directory was specified! Either set BEEP_PARAMETERS_DIR "
+            "or pass --protocol-parameters-dir to use autostructuring."
+        )
 
     params = {
         "v_range": v_range,
@@ -253,13 +268,11 @@ def structure(
         "discharge_axis": discharge_axis
     }
 
-
-    status_json = []
+    status_json = {}
     for i, f in enumerate(files):
         op_result = {
             "validated": False,
             "structured": False,
-            "input": f,
             "output": None,
             "traceback": None,
             "walltime": None,
@@ -277,7 +290,11 @@ def structure(
             if not validation_only:
                 logger.info(f"Structuring file {i} of {n_files}: Read from {f}")
                 if automatic:
-                    dp.autostructure()
+                    dp.autostructure(
+                        charge_axis=charge_axis,
+                        discharge_axis=discharge_axis,
+                        parameters_path=params_dir
+                    )
                 else:
                     dp.structure(**params)
 
@@ -295,7 +312,7 @@ def structure(
             if halt_on_error:
                 raise
 
-        status_json.append(op_result)
+        status_json[f] = op_result
         t1 = time.time()
         op_result["walltime"] = t1 - t0
 

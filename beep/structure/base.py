@@ -424,6 +424,8 @@ class BEEPDatapath(abc.ABC, MSONable):
             full_fast_charge (float): full fast charge for summary stats.
             diagnostic_available (dict): project metadata for processing
                 diagnostic cycles correctly.
+            charge_axis (str): Column to interpolate charge step
+            discharge_axis (str): Column to interpolate discharge step
         """
         logger.info(f"Beginning structuring along charge axis '{charge_axis}' and discharge axis '{discharge_axis}'.",
                     extra=SERVICE_CONFIG)
@@ -450,7 +452,12 @@ class BEEPDatapath(abc.ABC, MSONable):
             diagnostic_available=diagnostic_available
         )
 
-    def autostructure(self):
+    def autostructure(
+            self,
+            charge_axis='charge_capacity',
+            discharge_axis='voltage',
+            parameters_path=None,
+    ):
         """
         Automatically run structuring based on automatically determined structuring parameters.
         The parameters are determined from the raw input file, so ensure the raw input file paths
@@ -459,11 +466,16 @@ class BEEPDatapath(abc.ABC, MSONable):
         WARNING: The BEEP_PROCESSING_DIR environment variable must have a parameters file within it
         in order for autostructuring to work correctly.
 
+        Args:
+            charge_axis (str): Column to interpolate charge step
+            discharge_axis (str): Column to interpolate discharge step
+            parameters_path (str) Path to directory of protocol parameters files.
+
         Returns:
             None
         """
         v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \
-            self.determine_structuring_parameters()
+            self.determine_structuring_parameters(parameters_path=parameters_path)
         logger.info(f"Autostructuring determined parameters of v_range={v_range}, "
                     f"resolution={resolution}, "
                     f"nominal_capacity={nominal_capacity}, "
@@ -474,7 +486,9 @@ class BEEPDatapath(abc.ABC, MSONable):
             resolution=resolution,
             nominal_capacity=nominal_capacity,
             full_fast_charge=full_fast_charge,
-            diagnostic_available=diagnostic_available
+            diagnostic_available=diagnostic_available,
+            charge_axis=charge_axis,
+            discharge_axis=discharge_axis
         )
 
     @StructuringDecorators.must_not_be_legacy
