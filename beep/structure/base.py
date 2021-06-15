@@ -1017,14 +1017,11 @@ class BEEPDatapath(abc.ABC, MSONable):
         resolution=1000,
         nominal_capacity=1.1,
         full_fast_charge=0.8,
-        parameters_path="data-share/raw/parameters",
+        parameters_path=None,
     ):
         """
         Method for determining what values to use to convert raw run into processed run.
 
-
-        WARNING: The BEEP_PROCESSING_DIR environment variable must have a parameters file within it
-        in order for determine_structuring_parameters to work correctly (see parameters_path).
 
         Args:
             v_range ([float, float]): voltage range for interpolation
@@ -1042,6 +1039,9 @@ class BEEPDatapath(abc.ABC, MSONable):
                 finding and using the diagnostic cycles
 
         """
+        if not parameters_path or not os.path.exists(parameters_path):
+            raise FileNotFoundError(f"Parameters path {parameters_path} does not exist!")
+
         run_parameter, all_parameters = parameters_lookup.get_protocol_parameters(
             self.paths["raw"], parameters_path
         )
