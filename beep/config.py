@@ -6,11 +6,11 @@ Configuration file for various runtime environments for BEEP-EP.
 
 config = {
     "local": {
-        "logging": {"container": "Testing", "streams": ["file"]},
+        "logging": {"container": "Testing", "streams": ["stdout"]},
         "kinesis": {"stream": "local/beep/eventstream"},
     },
     "dev": {
-        "logging": {"container": "Testing", "streams": ["file"]},
+        "logging": {"container": "Testing", "streams": ["stdout"]},
         "kinesis": {"stream": "local/beep/eventstream"},
     },
     "test": {

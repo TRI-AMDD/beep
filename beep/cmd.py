@@ -5,6 +5,7 @@ import pprint
 import traceback
 
 import click
+from monty.json import MSONable
 
 from beep import logger
 from beep.structure.cli import auto_load
@@ -19,6 +20,11 @@ FILE_DELIMITER_ESC_SEQ = '\,'
 FILE_DELIMITER_UNICODE_PLACEHOLDER = "ʤ"
 
 
+
+STRUCTURE_CONFIG = {"service": "DataStructurer"}
+
+
+
 class ContextPersister:
     """
     Class to hold persisting objects for downstream
@@ -26,8 +32,6 @@ class ContextPersister:
     """
     def __init__(self, cwd=None):
         self.cwd = cwd
-
-
 
 @click.group(invoke_without_command=False)
 @click.pass_context
@@ -62,11 +66,12 @@ def cli(ctx):
 @click.option(
     '--output-filenames',
     '-o',
-    type=click.STRING,
+    type=click.Path(),
     help="Filenames to write each input filename to. "
          "If not specified, auto-names each file by appending"
          "`-structured` before the file extension inside "
-         "the current working dir."
+         "the current working dir.",
+    multiple=True
 )
 @click.option(
     '--output-dir',
@@ -182,17 +187,64 @@ def structure(
         s3
 ):
     files = [os.path.abspath(f) for f in files]
+    output_files = [os.path.abspath(f) for f in output_filenames]
 
 
-    for f in files:
-        try:
-            dp = auto_load(f)
-            dp.validate()
-        except BeepValidationError:
-            exc_type, exc_value, exc_traceback = sys.exc_info(
+
+    logger.info(f"Input files: {pprint.pformat(files)}", extra=STRUCTURE_CONFIG)
+    logger.info(f"Output files: {pprint.pformat(output_files)}", extra=STRUCTURE_CONFIG)
 
 
-        logger.info()
+
+    # if protocol_parameters_file
+    #
+    # params = {
+    #     "v_range": v_range,
+    #     "resolution": resolution,
+    #     "nominal_capacity": nominal_capacity,
+    #     "full_fast_charge": full_fast_charge,
+    #     "charge_axis": charge_axis,
+    #     "discharge_axis": discharge_axis
+    # }
+    #
+    #
+    # n_files = len(files)
+    #
+    #
+    #
+    # for i, f in enumerate(files):
+    #
+    #     op_result = {
+    #         "validated": False,
+    #         "structured": False,
+    #         "input": f,
+    #         "output": None,
+    #         "traceback": None,
+    #         "time_elapsed": None,
+    #     }
+    #     try:
+    #         dp = auto_load(f)
+    #
+    #         logger.info(f"Validating file {i} of {n_files}: {f}")
+    #         dp.validate()
+    #         op_result["validated"] = True
+    #         logger.info(f"Validated file {i} of {n_files}: {f}")
+    #
+    #         if not validation_only:
+    #             logger.info(f"Structuring file {i} of {n_files}: {f}")
+    #             if automatic:
+    #                 dp.autostructure()
+    #             else:
+    #                 dp.structure(**params)
+    #             op_result["structured"] = True
+    #             logger.info(f"Structured file {i} of {n_files}: {f}")
+    #
+    #     except BeepValidationError:
+    #         exc_type, exc_value, exc_traceback = sys.exc_info()
+    #
+    #
+    #
+    #     logger.info()
 
 
     # cwd = ctx.obj.cwd
