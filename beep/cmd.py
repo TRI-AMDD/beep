@@ -3,6 +3,7 @@ import sys
 import time
 import pprint
 import fnmatch
+import functools
 import traceback
 
 import click
@@ -95,14 +96,14 @@ def cli(ctx):
     type=CLICK_FILE,
     help="Directory of a protocol parameters files to use for "
          "auto-structuring. If not specified, BEEP cannot auto-"
-         "structure. Use with --automatic. Can alternatively"
+         "structure. Use with --automatic. Can alternatively "
          "be set via environment variable BEEP_PARAMETERS_PATH."
 )
 @click.option(
     '--v-range',
     '-v',
     type=(click.FLOAT, click.FLOAT),
-    help="Lower, upper bounds for voltage range for structuring."
+    help="Lower, upper bounds for voltage range for structuring. "
          "Overridden by auto-structuring if --automatic."
 )
 @click.option(
@@ -110,7 +111,7 @@ def cli(ctx):
     '-r',
     type=click.INT,
     default=1000,
-    help="Resolution for interpolation for structuring. Overridden"
+    help="Resolution for interpolation for structuring. Overridden "
          "by auto-structuring if --automatic."
 )
 @click.option(
@@ -118,7 +119,7 @@ def cli(ctx):
     '-n',
     type=click.FLOAT,
     default=1.1,
-    help="Nominal capacity to use for structuring. Overridden by"
+    help="Nominal capacity to use for structuring. Overridden by "
          "auto-structuring if --automatic."
 )
 @click.option(
@@ -126,7 +127,7 @@ def cli(ctx):
     '-f',
     type=click.FLOAT,
     default=0.8,
-    help="Full fast charge threshold to use for structuring."
+    help="Full fast charge threshold to use for structuring. "
          "Overridden by auto-structuring if --automatic."
 )
 @click.option(
@@ -134,7 +135,7 @@ def cli(ctx):
     '-c',
     type=click.STRING,
     default='charge_axis',
-    help="Axis to use for charge step interpolation. Must be found"
+    help="Axis to use for charge step interpolation. Must be found "
          "inside the loaded dataframe. Can be used with --automatic."
 )
 @click.option(
@@ -160,7 +161,7 @@ def cli(ctx):
     '--halt-on-error',
     is_flag=True,
     default=False,
-    help="Set to halt BEEP if critical structuring"
+    help="Set to halt BEEP if critical structuring "
          "errors are encountered on any file. Otherwise, logs "
          "critical errors to the status json.",
 )
@@ -170,7 +171,7 @@ def cli(ctx):
     default=False,
     help="If --protocol-parameters-path or the BEEP_PARAMETERS_"
          "PATH environment variable is specified, will automatically "
-         "determine structuring parameters. Will override all"
+         "determine structuring parameters. Will override all "
          "manually set structuring parameters."
 )
 @click.option(
@@ -183,7 +184,7 @@ def cli(ctx):
     '--no-raw',
     is_flag=True,
     default=False,
-    help="Does not save raw cycler data to disk. Saves disk space, but"
+    help="Does not save raw cycler data to disk. Saves disk space, but "
          "prevents files from being partially restructued."
 )
 @click.pass_context
@@ -352,10 +353,27 @@ def structure(
             if halt_on_error:
                 raise
 
-        status_json[f] = op_result
         t1 = time.time()
         op_result["walltime"] = t1 - t0
+        status_json[f] = op_result
 
-        if output_status_json:
-            dumpfn(status_json, output_status_json)
-            logger.info(f"Wrote status json file to {output_status_json}")
+    succeeded, failed, invalid = [], [], []
+
+    for input_fname, op_result in status_json.items():
+        if op_result["validated"] and op_result["structured"]:
+            succeeded.append(input_fname)
+        elif op_result["validated"] and not op_result["structured"]:
+            failed.append(input_fname)
+        else:
+            invalid.append(input_fname)
+
+    logger.info(
+        f"Structuring report:\n"
+        f"\tSucceeded: {len(succeeded)}]\n"
+        f"\tInvalid: {len(invalid)}\n{pprint.pformat(invalid)}"
+        f"\tFailed: {len(failed)}\n{pprint.pformat(failed)}"
+    )
+
+    if output_status_json:
+        dumpfn(status_json, output_status_json)
+        logger.info(f"Wrote status json file to {output_status_json}")
