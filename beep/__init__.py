@@ -33,6 +33,7 @@ tqdm = partial(_tqdm, disable=bool(os.environ.get("TQDM_OFF")))
 
 ENV_VAR = "BEEP_ENV"
 PROCESSED_DIR = "BEEP_PROCESSING_DIR"
+ENV_PARAMETERS_DIR = os.environ.get("BEEP_PARAMETERS_PATH", "")
 MAX_RETRIES = 12
 
 # environment
