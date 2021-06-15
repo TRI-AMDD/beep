@@ -1,6 +1,7 @@
 import os
 import sys
 import glob
+import time
 import pprint
 import traceback
 
@@ -196,63 +197,52 @@ def structure(
 
 
 
-    # if protocol_parameters_file
-    #
-    # params = {
-    #     "v_range": v_range,
-    #     "resolution": resolution,
-    #     "nominal_capacity": nominal_capacity,
-    #     "full_fast_charge": full_fast_charge,
-    #     "charge_axis": charge_axis,
-    #     "discharge_axis": discharge_axis
-    # }
-    #
-    #
-    # n_files = len(files)
-    #
-    #
-    #
-    # for i, f in enumerate(files):
-    #
-    #     op_result = {
-    #         "validated": False,
-    #         "structured": False,
-    #         "input": f,
-    #         "output": None,
-    #         "traceback": None,
-    #         "time_elapsed": None,
-    #     }
-    #     try:
-    #         dp = auto_load(f)
-    #
-    #         logger.info(f"Validating file {i} of {n_files}: {f}")
-    #         dp.validate()
-    #         op_result["validated"] = True
-    #         logger.info(f"Validated file {i} of {n_files}: {f}")
-    #
-    #         if not validation_only:
-    #             logger.info(f"Structuring file {i} of {n_files}: {f}")
-    #             if automatic:
-    #                 dp.autostructure()
-    #             else:
-    #                 dp.structure(**params)
-    #             op_result["structured"] = True
-    #             logger.info(f"Structured file {i} of {n_files}: {f}")
-    #
-    #     except BeepValidationError:
-    #         exc_type, exc_value, exc_traceback = sys.exc_info()
-    #
-    #
-    #
-    #     logger.info()
+    if protocol_parameters_file
+
+    params = {
+        "v_range": v_range,
+        "resolution": resolution,
+        "nominal_capacity": nominal_capacity,
+        "full_fast_charge": full_fast_charge,
+        "charge_axis": charge_axis,
+        "discharge_axis": discharge_axis
+    }
 
 
-    # cwd = ctx.obj.cwd
+    n_files = len(files)
 
-    # click.echo(pprint.pformat(files))
+    for i, f in enumerate(files):
 
+        op_result = {
+            "validated": False,
+            "structured": False,
+            "input": f,
+            "output": None,
+            "traceback": None,
+            "walltime": None,
+        }
 
+        t0 = time.time()
+        try:
+            dp = auto_load(f)
 
-    # click.echo(pprint.pformat(bad_globs), err=True)
-    # res = process_file_list_from_json()
-    # click.echo()
+            logger.info(f"Validating file {i} of {n_files}: {f}")
+            dp.validate()
+            op_result["validated"] = True
+            logger.info(f"Validated file {i} of {n_files}: {f}")
+
+            if not validation_only:
+                logger.info(f"Structuring file {i} of {n_files}: {f}")
+                if automatic:
+                    dp.autostructure()
+                else:
+                    dp.structure(**params)
+                op_result["structured"] = True
+                logger.info(f"Structured file {i} of {n_files}: {f}")
+
+        except BaseException:
+            tbinfo = sys.exc_info()
+            op_result["traceback"] = traceback.format_tb(*tbinfo)
+
+        t1 = time.time()
+        op_result["walltime"] = t1 - t0
