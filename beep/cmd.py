@@ -10,7 +10,7 @@ from monty.serialization import dumpfn
 
 from beep import logger, ENV_PARAMETERS_DIR
 from beep.structure.cli import auto_load
-from beep.utils.s3 import list_s3_objects
+from beep.utils.s3 import list_s3_objects, download_s3_object
 
 CLICK_FILE = click.Path(file_okay=True, dir_okay=False, writable=False, readable=True)
 CLICK_DIR = click.Path(file_okay=False, dir_okay=True, writable=True, readable=True)
@@ -206,22 +206,47 @@ def structure(
         validation_only,
         no_raw,
 ):
-
-
     # download from s3 first, if needed
     if s3_bucket:
         logger.info(f"Fetching file list from s3 bucket {s3_bucket}...")
         s3_objs = list_s3_objects(s3_bucket)
         logger.info(f"Including {len(s3_objs)} available s3 objects in file match.")
-        keys = [o.key for o in s3_objs]
+        s3_keys = [o.key for o in s3_objs]
 
         # local files matching globs are pre-expanded by Click
-        maybe_globs =
+        s3_keys_matched = []
+        local_files = []
+        for maybe_glob in files:
+            # add direct matches
+            if not "*" in maybe_glob:
+                if maybe_glob in s3_keys:
+                    s3_keys_matched.append(maybe_glob)
+                else:
+                    local_files.append(maybe_glob)
+            else:
+                # its a glob, and real local globs will
+                # be pre-expanded by click, so the only
+                # valid globs will be on s3. All remaining
+                # globs are invalid/bad paths
+                matching_files = fnmatch.filter(s3_keys, maybe_glob)
+                if matching_files:
+                    s3_keys_matched.append(matching_files)
 
-
+        logger.info(f"Found {len(s3_keys_matched)} matching files on s3")
+        local_files_from_s3 = []
+        for s3k in s3_keys_matched:
+            s3k_basename = os.path.basename(s3k)
+            s3k_local_fullname = os.path.join(ctx.obj.cwd, s3k_basename)
+            logger.info(f"Fetching {s3k} from {s3_bucket}")
+            download_s3_object(s3_bucket, s3k, s3k_local_fullname)
+            logger.info(f"Fetched s3 file {s3k_basename} to {s3k_local_fullname}")
+            local_files_from_s3.append(s3k_local_fullname)
+        files = local_files + local_files_from_s3
 
     files = [os.path.abspath(f) for f in files]
     n_files = len(files)
+
+    logger.info(f"Structuring {n_files} files")
 
     # Output dir overrules output filenames
     if output_dir:
@@ -252,10 +277,6 @@ def structure(
                 add_suffix(f, ctx.obj.cwd, STRUCTURED_SUFFIX, modified_ext=".json.gz")
                 for f in files
             ]
-
-    logger.info(f"Input files: {pprint.pformat(files)}", extra=STRUCTURE_CONFIG)
-    logger.info(f"Output files: {pprint.pformat(output_files)}", extra=STRUCTURE_CONFIG)
-
 
     if protocol_parameters_dir and ENV_PARAMETERS_DIR:
         logger.warning(
