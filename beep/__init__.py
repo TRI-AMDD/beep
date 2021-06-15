@@ -13,12 +13,7 @@ import time
 from botocore.exceptions import NoCredentialsError
 from tqdm import tqdm as _tqdm
 
-from .config import config
-
-try:
-    from io import StringIO
-except (ImportError, ModuleNotFoundError):
-    from StringIO import StringIO
+from .config import CONFIG
 
 # Versioning.  The python code version is frequently tagged
 # with a commit hash from the repo, which is supplied via
@@ -31,57 +26,34 @@ if VERSION_TAG is not None:
 # Custom tqdm with optional turnoff from env
 tqdm = partial(_tqdm, disable=bool(os.environ.get("TQDM_OFF")))
 
-ENV_VAR = "BEEP_ENV"
-ENV_PARAMETERS_DIR = os.environ.get("BEEP_PARAMETERS_PATH", "")
-MAX_RETRIES = 12
 
-# environment
-ENVIRONMENT = os.getenv(ENV_VAR)
-if ENVIRONMENT is None or ENVIRONMENT not in config.keys():
-    ENVIRONMENT = "local"
+# All environment variables
+BEEP_ENV_KEY = "BEEP_ENV"
+BEEP_PARAMETERS_KEY = "BEEP_PARAMETERS_DIR"
+BEEP_S3_CACHE_KEY = "BEEP_S3_CACHE"
+BEEP_ENV = os.environ.get(BEEP_ENV_KEY, "local")
+BEEP_PARAMETERS_DIR = os.environ.get(BEEP_PARAMETERS_KEY, "")
+# Get S3 cache location from env or use default in repo
+S3_CACHE = os.environ.get("BEEP_S3_CACHE", os.path.join(MODULE_DIR, "..", "s3_cache"))
 
-# DIR = os.getenv(PROCESSED_DIR)
-# if DIR is None:
-#     if ENVIRONMENT in ["stage", "prod"]:
-#         os.environ[PROCESSED_DIR] = "/"
-#     elif ENVIRONMENT in ["local", "dev", "test"]:
-#         os.environ[PROCESSED_DIR] = os.getcwd()
-#     else:
-#         raise ValueError(
-#             f"The directory for processing cycling data {PROCESSED_DIR} must be set"
-#             + f" eg. /Users/Bob/cycling"
-#         )
 
+# Common locations
 MODULE_DIR = os.path.dirname(__file__)
 CONVERSION_SCHEMA_DIR = os.path.join(MODULE_DIR, "conversion_schemas")
 VALIDATION_SCHEMA_DIR = os.path.join(MODULE_DIR, "validation_schemas")
 MODEL_DIR = os.path.join(MODULE_DIR, "models")
 
+
+# Logging configuration
 LOG_DIR = os.path.join(MODULE_DIR, "logs")
 if not os.path.isdir(LOG_DIR):
     os.mkdir(LOG_DIR)
-
-# Get S3 cache location from env or use default in repo
-S3_CACHE = os.environ.get("BEEP_S3_CACHE", os.path.join(MODULE_DIR, "..", "s3_cache"))
-
-# logging
 np.set_printoptions(precision=3)
-
-# service (logging)
-container = config[ENVIRONMENT]["logging"]["container"]
-
-# initialize logger and clear previous handlers and filters, if exist
-logger = logging.getLogger(ENVIRONMENT + "/beep")
+# clear previous loggers/handlers/filters, if exists
+logger = logging.getLogger(BEEP_ENV + "/beep")
 logger.handlers = []
 logger.filters = []
-
-fmt_str = (
-    '{"time": "%(asctime)s", "level": "%(levelname)s", '
-    '"service": "%(service)s", "process": "%(process)d", '
-    '"module": "%(module)s", "func": "%(funcName)s", '
-    '"msg": "%(message)s"}'
-)
-formatter = logging.Formatter(fmt_str)
+formatter = logging.Formatter(config)
 
 # output and format
 if "CloudWatch" in config[ENVIRONMENT]["logging"]["streams"]:

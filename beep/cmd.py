@@ -333,6 +333,7 @@ def structure(
 
         t0 = time.time()
         try:
+            print("HERE", f)
             dp = auto_load(f)
 
             logger.info(f"Validating file {i} of {n_files}: {f}")
@@ -358,7 +359,7 @@ def structure(
 
         except BaseException:
             tbinfo = sys.exc_info()
-            tbfmt = traceback.format_tb(*tbinfo)
+            tbfmt = traceback.format_exception(*tbinfo)
             logger.error("\n".join(tbfmt))
             op_result["traceback"] = tbfmt
 
