@@ -219,7 +219,7 @@ def structure(
         local_files = []
         for maybe_glob in files:
             # add direct matches
-            if not "*" in maybe_glob:
+            if "*" not in maybe_glob:
                 if maybe_glob in s3_keys:
                     s3_keys_matched.append(maybe_glob)
                 else:
@@ -232,6 +232,8 @@ def structure(
                 matching_files = fnmatch.filter(s3_keys, maybe_glob)
                 if matching_files:
                     s3_keys_matched.append(matching_files)
+                else:
+                    local_files.append(maybe_glob)
 
         logger.info(f"Found {len(s3_keys_matched)} matching files on s3")
         local_files_from_s3 = []

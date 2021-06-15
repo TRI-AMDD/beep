@@ -23,10 +23,10 @@ def list_s3_objects(bucket):
     List all s3 objects available to user on S3 in a specific bucket.
 
     Args:
-        bucket:
+        bucket (str): S3 bucket
 
     Returns:
-
+        ([boto3.ObjectSummary]): List of s3 objects.
     """
     s3 = boto3.resource('s3')
     bucket = s3.Bucket(bucket)
