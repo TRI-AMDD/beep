@@ -1,5 +1,6 @@
 import os
-from enum import Enum
+import glob
+import pprint
 
 import click
 
@@ -8,6 +9,9 @@ from beep.structure import process_file_list_from_json
 CLICK_FILE = click.Path(file_okay=True, dir_okay=False, writable=False, readable=True)
 CLICK_DIR = click.Path(file_okay=False, dir_okay=True, writable=True, readable=True)
 BEEP_CMDS = ["structure", "featurize", "run_model"]
+FILE_DELIMITER = ","
+FILE_DELIMITER_ESC_SEQ = '\,'
+FILE_DELIMITER_UNICODE_PLACEHOLDER = "ʤ"
 
 
 class ContextPersister:
@@ -19,9 +23,6 @@ class ContextPersister:
         self.cwd = cwd
 
 
-def parse_files_glob(files_glob):
-    files_sep = files_glob.split(files_glob)
-
 
 @click.group(invoke_without_command=False)
 @click.pass_context
@@ -31,16 +32,17 @@ def cli(ctx):
     context.
     """
     ctx.ensure_object(ContextPersister)
-    ctx.obj.cwd = os.getcwd()
+    ctx.obj.cwd = os.path.abspath(os.getcwd())
 
 
 @cli.command(
     help="Structure and/or validate one or more files. Argument "
-         "is a comma-separated list of files or wildcards.")
+         "is a space-separated list of files or globs."
+)
 @click.argument(
     'files',
-    nargs=1,
-    type=click.STRING,
+    nargs=-1,
+    type=CLICK_FILE,
 )
 @click.option(
     '--output-status-json',
@@ -174,6 +176,12 @@ def structure(
         validation_only,
         s3
 ):
-    click.echo("Running structure ok.")
+    # click.echo("Running structure ok.")
     cwd = ctx.obj.cwd
-    click.echo(cwd)
+    # click.echo(cwd)
+
+    click.echo(pprint.pformat(files))
+
+    # click.echo(pprint.pformat(bad_globs), err=True)
+    # res = process_file_list_from_json()
+    # click.echo()
