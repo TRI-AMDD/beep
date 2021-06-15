@@ -9,7 +9,7 @@ import traceback
 import click
 from monty.serialization import dumpfn
 
-from beep import logger, ENV_PARAMETERS_DIR, S3_CACHE
+from beep import logger, BEEP_PARAMETERS_DIR, S3_CACHE
 from beep.structure.cli import auto_load
 from beep.utils.s3 import list_s3_objects, download_s3_object
 
@@ -18,9 +18,6 @@ CLICK_DIR = click.Path(file_okay=False, dir_okay=True, writable=True, readable=T
 BEEP_CMDS = ["structure", "featurize", "run_model"]
 STRUCTURED_SUFFIX = "-structured"
 FEATURIZED_SUFFIX = "-featurized"
-
-STRUCTURE_CONFIG = {"service": "DataStructurer"}
-
 
 
 class ContextPersister:
@@ -291,16 +288,16 @@ def structure(
                 for f in files
             ]
 
-    if protocol_parameters_dir and ENV_PARAMETERS_DIR:
+    if protocol_parameters_dir and BEEP_PARAMETERS_DIR:
         logger.warning(
             "Both --protocol-parameters-dir and $BEEP_PARAMETERS_PATH were specified. "
             "Defaulting to path from --protocol-parameters-dir."
         )
         params_dir = protocol_parameters_dir
-    elif protocol_parameters_dir and not ENV_PARAMETERS_DIR:
+    elif protocol_parameters_dir and not BEEP_PARAMETERS_DIR:
         params_dir = protocol_parameters_dir
-    elif not protocol_parameters_dir and ENV_PARAMETERS_DIR:
-        params_dir = ENV_PARAMETERS_DIR
+    elif not protocol_parameters_dir and BEEP_PARAMETERS_DIR:
+        params_dir = BEEP_PARAMETERS_DIR
     else:
         # neither are defined
         params_dir = None
@@ -333,9 +330,7 @@ def structure(
 
         t0 = time.time()
         try:
-            print("HERE", f)
             dp = auto_load(f)
-
             logger.info(f"Validating file {i} of {n_files}: {f}")
             dp.validate()
             op_result["validated"] = True
@@ -360,7 +355,7 @@ def structure(
         except BaseException:
             tbinfo = sys.exc_info()
             tbfmt = traceback.format_exception(*tbinfo)
-            logger.error("\n".join(tbfmt))
+            logger.error(f"Failed/invalid {i} of {n_files} ({tbinfo[0].__name__}): {f}")
             op_result["traceback"] = tbfmt
 
             if halt_on_error:
@@ -380,12 +375,14 @@ def structure(
         else:
             invalid.append(input_fname)
 
-    logger.info(
-        f"Structuring report:\n"
-        f"\tSucceeded: {len(succeeded)}]\n"
-        f"\tInvalid: {len(invalid)}\n{pprint.pformat(invalid)}"
-        f"\tFailed: {len(failed)}\n{pprint.pformat(failed)}"
-    )
+    logger.info(f"Structuring report:")
+    logger.info(f"\tSucceeded: {len(succeeded)}/{n_files}")
+    logger.info(f"\tInvalid: {len(invalid)}/{n_files}")
+    for inv in invalid:
+        logger.info(f"\t\t- {inv}")
+    logger.info(f"\tFailed: {len(failed)}/{n_files}")
+    for fail in failed:
+        logger.info(f"\t\t- {fail}")
 
     if output_status_json:
         dumpfn(status_json, output_status_json)

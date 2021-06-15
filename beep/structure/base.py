@@ -256,6 +256,17 @@ class BEEPDatapath(abc.ABC, MSONable):
         """
         raise NotImplementedError
 
+    @StructuringDecorators.must_not_be_legacy
+    @abc.abstractmethod
+    def validate(self):
+        """Validate the raw data.
+
+        Returns:
+            (bool) True if the raw data is valid, false otherwise.
+
+        """
+        raise NotImplementedError
+
     @classmethod
     def from_json_file(cls, filename):
         """Load a structured run previously saved to file.
@@ -389,18 +400,6 @@ class BEEPDatapath(abc.ABC, MSONable):
             diagnostic_summary)
         datapath.diagnostic_data = diagnostic_data if diagnostic_data is None else pd.DataFrame(diagnostic_data)
         return datapath
-
-    def validate(self):
-        """Validate the raw data.
-
-        Returns:
-            (bool) True if the raw data is valid, false otherwise.
-
-        """
-        validator = ValidatorBeep()
-        is_valid = validator.validate_arbin_dataframe(self.raw_data)
-        if not is_valid:
-            raise BeepValidationError("Beep validation failed")
 
     @StructuringDecorators.must_not_be_legacy
     def structure(self,
