@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import pprint
+import fnmatch
 import traceback
 
 import click
@@ -9,6 +10,7 @@ from monty.serialization import dumpfn
 
 from beep import logger, ENV_PARAMETERS_DIR
 from beep.structure.cli import auto_load
+from beep.utils.s3 import list_s3_objects
 
 CLICK_FILE = click.Path(file_okay=True, dir_okay=False, writable=False, readable=True)
 CLICK_DIR = click.Path(file_okay=False, dir_okay=True, writable=True, readable=True)
@@ -149,8 +151,10 @@ def cli(ctx):
     '-b',
     default=None,
     type=click.STRING,
-    help="Expands file paths to include those in the s3 bucket specified. " \
-         "File paths specify s3 keys. Keys can be globbed/wildcarded."
+    help="Expands file paths to include those in the s3 bucket specified. "
+         "File paths specify s3 keys. Keys can be globbed/wildcarded. Paths "
+         "matching local files will be prioritized over files with identical "
+         "paths/globs in s3. Files will be downloaded to CWD."
 )
 @click.option(
     '--halt-on-error',
@@ -203,9 +207,16 @@ def structure(
         no_raw,
 ):
 
+
     # download from s3 first, if needed
-    if s3:
-        logger.info("Fetching file list from s3")
+    if s3_bucket:
+        logger.info(f"Fetching file list from s3 bucket {s3_bucket}...")
+        s3_objs = list_s3_objects(s3_bucket)
+        logger.info(f"Including {len(s3_objs)} available s3 objects in file match.")
+        keys = [o.key for o in s3_objs]
+
+        # local files matching globs are pre-expanded by Click
+        maybe_globs =
 
 
 
