@@ -136,25 +136,27 @@ def cli(ctx):
     '--s3',
     is_flag=True,
     default=False,
-    help="Expands file paths to include those in s3 buckets."
+    help="Expands file paths to include those in s3 buckets. "
          "s3 must be preconfigured on system."
 )
+@click.pass_context
 def structure(
         ctx,
-        files_glob,
-        status_json,
-        files_output,
-        dir_output,
+        files,
+        output_status_json,
+        output_filenames,
+        output_dir,
         error_handling,
-        parameters_file,
+        protocol_parameters_file,
         v_range,
         resolution,
         nominal_capacity,
         full_fast_charge,
-        chg_axis,
-        dchg_axis,
-        automatic_flag,
-        validation_only_flag,
-        s3_flag
+        charge_axis,
+        discharge_axis,
+        automatic,
+        validation_only,
+        s3
 ):
     click.echo("Running structure ok.")
+    click.echo(dict(ctx))
