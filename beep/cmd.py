@@ -4,6 +4,7 @@ import pprint
 
 import click
 
+from beep import logger
 from beep.structure import process_file_list_from_json
 
 CLICK_FILE = click.Path(file_okay=True, dir_okay=False, writable=False, readable=True)
@@ -176,11 +177,17 @@ def structure(
         validation_only,
         s3
 ):
-    # click.echo("Running structure ok.")
-    cwd = ctx.obj.cwd
-    # click.echo(cwd)
+    files = [os.path.abspath(f) for f in files]
 
-    click.echo(pprint.pformat(files))
+
+    for
+
+
+    # cwd = ctx.obj.cwd
+
+    # click.echo(pprint.pformat(files))
+
+
 
     # click.echo(pprint.pformat(bad_globs), err=True)
     # res = process_file_list_from_json()
