@@ -6,7 +6,7 @@ import pprint
 import traceback
 
 import click
-from monty.json import MSONable
+from monty.serialization import dumpfn
 
 from beep import logger
 from beep.structure.cli import auto_load
@@ -19,7 +19,7 @@ BEEP_CMDS = ["structure", "featurize", "run_model"]
 FILE_DELIMITER = ","
 FILE_DELIMITER_ESC_SEQ = '\,'
 FILE_DELIMITER_UNICODE_PLACEHOLDER = "ʤ"
-
+STRUCTURED_SUFFIX = "-structured"
 
 
 STRUCTURE_CONFIG = {"service": "DataStructurer"}
@@ -33,6 +33,18 @@ class ContextPersister:
     """
     def __init__(self, cwd=None):
         self.cwd = cwd
+
+
+def add_suffix(full_path, output_dir, suffix, modified_ext=None):
+    basename = os.path.basename(full_path)
+    stripped_basename, ext = os.path.splitext(basename)
+    if modified_ext:
+        ext = modified_ext
+    new_basename = stripped_basename + suffix + ext
+    return os.path.join(
+        output_dir,
+        new_basename
+    )
 
 @click.group(invoke_without_command=False)
 @click.pass_context
@@ -62,7 +74,7 @@ def cli(ctx):
     help="File to output with JSON info about the states of "
          "structured and unstrutured entries. Useful for "
          "high-throughput structuring or storage in NoSQL"
-         "databases."
+         "databases. If not set, status json is not written."
 )
 @click.option(
     '--output-filenames',
@@ -80,15 +92,6 @@ def cli(ctx):
     type=CLICK_DIR,
     help="Directory to dump auto-named files to. Only works if"
          "--output-filenames is not specified."
-)
-@click.option(
-    '--error-handling',
-    '-e',
-    type=click.STRING,
-    help="Set to `halt` to throw stacktrace if critical structuring"
-         "errors are encountered on any file. Set to `log` to pass"
-         "critical errors to the status json.",
-    default="log"
 )
 @click.option(
     '--protocol-parameters-file',
@@ -147,6 +150,14 @@ def cli(ctx):
          "found inside the loaded dataframe."
 )
 @click.option(
+    '--halt-on-error',
+    is_flag=True,
+    help="Set to halt BEEP if critical structuring"
+         "errors are encountered on any file. Otherwise, logs "
+         "critical errors to the status json.",
+    default="log"
+)
+@click.option(
     '--automatic',
     is_flag=True,
     default=False,
@@ -162,6 +173,13 @@ def cli(ctx):
     help='Skips structuring, only validates files.'
 )
 @click.option(
+    '--no-raw',
+    is_flag=True,
+    default=False,
+    help="Does not save raw cycler data to disk. Saves disk space, but"
+         "prevents files from being partially restructued."
+)
+@click.option(
     '--s3',
     is_flag=True,
     default=False,
@@ -175,7 +193,6 @@ def structure(
         output_status_json,
         output_filenames,
         output_dir,
-        error_handling,
         protocol_parameters_file,
         v_range,
         resolution,
@@ -183,19 +200,47 @@ def structure(
         full_fast_charge,
         charge_axis,
         discharge_axis,
+        halt_on_error,
         automatic,
         validation_only,
+        no_raw,
         s3
 ):
     files = [os.path.abspath(f) for f in files]
-    output_files = [os.path.abspath(f) for f in output_filenames]
+    n_files = len(files)
 
+    # Output dir overrules output filenames
+    if output_dir:
+        # Use auto-naming in the output dir
+        output_dir = os.path.abspath(output_dir)
+        output_files = [
+            add_suffix(f, output_dir, STRUCTURED_SUFFIX, modified_ext=".json.gz")
+            for f in files
+        ]
 
+        if output_filenames:
+            logger.warning(
+                "Both --output-filenames and --output-dir were specified; "
+                "defaulting to --output-dir with auto-naming."
+            )
+    else:
+        if output_filenames:
+            output_files = [os.path.abspath(f) for f in output_filenames]
+            n_outputs = len(output_files)
+            if n_files != n_outputs:
+                raise ValueError(
+                    f"Number of input files ({n_files}) does not match number "
+                    f"of output filenames ({n_outputs})!"
+                )
+        else:
+            # Use auto-naming in the cwd
+            output_files = [
+                add_suffix(f, ctx.obj.cwd, STRUCTURED_SUFFIX, modified_ext=".json.gz")
+                for f in files
+            ]
 
     logger.info(f"Input files: {pprint.pformat(files)}", extra=STRUCTURE_CONFIG)
     logger.info(f"Output files: {pprint.pformat(output_files)}", extra=STRUCTURE_CONFIG)
-
-
 
     if protocol_parameters_file
 
@@ -209,10 +254,8 @@ def structure(
     }
 
 
-    n_files = len(files)
-
+    status_json = []
     for i, f in enumerate(files):
-
         op_result = {
             "validated": False,
             "structured": False,
@@ -232,17 +275,30 @@ def structure(
             logger.info(f"Validated file {i} of {n_files}: {f}")
 
             if not validation_only:
-                logger.info(f"Structuring file {i} of {n_files}: {f}")
+                logger.info(f"Structuring file {i} of {n_files}: Read from {f}")
                 if automatic:
                     dp.autostructure()
                 else:
                     dp.structure(**params)
+
+                output_fname = output_files[i]
+                dp.to_json_file(output_fname, omit_raw=no_raw)
                 op_result["structured"] = True
-                logger.info(f"Structured file {i} of {n_files}: {f}")
+                logger.info(f"Structured file {i} of {n_files}: Written to {output_fname}")
 
         except BaseException:
             tbinfo = sys.exc_info()
-            op_result["traceback"] = traceback.format_tb(*tbinfo)
+            tbfmt = traceback.format_tb(*tbinfo)
+            logger.error("\n".join(tbfmt))
+            op_result["traceback"] = tbfmt
 
+            if halt_on_error:
+                raise
+
+        status_json.append(op_result)
         t1 = time.time()
         op_result["walltime"] = t1 - t0
+
+        if output_status_json:
+            dumpfn(status_json, output_status_json)
+            logger.info(f"Wrote status json file to {output_status_json}")
