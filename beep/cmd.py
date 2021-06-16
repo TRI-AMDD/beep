@@ -91,7 +91,7 @@ def cli(ctx):
 @click.option(
     '--protocol-parameters-dir',
     '-p',
-    type=CLICK_FILE,
+    type=CLICK_DIR,
     help="Directory of a protocol parameters files to use for "
          "auto-structuring. If not specified, BEEP cannot auto-"
          "structure. Use with --automatic. Can alternatively "

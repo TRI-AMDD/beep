@@ -23,9 +23,7 @@ from beep.conversion_schemas import (
 
 from beep.utils import parameters_lookup
 from beep import logger
-from beep.validate import BeepValidationError, SimpleValidator
-
-SERVICE_CONFIG = {"service": "DataStructurer"}
+from beep.validate import SimpleValidator
 
 
 class BEEPDatapath(abc.ABC, MSONable):
@@ -480,7 +478,7 @@ class BEEPDatapath(abc.ABC, MSONable):
                     f"resolution={resolution}, "
                     f"nominal_capacity={nominal_capacity}, "
                     f"full_fast_charge={full_fast_charge}, "
-                    f"diagnostic_available={diagnostic_available}", extra=SERVICE_CONFIG)
+                    f"diagnostic_available={diagnostic_available}")
         return self.structure(
             v_range=v_range,
             resolution=resolution,
@@ -1045,6 +1043,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         run_parameter, all_parameters = parameters_lookup.get_protocol_parameters(
             self.paths["raw"], parameters_path
         )
+
         # Logic for interpolation variables and diagnostic cycles
         diagnostic_available = False
         if run_parameter is not None:
