@@ -12,6 +12,7 @@ from monty.serialization import dumpfn
 from beep import logger, BEEP_PARAMETERS_DIR, S3_CACHE
 from beep.structure.cli import auto_load
 from beep.utils.s3 import list_s3_objects, download_s3_object
+from beep.validate import BeepValidationError
 
 CLICK_FILE = click.Path(file_okay=True, dir_okay=False, writable=False, readable=True)
 CLICK_DIR = click.Path(file_okay=False, dir_okay=True, writable=True, readable=True)
@@ -131,7 +132,7 @@ def cli(ctx):
     '--charge-axis',
     '-c',
     type=click.STRING,
-    default='charge_axis',
+    default='charge_capacity',
     help="Axis to use for charge step interpolation. Must be found "
          "inside the loaded dataframe. Can be used with --automatic."
 )
@@ -331,13 +332,17 @@ def structure(
         t0 = time.time()
         try:
             dp = auto_load(f)
-            logger.info(f"Validating file {i} of {n_files}: {f}")
-            dp.validate()
-            op_result["validated"] = True
-            logger.info(f"Validated file {i} of {n_files}: {f}")
+            logger.info(f"Validating file {i + 1} of {n_files}: {f}")
+            is_valid = dp.validate()
+            op_result["validated"] = is_valid
+
+            if not is_valid:
+                raise BeepValidationError
+
+            logger.info(f"Validated file {i + 1} of {n_files}: {f}")
 
             if not validation_only:
-                logger.info(f"Structuring file {i} of {n_files}: Read from {f}")
+                logger.info(f"Structuring file {i + 1} of {n_files}: Read from {f}")
                 if automatic:
                     dp.autostructure(
                         charge_axis=charge_axis,
@@ -350,12 +355,12 @@ def structure(
                 output_fname = output_files[i]
                 dp.to_json_file(output_fname, omit_raw=no_raw)
                 op_result["structured"] = True
-                logger.info(f"Structured file {i} of {n_files}: Written to {output_fname}")
+                logger.info(f"Structured file {i + 1} of {n_files}: Written to {output_fname}")
 
         except BaseException:
             tbinfo = sys.exc_info()
             tbfmt = traceback.format_exception(*tbinfo)
-            logger.error(f"Failed/invalid {i} of {n_files} ({tbinfo[0].__name__}): {f}")
+            logger.error(f"Failed/invalid {i + 1} of {n_files} ({tbinfo[0].__name__}): {f}")
             op_result["traceback"] = tbfmt
 
             if halt_on_error:

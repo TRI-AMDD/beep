@@ -23,7 +23,7 @@ from beep.conversion_schemas import (
 
 from beep.utils import parameters_lookup
 from beep import logger
-from beep.validate import BeepValidationError, ValidatorBeep
+from beep.validate import BeepValidationError, SimpleValidator
 
 SERVICE_CONFIG = {"service": "DataStructurer"}
 
@@ -257,7 +257,6 @@ class BEEPDatapath(abc.ABC, MSONable):
         raise NotImplementedError
 
     @StructuringDecorators.must_not_be_legacy
-    @abc.abstractmethod
     def validate(self):
         """Validate the raw data.
 
@@ -265,7 +264,9 @@ class BEEPDatapath(abc.ABC, MSONable):
             (bool) True if the raw data is valid, false otherwise.
 
         """
-        raise NotImplementedError
+        v = SimpleValidator()
+        is_valid = v.validate(self.raw_data)
+        return is_valid
 
     @classmethod
     def from_json_file(cls, filename):

@@ -5,10 +5,11 @@ import os
 from datetime import datetime
 
 import pytz
+from monty.serialization import loadfn
 import pandas as pd
 
 from beep.conversion_schemas import ARBIN_CONFIG
-from beep import logger
+from beep import logger, tqdm
 from beep.structure.base import BEEPDatapath
 
 
@@ -25,44 +26,6 @@ class ArbinDatapath(BEEPDatapath):
     Attributes:
         All from BEEPDatapath
     """
-
-
-    def validate(self):
-        """
-        Validator for large, cyclic dataframes coming from Arbin.
-        Requires a valid Cycle_Index column of type int.
-        Designed for performance - will stop at the first encounter of issues.
-
-        Args:
-            df (pandas.DataFrame): Arbin output as DataFrame.
-            schema (str): Path to the validation schema. Defaults to arbin for now.
-        Returns:
-            bool: True if validated with out errors. If validation fails, errors
-                are listed at ValidatorBeep.errors.
-        """
-
-        try:
-            schema = loadfn(schema)
-            self.arbin_schema = schema
-        except Exception as e:
-            warnings.warn("Arbin schema could not be found: {}".format(e))
-
-        df = df.rename(str.lower, axis="columns")
-
-        # Validation cycle index data and cast to int
-        if not self._prevalidate_nonnull_column(df, "cycle_index"):
-            return False
-        df.cycle_index = df.cycle_index.astype(int, copy=False)
-
-        # Validation starts here
-        self.schema = self.arbin_schema
-
-        for cycle_index, cycle_df in tqdm(df.groupby("cycle_index")):
-            cycle_dict = cycle_df.replace({np.nan, "None"}).to_dict(orient="list")
-            result = self.validate(cycle_dict)
-            if not result:
-                return False
-        return True
 
     @classmethod
     def from_file(cls, path, metadata_path=None):
