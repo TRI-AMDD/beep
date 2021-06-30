@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 import time
@@ -9,7 +10,7 @@ import traceback
 import click
 from monty.serialization import dumpfn
 
-from beep import logger, BEEP_PARAMETERS_DIR, S3_CACHE
+from beep import logger, BEEP_PARAMETERS_DIR, S3_CACHE, formatter_jsonl
 from beep.structure.cli import auto_load
 from beep.utils.s3 import list_s3_objects, download_s3_object
 from beep.validate import BeepValidationError
@@ -42,15 +43,29 @@ def add_suffix(full_path, output_dir, suffix, modified_ext=None):
     )
 
 @click.group(invoke_without_command=False)
+@click.option(
+    "--log-file",
+    "-l",
+    type=click.Path(file_okay=True, dir_okay=False, writable=True, readable=True),
+    multiple=False,
+    help="File to log formatted json to. Log will still be output in human"
+         "readable form to stdout, but if --log-file is specified, it will"
+         "be additionally logged to a jsonl (json-lines) formatted file.",
+)
 @click.pass_context
-def cli(ctx):
+def cli(ctx, log_file):
     """
     Base command for all BEEP subcommands. Sets CWD and persistent
     context.
     """
     ctx.ensure_object(ContextPersister)
-    ctx.obj.cwd = os.path.abspath(os.getcwd())
+    cwd = os.path.abspath(os.getcwd())
+    ctx.obj.cwd = cwd
 
+    if log_file:
+        hdlr = logging.FileHandler(log_file, "a")
+        hdlr.setFormatter(formatter_jsonl)
+        logger.addHandler(hdlr)
 
 @cli.command(
     help="Structure and/or validate one or more files. Argument "

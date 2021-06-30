@@ -6,8 +6,6 @@ from glob import glob
 import os
 from beep import logger
 
-s = {"service": "DataStructurer"}
-
 
 def get_project_sequence(path):
     """
@@ -51,7 +49,7 @@ def get_protocol_parameters(filepath, parameters_path):
         df = pd.read_csv(project_parameter_files[0])
         parameter_row = df[df.seq_num == int(project_name_list[1])]
         if parameter_row.empty:
-            logger.error("Unable to get project parameters for: %s", filepath, extra=s)
+            logger.error("Unable to get project parameters for: %s", filepath)
             parameter_row = None
             df = None
     else:

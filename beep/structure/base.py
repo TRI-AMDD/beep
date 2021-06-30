@@ -425,8 +425,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             charge_axis (str): Column to interpolate charge step
             discharge_axis (str): Column to interpolate discharge step
         """
-        logger.info(f"Beginning structuring along charge axis '{charge_axis}' and discharge axis '{discharge_axis}'.",
-                    extra=SERVICE_CONFIG)
+        logger.info(f"Beginning structuring along charge axis '{charge_axis}' and discharge axis '{discharge_axis}'.")
 
         if diagnostic_available:
             self.diagnostic_summary = self.summarize_diagnostic(

@@ -76,8 +76,6 @@ PROJECT_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-projects.yaml")
 DEFAULT_VALIDATION_RECORDS = os.path.join(
     VALIDATION_SCHEMA_DIR, "validation_records.json"
 )
-s = {"service": "DataValidator"}
-
 
 class ValidatorBeep(Validator):
     """
@@ -561,9 +559,9 @@ class SimpleValidator(object):
             )
 
             if validated:
-                logger.info("%s method=%s errors=%s", name, method, reason, extra=s)
+                logger.info("%s method=%s errors=%s", name, method, reason)
             else:
-                logger.warning("%s method=%s errors=%s", name, method, reason, extra=s)
+                logger.warning("%s method=%s errors=%s", name, method, reason)
 
         if record_results:
             self.validation_records.update(results)
@@ -656,16 +654,16 @@ def main():
         (None)
 
     """
-    logger.info("starting", extra=s)
-    logger.info("Running version=%s", __version__, extra=s)
+    logger.info("starting")
+    logger.info("Running version=%s", __version__)
     try:
         args = docopt(__doc__)
         input_json = args["INPUT_JSON"]
         print(validate_file_list_from_json(input_json), end="")
     except Exception as e:
-        logger.error(str(e), extra=s)
+        logger.error(str(e))
         raise e
-    logger.info("finish", extra=s)
+    logger.info("finish")
     return None
 
 

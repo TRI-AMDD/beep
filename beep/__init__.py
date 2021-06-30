@@ -13,8 +13,6 @@ import time
 from botocore.exceptions import NoCredentialsError
 from tqdm import tqdm as _tqdm
 
-from .config import CONFIG
-
 try:
     from io import StringIO
 except (ImportError, ModuleNotFoundError):
@@ -32,6 +30,20 @@ if VERSION_TAG is not None:
 tqdm = partial(_tqdm, disable=bool(os.environ.get("TQDM_OFF")))
 
 
+JSON_LOG_FMT = {"fmt": (
+    '{"time": "%(asctime)s", "level": "%(levelname)s", '
+    '"process": "%(process)d", '
+    '"module": "%(module)s", "func": "%(funcName)s", '
+    '"msg": "%(message)s"}'
+)
+}
+
+HUMAN_LOG_FMT = {
+    "fmt": "%(asctime)s %(levelname)-8s %(message)s",
+    "datefmt": "%Y-%m-%d %H:%M:%S"
+}
+
+
 # Common locations
 MODULE_DIR = os.path.dirname(__file__)
 CONVERSION_SCHEMA_DIR = os.path.join(MODULE_DIR, "conversion_schemas")
@@ -40,14 +52,12 @@ MODEL_DIR = os.path.join(MODULE_DIR, "models")
 
 
 # All environment variables
-BEEP_ENV_KEY = "BEEP_ENV"
 BEEP_PARAMETERS_KEY = "BEEP_PARAMETERS_DIR"
 BEEP_S3_CACHE_KEY = "BEEP_S3_CACHE"
-BEEP_ENV = os.environ.get(BEEP_ENV_KEY, "local")
+
 BEEP_PARAMETERS_DIR = os.environ.get(BEEP_PARAMETERS_KEY, "")
 # Get S3 cache location from env or use default in repo
-S3_CACHE = os.environ.get("BEEP_S3_CACHE", os.path.join(MODULE_DIR, "..", "s3_cache"))
-
+S3_CACHE = os.environ.get(BEEP_S3_CACHE_KEY, os.path.join(MODULE_DIR, "..", "s3_cache"))
 
 # Logging configuration
 LOG_DIR = os.path.join(MODULE_DIR, "logs")
@@ -55,37 +65,16 @@ if not os.path.isdir(LOG_DIR):
     os.mkdir(LOG_DIR)
 np.set_printoptions(precision=3)
 # clear previous loggers/handlers/filters, if exists
-logger = logging.getLogger(BEEP_ENV + "/beep")
+logger = logging.getLogger("beep")
 logger.handlers = []
 logger.filters = []
-formatter = logging.Formatter(**CONFIG[BEEP_ENV]["logging"]["logger_args"])
+formatter_stdout = logging.Formatter(**HUMAN_LOG_FMT)
+formatter_jsonl = logging.Formatter(**JSON_LOG_FMT)
 
-if "CloudWatch" in CONFIG[BEEP_ENV]["logging"]["streams"]:
-    max_retries = 12
-    if BEEP_ENV == "stage":
-        for _ in range(max_retries):
-            try:
-                hdlr = watchtower.CloudWatchLogHandler(log_group="/stage/beep/services")
-            except NoCredentialsError:
-                time.sleep(10)
-                continue
-            else:
-                break
-        else:
-            raise NoCredentialsError
-    else:
-        hdlr = watchtower.CloudWatchLogHandler(log_group="Worker")
-    hdlr.setFormatter(formatter)
-    logger.addHandler(hdlr)
-if "stdout" in CONFIG[BEEP_ENV]["logging"]["streams"]:
-    hdlr = logging.StreamHandler(sys.stdout)
-    hdlr.setFormatter(formatter)
-    logger.addHandler(hdlr)
-if "file" in CONFIG[BEEP_ENV]["logging"]["streams"]:
-    log_file = os.path.join(MODULE_DIR, "Testing_logger.log")
-    hdlr = logging.FileHandler(log_file, "a")
-    hdlr.setFormatter(formatter)
-    logger.addHandler(hdlr)
+# Stdout log will always be enabled
+hdlr = logging.StreamHandler(sys.stdout)
+hdlr.setFormatter(formatter_stdout)
+logger.addHandler(hdlr)
 
 logger.setLevel("DEBUG")
 logger.propagate = False
