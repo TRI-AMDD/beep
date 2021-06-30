@@ -6,12 +6,22 @@ import pprint
 import fnmatch
 import functools
 import traceback
+import importlib
 
 import click
 from monty.serialization import dumpfn
 
 from beep import logger, BEEP_PARAMETERS_DIR, S3_CACHE, formatter_jsonl
 from beep.structure.cli import auto_load
+from beep.featurize import \
+    RPTdQdVFeatures, \
+    HPPCResistanceVoltageFeatures, \
+    HPPCRelaxationFeatures, \
+    DiagnosticSummaryStats, \
+    DiagnosticProperties, \
+    TrajectoryFastCharge, \
+    DeltaQFastCharge, \
+    BeepFeatures
 from beep.utils.s3 import list_s3_objects, download_s3_object
 from beep.validate import BeepValidationError
 
@@ -48,8 +58,8 @@ def add_suffix(full_path, output_dir, suffix, modified_ext=None):
     "-l",
     type=click.Path(file_okay=True, dir_okay=False, writable=True, readable=True),
     multiple=False,
-    help="File to log formatted json to. Log will still be output in human"
-         "readable form to stdout, but if --log-file is specified, it will"
+    help="File to log formatted json to. Log will still be output in human "
+         "readable form to stdout, but if --log-file is specified, it will "
          "be additionally logged to a jsonl (json-lines) formatted file.",
 )
 @click.pass_context
@@ -410,3 +420,132 @@ def structure(
     if output_status_json:
         dumpfn(status_json, output_status_json)
         logger.info(f"Wrote status json file to {output_status_json}")
+
+
+@cli.command(
+    help="Featurize one or more files. Argument "
+         "is a space-separated list of files or globs. The same "
+         "features are applied to each file."
+)
+@click.argument(
+    'files',
+    nargs=-1,
+    type=CLICK_FILE,
+)
+@click.option(
+    '--output-status-json',
+    '-s',
+    type=CLICK_FILE,
+    multiple=False,
+    help="File to output with JSON info about the states of "
+         "featurized and unfeaturized entries. Useful for "
+         "high-throughput featurization or storage in NoSQL"
+         "databases. If not set, status json is not written."
+)
+@click.option(
+    '--output-filenames',
+    '-o',
+    type=click.Path(),
+    help="Filenames to write each input filename to. "
+         "If not specified, auto-names each file by appending"
+         "`-featurized` before the file extension inside "
+         "the current working dir.",
+    multiple=True
+)
+@click.option(
+    '--output-dir',
+    '-d',
+    type=CLICK_DIR,
+    help="Directory to dump auto-named files to. Only works if"
+         "--output-filenames is not specified."
+)
+@click.option(
+    '--featurizers',
+    "-f",
+    default=("all",),
+    multiple=True,
+    type=click.STRING,
+    help="List featurizers to apply (space-separated). BEEP "
+         "native featurizers include rptdqdv, hppcresistance, "
+         "hppcrelaxation, diagsumstats, dqfastcharge, diagprops, and "
+         "trajfastcharge. "
+         "For all featurizers, use 'all'. For external featurizers"
+         "that inherit the BeepFeatures class, specify the featurizer"
+         "name with a fully specified importable module name and "
+         "class name e.g., my_package.my_module.MyClass."
+)
+@click.option(
+    '--halt-on-error',
+    is_flag=True,
+    default=False,
+    help="Set to halt BEEP if critical featurization "
+         "errors are encountered on any file with any featurizer. "
+         "Otherwise, logs critical errors to the status json.",
+)
+@click.option(
+    '--autocheck',
+    is_flag=True,
+    default=False,
+    help="Automatically check the featurizers"
+)
+@click.pass_context
+def featurize(
+        ctx,
+        files,
+        output_status_json,
+        output_filenames,
+        output_dir,
+        featurizers,
+        halt_on_error,
+        autocheck
+):
+    files = [os.path.abspath(f) for f in files]
+    n_files = len(files)
+
+    logger.info(f"Featurizing {n_files} files")
+
+    allowed_featurizers = {
+        "rptdqdv": RPTdQdVFeatures,
+        "hppcresistance": HPPCResistanceVoltageFeatures,
+        "hppcrelaxation": HPPCRelaxationFeatures,
+        "diagsumstats": DiagnosticSummaryStats,
+        "diagprops": DiagnosticProperties,
+        "trajfastcharge": TrajectoryFastCharge,
+        "dqfastcharge": DeltaQFastCharge
+    }
+
+    f_map = {}
+    for f in featurizers:
+        if f in allowed_featurizers:
+            f_str = allowed_featurizers[f].__name__
+            if f_str not in f_map:
+                f_map[f_str] = allowed_featurizers[f]
+        elif f == "all":
+            for fcls in allowed_featurizers.values():
+                f_map[fcls.__name__] = fcls
+        else:
+            # it is assumed it will be an external module
+            if "." not in f:
+                logging.critical(
+                    f"'{f}' not recognized as BEEP native featurizer "
+                    f"or importable module."
+                )
+                click.Context.exit(1)
+
+            modname, _, clsname = f.rpartition('.')
+            mod = importlib.import_module(modname)
+            cls = getattr(mod, clsname)
+
+            if not issubclass(cls, BeepFeatures):
+                logging.critical(f"Class {cls.__name__} is not a subclass of BeepFeatures.")
+                click.Context.exit(1)
+
+            f_map[cls.__name__] = cls
+
+    logger.info(f"Applying {len(f_map)} featurizers: {list(f_map.keys())}")
+
+    for file in files:
+        pass
+
+
+
