@@ -347,17 +347,17 @@ def structure(
         t0 = time.time()
         try:
             dp = auto_load(f)
-            logger.info(f"Validating file {i + 1} of {n_files}: {f}")
+            logger.info(f"File {i + 1} of {n_files}: Validating: {f}")
             is_valid = dp.validate()
             op_result["validated"] = is_valid
 
             if not is_valid:
                 raise BeepValidationError
 
-            logger.info(f"Validated file {i + 1} of {n_files}: {f}")
+            logger.info(f"File {i + 1} of {n_files}: Validated: {f}")
 
             if not validation_only:
-                logger.info(f"Structuring file {i + 1} of {n_files}: Read from {f}")
+                logger.info(f"File {i + 1} of {n_files}: Structuring: Read from {f}")
                 if automatic:
                     dp.autostructure(
                         charge_axis=charge_axis,
@@ -370,12 +370,12 @@ def structure(
                 output_fname = output_files[i]
                 dp.to_json_file(output_fname, omit_raw=no_raw)
                 op_result["structured"] = True
-                logger.info(f"Structured file {i + 1} of {n_files}: Written to {output_fname}")
+                logger.info(f"File {i + 1} of {n_files}: Structured: Written to {output_fname}")
 
         except BaseException:
             tbinfo = sys.exc_info()
             tbfmt = traceback.format_exception(*tbinfo)
-            logger.error(f"Failed/invalid {i + 1} of {n_files} ({tbinfo[0].__name__}): {f}")
+            logger.error(f"File {i + 1} of {n_files}: Failed/invalid: ({tbinfo[0].__name__}): {f}")
             op_result["traceback"] = tbfmt
 
             if halt_on_error:
@@ -385,6 +385,7 @@ def structure(
         op_result["walltime"] = t1 - t0
         status_json[f] = op_result
 
+    # Generate the status report
     succeeded, failed, invalid = [], [], []
 
     for input_fname, op_result in status_json.items():
@@ -395,12 +396,14 @@ def structure(
         else:
             invalid.append(input_fname)
 
-    logger.info(f"Structuring report:")
-    logger.info(f"\tSucceeded: {len(succeeded)}/{n_files}")
+    logger.info(f"{'Validation' if validation_only else 'Structuring'} report:")
+
+    logger.info(f"\t{'Structured' if validation_only else 'Succeeded'}: {len(succeeded)}/{n_files}")
     logger.info(f"\tInvalid: {len(invalid)}/{n_files}")
     for inv in invalid:
         logger.info(f"\t\t- {inv}")
-    logger.info(f"\tFailed: {len(failed)}/{n_files}")
+
+    logger.info(f"\t{'Validated, not structured' if validation_only else 'Failed'}: {len(failed)}/{n_files}")
     for fail in failed:
         logger.info(f"\t\t- {fail}")
 
