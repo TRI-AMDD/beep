@@ -36,8 +36,8 @@ from beep import MODULE_DIR
 from beep.utils import parameters_lookup
 from beep.structure.cli import auto_load_processed
 from beep.featurize import (
-    RPTdQdVFeatures, HPPCResistanceVoltageFeatures,
-    HPPCRelaxationFeatures, DiagnosticProperties,
+    HPPCResistanceVoltageFeatures,
+    DiagnosticProperties,
     DiagnosticSummaryStats
 )
 from sklearn.model_selection import train_test_split
@@ -47,8 +47,8 @@ FEATURE_HYPERPARAMS = loadfn(
     os.path.join(MODULE_DIR, "features/feature_hyperparameters.yaml")
 )
 
-FEATURIZER_CLASSES = [RPTdQdVFeatures, HPPCResistanceVoltageFeatures,
-                      HPPCRelaxationFeatures, DiagnosticSummaryStats,
+FEATURIZER_CLASSES = [HPPCResistanceVoltageFeatures,
+                      DiagnosticSummaryStats,
                       DiagnosticProperties]
 
 
