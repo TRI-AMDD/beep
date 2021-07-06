@@ -1735,3 +1735,91 @@ def add_cycle_nums_to_csvs(
 
         df["cycle_index"] = cycle_nums
         df.to_csv(csv_out_fp, sep=";")
+
+
+def convert_formation():
+    mps_str = (
+        "BT-LAB SETTING FILE\r\n"
+        "\r\n"
+        "Number of linked techniques : {}\r\n"
+        "\r\n"
+        "Filename : C:\\Users\\Biologic Server\\Documents\\BT-Lab\\Data\\PK_loop_technique2.mps\r\n"
+        "\r\n"
+        "Device : BCS-815\r\n"
+        "Ecell ctrl range : min = 0.00 V, max = 9.00 V\r\n"
+        "Safety Limits :\r\n"
+        "	Ecell min = 2.90 V\r\n"
+        "	Ecell max = 4.3 V\r\n"
+        "	for t > 100 ms\r\n"
+        "Electrode material : \r\n"
+        "Initial state : \r\n"
+        "Electrolyte : \r\n"
+        "Comments : \r\n"
+        "Mass of active material : 0.001 mg\r\n"
+        " at x = 0.000\r\n"
+        "Molecular weight of active material (at x = 0) : 0.001 g/mol\r\n"
+        "Atomic weight of intercalated ion : 0.001 g/mol\r\n"
+        "Acquisition started at : xo = 0.000\r\n"
+        "Number of e- transfered per intercalated ion : 1\r\n"
+        "for DX = 1, DQ = 26.802 mA.h\r\n"
+        "Battery capacity : 0.000 A.h\r\n"
+        "Electrode surface area : 0.001 cm\N{superscript two}\r\n"
+        "Characteristic mass : 0.001 g\r\n"
+        "Text export\r\n"
+        "   Mode : Standard\r\n"
+        "   Time format : Absolute MMDDYYYY\r\n"
+        "Cycle Definition : Charge/Discharge alternance\r\n"
+        "Turn to OCV between techniques\r\n"
+        "\r\n"
+        "Technique : 1\r\n"
+    ).format(1)
+
+    filename = 'a_formation06162921_Xiao.000'
+    fp = os.path.join(PROCEDURE_TEMPLATE_DIR, filename)
+    converter = MaccorToBiologicMb()
+    ast = converter.load_maccor_ast(fp)
+    steps = get(ast, "MaccorTestProcedure.ProcSteps.TestStep")
+
+    tech_seqs, tech_seq_map= converter._maccor_steps_to_biologic_seqs(steps, unroll=True)
+    step_transition_data = get_cycle_adv_data_by_tech_num(steps)[1]
+    cycle_transition_rules = create_seq_num_adv_cycle_data(step_transition_data, tech_seq_map, 0)
+    serializer = CycleTransitionRulesSerializer()
+    rules_json = serializer.json(cycle_transition_rules)
+    
+    # gen cycles rules json file
+    rules_fp = os.path.join(BIOLOGIC_TEMPLATE_DIR, "{}.technique_1_cycle_rules.json".format(filename))
+    with open(rules_fp, "wb") as f:
+        f.write(rules_json.encode("utf-8"))
+        print("created {}".format(rules_fp))
+
+
+
+    # generate file mapping
+    step_mapping_filename = "{}.mps.step-mapping.txt".format(filename)
+    step_mapping_fp = os.path.join(BIOLOGIC_TEMPLATE_DIR, step_mapping_filename)
+    with open(step_mapping_fp, "wb") as f:
+        file_str = "Technique 1:\r\n"
+
+        pairs = list(tech_seq_map.items())
+        pairs.sort(key=lambda x: x[0])
+
+        for seq_num, step_num in pairs:
+            file_str += "seq {} generated from step {}\r\n".format(
+                seq_num, step_num
+            )
+        file_str += "\r\n"
+        f.write(file_str.encode("ISO-8859-1"))
+        print("created {}".format(step_mapping_fp))
+
+
+    out_fp = os.path.join(BIOLOGIC_TEMPLATE_DIR, "{}.mps".format(filename))
+    with open(out_fp, "wb") as f:
+        mps_str += converter._seqs_to_str(tech_seqs)
+        f.write(mps_str.encode("ISO-8859-1"))
+        print("created {}".format(out_fp))
+
+convert_formation()
+
+# cp /Users/willpowelson/tri/beep/beep/protocol/biologic_templates/a_formation06162921_Xiao.000.technique_1_cycle_rules.json ~/Documents
+# cp /Users/willpowelson/tri/beep/beep/protocol/biologic_templates/a_formation06162921_Xiao.000.mps.step-mapping.txt ~/Documents
+# cp /Users/willpowelson/tri/beep/beep/protocol/biologic_templates/a_formation06162921_Xiao.000.mps ~/Documents
