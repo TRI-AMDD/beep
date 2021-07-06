@@ -602,9 +602,12 @@ class MaccorToBiologicMb:
 
                 loop_seq_count_stack.append(0)
             elif (
-                step_type == "AdvCycle"
-                and is_last_step_in_loop
-                and not curr_loop_will_unroll
+                (step_type == "AdvCycle" and not unroll)
+                or (
+                    step_type == "AdvCycle"
+                    and is_last_step_in_loop    
+                    and not curr_loop_will_unroll
+                )
             ):
                 # adv cycle will occur with loop
                 adv_cycle_ignore_status_by_idx[idx] = {"ignore": True}
