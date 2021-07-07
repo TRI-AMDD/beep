@@ -24,9 +24,7 @@ from beep.featurize import (
     DeltaQFastCharge,
     TrajectoryFastCharge,
     DegradationPredictor,
-    RPTdQdVFeatures,
     HPPCResistanceVoltageFeatures,
-    HPPCRelaxationFeatures,
     DiagnosticProperties,
     DiagnosticSummaryStats,
     CycleSummaryStats
@@ -203,7 +201,7 @@ class TestFeaturizer(unittest.TestCase):
             self.assertIsInstance(reloaded["file_list"][-1], str)
 
             # Ensure first is correct
-            features_reloaded = loadfn(reloaded["file_list"][4])
+            features_reloaded = loadfn(reloaded["file_list"][2])
             self.assertIsInstance(features_reloaded, DeltaQFastCharge)
             self.assertEqual(
                 features_reloaded.X.loc[0, "nominal_capacity_by_median"],
@@ -266,31 +264,6 @@ class TestFeaturizer(unittest.TestCase):
             self.assertEqual("featurizing", output_json["action"])
             self.assertEqual("incomplete", output_json["status"])
 
-    def test_RPTdQdVFeatures_class(self):
-        with ScratchDir("."):
-            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-            pcycler_run_loc = os.path.join(
-                TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
-            )
-            pcycler_run = auto_load_processed(pcycler_run_loc)
-            params_dict = {
-                "test_time_filter_sec": 1000000,
-                "cycle_index_filter": 6,
-                "diag_ref": 0,
-                "diag_nr": 2,
-                "charge_y_n": 1,
-                "rpt_type": "rpt_2C",
-                "plotting_y_n": 0,
-            }
-            featurizer = RPTdQdVFeatures.from_run(
-                pcycler_run_loc, os.getcwd(), pcycler_run, params_dict
-            )
-            path, local_filename = os.path.split(featurizer.name)
-            folder = os.path.split(path)[-1]
-            dumpfn(featurizer, featurizer.name)
-            self.assertEqual(folder, "RPTdQdVFeatures")
-            self.assertEqual(featurizer.X.shape[1], 11)
-            self.assertEqual(featurizer.metadata["parameters"], params_dict)
 
     def test_HPPCResistanceVoltageFeatures_class(self):
         with ScratchDir("."):
@@ -312,36 +285,6 @@ class TestFeaturizer(unittest.TestCase):
                  featurizer.X.iloc[0, 5], featurizer.X.iloc[0, 27]],
                 ["r_c_0s_00", "D_8", -0.08845776922490017, -0.1280224700339366, -0.10378359476555565],
             )
-
-    def test_HPPCRelaxationFeatures_class(self):
-        with ScratchDir("."):
-            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-            pcycler_run_loc = os.path.join(
-                TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
-            )
-            pcycler_run = auto_load_processed(pcycler_run_loc)
-            featurizer = HPPCRelaxationFeatures.from_run(
-                pcycler_run_loc, os.getcwd(), pcycler_run
-            )
-            path, local_filename = os.path.split(featurizer.name)
-            folder = os.path.split(path)[-1]
-            dumpfn(featurizer, featurizer.name)
-            params_dict = {
-                "test_time_filter_sec": 1000000,
-                "cycle_index_filter": 6,
-                "n_soc_windows": 8,
-                "soc_list": [90, 80, 70, 60, 50, 40, 30, 20, 10],
-                "percentage_list": [50, 80, 99],
-                "hppc_list": [0, 1],
-            }
-
-            self.assertEqual(folder, "HPPCRelaxationFeatures")
-            self.assertEqual(featurizer.X.shape[1], 30)
-            self.assertListEqual(
-                [featurizer.X.columns[0], featurizer.X.columns[-1]],
-                ["var_50%", "SOC10%_degrad99%"],
-            )
-            self.assertEqual(featurizer.metadata["parameters"], params_dict)
 
     def test_DiagnosticSummaryStats_class(self):
         with ScratchDir("."):
@@ -560,20 +503,6 @@ class TestFeaturizerHelpers(unittest.TestCase):
         self.assertEqual(sum_diag['diagnostic_start_cycle'].iloc[0], 30)
         self.assertEqual(sum_diag['diagnostic_interval'].iloc[0], 200)
         self.assertEqual(sum_diag['epoch_time'].iloc[0], 1598156928)
-
-    def test_generate_dQdV_peak_fits(self):
-        processed_cycler_run_path = os.path.join(
-            TEST_FILE_DIR, "PreDiag_000304_000153_truncated_structure.json"
-        )
-        with ScratchDir("."):
-            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-            pcycler_run = auto_load_processed(processed_cycler_run_path)
-            peaks_df = featurizer_helpers.generate_dQdV_peak_fits(pcycler_run, 'rpt_0.2C', 0, 1, plotting_y_n=1)
-            print(len(peaks_df.columns))
-            self.assertEqual(peaks_df.columns.tolist(),
-                             ['m0_Amp_rpt_0.2C_1', 'm0_Mu_rpt_0.2C_1', 'm1_Amp_rpt_0.2C_1',
-                              'm1_Mu_rpt_0.2C_1', 'm2_Amp_rpt_0.2C_1', 'm2_Mu_rpt_0.2C_1',
-                              'trough_height_0_rpt_0.2C_1', 'trough_height_1_rpt_0.2C_1'])
 
     def test_get_v_diff(self):
         processed_cycler_run_path_1 = os.path.join(
