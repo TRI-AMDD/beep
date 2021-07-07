@@ -816,7 +816,7 @@ class BEEPDatapath(abc.ABC, MSONable):
 
     # equivalent of get_interpolated_diagnostic_cycles
     def interpolate_diagnostic_cycles(
-            self, diagnostic_available, resolution=1000, v_resolution=0.0005
+            self, diagnostic_available, resolution=1000, v_resolution=0.0005, v_delta_min=0.001
     ):
         """
         Interpolates data according to location and type of diagnostic
@@ -828,6 +828,7 @@ class BEEPDatapath(abc.ABC, MSONable):
                 of the diagnostic
             resolution (int): resolution of interpolation
             v_resolution (float): voltage delta to set for range based interpolation
+            v_delta_min (float): minimum voltage delta for voltage based interpolation
 
         Returns:
             (pd.DataFrame) of interpolated diagnostic steps by step and cycle
@@ -875,6 +876,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         group = diag_data.groupby(["cycle_index", "step_index", "step_index_counter"])
         incl_columns = [
             "current",
+            "voltage",
             "charge_capacity",
             "discharge_capacity",
             "charge_energy",
@@ -894,7 +896,8 @@ class BEEPDatapath(abc.ABC, MSONable):
         for (cycle_index, step_index, step_index_counter), df in tqdm(group):
             if len(df) < 2:
                 continue
-            if diag_cycle_type[diag_cycles_at.index(cycle_index)] == "hppc":
+            step_voltage_delta = df.voltage.max() - df.voltage.min()
+            if diag_cycle_type[diag_cycles_at.index(cycle_index)] == "hppc" and step_voltage_delta >= v_delta_min:
                 v_hppc_step = [df.voltage.min(), df.voltage.max()]
                 hppc_resolution = int(
                     (df.voltage.max() - df.voltage.min()) / v_resolution
@@ -905,6 +908,15 @@ class BEEPDatapath(abc.ABC, MSONable):
                     field_range=v_hppc_step,
                     columns=incl_columns,
                     resolution=hppc_resolution,
+                )
+            elif step_voltage_delta < v_delta_min:
+                t_range_step = [df.test_time.min(), df.test_time.max()]
+                new_df = interpolate_df(
+                    df,
+                    field_name="test_time",
+                    field_range=t_range_step,
+                    columns=incl_columns,
+                    resolution=resolution,
                 )
             else:
                 new_df = interpolate_df(

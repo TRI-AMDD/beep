@@ -106,8 +106,8 @@ class RapidChargeWave:
         assert np.all(np.diff(mesh_points)) > 0
         current_smooth, time_smooth, current_multistep, time_multistep = \
             self.get_input_currents_both_to_final_soc(charging_c_rates, mesh_points)
-        end_time_smooth = np.int(np.round(np.max(time_smooth), 0))
-        end_time_multistep = np.int(np.round(np.max(time_multistep), 0))
+        end_time_smooth = int(np.round(np.max(time_smooth), 0))
+        end_time_multistep = int(np.round(np.max(time_multistep), 0))
         assert end_time_smooth == end_time_multistep
 
         time_uniform = np.arange(0, end_time_smooth, 1)
