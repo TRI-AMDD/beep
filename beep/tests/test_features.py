@@ -37,11 +37,15 @@ from monty.serialization import dumpfn, loadfn
 from monty.tempfile import ScratchDir
 from beep.utils.s3 import download_s3_object
 from beep.tests.constants import TEST_FILE_DIR, BIG_FILE_TESTS, SKIP_MSG
+from beep import MODULE_DIR
 
 
 MACCOR_FILE_W_DIAGNOSTICS = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000020_CH71.071")
 MACCOR_FILE_W_PARAMETERS = os.path.join(
     TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010"
+)
+FEATURE_HYPERPARAMS = loadfn(
+    os.path.join(MODULE_DIR, "features/feature_hyperparameters.yaml")
 )
 
 
@@ -186,11 +190,11 @@ class TestFeaturizer(unittest.TestCase):
             # os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             shutil.copy(os.path.join(TEST_FILE_DIR, "data-share", "raw", "cell_info", "anode_test.csv"),
                         os.path.join(TEST_FILE_DIR, "data-share", "raw", "cell_info",
-                                     "anode_secondMeasure_clean_cc_charge_exptl_aligned.csv")
+                                     FEATURE_HYPERPARAMS["IntracellFeatures"]["anode_file"])
                         )
             shutil.copy(os.path.join(TEST_FILE_DIR, "data-share", "raw", "cell_info", "cathode_test.csv"),
                         os.path.join(TEST_FILE_DIR, "data-share", "raw", "cell_info",
-                                     "cathode_clean_cc_charge_exptl_aligned.csv")
+                                     FEATURE_HYPERPARAMS["IntracellFeatures"]["cathode_file"])
                         )
 
             # Create dummy json obj
