@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests related to feature generation"""
-
+import shutil
 import unittest
 import os
 import json
@@ -184,6 +184,14 @@ class TestFeaturizer(unittest.TestCase):
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
             # os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
+            shutil.copy(os.path.join(TEST_FILE_DIR, "data-share", "raw", "cell_info", "anode_test.csv"),
+                        os.path.join(TEST_FILE_DIR, "data-share", "raw", "cell_info",
+                                     "anode_secondMeasure_clean_cc_charge_exptl_aligned.csv")
+                        )
+            shutil.copy(os.path.join(TEST_FILE_DIR, "data-share", "raw", "cell_info", "cathode_test.csv"),
+                        os.path.join(TEST_FILE_DIR, "data-share", "raw", "cell_info",
+                                     "cathode_clean_cc_charge_exptl_aligned.csv")
+                        )
 
             # Create dummy json obj
             json_obj = {
