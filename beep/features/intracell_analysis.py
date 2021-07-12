@@ -1327,7 +1327,7 @@ class IntracellAnalysis:
                                    NE_upper_voltage, NE_lower_voltage, NE_upper_SOC, NE_lower_SOC, NE_mass,
                                    Li_mass
                                    ]
-                    }
+                     }
         profiles_dict = {cycle_index: real_cell_candidate_charge_profile_aligned}
 
         return loss_dict, profiles_dict
