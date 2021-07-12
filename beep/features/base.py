@@ -46,21 +46,13 @@ $ featurize '{"invalid_file_list": ["/data-share/renamed_cycler_files/FastCharge
 """
 
 import os
-import json
-import numpy as np
 import pandas as pd
 from abc import ABCMeta, abstractmethod
-from docopt import docopt
 from monty.json import MSONable
-from monty.serialization import loadfn, dumpfn
-from scipy.stats import skew, kurtosis
+from monty.serialization import loadfn
 
 from beep.collate import scrub_underscore_suffix, add_suffix_to_filename
-from beep.structure.cli import auto_load_processed
-from beep.utils import WorkflowOutputs
-from beep.features import featurizer_helpers
-from beep.features import intracell_losses
-from beep import logger, __version__, MODULE_DIR
+from beep import MODULE_DIR
 
 FEATURE_HYPERPARAMS = loadfn(
     os.path.join(MODULE_DIR, "features/feature_hyperparameters.yaml")
