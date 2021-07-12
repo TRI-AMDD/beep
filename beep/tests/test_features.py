@@ -207,7 +207,7 @@ class TestFeaturizer(unittest.TestCase):
                 features_reloaded.X.loc[0, "nominal_capacity_by_median"],
                 0.07114775279999999,
             )
-            features_reloaded = loadfn(reloaded["file_list"][-1])
+            features_reloaded = loadfn(reloaded["file_list"][4])
             self.assertIsInstance(features_reloaded, DiagnosticProperties)
             self.assertListEqual(
                 list(features_reloaded.X.iloc[2, :]),
@@ -776,5 +776,5 @@ class TestRawToFeatures(unittest.TestCase):
 
             result_list = ['success'] * 7
             self.assertEqual(reloaded['result_list'], result_list)
-            rpt_df = loadfn(reloaded['file_list'][0])
-            self.assertEqual(np.round(rpt_df.X['m0_Amp_rpt_0.2C_1'].iloc[0], 6), 0.867371)
+            res_df = loadfn(reloaded['file_list'][0])
+            self.assertAlmostEqual(res_df.X['r_c_0s_00'].iloc[0], -0.098951, 5)

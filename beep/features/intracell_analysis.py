@@ -5,6 +5,7 @@ import os
 from matplotlib import cm
 from scipy.interpolate import interp1d
 from scipy.spatial import distance
+from scipy.optimize import differential_evolution
 
 CELL_INFO_DIR = os.path.join('data-share', 'raw', 'cell_info')
 
@@ -1206,3 +1207,127 @@ class IntracellAnalysis:
             y_charge = diag_type_cycle_i.voltage.loc[diag_type_cycles['step_type'] == 0]
 
         return x_charge, y_charge
+
+    def intracell_wrapper_init(self,
+                               cell_struct,
+                               initial_matching_bounds=None
+                               ):
+        """
+        Wrapper function that calls all of the functions to get the initial values for the cell
+        before fitting all of the
+
+        Args:
+             cell_struct (beep.structure): dataframe to determine whether
+                charging or discharging
+             chg (bool): Charge state; True if charging
+
+        Returns:
+            (bool): True if step is the charge state specified.
+        """
+        if initial_matching_bounds is None:
+            initial_matching_bounds = ((0.8, 1.2), (-20.0, 20.0), (1, 1), (0.1, 0.1), (0.1, 0.1))
+
+        real_cell_initial_charge_profile_aligned, real_cell_initial_charge_profile = \
+            self.process_beep_cycle_data_for_initial_halfcell_analysis(cell_struct)
+        opt_result_halfcell_initial_matching = differential_evolution(self._get_error_from_halfcell_initial_matching,
+                                                                      initial_matching_bounds,
+                                                                      args=(real_cell_initial_charge_profile_aligned,
+                                                                            self.pe_pristine, self.ne_1_pristine,
+                                                                            self.ne_2_pristine_pos,
+                                                                            self.ne_2_pristine_neg),
+                                                                      strategy='best1bin', maxiter=1000,
+                                                                      popsize=15, tol=0.001, mutation=0.5,
+                                                                      recombination=0.7, seed=1,
+                                                                      callback=None, disp=False, polish=True,
+                                                                      init='latinhypercube', atol=0,
+                                                                      updating='deferred', workers=-1, constraints=())
+        (PE_pristine_matched,
+         NE_pristine_matched,
+         df_real_interped,
+         emulated_full_cell_interped) = self.halfcell_initial_matching_v2(opt_result_halfcell_initial_matching.x,
+                                                                        real_cell_initial_charge_profile_aligned,
+                                                                        self.pe_pristine,
+                                                                        self.ne_1_pristine,
+                                                                        self.ne_2_pristine_pos,
+                                                                        self.ne_2_pristine_neg)
+        return (real_cell_initial_charge_profile_aligned,
+                real_cell_initial_charge_profile,
+                PE_pristine_matched,
+                NE_pristine_matched)
+
+    def intracell_values_wrapper(self,
+                                 cycle_index,
+                                 cell_struct,
+                                 real_cell_initial_charge_profile_aligned,
+                                 real_cell_initial_charge_profile,
+                                 PE_pristine_matched,
+                                 NE_pristine_matched,
+                                 degradation_bounds=None
+                                 ):
+
+        if degradation_bounds is None:
+            degradation_bounds = ((-10, 50),  # LLI
+                                  (-10, 50),  # LAM_PE
+                                  (-10, 50),  # LAM_NE
+                                  (1, 1),  # (-1,1) x_NE_2
+                                  (0.1, 0.1),  # (0.01,0.1)
+                                  (0.1, 0.1),  # (0.01,0.1)
+                                  )
+
+        real_cell_candidate_charge_profile_aligned = self.process_beep_cycle_data_for_candidate_halfcell_analysis(
+            cell_struct,
+            real_cell_initial_charge_profile_aligned,
+            real_cell_initial_charge_profile,
+            cycle_index)
+
+        degradation_optimization_result = differential_evolution(self._get_error_from_degradation_matching,
+                                                                 degradation_bounds,
+                                                                 args=(PE_pristine_matched,
+                                                                       NE_pristine_matched,
+                                                                       self.ne_2_pristine_pos,
+                                                                       self.ne_2_pristine_neg,
+                                                                       real_cell_candidate_charge_profile_aligned
+                                                                       ),
+                                                                 strategy='best1bin', maxiter=100000,
+                                                                 popsize=15, tol=0.001, mutation=0.5,
+                                                                 recombination=0.7,
+                                                                 seed=1,
+                                                                 callback=None, disp=False, polish=True,
+                                                                 init='latinhypercube',
+                                                                 atol=0, updating='deferred', workers=-1,
+                                                                 constraints=()
+                                                                 )
+
+        (PE_out_centered,
+         NE_out_centered,
+         dVdQ_over_SOC_real,
+         dVdQ_over_SOC_emulated,
+         df_real_interped,
+         emulated_full_cell_interped) = self.get_dQdV_over_V_from_degradation_matching(
+            degradation_optimization_result.x,
+            PE_pristine_matched,
+            NE_pristine_matched,
+            self.ne_2_pristine_pos,
+            self.ne_2_pristine_neg,
+            real_cell_candidate_charge_profile_aligned)
+        #
+        (PE_upper_voltage, PE_lower_voltage, PE_upper_SOC, PE_lower_SOC, PE_mass,
+         NE_upper_voltage, NE_lower_voltage, NE_upper_SOC, NE_lower_SOC, NE_mass,
+         SOC_upper, SOC_lower, Li_mass) = get_halfcell_voltages(PE_out_centered, NE_out_centered)
+        #
+        LLI = degradation_optimization_result.x[0]
+        LAM_PE = degradation_optimization_result.x[1]
+        LAM_NE = degradation_optimization_result.x[2]
+        x_NE_2 = degradation_optimization_result.x[3]
+        alpha_real = degradation_optimization_result.x[4]
+        alpha_emulated = degradation_optimization_result.x[5]
+
+        loss_dict = {cycle_index: [LLI, LAM_PE, LAM_NE, x_NE_2, alpha_real, alpha_emulated,
+                                  PE_upper_voltage, PE_lower_voltage, PE_upper_SOC, PE_lower_SOC, PE_mass,
+                                  NE_upper_voltage, NE_lower_voltage, NE_upper_SOC, NE_lower_SOC, NE_mass,
+                                  Li_mass
+                                  ]
+                    }
+        profiles_dict = {cycle_index: real_cell_candidate_charge_profile_aligned}
+
+        return loss_dict, profiles_dict
