@@ -49,13 +49,11 @@ import os
 import json
 import numpy as np
 import pandas as pd
-from abc import ABCMeta, abstractmethod
 from docopt import docopt
 from monty.json import MSONable
 from monty.serialization import loadfn, dumpfn
 from scipy.stats import skew, kurtosis
 
-from beep.collate import scrub_underscore_suffix, add_suffix_to_filename
 from beep.structure.cli import auto_load_processed
 from beep.utils import WorkflowOutputs
 from beep.features import featurizer_helpers, intracell_losses
