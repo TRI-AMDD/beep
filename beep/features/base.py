@@ -216,4 +216,3 @@ class BeepFeatures(MSONable, metaclass=ABCMeta):
         """MSONable deserialization method"""
         d["X"] = pd.DataFrame(d["X"])
         return cls(**d)
-

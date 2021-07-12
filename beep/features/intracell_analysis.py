@@ -1245,11 +1245,11 @@ class IntracellAnalysis:
          NE_pristine_matched,
          df_real_interped,
          emulated_full_cell_interped) = self.halfcell_initial_matching_v2(opt_result_halfcell_initial_matching.x,
-                                                                        real_cell_initial_charge_profile_aligned,
-                                                                        self.pe_pristine,
-                                                                        self.ne_1_pristine,
-                                                                        self.ne_2_pristine_pos,
-                                                                        self.ne_2_pristine_neg)
+                                                                          real_cell_initial_charge_profile_aligned,
+                                                                          self.pe_pristine,
+                                                                          self.ne_1_pristine,
+                                                                          self.ne_2_pristine_pos,
+                                                                          self.ne_2_pristine_neg)
         return (real_cell_initial_charge_profile_aligned,
                 real_cell_initial_charge_profile,
                 PE_pristine_matched,
@@ -1323,10 +1323,10 @@ class IntracellAnalysis:
         alpha_emulated = degradation_optimization_result.x[5]
 
         loss_dict = {cycle_index: [LLI, LAM_PE, LAM_NE, x_NE_2, alpha_real, alpha_emulated,
-                                  PE_upper_voltage, PE_lower_voltage, PE_upper_SOC, PE_lower_SOC, PE_mass,
-                                  NE_upper_voltage, NE_lower_voltage, NE_upper_SOC, NE_lower_SOC, NE_mass,
-                                  Li_mass
-                                  ]
+                                   PE_upper_voltage, PE_lower_voltage, PE_upper_SOC, PE_lower_SOC, PE_mass,
+                                   NE_upper_voltage, NE_lower_voltage, NE_upper_SOC, NE_lower_SOC, NE_mass,
+                                   Li_mass
+                                   ]
                     }
         profiles_dict = {cycle_index: real_cell_candidate_charge_profile_aligned}
 

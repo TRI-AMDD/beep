@@ -1,10 +1,6 @@
 import os
-import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from scipy import signal
-from lmfit import models
-from monty.serialization import loadfn, dumpfn
+from monty.serialization import loadfn
 
 from beep.features.base import BeepFeatures
 from beep.features.intracell_analysis import IntracellAnalysis
