@@ -280,11 +280,12 @@ class TestFeaturizer(unittest.TestCase):
             dumpfn(featurizer, featurizer.name)
             self.assertEqual(folder, "HPPCResistanceVoltageFeatures")
             self.assertEqual(featurizer.X.shape[1], 76)
-            self.assertListEqual(
-                [featurizer.X.columns[0], featurizer.X.columns[-1], featurizer.X.iloc[0, 0],
-                 featurizer.X.iloc[0, 5], featurizer.X.iloc[0, 27]],
-                ["r_c_0s_00", "D_8", -0.08845776922490017, -0.1280224700339366, -0.10378359476555565],
-            )
+            self.assertEqual(featurizer.X.columns[0], "r_c_0s_00")
+            self.assertEqual(featurizer.X.columns[-1], "D_8")
+
+            self.assertAlmostEqual(featurizer.X.iloc[0, 0], -0.08845776922490017, 6)
+            self.assertAlmostEqual(featurizer.X.iloc[0, 5], -0.1280224700339366, 6)
+            self.assertAlmostEqual(featurizer.X.iloc[0, 27], -0.10378359476555565, 6)
 
     def test_DiagnosticSummaryStats_class(self):
         with ScratchDir("."):
@@ -587,13 +588,13 @@ class TestFeaturizerHelpers(unittest.TestCase):
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
         pcycler_run = auto_load_processed(pcycler_run_loc)
         hppc_ocv_features = featurizer_helpers.get_hppc_ocv(pcycler_run, 1)
-        self.assertEqual(np.round(hppc_ocv_features['var_ocv'].iloc[0], 6), 0.000016)
-        self.assertEqual(np.round(hppc_ocv_features['min_ocv'].iloc[0], 6), -0.001291)
-        self.assertEqual(np.round(hppc_ocv_features['mean_ocv'].iloc[0], 6), 0.002221)
-        self.assertEqual(np.round(hppc_ocv_features['skew_ocv'].iloc[0], 6), 1.589392)
-        self.assertEqual(np.round(hppc_ocv_features['kurtosis_ocv'].iloc[0], 6), 7.041016)
-        self.assertEqual(np.round(hppc_ocv_features['sum_ocv'].iloc[0], 6), 0.025126)
-        self.assertEqual(np.round(hppc_ocv_features['sum_square_ocv'].iloc[0], 6), 0.000188)
+        self.assertAlmostEqual(hppc_ocv_features['var_ocv'].iloc[0], 0.000016, 6)
+        self.assertAlmostEqual(hppc_ocv_features['min_ocv'].iloc[0], -0.001291, 6)
+        self.assertAlmostEqual(hppc_ocv_features['mean_ocv'].iloc[0], 0.002221, 6)
+        self.assertAlmostEqual(hppc_ocv_features['skew_ocv'].iloc[0], 1.589392, 6)
+        self.assertAlmostEqual(hppc_ocv_features['kurtosis_ocv'].iloc[0], 7.041016, 6)
+        self.assertAlmostEqual(hppc_ocv_features['sum_ocv'].iloc[0], 0.025126, 6)
+        self.assertAlmostEqual(hppc_ocv_features['sum_square_ocv'].iloc[0], 0.000188, 6)
 
     def test_get_step_index(self):
         pcycler_run_loc = os.path.join(
