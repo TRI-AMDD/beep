@@ -796,6 +796,18 @@ class BEEPDatapath(abc.ABC, MSONable):
         summary["paused"] = self.raw_data.groupby("cycle_index").apply(
             get_max_paused_over_threshold)
 
+        # Add CV_time and CV_current summary stats
+        CV_time = []
+        CV_current = []
+        for cycle in summary.cycle_index:
+            raw_cycle = self.raw_data.loc[self.raw_data.cycle_index == cycle]
+            charge = raw_cycle.loc[raw_cycle.current > 0]
+            CV = get_CV_segment_from_charge(charge)
+            CV_time.append(CV.test_time.iat[-1] - CV.test_time.iat[0])
+            CV_current.append(CV.current.iat[-1])
+        summary["CV_time"] = CV_time
+        summary["CV_current"] = CV_current
+
         summary = self._cast_dtypes(summary, "summary")
 
         last_voltage = self.raw_data.loc[
@@ -987,6 +999,22 @@ class BEEPDatapath(abc.ABC, MSONable):
         diag_summary["cycle_type"] = pd.Series(
             diagnostic_available["cycle_type"] * len(starts_at)
         )
+
+        # Add CV_time and CV_current summary stats
+        CV_time = []
+        CV_current = []
+        for cycle in diag_summary.cycle_index:
+            raw_cycle = self.raw_data.loc[self.raw_data.cycle_index == cycle]
+
+            # Charge is the very first step_index
+            CCCV = raw_cycle.loc[raw_cycle.step_index == raw_cycle.step_index.min()]
+            CV = get_CV_segment_from_charge(CCCV)
+
+            CV_time.append(CV.test_time.iat[-1] - CV.test_time.iat[0])
+            CV_current.append(CV.current.iat[-1])
+
+        diag_summary["CV_time"] = CV_time
+        diag_summary["CV_current"] = CV_current
 
         diag_summary = self._cast_dtypes(diag_summary, "diagnostic_summary")
 
@@ -1385,3 +1413,31 @@ def get_max_paused_over_threshold(group, paused_threshold=3600):
     else:
         max_paused_duration = 0
     return max_paused_duration
+
+
+def get_CV_segment_from_charge(charge):
+    """
+    Extracts the constant voltage segment from charge. Works for both CCCV or
+    CC steps followed by a CV step.
+
+    Args:
+        group (pd.DataFrame): charge dataframe for a single cycle
+
+    Returns:
+        (pd.DataFrame): dataframe containing the CV segment
+
+    """
+    # Compute dI and dV
+    dI = np.diff(charge.current)
+    dV = np.diff(charge.voltage)
+    dt = np.diff(charge.test_time)
+
+    # Find the first index where dt>1 and abs(dV/dt)<tol and abs(dI/dt)>tol
+    i = 0
+    while i < len(dV) and not (dt[i] > 1 and abs(dV[i]/dt[i]) < 5.e-5 and abs(dI[i]/dt[i]) > 1.e-4):
+        i = i+1
+
+    # Filter for CV phase
+    CV = charge.loc[charge.test_time >= charge.test_time.iat[i-1]]
+
+    return(CV)
