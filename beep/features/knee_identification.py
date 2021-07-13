@@ -5,6 +5,34 @@ Functions for identifying "knee" behavior in capacity fade trajectory.
 import numpy as np
 import pandas as pd
 from scipy.optimize import differential_evolution
+from beep.structure.cli import auto_load_processed
+from beep.featurize import DiagnosticProperties
+
+def load_capacity_fade_from_run(run,
+                                cycle_type = 'rpt_0.2C',
+                                project_list = ["PreDiag", "PredictionDiagnostics"],
+                                featurized_path = "/home/ec2-user/SageMaker/efs-readonly/features/"
+                                ):
+    
+    seq_num = int(run[-25:-22])
+    dataset_from_features = BeepDataset.from_features('batches_1_2_3_throughput',
+                                                  project_list,
+                                                  [DiagnosticProperties],
+                                                  feature_dir=featurized_path)
+    
+    cell_and_cycle_df = dataset_from_features.data.loc[
+    (dataset_from_features.data['cycle_type'] == cycle_type) & 
+    (dataset_from_features.data['metric'] == 'discharge_capacity') &
+    (dataset_from_features.data['seq_num'] == seq_num)]
+    
+    efc = (cell_and_cycle_df['initial_regular_throughput']*cell_and_cycle_df['normalized_regular_throughput']).values
+    capacity = cell_and_cycle_df['fractional_metric'].values
+
+    batch_df_one_cell = pd.DataFrame(np.vstack((capacity,efc)).T,columns=['capacity','efc'])
+    batch_df_one_cell['seq_num'] = seq_num
+    batch_df_one_cell.set_index('seq_num',inplace=True)
+    
+    return batch_df_one_cell
 
 def bacon_watts_heaviside(X,*params):
     """
@@ -26,7 +54,8 @@ def bacon_watts_heaviside(X,*params):
     capacity,efc = params
     xf_scale = np.max(efc)
 
-    y = np.heaviside(xt-efc/xf_scale,0.5)*(a0 + (yt-a0)/(xt-0)*(efc/xf_scale-0)) + np.heaviside(efc/xf_scale-xt,0.5)*(af+(yt-af)/(xt-xf)*(efc/xf_scale-xf))
+    y = np.heaviside(xt-efc/xf_scale,0.5)*(a0 + (yt-a0)/(xt-0)*(efc/xf_scale-0)) +\
+        np.heaviside(efc/xf_scale-xt,0.5)*(af+(yt-af)/(xt-xf)*(efc/xf_scale-xf))
     return y
 
 def get_error_bacon_watts_heaviside(X,*params):
