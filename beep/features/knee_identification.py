@@ -28,7 +28,7 @@ def load_capacity_fade_from_run(run,
     efc = (cell_and_cycle_df['initial_regular_throughput']*cell_and_cycle_df['normalized_regular_throughput']).values
     capacity = cell_and_cycle_df['fractional_metric'].values
 
-    batch_df_one_cell = pd.DataFrame(np.vstack((capacity,efc)).T,columns=['capacity','efc'])
+    batch_df_one_cell = pd.DataFrame(np.vstack((capacity,efc)).T,columns=['fractional_metric','equivalent_full_cycles'])
     batch_df_one_cell['seq_num'] = seq_num
     batch_df_one_cell.set_index('seq_num',inplace=True)
     
