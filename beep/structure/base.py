@@ -803,8 +803,8 @@ class BEEPDatapath(abc.ABC, MSONable):
             raw_cycle = self.raw_data.loc[self.raw_data.cycle_index == cycle]
             charge = raw_cycle.loc[raw_cycle.current > 0]
             CV = get_CV_segment_from_charge(charge)
-            CV_time.append(CV.test_time.iat[-1] - CV.test_time.iat[0])
-            CV_current.append(CV.current.iat[-1])
+            CV_time.append(get_CV_time(CV))
+            CV_current.append(get_CV_current(CV))
         summary["CV_time"] = CV_time
         summary["CV_current"] = CV_current
 
@@ -1009,9 +1009,8 @@ class BEEPDatapath(abc.ABC, MSONable):
             # Charge is the very first step_index
             CCCV = raw_cycle.loc[raw_cycle.step_index == raw_cycle.step_index.min()]
             CV = get_CV_segment_from_charge(CCCV)
-
-            CV_time.append(CV.test_time.iat[-1] - CV.test_time.iat[0])
-            CV_current.append(CV.current.iat[-1])
+            CV_time.append(get_CV_time(CV))
+            CV_current.append(get_CV_current(CV))
 
         diag_summary["CV_time"] = CV_time
         diag_summary["CV_current"] = CV_current
@@ -1421,7 +1420,7 @@ def get_CV_segment_from_charge(charge):
     CC steps followed by a CV step.
 
     Args:
-        group (pd.DataFrame): charge dataframe for a single cycle
+        charge (pd.DataFrame): charge dataframe for a single cycle
 
     Returns:
         (pd.DataFrame): dataframe containing the CV segment
@@ -1438,6 +1437,37 @@ def get_CV_segment_from_charge(charge):
         i = i+1
 
     # Filter for CV phase
-    CV = charge.loc[charge.test_time >= charge.test_time.iat[i-1]]
+    if len(charge):
+        return(charge.loc[charge.test_time >= charge.test_time.iat[i-1]])
 
-    return(CV)
+
+def get_CV_time(CV):
+    """
+    Helper function to compute CV time.
+
+    Args:
+        CV (pd.DataFrame): CV segement of charge
+
+    Returns:
+        (float): length of the CV segment in seconds
+
+    """
+    if isinstance(CV, pd.DataFrame):
+        if len(CV):
+            return(CV.test_time.iat[-1] - CV.test_time.iat[0])
+
+
+def get_CV_current(CV):
+    """
+    Helper function to compute CV current.
+
+    Args:
+        CV (pd.DataFrame): CV segement of charge
+
+    Returns:
+        (float): current reached at the end of the CV segment
+
+    """
+    if isinstance(CV, pd.DataFrame):
+        if len(CV):
+            return(CV.current.iat[-1])
