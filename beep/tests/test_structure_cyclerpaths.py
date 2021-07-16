@@ -326,7 +326,7 @@ class TestBioLogicDatapath(unittest.TestCase):
     def test_from_file(self):
 
         biologic_file = os.path.join(
-            TEST_FILE_DIR, "raw", "biologic_test_file_short.mpt"
+            TEST_FILE_DIR, "raw", "test_loopsnewoutput_01_MB_CE1_short10k.csv"
         )
         dp = BiologicDatapath.from_file(biologic_file)
 
