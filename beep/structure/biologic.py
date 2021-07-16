@@ -25,8 +25,8 @@ class BiologicDatapath(BEEPDatapath):
             BiologicDatapath
         """
 
-        header_line = 3  # specific to file layout
-        data_starts_line = 4  # specific to file layout
+        header_line = 1  # specific to file layout
+        data_starts_line = 2  # specific to file layout
         column_map = BIOLOGIC_CONFIG["data_columns"]
 
         raw = dict()
@@ -40,7 +40,7 @@ class BiologicDatapath(BEEPDatapath):
 
                 if i == header_line:
                     header = str(line.strip())[2:-1]
-                    columns = header.split("\\t")
+                    columns = header.split(";")
                     for c in columns:
                         raw[c] = list()
 
@@ -49,7 +49,7 @@ class BiologicDatapath(BEEPDatapath):
                     if len(line) == 0:
                         empty_lines += 1
                         continue
-                    items = line.split("\t")
+                    items = line.split(";")
                     for ci in range(len(items)):
                         column_name = columns[ci]
                         data_type = column_map.get(column_name, dict()).get(
@@ -78,7 +78,7 @@ class BiologicDatapath(BEEPDatapath):
         )
         data.loc[data.step_index % 2 == 0, "discharge_capacity"] = 0
 
-        metadata_path = path.replace(".mpt", ".mpl")
+        metadata_path = path.replace(".csv", ".mpl")
         metadata = cls.parse_metadata(metadata_path)
         metadata["filename"] = path
         metadata["_today_datetime"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -129,13 +129,9 @@ class BiologicDatapath(BEEPDatapath):
                     line = line[:-4]
 
                 if line.strip().split(" : ")[0] == "Run on channel":
-                    channel_id = line.strip().split(" : ")[1]
-                    channel_id = channel_id.split(" ")[0]
-                    if channel_id[0] != "C":
-                        raise RuntimeError(
-                            "Unexpected channel id format in biologic log file."
-                        )
-                    channel_id = int(channel_id[1:])
+                    channel_id = line.strip().split(' : ')[1]
+                    channel_id = channel_id.split(' ')[0]
+                    channel_id = int(str(ord(channel_id[0]) - 64) + channel_id[1:])
                     metadata["channel_id"] = channel_id
                     flag_cell_id = True
 

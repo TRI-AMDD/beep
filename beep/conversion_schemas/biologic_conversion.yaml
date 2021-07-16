@@ -6,7 +6,7 @@ data_columns:
   cycle number:
     beep_name: cycle_index
     data_type: int
-  half cycle:
+  Ns:
     beep_name: step_index
     data_type: int
   Ecell/V:
