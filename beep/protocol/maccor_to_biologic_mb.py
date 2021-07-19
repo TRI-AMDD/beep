@@ -477,298 +477,6 @@ class MaccorToBiologicMb:
         return loop_seq
 
     """
-    creates the seqs that will act as an advance cycle step
-    when the Biologic cycle definition is set to loop
-    """
-
-    def _create_advance_cyle_seqs(self, seq_num):
-        # Biologic Modulo Bat does not support real Advance Cycle sequences
-        # however we can simulate them if the cycle definition is set to Loop
-        # which means that for every successful loop the cycle num advances
-        #
-        # we create an  "empty loop" seq that has the number of loops set to 0, this is immediately
-        # passed over whenever we reach it. Immediately following that empty loop, we create
-        # another loop that goes back to the empty loop exaclty once, this advances the cycle number
-
-        if seq_num == 0:
-            # the ctrl_seq field, (the seq we loop to) must be smaller the the Ns field (the seq num)
-            # but also a non-negative integer this is not posssible if the seq num is 0
-            raise Exception(
-                "Biologic does not support advancing cycle number at step 1/seq 0"
-            )
-
-        blank_loop_seq = self._create_loop_seq(seq_num, 0, 0)
-        adv_cycle_loop_seq = self._create_loop_seq(seq_num + 1, seq_num, 1)
-
-        return blank_loop_seq, adv_cycle_loop_seq
-
-    def _unroll_loop(self, loop, num_loops, loop_start_seq_num, loop_post_seq_num):
-        unrolled_loop = loop.copy()
-
-        # if num loops is zero, should return original loop
-        for i in range(1, num_loops + 1):
-            for seq in loop:
-                unrolled_seq = seq.copy()
-                unrolled_seq["Ns"] += len(loop) * i
-
-                for j in range(0, 3):
-                    goto_field = "lim{}_seq".format(j + 1)
-                    goto_seq_num = int(seq[goto_field])
-                    # make gotos internal to the loop work during unrolled portions
-                    # print("do we alter?", loop_start_seq_num <= goto_seq_num and goto_seq_num < loop_post_seq_num)
-                    if (
-                        loop_start_seq_num <= goto_seq_num
-                        and goto_seq_num <= loop_post_seq_num
-                    ):
-                        unrolled_seq[goto_field] = goto_seq_num + (len(loop) * i)
-
-                unrolled_loop.append(unrolled_seq)
-
-        assert len(unrolled_loop) == len(loop) * (num_loops + 1)
-
-        return unrolled_loop
-
-    """
-    Converts a Maccor AST to a list of equivlanet Biologic MB seqs assuming
-    cycles advance only during a loop (Cycle Definition: Loop)
-
-    Loops that are not representable in Biologic MB format will be unrolled
-
-    returns
-        - a list of biologic seqs
-    """
-
-    def maccor_ast_to_biologic_seqs(self, maccor_ast, unroll=False):
-        steps = get(maccor_ast, "MaccorTestProcedure.ProcSteps.TestStep")
-        if steps is None:
-            print(
-                'Failure: could not find path: "MaccorTestProcedure.ProcSteps.TestStep" to steps'
-            )
-            return
-
-        seqs, _ = self._maccor_steps_to_biologic_seqs(steps, unroll=unroll)
-        return seqs
-
-    """
-    Converts a list of Maccor AST to a list of equivlanet Biologic MB seqs assuming
-    cycles advance only during a loop (Cycle Definition: Loop)
-
-    Loops that are not representable in Biologic MB format will be unrolled
-
-    returns
-        - a list of biologic seqs
-        - a dictionary containing the mapping from output seqs to input steps
-          seqs are 0-indexed, steps are 1-indexed
-    """
-
-    def _maccor_steps_to_biologic_seqs(self, steps, unroll=False):
-
-        # To build our seqs we need to be able to handle GOTOs
-        # in order to do that we a mapping between Step Numbers
-        # and seq numbers. This will require us to pre-compute
-        # what loops will be unrolled and what terms will be
-        # re-written and use that to create a mapping of of step numbers
-        # to seq numbers. Actual loop unrolling is also simplified
-        # by pre-computing whether each loop meets an unroll condition
-        curr_seq_num = 0
-        loop_seq_count_stack = [0]
-        # first entry is the base sequence, the value is never used
-        # but having it improves book keeping
-        loop_will_unroll_stack = [False]
-
-        num_steps = len(steps)
-        seq_num_by_step_num = {num_steps: END_SEQ_NUM}
-        loop_unroll_status_by_idx = {}
-        adv_cycle_ignore_status_by_idx = {}
-
-        # tracking
-        loop_start_seq_num_stack = []
-        step_num_by_seq_num = {}
-
-        assert steps[-1]["StepType"] == "End"
-        for idx, step in enumerate(steps[0:-1]):
-            step_num = idx + 1
-            seq_num_by_step_num[step_num] = curr_seq_num
-            is_last_step_in_loop = steps[idx + 1]["StepType"][0:4] == "Loop"
-            curr_loop_will_unroll = loop_will_unroll_stack[-1]
-            step_type = step["StepType"]
-
-            if step_type[0:2] == "Do":
-                # no nested loops in Maccor
-                # we don't care about marking base protocol as will_unroll
-                loop_will_unroll_stack[-1] = True
-                loop_will_unroll_stack.append(False)
-                loop_start_seq_num_stack.append(curr_seq_num)
-
-                loop_seq_count_stack.append(0)
-            elif (
-                (step_type == "AdvCycle" and not unroll)
-                or (
-                    step_type == "AdvCycle"
-                    and is_last_step_in_loop    
-                    and not curr_loop_will_unroll
-                )
-            ):
-                # adv cycle will occur with loop
-                adv_cycle_ignore_status_by_idx[idx] = {"ignore": True}
-            elif step_type == "AdvCycle":
-                loop_will_unroll_stack[-1] = True
-                adv_cycle_ignore_status_by_idx[idx] = {"ignore": False}
-
-                # creating adv cycle requires 2 seqs
-                step_num_by_seq_num[curr_seq_num] = step_num
-                loop_seq_count_stack[-1] += 1
-                curr_seq_num += 1
-
-                step_num_by_seq_num[curr_seq_num] = step_num
-                loop_seq_count_stack[-1] += 1
-                curr_seq_num += 1
-            elif step_type[0:4] == "Loop":
-                assert step["Ends"]["EndEntry"]["EndType"] == "Loop Cnt"
-                num_loops = int(step["Ends"]["EndEntry"]["Value"])
-
-                curr_loop_start_seq = loop_start_seq_num_stack.pop()
-                curr_loop_seq_count = loop_seq_count_stack.pop()
-
-                loop_unroll_status_by_idx[idx] = {"will_unroll": curr_loop_will_unroll}
-                loop_will_unroll_stack.pop()
-
-                if unroll and curr_loop_will_unroll:
-                    # add unrolled loop seqs
-
-                    # first add tracking data
-                    for seq_num in range(curr_loop_start_seq, curr_seq_num):
-                        step_num_for_seq = step_num_by_seq_num[seq_num]
-                        for loop_num in range(1, num_loops):
-                            looped_seq_num = seq_num + (loop_num * curr_loop_seq_count)
-                            step_num_by_seq_num[looped_seq_num] = step_num_for_seq
-
-                    curr_seq_num += curr_loop_seq_count * num_loops
-                    curr_loop_seq_count *= num_loops + 1
-                else:
-                    # add loop seq
-                    step_num_by_seq_num[curr_seq_num] = step_num
-                    curr_seq_num += 1
-                    curr_loop_seq_count += 1
-
-                loop_seq_count_stack[-1] += curr_loop_seq_count
-            else:
-                # physical step
-
-                # last step in loop does not advance cycle, must unroll
-                if unroll and is_last_step_in_loop:
-                    loop_will_unroll_stack[-1] = True
-
-                if get(step, "Limits.Current") or get(step, "Limits.Voltage"):
-                    step_num_by_seq_num[curr_seq_num] = step_num
-                    step_num_by_seq_num[curr_seq_num + 1] = step_num
-                    loop_seq_count_stack[-1] += 2
-                    curr_seq_num += 2
-                else:
-                    step_num_by_seq_num[curr_seq_num] = step_num
-                    loop_seq_count_stack[-1] += 1
-                    curr_seq_num += 1
-
-        assert len(loop_seq_count_stack) == 1
-        assert len(loop_will_unroll_stack) == 1
-
-        pre_computed_seq_count = loop_seq_count_stack.pop()
-        assert pre_computed_seq_count == curr_seq_num
-
-        # now that we've finished our pre-computations
-        # we build the seqs
-        seq_loop_stack = [[]]
-        loop_start_seq_num_stack = []
-        step_num_goto_lower_bound = 0
-        end_step_num = len(steps)
-
-        # ignore end step
-        for idx, step in enumerate(steps[0:-1]):
-            step_type = step["StepType"]
-            step_num = idx + 1
-            seq_num = seq_num_by_step_num[step_num]
-
-            if step_type[0:2] == "Do":
-                step_num_goto_lower_bound = step_num
-                seq_loop_stack.append([])
-                loop_start_seq_num_stack.append(seq_num)
-            elif step_type[0:4] == "Loop" and step_num:
-                step_num_goto_lower_bound = step_num
-                loop_start_seq_num = loop_start_seq_num_stack.pop()
-
-                assert step["Ends"]["EndEntry"]["EndType"] == "Loop Cnt"
-                num_loops = int(step["Ends"]["EndEntry"]["Value"])
-
-                loop_will_unoll = loop_unroll_status_by_idx[idx]["will_unroll"]
-                loop = seq_loop_stack.pop()
-
-                if unroll and loop_will_unoll:
-                    unrolled_loop = self._unroll_loop(
-                        loop, num_loops, loop_start_seq_num, seq_num
-                    )
-                    assert len(unrolled_loop) == (len(loop) * (num_loops + 1))
-                    print(
-                        "loop ending at step {} unrolled to {} seqs".format(
-                            step_num, len(unrolled_loop)
-                        )
-                    )
-                    loop = unrolled_loop
-                else:
-                    loop_seq = self._create_loop_seq(
-                        seq_num, loop_start_seq_num, num_loops - 1
-                    )
-                    loop.append(loop_seq)
-
-                seq_loop_stack[-1] += loop
-            elif step_type == "AdvCycle":
-                if not adv_cycle_ignore_status_by_idx[idx]["ignore"]:
-                    step_num_goto_lower_bound = step_num
-
-                    blank_loop_seq, adv_cycle_loop_seq = self._create_advance_cyle_seqs(
-                        seq_num
-                    )
-                    seq_loop_stack[-1].append(blank_loop_seq)
-                    seq_loop_stack[-1].append(adv_cycle_loop_seq)
-            elif get(step, "Limits.Voltage") or get(step, "Limits.Current"):
-                step_part1, step_part2 = self._split_combined_step(step, step_num)
-                seq1 = self._proc_step_to_seq(
-                    step_part1,
-                    step_num,
-                    seq_num_by_step_num,
-                    step_num_goto_lower_bound,
-                    end_step_num,
-                    split_step="pt1",
-                )
-                seq_loop_stack[-1].append(seq1)
-                seq2 = self._proc_step_to_seq(
-                    step_part2,
-                    step_num,
-                    seq_num_by_step_num,
-                    step_num_goto_lower_bound,
-                    end_step_num,
-                    split_step="pt2",
-                )
-                seq_loop_stack[-1].append(seq2)
-            else:
-                seq = self._proc_step_to_seq(
-                    step,
-                    step_num,
-                    seq_num_by_step_num,
-                    step_num_goto_lower_bound,
-                    end_step_num,
-                )
-                seq_loop_stack[-1].append(seq)
-
-        assert len(seq_loop_stack) == 1
-
-        seqs = seq_loop_stack.pop()
-        assert len(seqs) == pre_computed_seq_count
-
-        print("conversion created {} seqs".format(pre_computed_seq_count))
-
-        return seqs, step_num_by_seq_num
-
-    """
     returns the AST for a Maccor diagnostic file
     """
 
@@ -872,69 +580,30 @@ class MaccorToBiologicMb:
         with open(fp, "wb") as f:
             f.write(file_str.encode("ISO-8859-1"))
 
-    """
-    convert loaded maccor AST to biologic procedure file
-    """
 
-    def maccor_ast_to_protocol_file(self, maccor_ast, fp, col_width=20):
-        file_str = self.maccor_ast_to_protocol_str(maccor_ast, col_width)
-        with open(fp, "wb") as f:
-            f.write(file_str.encode("ISO-8859-1"))
-            # f.write(file_str.encode("UTF-8"))
-
-    """
-    converts maccor AST to biologic protocol
-    biologic fp should include a .mps extension
-    file has LATIN-1 i.e. ISO-8859-1 encoding
-        str - maccor filepath to load
-        str - biologic filepath to output
-        str - maccor encoding
-        int - col-width for seqs, defaults to Biologic standard
-    """
-
-    def convert(
-        self, maccor_fp, biologic_fp, maccor_encoding="ISO-8859-1", col_width=20
-    ):
-        maccor_ast = self.load_maccor_ast(maccor_fp, maccor_encoding)
-        self.maccor_ast_to_protocol_file(maccor_ast, biologic_fp, col_width)
-
-    """
-    accepts a maccor AST and a predicate to filter EndEntries in each step
-    by a predicate, does not mutate input AST
-      OrderedDict() - maccor AST
-      (OrderedDtict(), int) -> bool - Maccor EndEntry AST and step number
-    """
-
-    def remove_end_entries_by_pred(self, maccor_ast, pred):
-        new_ast = copy.deepcopy(maccor_ast)
-        steps = get(new_ast, "MaccorTestProcedure.ProcSteps.TestStep")
-        if steps is None:
-            print("Could not find any Maccor steps loaded")
-            return maccor_ast
-
-        for i, step in enumerate(steps):
-            step_num = i + 1
-            if get(step, "Ends.EndEntry") is None:
-                continue
-            elif type(get(step, "Ends.EndEntry")) == list:
-                filtered = list(
-                    filter(
-                        lambda end_entry: pred(end_entry, step_num),
-                        step["Ends"]["EndEntry"],
-                    )
-                )
-
-                if len(filtered) == 0:
-                    unset(step, "Ends.EndEntry")
-                elif len(filtered) == 1:
-                    set_(step, "Ends.EndEntry", filtered[0])
-                else:
-                    set_(step, "Ends.EndEntry", filtered)
-            else:
-                if not pred(get(step, "Ends.EndEntry"), step_num):
-                    unset(step, "Ends.EndEntry")
-
-        return new_ast
+    # REWRITE TIME - what are we doing?
+    # 
+    # Before we were doing loop unrolling, which ended up being wrong.
+    # There's weird counting logic because GOTOs were gonna be real hard
+    # Steps get split, we didn't account for this originally
+    # 
+    # what we need now:
+    # split along technique lines
+    # ensure all gotos are valid
+    # 
+    # counting logic is complex
+    # set field processing mappings
+    # 
+    # 1. parse AST
+    # 2. get steps
+    # 3. apply filter rules, map rules
+    # 4. split along technique lines
+    # 5. convert physical operations
+    # 6. convert gotos, assert  range invariants
+    # 7. merge step/seq mappings
+    # 8. apply mappings
+    # 9. create transition rules 
+    # 10. write all files 
 
 
 class CycleTransitionRules:
@@ -1744,7 +1413,7 @@ def convert_formation():
     mps_str = (
         "BT-LAB SETTING FILE\r\n"
         "\r\n"
-        "Number of linked techniques : {}\r\n"
+        "Number of linked techniques : 1\r\n"
         "\r\n"
         "Filename : C:\\Users\\Biologic Server\\Documents\\BT-Lab\\Data\\PK_loop_technique2.mps\r\n"
         "\r\n"
@@ -1826,3 +1495,5 @@ convert_formation()
 # cp /Users/willpowelson/tri/beep/beep/protocol/biologic_templates/a_formation06162921_Xiao.000.technique_1_cycle_rules.json ~/Documents
 # cp /Users/willpowelson/tri/beep/beep/protocol/biologic_templates/a_formation06162921_Xiao.000.mps.step-mapping.txt ~/Documents
 # cp /Users/willpowelson/tri/beep/beep/protocol/biologic_templates/a_formation06162921_Xiao.000.mps ~/Documents
+
+
