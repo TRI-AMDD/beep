@@ -46,6 +46,13 @@ class MaccorToBiologicMb:
         )
         schema = OrderedDict(BIOLOGIC_SCHEMA)
         self.blank_seq = OrderedDict(schema["blank_seq"])
+        self.step_filter_rules = [],
+        self.step_mapping_rules = [],
+        self.seq_mapping_rules = [],
+        self.max_voltage_v = None
+        self.min_voltage_v = None
+        self.max_current_a = None
+        self.min_current_a = None
 
     def _get_decimal_sig_figs(self, val_str):
         match_p10 = re.search("(e|E)([-+]?[0-9]+)", val_str)
