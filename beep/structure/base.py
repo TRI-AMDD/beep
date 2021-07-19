@@ -1414,13 +1414,16 @@ def get_max_paused_over_threshold(group, paused_threshold=3600):
     return max_paused_duration
 
 
-def get_CV_segment_from_charge(charge):
+def get_CV_segment_from_charge(charge, dt_tol=1, dVdt_tol=5e-5, dIdt_tol=1e-4):
     """
     Extracts the constant voltage segment from charge. Works for both CCCV or
     CC steps followed by a CV step.
 
     Args:
         charge (pd.DataFrame): charge dataframe for a single cycle
+        dt_tol (float) : dt tolernace (minimum) for identifying CV
+        dVdt_tol (float) : dVdt tolerance (maximum) for identifying CV
+        dIdt_tol (float) : dVdt tolerance (minimum) for identifying CV 
 
     Returns:
         (pd.DataFrame): dataframe containing the CV segment
@@ -1431,9 +1434,9 @@ def get_CV_segment_from_charge(charge):
     dV = np.diff(charge.voltage)
     dt = np.diff(charge.test_time)
 
-    # Find the first index where dt>1 and abs(dV/dt)<tol and abs(dI/dt)>tol
+    # Find the first index where the CV segment begins
     i = 0
-    while i < len(dV) and not (dt[i] > 1 and abs(dV[i]/dt[i]) < 5.e-5 and abs(dI[i]/dt[i]) > 1.e-4):
+    while i < len(dV) and not (dt[i] > dt_tol and abs(dV[i]/dt[i]) < dVdt_tol and abs(dI[i]/dt[i]) > dIdt_tol):
         i = i+1
 
     # Filter for CV phase
