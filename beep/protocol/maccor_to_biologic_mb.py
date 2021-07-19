@@ -45,7 +45,7 @@ class MaccorToBiologicMb:
             os.path.join(PROTOCOL_SCHEMA_DIR, "biologic_mb_schema.yaml")
         )
         schema = OrderedDict(BIOLOGIC_SCHEMA)
-        self.blank_seq = OrderedDict(schema["blank_seq"])
+        self._blank_seq = OrderedDict(schema["blank_seq"])
         self.step_filter_rules = [],
         self.step_mapping_rules = [],
         self.seq_mapping_rules = [],
@@ -176,7 +176,7 @@ class MaccorToBiologicMb:
             seq_num = seq_num + 1
         assert seq_num is not None
 
-        new_seq = self.blank_seq.copy()
+        new_seq = self._blank_seq.copy()
         new_seq["Ns"] = seq_num
         new_seq["lim1_seq"] = seq_num + 1
         new_seq["lim2_seq"] = seq_num + 1
@@ -469,7 +469,7 @@ class MaccorToBiologicMb:
         return step_part1, step_part2
 
     def _create_loop_seq(self, seq_num, seq_num_to_loop_to, num_loops):
-        loop_seq = self.blank_seq.copy()
+        loop_seq = self._blank_seq.copy()
         loop_seq["Ns"] = seq_num
         loop_seq["ctrl_type"] = "Loop"
         loop_seq["ctrl_repeat"] = num_loops
@@ -495,7 +495,7 @@ class MaccorToBiologicMb:
 
     def _seqs_to_str(self, seqs, col_width=20):
         seq_str = ""
-        for key in OrderedDict.keys(self.blank_seq):
+        for key in OrderedDict.keys(self._blank_seq):
             if len(key) > col_width:
                 raise Exception(
                     "seq key {} has length greater than col width {}".format(
