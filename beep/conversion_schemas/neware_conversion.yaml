@@ -26,7 +26,7 @@ data_columns:
   Temperature(C): temperature
 data_types:
   Record ID: 'int32'
-  test_time: 'float32'
+  test_time: 'float64'
   Time(h:min:s.ms): 'float32'
   Step ID: 'int16'
   Cycle ID: 'int32'

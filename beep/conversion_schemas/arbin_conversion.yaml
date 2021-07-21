@@ -38,7 +38,7 @@ data_columns:
   temperature: temperature
 data_types:
   data_point: 'int32'
-  test_time: 'float32'
+  test_time: 'float64'
   datetime: 'float32'
   step_time: 'float32'
   step_index: 'int16'
