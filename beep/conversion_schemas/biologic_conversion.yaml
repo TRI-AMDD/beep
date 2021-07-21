@@ -3,10 +3,10 @@ metadata_fields:
   filename: filename
   _today_datetime: _today_datetime
 data_columns:
-  cycle number:
+  cycle_index:
     beep_name: cycle_index
     data_type: int
-  half cycle:
+  Ns:
     beep_name: step_index
     data_type: int
   Ecell/V:

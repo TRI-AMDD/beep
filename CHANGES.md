@@ -1,5 +1,19 @@
 
 
+v2021.7.21.14
+-------------
+* use correct test file and cycle_index column
+* update to biologic data file parsing
+* update biologic test to new requirements
+* Remove RPTdQdVFeature and HPPCRelaxationFeature for futher development
+* Update HPPCResistanceFeature - Thanks Xiao Cui!
+* adding in some numerical values
+* add one numerical value
+* add IndexError for except
+* in order to pass the test, changed the name of the strings (column names)
+* make the fitting better for the initial part
+* I changed the resistance features with the current code and also changed the features to be percentage change
+
 v2021.6.3.21
 ------------
 * Update threshold method per Patrick Asinger's suggestion
