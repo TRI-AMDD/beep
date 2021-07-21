@@ -775,7 +775,8 @@ class TestRawToFeatures(unittest.TestCase):
             import pprint
             pprint.pprint(reloaded)
 
-            result_list = ['success'] * 7
+            result_list = ['success'] * 5
             self.assertEqual(reloaded['result_list'], result_list)
-            rpt_df = loadfn(reloaded['file_list'][0])
-            self.assertEqual(np.round(rpt_df.X['m0_Amp_rpt_0.2C_1'].iloc[0], 6), 0.867371)
+            res_df = loadfn(reloaded['file_list'][0])
+            print(res_df.X)
+            self.assertAlmostEqual(res_df.X['r_c_0s_00'].iloc[0], -0.098951, 6)
