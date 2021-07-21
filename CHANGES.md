@@ -1,5 +1,16 @@
 
 
+v2021.7.21.18
+-------------
+* Adds CV_time and CV_current summary stats - Thanks Dan Cogswell!
+* Tolerances for CV segment extraction are now input variables.
+* Adds dtypes for CV_time and CV_current.
+* CV time stat now set to None for cycles which don't have charge steps.
+* Adds CV_time and CV_current as summary stats, and a helper function to extract the CV portion of charge.
+* Converts test_time from float32 to float64. It can get large enough that decimal points are truncated with float32, producing data points with exactly the same test_time.
+* Add file copy to test so that generation can run automatically
+* Working version of intracell features - thanks Patrick Asinger!
+
 v2021.7.21.14
 -------------
 * use correct test file and cycle_index column
