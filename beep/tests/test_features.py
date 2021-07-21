@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests related to feature generation"""
-
+import shutil
 import unittest
 import os
 import json
@@ -37,11 +37,15 @@ from monty.serialization import dumpfn, loadfn
 from monty.tempfile import ScratchDir
 from beep.utils.s3 import download_s3_object
 from beep.tests.constants import TEST_FILE_DIR, BIG_FILE_TESTS, SKIP_MSG
+from beep import MODULE_DIR
 
 
 MACCOR_FILE_W_DIAGNOSTICS = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000020_CH71.071")
 MACCOR_FILE_W_PARAMETERS = os.path.join(
     TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010"
+)
+FEATURE_HYPERPARAMS = loadfn(
+    os.path.join(MODULE_DIR, "features/feature_hyperparameters.yaml")
 )
 
 
@@ -184,6 +188,14 @@ class TestFeaturizer(unittest.TestCase):
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
             # os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
+            shutil.copy(os.path.join(TEST_FILE_DIR, "data-share", "raw", "cell_info", "anode_test.csv"),
+                        os.path.join(TEST_FILE_DIR, "data-share", "raw", "cell_info",
+                                     FEATURE_HYPERPARAMS["IntracellFeatures"]["anode_file"])
+                        )
+            shutil.copy(os.path.join(TEST_FILE_DIR, "data-share", "raw", "cell_info", "cathode_test.csv"),
+                        os.path.join(TEST_FILE_DIR, "data-share", "raw", "cell_info",
+                                     FEATURE_HYPERPARAMS["IntracellFeatures"]["cathode_file"])
+                        )
 
             # Create dummy json obj
             json_obj = {
@@ -207,7 +219,7 @@ class TestFeaturizer(unittest.TestCase):
                 features_reloaded.X.loc[0, "nominal_capacity_by_median"],
                 0.07114775279999999,
             )
-            features_reloaded = loadfn(reloaded["file_list"][-1])
+            features_reloaded = loadfn(reloaded["file_list"][4])
             self.assertIsInstance(features_reloaded, DiagnosticProperties)
             self.assertListEqual(
                 list(features_reloaded.X.iloc[2, :]),
@@ -778,5 +790,5 @@ class TestRawToFeatures(unittest.TestCase):
             result_list = ['success'] * 5
             self.assertEqual(reloaded['result_list'], result_list)
             res_df = loadfn(reloaded['file_list'][0])
-            print(res_df.X)
-            self.assertAlmostEqual(res_df.X['r_c_0s_00'].iloc[0], -0.098951, 6)
+
+            self.assertAlmostEqual(res_df.X['r_c_0s_00'].iloc[0], -0.098951, 5)

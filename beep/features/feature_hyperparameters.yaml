@@ -36,3 +36,13 @@ TrajectoryFastCharge:
   interval_cap: 0.03
 DiagnosticProperties:
   quantities: ['discharge_energy', 'discharge_capacity']
+IntracellCycles:
+  diagnostic_cycle_type: 'rpt_0.2C'
+  step_type: 0
+  anode_file: 'anode_secondMeasure_clean_cc_charge_exptl_aligned.csv'
+  cathode_file: 'cathode_clean_cc_charge_exptl_aligned.csv'
+IntracellFeatures:
+  diagnostic_cycle_type: 'rpt_0.2C'
+  step_type: 0
+  anode_file: 'anode_secondMeasure_clean_cc_charge_exptl_aligned.csv'
+  cathode_file: 'cathode_clean_cc_charge_exptl_aligned.csv'
