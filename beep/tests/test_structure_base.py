@@ -279,7 +279,6 @@ class TestBEEPDatapath(unittest.TestCase):
         interval = discharge.iloc[measurement_index: measurement_index + 2]
         interval = interval.drop(columns=["date_time_iso"])  # Drop non-numeric column
 
-
         # Test interpolation with a by-hand calculation of slope
         diff = np.diff(interval, axis=0)
         pred = interval.iloc[[0]] + diff * (
@@ -561,6 +560,19 @@ class TestBEEPDatapath(unittest.TestCase):
         plt.plot(hppc_dischg1.test_time, hppc_dischg1.voltage)
         plt.savefig(os.path.join(TEST_FILE_DIR, "hppc_discharge_pulse_1.png"))
         self.assertEqual(len(hppc_dischg1), 176)
+
+        hppc_dischg2 = diag_interpolated[
+            (diag_interpolated.cycle_index == 37)
+            & (diag_interpolated.step_type == 6)
+            # & (diag_interpolated.step_index_counter == 3)
+            & ~pd.isnull(diag_interpolated.current)
+            ]
+        print(hppc_dischg2.step_type.unique())
+        self.assertAlmostEqual(hppc_dischg2.voltage.min(), hppc_dischg2.voltage.max(), 3)
+        plt.figure()
+        plt.plot(hppc_dischg2.test_time, hppc_dischg2.current)
+        plt.savefig(os.path.join(TEST_FILE_DIR, "hppc_cv.png"))
+        self.assertEqual(len(hppc_dischg2), 1000)
 
         # processed_cycler_run = cycler_run.to_processed_cycler_run()
         md.autostructure()
