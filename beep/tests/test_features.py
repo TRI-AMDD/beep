@@ -787,8 +787,14 @@ class TestRawToFeatures(unittest.TestCase):
             import pprint
             pprint.pprint(reloaded)
 
-            result_list = ['success'] * 5
+            result_list = ['success'] * 7
             self.assertEqual(reloaded['result_list'], result_list)
             res_df = loadfn(reloaded['file_list'][0])
-
-            self.assertAlmostEqual(res_df.X['r_c_0s_00'].iloc[0], -0.098951, 5)
+            self.assertEqual(res_df.class_feature_name, "HPPCResistanceVoltageFeatures")
+            print(res_df.X)
+            self.assertAlmostEqual(res_df.X['r_c_0s_00'].iloc[0], -0.159771397, 5)
+            self.assertAlmostEqual(res_df.X['r_c_0s_10'].iloc[0], -0.143679, 5)
+            self.assertAlmostEqual(res_df.X['r_c_0s_20'].iloc[0], -0.146345, 5)
+            self.assertAlmostEqual(res_df.X['D_6'].iloc[0], -0.167919, 5)
+            self.assertAlmostEqual(res_df.X['D_7'].iloc[0], 0.094136, 5)
+            self.assertAlmostEqual(res_df.X['D_8'].iloc[0], 0.172496, 5)
