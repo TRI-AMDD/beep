@@ -1176,9 +1176,6 @@ class MaccorToBiologicMb:
             cycle_advances_by_seq_transition = {}
             for (s_, t_), cycle_advances in cycle_advances_by_step_transition.items():
                 # exit from last seq of split, enter at first seq of split
-                if t_ == 33:
-                    print(tp.technique_num)
-                    print(tp.seq_nums_by_step_num)
                 s = tp.seq_nums_by_step_num[s_][-1]
                 t = tp.seq_nums_by_step_num[t_][0]
                 transition = (s, t)
