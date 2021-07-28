@@ -960,14 +960,155 @@ class MaccorToBiologicMb:
         return seqs, step_nums_by_seq_num, seq_nums_by_step_num
 
     """
-    converted loaded biologic seqs to a protocol file
+    create cycle advancement rules
+
+    accepts
+        - list(TechniquePartionPostConversion)
+
+    returns
+        - list(CycleAdvancementRules)
     """
 
-    def biologic_seqs_to_protocol_file(self, seqs, fp, col_width=20):
-        file_str = self.biologic_seqs_to_protocol_str(seqs, col_width)
-        with open(fp, "wb") as f:
-            f.write(file_str.encode("ISO-8859-1"))
+    def _create_cycle_advancement_rules(self, technique_partitions_post_conversion):
+        # The plan:
+        #
+        # Biologic allow users to manually advance the cycle index
+        # but we need that in our data. Output data contains
+        # at least one data point from every step that takes some measurement
+        #
+        # From the source Maccor files we can calculate which transtitions between
+        # measurement steps cause an advance cycle using a Loop or going to the
+        # next step
+        #
+        # we can thus create a mapping of these transitions and how many cycle advances they cause
+        # e.g. 4 to 6 could advance by 1, or 4 to 7 advance by 2.
+        # The general form is then {(source, target): cycle_advances}
+        #
+        # we can map the source and target step nums to seq_nums in a technique as long
+        # as we do appropriate book keeping on any techniques that were split
+        #
+        # we'll also need to keep track of cycle advancements for:
+        # - transitions between techniques
+        # - when a technique loops
+        #
+        cycle_advancement_rules = []
 
+        adv_cycle_count = 0
+        for tp in technique_partitions_post_conversion:
+            allowed_loop_open, forbidden_loop_open = ("Do 2", "Do 1") if tp.tech_does_loop else ("Do 1", "Do 2")
+            allowed_loop_close, forbidden_loop_close = (
+                ("Loop 2", "Loop 1") if tp.tech_does_loop else ("Loop 1", "Loop 2")
+            )
+
+            cycle_advances_on_tech_start = adv_cycle_count
+            adv_cycle_count = 0
+
+            cycle_advances_by_step_transition = {}
+
+            prev_loop_open = -1
+            prev_measurement_step_num = -1
+            for i, step in enumerate(tp.steps):
+                step_num = i + tp.step_num_offset + 1
+                step_type = get(step, "StepType")
+
+                if step_type in [forbidden_loop_close, forbidden_loop_open]:
+                    raise Exception(
+                        ("Tech {} contains improperly nested loop " + "StepType {} at step {}").format(
+                            tp.technique_num, step_type, step_num
+                        )
+                    )
+                if step_type == "AdvCycle":
+                    adv_cycle_count += 1
+                elif step_type == allowed_loop_open:
+                    if prev_loop_open != -1:
+                        prev_loop_open_step_num = prev_loop_open + step_num_offset
+                        raise Exception(
+                            ("Loop at step {} interleaved with loop at step {}").format(
+                                step_num, prev_loop_open_step_num
+                            )
+                        )
+                    prev_loop_open = i
+                elif step_type == allowed_loop_close:
+                    if prev_loop_open == -1:
+                        raise Exception("Unclosed loop at step {}".format(step_num))
+
+                    # we need to trace the loop to find the cycle advancement
+                    if adv_cycle_count > 0:
+                        if prev_measurement_step_num == -1:
+                            raise Exception(
+                                (
+                                    "Loop end at step {} contains advance cycle with" + "no physical step in loop body"
+                                ).format(step_num)
+                            )
+
+                        looped_cycle_advances = adv_cycle_count
+                        for j in range(prev_loop_open + 1, i + 1):
+                            looped_step_num = j + tp.step_num_offset
+                            if looped_step_num == step_num:
+                                raise Exception("Loop end step {} contains no measurement steps".format(step_num))
+                            elif looped_step_num == prev_measurement_step_num:
+                                raise Exception(
+                                    (
+                                        "step {} is the only measurement step in a loop that advances cycle index,"
+                                        + " correct cycle index computation impossible"
+                                    ).format(prev_measurement_step_num)
+                                )
+
+                            looped_step_type = get(tp.steps[j], "StepType")
+                            if looped_step_type == "Adv Cycle":
+                                looped_cycle_advances += 1
+                            else:
+                                # assumption that step is measurement because there are
+                                # no interleaved loops and only other logical step is adv cycle
+                                transition = (prev_measurement_step_num, looped_step_num)
+                                cycle_advances_by_step_transition[transition] = looped_cycle_advances
+                                break
+
+                    prev_loop_open = -1
+                else:
+                    # assumption: every physical step is measurement step
+                    assert get(step, "Reports.ReportEntry") is not None
+
+                    if prev_measurement_step_num == -1:
+                        cycle_advances_on_tech_start += adv_cycle_count
+                    else:
+                        transition = (prev_measurement_step_num, step_num)
+                        cycle_advances_by_step_transition[transition] = adv_cycle_count
+                    prev_measurement_step_num = step_num
+                    adv_cycle_count = 0
+
+            cycle_advances_on_tech_loop = adv_cycle_count
+
+            # TODO we should also check GOTO transitions as well
+            # these should be done _after_ the Next Step and Loop cases
+            # because there could be ambiguity in where a transition
+            # actually advances a cycle
+            # e.g. (4,6) is a transition but 4 has a GOTO to 6
+            # the case is pathalogical but real, we should
+            # throw an error when it happens
+
+            cycle_advances_by_seq_transition = {}
+            for (s_, t_), cycle_advances in cycle_advances_by_step_transition.items():
+                # exit from last seq of split, enter at first seq of split
+                if t_ == 33:
+                    print(tp.technique_num)
+                    print(tp.seq_nums_by_step_num)
+                s = tp.seq_nums_by_step_num[s_][-1]
+                t = tp.seq_nums_by_step_num[t_][0]
+                transition = (s, t)
+                cycle_advances_by_seq_transition[transition] = cycle_advances
+
+            cycle_advancement_rules.append(
+                CycleAdvancementRules(
+                    tech_num=tp.technique_num,
+                    tech_does_loop=tp.tech_does_loop,
+                    adv_cycle_on_start=cycle_advances_on_tech_start,
+                    adv_cycle_on_tech_loop=cycle_advances_on_tech_loop,
+                    adv_cycle_seq_transitions=cycle_advances_by_seq_transition,
+                    debug_adv_cycle_on_step_transitions=cycle_advances_by_step_transition,
+                )
+            )
+        return cycle_advancement_rules
 
     # REWRITE TIME - what are we doing?
     # 
