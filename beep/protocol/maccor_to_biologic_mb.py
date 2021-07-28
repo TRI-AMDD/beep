@@ -852,16 +852,43 @@ class MaccorToBiologicMb:
     # counting logic is complex
     # set field processing mappings
     # 
-    # 1. parse AST
-    # 2. get steps
-    # 3. apply filter rules, map rules
-    # 4. split along technique lines
-    # 5. convert physical operations
-    # 6. convert gotos, assert  range invariants
-    # 7. merge step/seq mappings
-    # 8. apply mappings
-    # 9. create transition rules 
-    # 10. write all files 
+
+class TechniquePartition:
+    def __init__(
+        self,
+        technique_num,
+        steps,
+        step_num_offset,
+        tech_does_loop,
+        num_loops,
+    ):
+        self.technique_num = technique_num
+        self.steps = steps
+        self.step_num_offset = step_num_offset
+        self.tech_does_loop = tech_does_loop
+        self.num_loops = num_loops
+
+
+class TechniquePartitionPostConversion:
+    def __init__(
+        self,
+        technique_num,
+        steps,
+        step_num_offset,
+        tech_does_loop,
+        num_loops,
+        seqs,
+        seq_nums_by_step_num,
+        step_nums_by_seq_num,
+    ):
+        self.technique_num = technique_num
+        self.steps = steps
+        self.step_num_offset = step_num_offset
+        self.tech_does_loop = tech_does_loop
+        self.num_loops = num_loops
+        self.seqs = seqs
+        self.seq_nums_by_step_num = seq_nums_by_step_num
+        self.step_nums_by_seq_num = step_nums_by_seq_num
 
 
 class CycleAdvancementRules:
