@@ -23,8 +23,8 @@ from beep.protocol import (
     PROCEDURE_TEMPLATE_DIR,
 )
 from monty.serialization import loadfn
-from collections import OrderedDict, deque
-from pydash import get, unset, set_, find_index, clone_deep_with
+from collections import OrderedDict
+from pydash import get, set_, find_index, clone_deep_with, clone_deep
 import pandas as pd
 import json
 
