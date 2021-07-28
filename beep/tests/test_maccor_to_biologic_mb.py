@@ -104,7 +104,7 @@ class ConversionTest(unittest.TestCase):
             tests,
         )
 
-    def proc_step_to_seq_test(self, test_step_xml, diff_dict):
+        def single_step_to_single_seq_test(self, test_step_xml, diff_dict):
         """
         test utility for testing proc_step_to_seq
          """
@@ -112,19 +112,28 @@ class ConversionTest(unittest.TestCase):
         test_step = proc["MaccorTestProcedure"]["ProcSteps"]["TestStep"]
         converter = MaccorToBiologicMb()
 
-        expected = converter.blank_seq.copy()
+        expected = converter._blank_seq.copy()
         expected["Ns"] = 0
         expected["lim1_seq"] = 1
         expected["lim2_seq"] = 1
         expected["lim3_seq"] = 1
         expected.update(diff_dict)
 
-        seq_num_by_step_num = {
-            1: 0,
-            2: 1,
+        step_num = 1
+        seq_nums_by_step_num = {
+            step_num: [0],
+            step_num + 1: [1],
         }
 
-        result = converter._proc_step_to_seq(test_step, 1, seq_num_by_step_num, 0, 2)
+        result = converter._convert_step_parts(
+            step_parts=[test_step],
+            step_num=step_num,
+            seq_nums_by_step_num=seq_nums_by_step_num,
+            goto_lowerbound=0,
+            goto_upperbound=3,
+            end_step_num=4,
+        )[0]
+
         for key, value in expected.items():
             self.assertEqual(
                 value,
@@ -191,10 +200,9 @@ class ConversionTest(unittest.TestCase):
             "rec1_type": "Ecell",
             "rec1_value": "2.200",
             "rec1_value_unit": "V",
-            "I Range": "10 A",
         }
 
-        self.proc_step_to_seq_test(xml, diff_dict)
+        self.single_step_to_single_seq_test(xml, diff_dict)
         pass
 
     def test_discharge_current_step_conversion(self):
@@ -279,10 +287,9 @@ class ConversionTest(unittest.TestCase):
             "rec2_type": "Time",
             "rec2_value": "10.000",
             "rec2_value_unit": "ms",
-            "I Range": "10 A",
         }
 
-        self.proc_step_to_seq_test(xml, diff_dict)
+        self.single_step_to_single_seq_test(xml, diff_dict)
         pass
 
     def test_cycle_transition_serialization(self):
