@@ -508,6 +508,34 @@ class MaccorToBiologicMb:
 
         return seq_str
 
+    def _technique_to_str(self, technique_num, seqs, tech_does_loop=False, num_loops=0, col_width=20):
+        technique_str = "\r\nTechnique : {}\r\n".format(technique_num)
+        technique_str += self._seqs_to_str(seqs)
+        if tech_does_loop:
+            tech_header = "\r\nTechnique : {}\r\n".format(technique_num + 1)
+            tech_type = "Loop\r\n"
+            loop_to = "goto Ne".ljust(col_width, " ") + "{}".format(technique_num).ljust(col_width) + "\r\n"
+            num_loops = "nt times".ljust(col_width, " ") + "{}".format(num_loops).ljust(col_width, " ") + "\r\n"
+
+            technique_str += tech_header + tech_type + loop_to + num_loops
+
+        return technique_str
+
+    def _diagnostic_file_str_from_technique_partitions_post_conversion(self, technique_partitions_post_conversion):
+        assert len(technique_partitions_post_conversion) > 0
+        last_tech = technique_partitions_post_conversion[-1]
+        num_techniques = last_tech.technique_num + 1 if last_tech.tech_does_loop else last_tech.technique_num
+
+        file_str = self._mps_header_template.format(num_techniques)
+        for tp in technique_partitions_post_conversion:
+            file_str += self._technique_to_str(
+                technique_num=tp.technique_num,
+                seqs=tp.seqs,
+                tech_does_loop=tp.tech_does_loop,
+                num_loops=tp.num_loops,
+            )
+
+        return file_str
     """
     partitions steps into multiple techniques
 
