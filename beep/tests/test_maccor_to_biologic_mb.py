@@ -141,6 +141,45 @@ class ConversionTest(unittest.TestCase):
                 msg="Expected {0}: {1} got {0}: {2}".format(key, value, result[key]),
             )
 
+    def test_partition_steps_into_techniques(self):
+        converter = MaccorToBiologicMb()
+        ast = converter.load_maccor_ast(
+            os.path.join(PROCEDURE_TEMPLATE_DIR, "diagnosticV5.000")
+        )
+        steps = get(ast, "MaccorTestProcedure.ProcSteps.TestStep")
+        self.assertEqual(True, len(steps) > 71)
+        
+        # existence of looped tech 2
+        nested_loop_open_idx = 36
+        nested_loop_open_type = get(steps[nested_loop_open_idx], 'StepType')
+        self.assertEqual(nested_loop_open_type, "Do 1")
+        nested_loop_close_idx = 68
+        nested_loop_close_type = get(steps[nested_loop_close_idx], 'StepType')
+        self.assertEqual(nested_loop_close_type, "Loop 1")
+
+
+        technique_partitions = converter._partition_steps_into_techniques(steps)
+        self.assertEqual(3, len(technique_partitions))
+        partition1, partition2, partition3 =  technique_partitions
+        
+        self.assertEqual(partition1.technique_num, 1)
+        self.assertEqual(partition2.technique_num, 2)
+        self.assertEqual(partition3.technique_num, 4)
+
+        self.assertEqual(partition1.tech_does_loop, False)
+        self.assertEqual(partition2.tech_does_loop, True)
+        self.assertEqual(partition3.tech_does_loop, False)
+
+        self.assertEqual(partition2.num_loops, 1000)
+
+        self.assertEqual(partition1.step_num_offset, 0)
+        self.assertEqual(partition2.step_num_offset, nested_loop_open_idx + 1)
+        self.assertEqual(partition3.step_num_offset, nested_loop_close_idx + 1)
+
+        self.assertEqual(len(partition1.steps), 36)
+        # trim opening/closing loops
+        self.assertEqual(len(partition2.steps), nested_loop_close_idx - nested_loop_open_idx - 1)
+        self.assertEqual(len(partition3.steps), 27)
     def test_rest_step_conversion(self):
         xml = (
             '<?xml version="1.0" encoding="UTF-8"?>'
