@@ -1183,9 +1183,8 @@ class MaccorToBiologicMb:
 
     """
     Best effort at converting a Maccor Protocolfile into an equivalent
-    Biologic Modulo Bat *.mps file, writes a series of rules for calculating
-    cycle advancement in the data generated during a run of the .mps file,
-    and simple/verbose mappings from steps to seqs
+    Biologic Modulo Bat *.mps file and writes a series of rules for calculating
+    cycle advancement in the data generated during a run of the .mps file
 
     altering input and output can be done via a variety of mechanisms documented
     in the constructor.
@@ -1201,15 +1200,10 @@ class MaccorToBiologicMb:
     side-effects
         - write diagnostic file
         - write cycle transition rules files for each technique
-        - write step mapping file
-        - write verbose step mapping file
 
     returns:
         - diagnostic_file_path: path
         - cycle_advancement_rules_file_paths: list(path)
-        - step_mapping_file_path: path
-        - step_mapping_verbose: path
-
     """
 
     def convert(self, maccor_fp, out_dir, out_filename):
@@ -1257,14 +1251,22 @@ class MaccorToBiologicMb:
 
         cycle_advancement_rules = self._create_cycle_advancement_rules(technique_partitions_post_conversion)
         advancement_serializer = CycleAdvancementRulesSerializer()
+
+        advancement_rules_fps = []
         assert len(cycle_advancement_rules) == len(technique_partitions_post_conversion)
         for tp, car in zip(technique_partitions_post_conversion, cycle_advancement_rules):
-            rules_filename = out_filename + "technique_{}_cycle_advancement_rules.json".format(tp.technique_num)
-            rules_fp = os.path.join(out_dir, rules_filename)
+            advancement_rules_filename = (
+                out_filename 
+                + "technique_{}_cycle_advancement_rules.json".format(tp.technique_num)
+            )
+            advancement_rules_fp = os.path.join(out_dir, advancement_rules_filename)
             json = advancement_serializer.json(car)
-            with open(rules_fp, "wb") as f:
+            advancement_rules_fps.append(advancement_rules_fp)
+            with open(advancement_rules_fp, "wb") as f:
                 f.write(json.encode("utf-8"))
-                print("writing {}".format(rules_fp))
+                print("writing {}".format(advancement_rules_fp))
+
+        return protocol_fp, advancement_rules_fps
 
 
 class TechniquePartition:
