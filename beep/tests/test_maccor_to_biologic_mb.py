@@ -18,7 +18,7 @@ import unittest
 import xmltodict
 from collections import OrderedDict
 from monty.tempfile import ScratchDir
-
+from pydash import get
 from beep.protocol import (
     PROTOCOL_SCHEMA_DIR,
     BIOLOGIC_TEMPLATE_DIR,
