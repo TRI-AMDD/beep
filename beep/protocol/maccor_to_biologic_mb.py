@@ -19,12 +19,10 @@ import copy
 import xmltodict
 from beep.protocol import (
     PROTOCOL_SCHEMA_DIR,
-    BIOLOGIC_TEMPLATE_DIR,
-    PROCEDURE_TEMPLATE_DIR,
 )
 from monty.serialization import loadfn
 from collections import OrderedDict
-from pydash import get, set_, find_index, clone_deep_with, clone_deep
+from pydash import get, set_, clone_deep
 import pandas as pd
 import json
 
@@ -646,7 +644,7 @@ class MaccorToBiologicMb:
 
             tech_does_loop = start in tech_loops_by_start_step_num
             # if tech loops, elide outer loop construct
-            substeps = steps[start + 1 : end - 1] if tech_does_loop else steps[start:end]
+            substeps = steps[start + 1:end - 1] if tech_does_loop else steps[start:end]
             num_loops = tech_loops_by_start_step_num[start] if tech_does_loop else 0
             step_num_offset = start + 1 if tech_does_loop else start
 
@@ -850,7 +848,7 @@ class MaccorToBiologicMb:
             mapped_seq = self._apply_min_voltage_to_seq(technique_num, seq, i)
 
             for mapper in self.seq_mappers + extra_mappers:
-                mapped_seq = mapper(technique_nume, seq, i)
+                mapped_seq = mapper(technique_num, seq, i)
 
             mapped_seqs.append(mapped_seq)
 
@@ -1094,7 +1092,7 @@ class MaccorToBiologicMb:
                     adv_cycle_count += 1
                 elif step_type == allowed_loop_open:
                     if prev_loop_open != -1:
-                        prev_loop_open_step_num = prev_loop_open + step_num_offset
+                        prev_loop_open_step_num = prev_loop_open + tp.step_num_offset
                         raise Exception(
                             ("Loop at step {} interleaved with loop at step {}").format(
                                 step_num, prev_loop_open_step_num
@@ -1267,6 +1265,7 @@ class MaccorToBiologicMb:
             with open(rules_fp, "wb") as f:
                 f.write(json.encode("utf-8"))
                 print("writing {}".format(rules_fp))
+
 
 class TechniquePartition:
     def __init__(
@@ -1494,4 +1493,3 @@ def add_cycle_nums_to_csvs(
 
         df["cycle_index"] = cycle_nums
         df.to_csv(csv_out_fp, sep=";")
-
