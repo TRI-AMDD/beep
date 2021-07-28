@@ -41,18 +41,59 @@ class MaccorToBiologicMb:
     """
 
     def __init__(self):
-        BIOLOGIC_SCHEMA = loadfn(
-            os.path.join(PROTOCOL_SCHEMA_DIR, "biologic_mb_schema.yaml")
-        )
+        BIOLOGIC_SCHEMA = loadfn(os.path.join(PROTOCOL_SCHEMA_DIR, "biologic_mb_schema.yaml"))
         schema = OrderedDict(BIOLOGIC_SCHEMA)
         self._blank_seq = OrderedDict(schema["blank_seq"])
-        self.step_filter_rules = [],
-        self.step_mapping_rules = [],
-        self.seq_mapping_rules = [],
+        self._blank_end_entry = xmltodict.parse(
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            "<EndEntry>"
+            "    <EndType></EndType>"
+            "    <SpecialType></SpecialType>"
+            "    <Oper></Oper>"
+            "    <Step></Step>"
+            "    <Value></Value>"
+            "</EndEntry>",
+            strip_whitespace=True,
+        )
+        self.step_mappers = []
+        self.seq_mappers = []
         self.max_voltage_v = None
         self.min_voltage_v = None
         self.max_current_a = None
         self.min_current_a = None
+        self._mps_header_template = (
+            "BT-LAB SETTING FILE\r\n"
+            "\r\n"
+            "Number of linked techniques : {}\r\n"
+            "\r\n"
+            "Filename : C:\\Users\\Biologic Server\\Documents\\BT-Lab\\Data\\PK_loop_technique2.mps\r\n"
+            "\r\n"
+            "Device : BCS-815\r\n"
+            "Ecell ctrl range : min = 0.00 V, max = 9.00 V\r\n"
+            "Safety Limits :\r\n"
+            "	Ecell min = 2.90 V\r\n"
+            "	Ecell max = 4.3 V\r\n"
+            "	for t > 100 ms\r\n"
+            "Electrode material : \r\n"
+            "Initial state : \r\n"
+            "Electrolyte : \r\n"
+            "Comments : \r\n"
+            "Mass of active material : 0.001 mg\r\n"
+            " at x = 0.000\r\n"
+            "Molecular weight of active material (at x = 0) : 0.001 g/mol\r\n"
+            "Atomic weight of intercalated ion : 0.001 g/mol\r\n"
+            "Acquisition started at : xo = 0.000\r\n"
+            "Number of e- transfered per intercalated ion : 1\r\n"
+            "for DX = 1, DQ = 26.802 mA.h\r\n"
+            "Battery capacity : 0.000 A.h\r\n"
+            "Electrode surface area : 0.001 cm\N{superscript two}\r\n"
+            "Characteristic mass : 0.001 g\r\n"
+            "Text export\r\n"
+            "   Mode : Standard\r\n"
+            "   Time format : Absolute MMDDYYYY\r\n"
+            "Cycle Definition : Charge/Discharge alternance\r\n"
+            "Turn to OCV between techniques\r\n"
+        )
 
     def _get_decimal_sig_figs(self, val_str):
         match_p10 = re.search("(e|E)([-+]?[0-9]+)", val_str)
