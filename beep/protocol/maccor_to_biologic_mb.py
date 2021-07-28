@@ -509,6 +509,88 @@ class MaccorToBiologicMb:
         return seq_str
 
     """
+    partitions steps into multiple techniques
+
+    note: for techniques that loop, the substeps will not include Do 1/Loop 1
+    steps at each respective end. The offset is adjusted accordingly.
+
+    accepts
+        - a list of Maccor TestSteps parsed from the source XML
+
+    returns
+        - list(TechniquePartition)
+    """
+
+    def _partition_steps_into_techniques(self, steps):
+        # any nested loops must be brokeN into two techniques,
+        # the actual procedure, and an outer looping technique
+
+        # locate partition points and mark technique
+        tech_loops_by_start_step_num = {}
+        curr_loop_1_start = -1
+        curr_tech_start = 0
+        in_loop_tech = False
+        tech_ranges = []
+        for i, step in enumerate(steps):
+            step_type = get(step, "StepType")
+            if step_type == "Do 1":
+                curr_loop_1_start = i
+            elif step_type == "Do 2":
+                assert curr_loop_1_start != -1
+                in_loop_tech = True
+            elif step_type == "Loop 1" and in_loop_tech:
+                # gather steps preceding start of looped tech
+                if curr_tech_start != curr_loop_1_start:
+                    tech_ranges.append((curr_tech_start, curr_loop_1_start))
+
+                # gather data around looped tech
+                curr_tech_start = i + 1
+                tech_ranges.append((curr_loop_1_start, curr_tech_start))
+                num_loops = int(get(step, "Ends.EndEntry.Value"))
+                tech_loops_by_start_step_num[curr_loop_1_start] = num_loops
+
+                in_loop_tech = False
+                curr_loop_1_start = -1
+
+        if curr_tech_start < len(steps):
+            tech_ranges.append((curr_tech_start, len(steps)))
+
+        # ranges must contiguously cover the steps with no overlap
+        first_tech_start = tech_ranges[0][0]
+        assert first_tech_start == 0
+        trailing_edge = tech_ranges[-1][1]
+        assert trailing_edge == len(steps)
+
+        prev_end = 0
+        technique_num = 1
+        tech_partitions = []
+        for start, end in tech_ranges:
+            # ranges must contiguously cover the steps with no overlap
+            assert prev_end == start
+            assert end > start
+            prev_end = end
+
+            tech_does_loop = start in tech_loops_by_start_step_num
+            # if tech loops, elide outer loop construct
+            substeps = steps[start + 1 : end - 1] if tech_does_loop else steps[start:end]
+            num_loops = tech_loops_by_start_step_num[start] if tech_does_loop else 0
+            step_num_offset = start + 1 if tech_does_loop else start
+
+            partition = TechniquePartition(
+                technique_num=technique_num,
+                steps=substeps,
+                step_num_offset=step_num_offset,
+                tech_does_loop=tech_does_loop,
+                num_loops=num_loops,
+            )
+            tech_partitions.append(partition)
+            if tech_does_loop:
+                technique_num += 2
+            else:
+                technique_num += 1
+
+        return tech_partitions
+
     """
     Utility for creating step mappers that filter out one or more unwanted EndEntry
 
@@ -886,65 +968,6 @@ class CycleTransitionRulesSerializer:
         )
 
 
-# Will Powelson May 18, 2021
-# The problem:
-# We need a way to calculate cycle index from a maccor protocol, not all protocols
-# are representable in biolgic. Nested loops require breaking the conversion into
-# multiple techniques which may break certain GOTO functionality, which we are accepting.
-#
-# Biologic also lacks the ability to control cycles, we need to infer cycle index from
-# the output data using changes to sequence number, technique number, technique loops
-# and number of changes in sequence number.
-#
-# The plan:
-# How splitting works
-# Given a list of steps we want to break out any nested loop into a technique
-# consider this beautful ascii art visualizing a maccor protocol's control flow
-# sans GOTOs
-# 1 |\
-# 2 | |
-# 3 |/
-# 4 |\
-# 5 |  \
-# 6 |\  |
-# 7 | | |
-# 8 |/  |
-# 9 |  /
-# 10|/
-# 11|
-# 12|
-# 13|
-#
-# the loop from 4-10 has an inner loop which is not easily representable in
-# in a single biologic technique, we will break this into a single technique,
-# and use a loop technique in place of the outer loop, so we end up with
-#
-# technique 1
-# 1 |\
-# 2 | |
-# 3 |/
-#
-# technique 2
-# 4 |
-# 5 |
-# 6 |\
-# 7 | |
-# 8 |/
-# 9 |
-# 10|
-#
-# technique 3 loops back to technique 2
-#
-# technique 4
-# 11|
-# 12|
-# 13|
-#
-# Now we can calculate how many cycle advances there are between techniques
-# or when a technique loops based on analysis of a much simpler structure,
-# each technique only needs to know if there were any cycle advances not applied from
-# its predecessor.
-#
 def get_cycle_adv_data_by_tech_num(maccor_test_steps):
     assert get(maccor_test_steps[-1], "StepType") == "End"
     maccor_test_steps = maccor_test_steps[:-1]
