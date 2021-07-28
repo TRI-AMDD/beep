@@ -783,41 +783,73 @@ class MaccorToBiologicMb:
         return mapped_seqs
 
     
+    """
+    converts a MaccorStep to a biologic seq, but does not handle anything
+    to do with control flow (biologic lims). CCVV style steps are split into
+    two.
 
-        # based on sample biologic mps file
+    accepts
+        - step: OrderedDict
+        - seq_num: int
 
-        # ordering from blank_seq template is _vital_ for this to work
-        file_str = (
-            "BT-LAB SETTING FILE\r\n"
-            "\r\n"
-            "Number of linked techniques : 1\r\n"
-            "\r\n"
-            "Filename : C:\\Users\\User\\Documents\\BT-Lab\\Data\\Grace\\BASF\\BCS - 171.64.160.115_Ja9_cOver70_CE3.mps\r\n\r\n"  # noqa
-            "Device : BCS-805\r\n"
-            "Ecell ctrl range : min = 0.00 V, max = 10.00 V\r\n"
-            "Electrode material : \r\n"
-            "Initial state : \r\n"
-            "Electrolyte : \r\n"
-            "Comments : \r\n"
-            "Mass of active material : 0.001 mg\r\n"
-            " at x = 0.000\r\n"  # leading space intentional
-            "Molecular weight of active material (at x = 0) : 0.001 g/mol\r\n"
-            "Atomic weight of intercalated ion : 0.001 g/mol\r\n"
-            "Acquisition started at : xo = 0.000\r\n"
-            "Number of e- transfered per intercalated ion : 1\r\n"
-            "for DX = 1, DQ = 26.802 mA.h\r\n"
-            "Battery capacity : 1.000 A.h\r\n"
-            "Electrode surface area : 0.001 cm\N{superscript two}\r\n"
-            "Characteristic mass : 8.624 mg\r\n"
-            "Cycle Definition : Charge/Discharge alternance\r\n"
-            "Do not turn to OCV between techniques\r\n"
-            "\r\n"
-            "Technique : 1\r\n"
-            "Modulo Bat\r\n"
+    returns
+        - list(OrderedDict)
+    """
+
+    def _split_step(self, step, step_num):
+        # start by splitting the steps
+        limits = get(step, "Limits")
+        step_type = get(step, "StepType")
+        step_mode = get(step, "StepMode")
+        if limits is None:
+            return [step]
+        elif step_mode == "Current" or step_mode == "Voltage":
+            # possible TODO, multiple voltages? not sure it's supported
+            acceptable_limit = "Voltage" if step_mode == "Current" else "Current"
+
+            lim = get(limits, acceptable_limit)
+            if not isinstance(lim, str):
+                raise Exception(
+                    "Only supported Limit for StepMode {} is a single {} Limit, check step {}".format(
+                        step_mode, acceptable_limit, step_num
+                    )
         )
 
-        file_str += self._seqs_to_str(seqs, col_width)
-        return file_str
+            step_part_2 = copy.deepcopy(step)
+            end_entries = get(step_part_2, "EndsEndEntries")
+            if end_entries is None:
+                end_entries = []
+            elif not isinstance(end_entries, list):
+                end_entries = [end_entries]
+
+            filtered_end_entries = []
+            for end_entry in end_entries:
+                if get(end_entry, "EndType") != lim:
+                    filtered_end_entries.append(end_entry)
+
+            oper = ""
+            if step_type == "Charge":
+                oper = ">="
+            elif step_type == "Dischrge":  # sic
+                oper = "<="
+            else:
+                raise Exception("Unsupported StepMode {} at step num {}".format(step_type, step_num))
+
+            new_end_entry = copy.deepcopy(self._blank_end_entry)
+            set_(new_end_entry, "EndType", step_mode)
+            set_(new_end_entry, "Oper", oper)
+            set_(new_end_entry, "Value", lim)
+            set_(new_end_entry, "Step", str(step_num + 1).zfill(3))
+
+            filtered_end_entries.append(new_end_entry)
+            new_end_entries = filtered_end_entries if len(filtered_end_entries) > 1 else filtered_end_entries[0]
+            set_(step_part_2, "Ends.EndEntry", new_end_entries)
+
+            set_(step_part_2, "StepNote", "Inserted by MaccorToBiologicConversion")
+
+            return [step, step_part_2]
+        else:
+            raise Exception("Step {} has Limit for step of that is not Voltage or Current".format(step_num))
 
     """
     converts maccor AST to biologic protocol
