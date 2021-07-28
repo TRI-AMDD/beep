@@ -1193,19 +1193,94 @@ class MaccorToBiologicMb:
             )
         return cycle_advancement_rules
 
-    # REWRITE TIME - what are we doing?
-    # 
-    # Before we were doing loop unrolling, which ended up being wrong.
-    # There's weird counting logic because GOTOs were gonna be real hard
-    # Steps get split, we didn't account for this originally
-    # 
-    # what we need now:
-    # split along technique lines
-    # ensure all gotos are valid
-    # 
-    # counting logic is complex
-    # set field processing mappings
-    # 
+    """
+    Best effort at converting a Maccor Protocolfile into an equivalent
+    Biologic Modulo Bat *.mps file, writes a series of rules for calculating
+    cycle advancement in the data generated during a run of the .mps file,
+    and simple/verbose mappings from steps to seqs
+
+    altering input and output can be done via a variety of mechanisms documented
+    in the constructor.
+
+    Alternatively, the high level code of this function has been kept as simple as
+    possible so that users may write their own pre/post processing pipeline.
+
+    accepts
+        - maccor_fp: path
+        - out_dir: path
+        - out_fn: path
+
+    side-effects
+        - write diagnostic file
+        - write cycle transition rules files for each technique
+        - write step mapping file
+        - write verbose step mapping file
+
+    returns:
+        - diagnostic_file_path: path
+        - cycle_advancement_rules_file_paths: list(path)
+        - step_mapping_file_path: path
+        - step_mapping_verbose: path
+
+    """
+
+    def convert(self, maccor_fp, out_dir, out_filename):
+        maccor_ast = self.load_maccor_ast(maccor_fp)
+        steps = get(maccor_ast, "MaccorTestProcedure.ProcSteps.TestStep")
+
+        steps = self._apply_step_mappings(steps)
+        assert len(steps) > 0
+
+        # remove end step, we don't need it
+        assert get(steps[-1], "StepType") == "End"
+        end_step_num = len(steps) - 1
+        steps = steps[0:-1]
+
+        technique_partitions_post_conversion = []
+        for tp in self._partition_steps_into_techniques(steps):
+            (seqs, step_nums_by_seq_num, seq_nums_by_step_num,) = self._convert_steps_to_seqs(
+                steps=tp.steps,
+                step_num_offset=tp.step_num_offset,
+                end_step_num=end_step_num,
+            )
+
+            seqs = self._apply_seq_mappings(tp.technique_num, seqs)
+
+            technique_partitions_post_conversion.append(
+                TechniquePartitionPostConversion(
+                    technique_num=tp.technique_num,
+                    steps=tp.steps,
+                    step_num_offset=tp.step_num_offset,
+                    tech_does_loop=tp.tech_does_loop,
+                    num_loops=tp.num_loops,
+                    seqs=seqs,
+                    seq_nums_by_step_num=seq_nums_by_step_num,
+                    step_nums_by_seq_num=step_nums_by_seq_num,
+                )
+            )
+
+        protocol_str = self._diagnostic_file_str_from_technique_partitions_post_conversion(
+            technique_partitions_post_conversion
+        )
+        protocol_fp = os.path.join(out_dir, out_filename + ".mps")
+        with open(protocol_fp, "wb") as f:
+            print("writing {}".format(protocol_fp))
+            f.write(protocol_str.encode("ISO-8859-1"))
+
+        cycle_advancement_rules = self._create_cycle_advancement_rules(technique_partitions_post_conversion)
+        advancement_serializer = CycleAdvancementRulesSerializer()
+        assert len(cycle_advancement_rules) == len(technique_partitions_post_conversion)
+        for tp, car in zip(technique_partitions_post_conversion, cycle_advancement_rules):
+            rules_filename = out_filename + "technique_{}_cycle_advancement_rules.json".format(tp.technique_num)
+            rules_fp = os.path.join(out_dir, rules_filename)
+            json = advancement_serializer.json(car)
+            with open(rules_fp, "wb") as f:
+                f.write(json.encode("utf-8"))
+                print("writing {}".format(rules_fp))
+
+# /Users/willpowelson/tri/beep/beep/protocol/procedure_templates/diagnosticV5.000
+
+
 
 class TechniquePartition:
     def __init__(
