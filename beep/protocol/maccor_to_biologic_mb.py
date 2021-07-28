@@ -852,14 +852,112 @@ class MaccorToBiologicMb:
             raise Exception("Step {} has Limit for step of that is not Voltage or Current".format(step_num))
 
     """
-    converts maccor AST to biologic protocol
-    resulting string assumes generated file will have
-    LATIN-1 i.e. ISO-8859-1 encoding
+    UNSAFE
+
+    assumes no nested loops within the steps provided
+    and makes no effort to correctly match loops based on number
+    e.g. Do 1/Loop 2 match
+
+    accepts
+        - steps: a list of Maccor Steps, a subset of the original
+        - step_num_offset: the number of steps from the original protocol
+        preceding the first step passed
+
+    returns
+        - seqs: list(OrderedDict)
+        - step_nums_by_seq_num: object(int, list(int))
+        - seq_nums_by_step_num: object(int, list(int))
     """
 
-    def maccor_ast_to_protocol_str(self, maccor_ast, unroll=False, col_width=20):
-        seqs = self.maccor_ast_to_biologic_seqs(maccor_ast, unroll=unroll)
-        return self.biologic_seqs_to_protocol_str(seqs, col_width)
+    def _convert_steps_to_seqs(self, steps, step_num_offset, end_step_num):
+        step_nums_by_seq_num = {}
+        seq_nums_by_step_num = {}
+
+        seq_num = 0
+        loop_close_types = {"Loop 1", "Loop 2"}
+        loop_open_types = {"Do 1", "Do 2"}
+        steps_and_parts = []
+        for i, step in enumerate(steps):
+            # steps are 1-indexed
+            step_num = i + 1 + step_num_offset
+            step_type = get(step, "StepType")
+
+            parts = []
+            if step_type in loop_open_types or step_type == "AdvCycle":
+                parts = []
+            elif step_type in loop_close_types:
+                parts = [step]
+            else:
+                parts = self._split_step(step, step_num)
+                assert len(parts) > 0
+
+            seq_nums_by_step_num[step_num] = []
+            if len(parts) > 0:
+                for _ in range(0, len(parts)):
+                    if seq_num not in step_nums_by_seq_num:
+                        step_nums_by_seq_num[seq_num] = []
+                    seq_nums_by_step_num[step_num].append(seq_num)
+                    step_nums_by_seq_num[seq_num].append(step_num)
+                    seq_num += 1
+            else:
+
+                if seq_num not in step_nums_by_seq_num:
+                    step_nums_by_seq_num[seq_num] = []
+                seq_nums_by_step_num[step_num].append(seq_num)
+
+            pair = (step, parts)
+            steps_and_parts.append(pair)
+
+        # GOTO rules in Biologic
+        # 1. cannot goto a step in another technique that is not the first step of the next technique
+        # 2. cannot GOTO a step before or at a Do step that's been seen
+        # 3. cannot GOTO a step before or at a Loop step that's been seen
+        one_past_final_step_num = step_num_offset + len(steps) + 1
+        goto_upperbound = one_past_final_step_num
+        goto_lowerbound = step_num_offset
+        prev_loop_open = -1
+
+        seqs = []
+        for i, (step, parts) in enumerate(steps_and_parts):
+            # steps are 1-indexed
+            step_num = step_num_offset + 1 + i
+            step_type = get(step, "StepType")
+            if step_type in loop_open_types:
+                prev_loop_open = step_num
+                # cannot goto befoer a Do
+                goto_lowerbound = prev_loop_open + 1
+            elif step_type == "AdvCycle":
+                continue
+            elif step_type in loop_close_types:
+                if prev_loop_open == -1:
+                    raise Exception("Unclosed loop at {}".format(step_num))
+
+                assert len(seq_nums_by_step_num[step_num]) == 1
+                seq_num = seq_nums_by_step_num[step_num][0]
+
+                num_loops = int(get(step, "Ends.EndEntry.Value"))
+                loop_seq = self._create_loop_seq(
+                    seq_num=seq_num,
+                    seq_num_to_loop_to=prev_loop_open,
+                    num_loops=num_loops,
+                )
+                seqs.append(loop_seq)
+
+                # book keep the loop
+                prev_loop_open = -1
+                goto_lowerbound = step_num + 1
+            else:
+                step_seq_parts = self._convert_step_parts(
+                    step_parts=parts,
+                    step_num=step_num,
+                    seq_nums_by_step_num=seq_nums_by_step_num,
+                    goto_lowerbound=goto_lowerbound,
+                    goto_upperbound=goto_upperbound,
+                    end_step_num=end_step_num,
+                )
+                seqs = seqs + step_seq_parts
+
+        return seqs, step_nums_by_seq_num, seq_nums_by_step_num
 
     """
     converted loaded biologic seqs to a protocol file
