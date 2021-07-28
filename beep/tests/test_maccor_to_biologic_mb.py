@@ -19,7 +19,12 @@ import xmltodict
 from collections import OrderedDict
 from monty.tempfile import ScratchDir
 
-from beep.protocol.maccor_to_biologic_mb import MaccorToBiologicMb, CycleTransitionRules, CycleTransitionRulesSerializer, convert_diagnostic_v5_multi_techniques
+from beep.protocol import (
+    PROTOCOL_SCHEMA_DIR,
+    BIOLOGIC_TEMPLATE_DIR,
+    PROCEDURE_TEMPLATE_DIR,
+)
+from beep.protocol.maccor_to_biologic_mb import MaccorToBiologicMb, CycleAdvancementRules, CycleAdvancementRulesSerializer
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
@@ -680,16 +685,16 @@ class ConversionTest(unittest.TestCase):
             convert_diagnostic_v5_multi_techniques(source_file="diagnosticV5.000")
     
     def test_cycle_transition_serialization(self):
-        cycle_transition_rules = CycleTransitionRules(
-            2,
-            True,
-            1,
-            1,
-            {(2, 5): 1, (14, 17): 1},
-            {(72, 71): 1, (72, 75): 1},
+        cycle_transition_rules = CycleAdvancementRules(
+            tech_num=2,
+            tech_does_loop=True,
+            adv_cycle_on_start = 1,
+            adv_cycle_on_tech_loop = 1,
+            adv_cycle_seq_transitions = {(2, 5): 1, (14, 17): 1},
+            debug_adv_cycle_on_step_transitions = {(72, 71): 1, (72, 75): 1},
         )
 
-        serializer = CycleTransitionRulesSerializer()
+        serializer = CycleAdvancementRulesSerializer()
         json_str = serializer.json(cycle_transition_rules)
         parsed_cycle_transition_rules = serializer.parse_json(json_str)
 
