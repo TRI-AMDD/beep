@@ -180,6 +180,84 @@ class ConversionTest(unittest.TestCase):
         # trim opening/closing loops
         self.assertEqual(len(partition2.steps), nested_loop_close_idx - nested_loop_open_idx - 1)
         self.assertEqual(len(partition3.steps), 27)
+
+    def test_apply_step_mappings_global_noop(self):
+        xml = (step_with_bounds_template).format(
+            voltage_v_lowerbound = 2.2,
+            voltage_v_upperbound = 4.2,
+            current_a_lowerbound = 0.1,
+            current_a_upperbound = 1.0,
+        )
+        step = get(
+            xmltodict.parse(xml, process_namespaces=False, strip_whitespace=True),
+            'TestStep',
+        )
+        converter = MaccorToBiologicMb()
+        
+        # no limits no mappings
+        unmapped_step = converter._apply_step_mappings([step])[0]
+        self.assertEqual(step, unmapped_step)
+
+        # limits outside of bounds, don't
+        converter.max_voltage_v = 10.0
+        converter.min_voltage_v = -10.0
+        converter.max_current_a = 10.0
+        converter.min_current_a = -10.0
+        unmapped_step = converter._apply_step_mappings([step])[0]
+        self.assertEqual(step, unmapped_step)
+    
+    def test_apply_step_mappings_global_voltage(self):
+        xml = (step_with_bounds_template).format(
+            voltage_v_lowerbound = 2.2,
+            voltage_v_upperbound = 4.2,
+            current_a_lowerbound = 0.1,
+            current_a_upperbound = 1.0,
+        )
+        step = get(
+            xmltodict.parse(xml, process_namespaces=False, strip_whitespace=True),
+            'TestStep',
+        )
+        converter = MaccorToBiologicMb()
+
+        converter.max_voltage_v = 3.9
+        converter.min_voltage_v = 3.1
+        step_without_voltage_end_entries = converter._apply_step_mappings([step])[0]
+
+        end_entries = get(step_without_voltage_end_entries, "Ends.EndEntry")
+        self.assertEqual(2, len(end_entries))
+        self.assertEqual("Current", get(end_entries[0], "EndType"))
+        self.assertEqual("Current", get(end_entries[1], "EndType"))
+
+        # check there was not mutation
+        original_end_entries = get(step, 'Ends.EndEntry')
+        self.assertEqual(4, len(original_end_entries))
+    
+    def test_apply_step_mappings_all_global_limits(self):
+        xml = (step_with_bounds_template).format(
+            voltage_v_lowerbound = 2.2,
+            voltage_v_upperbound = 4.2,
+            current_a_lowerbound = 0.1,
+            current_a_upperbound = 1.0,
+        )
+        step = get(
+            xmltodict.parse(xml, process_namespaces=False, strip_whitespace=True),
+            'TestStep',
+        )
+        converter = MaccorToBiologicMb()
+
+
+        converter.max_voltage_v = 3.9
+        converter.min_voltage_v = 3.1
+        converter.max_current_a = 0.7
+        converter.min_current_a = 0.3
+
+        step_with_no_end_entries = converter._apply_step_mappings([step])[0]
+        self.assertEqual(None, get(step_with_no_end_entries, "Ends.EndEntry"))
+
+        # check there was not mutation
+        original_end_entries = get(step, 'Ends.EndEntry')
+        self.assertEqual(4, len(original_end_entries))
+
     def test_rest_step_conversion(self):
         xml = (
             '<?xml version="1.0" encoding="UTF-8"?>'
