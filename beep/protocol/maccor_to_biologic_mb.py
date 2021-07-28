@@ -536,6 +536,64 @@ class MaccorToBiologicMb:
             )
 
         return file_str
+    # Will Powelson May 18, 2021
+    # The problem:
+    # We need a way to calculate cycle index from a maccor protocol, not all protocols
+    # are representable in biolgic. Nested loops require breaking the conversion into
+    # multiple techniques which may break certain GOTO functionality, which we are accepting.
+    #
+    # Biologic also lacks the ability to control cycles, we need to infer cycle index from
+    # the output data using changes to sequence number, technique number, technique loops
+    # and number of changes in sequence number.
+    #
+    # The plan:
+    # Given a list of steps we want to break out any nested loop into a technique.
+    # consider this beautful ascii art visualizing a maccor protocol's control flow
+    # sans GOTOs
+    # 1 |\
+    # 2 | |
+    # 3 |/
+    # 4 |\
+    # 5 |  \
+    # 6 |\  |
+    # 7 | | |
+    # 8 |/  |
+    # 9 |  /
+    # 10|/
+    # 11|
+    # 12|
+    # 13|
+    #
+    # the loop from 4-10 has an inner loop which is not easily representable in
+    # in a single biologic technique, we will break this into a single technique,
+    # and use a loop technique in place of the outer loop, so we end up with
+    #
+    # technique 1
+    # 1 |\
+    # 2 | |
+    # 3 |/
+    #
+    # technique 2
+    # 4 |
+    # 5 |
+    # 6 |\
+    # 7 | |
+    # 8 |/
+    # 9 |
+    # 10|
+    #
+    # technique 3 loops back to technique 2
+    #
+    # technique 4
+    # 11|
+    # 12|
+    # 13|
+    #
+    # Later, we can calculate how many cycle advances there are between techniques
+    # or when a technique loops based on analysis of a much simpler structure,
+    # each technique only needs to know if there were any cycle advances not applied from
+    # its predecessor.
+    #
     """
     partitions steps into multiple techniques
 
