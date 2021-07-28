@@ -104,7 +104,7 @@ class ConversionTest(unittest.TestCase):
             tests,
         )
 
-        def single_step_to_single_seq_test(self, test_step_xml, diff_dict):
+    def single_step_to_single_seq_test(self, test_step_xml, diff_dict):
         """
         test utility for testing proc_step_to_seq
          """
