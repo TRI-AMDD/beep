@@ -509,16 +509,198 @@ class MaccorToBiologicMb:
         return seq_str
 
     """
-    converts biologic seqs to biologic protocol string
-    resulting string assumes generated file will have
-    LATIN-1 i.e. ISO-8859-1 encoding
+    """
+    Utility for creating step mappers that filter out one or more unwanted EndEntry
+
+    predicate should return True to keep an EndEntry, False to filter it
+
+    accepts
+        - pred: (end_entry: OrderedDict, idx: int, step_num: int) -> Boolean
+
+    return
+        - mapper: (step: OrderedDict, step_num: int) -> mapped_step: OrderedDict
     """
 
-    def biologic_seqs_to_protocol_str(self, seqs, col_width=20):
-        # encoding is assumed due to superscript 2 here, as well as
-        # micro sign elsewhere in code, they would presumably be
-        # handled by their unicode alternatives in UTF-8 but we
-        # haven't seen that fileformat so we're not sure
+    def _create_step_end_entry_filter(self, pred):
+        def mapper(step, step_num):
+            end_entries = get(step, "Ends.EndEntry")
+            if end_entries is None:
+                return step
+
+            end_entries = end_entries if type(end_entries) is not list else end_entries
+            filtered_end_entries = []
+            for idx, end_entry in enumerate(end_entries):
+                if pred(end_entry, idx, step_num):
+                    filtered_end_entries.append(end_entry)
+
+            if len(filtered_end_entries) == len(end_entries):
+                # noop
+                return step
+            else:
+                filtered_end_entries = filtered_end_entries if len(filtered_end_entries) > 0 else None
+                step_copy = clone_deep(step)
+                step_copy = set_(step_copy, "Ends.EndEntry", filtered_end_entries)
+                assert step_copy != step
+                return step_copy
+
+        return mapper
+
+    def _filter_end_entry_by_max_voltage(self, step, step_num):
+        def pred(end_entry, _idx, _step_num):
+            if self.max_voltage_v is None:
+                return True
+
+            end_type = get(end_entry, "EndType")
+            if end_type != "Voltage":
+                return True
+
+            val = float(get(end_entry, "Value"))
+            oper = get(end_entry, "Oper")
+            if oper == ">=" and val >= self.max_voltage_v:
+                return False
+            else:
+                return True
+
+        return self._create_step_end_entry_filter(pred)(step, step_num)
+
+    def _filter_end_entry_by_min_voltage(self, step, step_num):
+        def pred(end_entry, _idx, _step_num):
+            if self.min_voltage_v is None:
+                return True
+
+            end_type = get(end_entry, "EndType")
+            if end_type != "Voltage":
+                return True
+
+            val = float(get(end_entry, "Value"))
+            oper = get(end_entry, "Oper")
+            if oper == "<=" and val <= self.min_voltage_v:
+                return False
+            else:
+                return True
+
+        return self._create_step_end_entry_filter(pred)(step, step_num)
+
+    def _filter_end_entry_by_max_current(self, step, step_num):
+        def pred(end_entry, _idx, _step_num):
+            if self.max_current_a is None:
+                return True
+
+            end_type = get(end_entry, "EndType")
+            if end_type != "Current":
+                return True
+
+            val = float(get(end_entry, "Value"))
+            oper = get(end_entry, "Oper")
+            if end_type == "Current" and oper == ">=" and val > self.max_current_a:
+                return False
+            else:
+                return True
+
+        return self._create_step_end_entry_filter(pred)(step, step_num)
+
+    def _filter_end_entry_by_min_current(self, step, step_num):
+        def pred(end_entry, _idx, _step_num):
+            if self.min_current_a is None:
+                return True
+
+            end_type = get(end_entry, "EndType")
+            if end_type != "Current":
+                return True
+
+            val = float(get(end_entry, "Value"))
+            oper = get(end_entry, "Oper")
+            if end_type == "Current" and oper == "<=" and val < self.min_current_a:
+                return False
+            else:
+                return True
+
+        return self._create_step_end_entry_filter(pred)(step, step_num)
+
+    def _apply_step_mappings(self, steps, extra_mappers=[]):
+        mapped_steps = []
+
+        for i, step in enumerate(steps):
+            step_num = i + 1
+
+            mapped_step = step
+            mapped_step = self._filter_end_entry_by_max_current(mapped_step, step_num)
+            mapped_step = self._filter_end_entry_by_min_current(mapped_step, step_num)
+            mapped_step = self._filter_end_entry_by_max_voltage(mapped_step, step_num)
+            mapped_step = self._filter_end_entry_by_min_voltage(mapped_step, step_num)
+
+            for mapper in self.step_mappers + extra_mappers:
+                mapped_step = mapper(mapped_step, step_num)
+
+            mapped_steps.append(mapped_step)
+
+        return mapped_steps
+
+    def _apply_max_current_to_seq(self, technique_num, seq, i):
+        if self.max_current_a is None:
+            return seq
+
+        mapped_seq = copy.deepcopy(seq)
+        mapped_seq["I Range Max"] = "{:.3f}".format(self.max_current_a)
+        return mapped_seq
+
+    def _apply_min_current_to_seq(self, technique_num, seq, i):
+        if self.min_current_a is None:
+            return seq
+
+        mapped_seq = copy.deepcopy(seq)
+        mapped_seq["I Range Min"] = "{:.3f}".format(self.min_current_a)
+        return mapped_seq
+
+    def _apply_max_voltage_to_seq(self, technique_num, seq, i):
+        if self.max_voltage_v is None:
+            return seq
+
+        mapped_seq = copy.deepcopy(seq)
+        mapped_seq["E Range Max (V)"] = "{:.3f}".format(self.max_voltage_v)
+        return mapped_seq
+
+    def _apply_min_voltage_to_seq(self, technique_num, seq, i):
+        if self.min_voltage_v is None:
+            return seq
+
+        mapped_seq = copy.deepcopy(seq)
+        mapped_seq["E Range Min (V)"] = "{:.3f}".format(self.min_voltage_v)
+        return mapped_seq
+
+    """
+    maps seqs based on global parameters such as min_voltage_v, applies
+    user defined mappings, and any additional mappers passed to the function.
+
+    maps have the signature (technique_num, seq, index_of_seq)
+
+    accepts
+        - technique_num: int
+        - seqs: list(OrderedDict)
+        - mappers: optional list((int, OrderedDict, int) -> OrderedDict))
+
+    returns 
+        - list(OrderedDict)
+    """
+
+    def _apply_seq_mappings(self, technique_num, seqs, extra_mappers=[]):
+        mapped_seqs = []
+        for i, seq in enumerate(seqs):
+            mapped_seq = seq
+
+            mapped_seq = self._apply_max_current_to_seq(technique_num, seq, i)
+            mapped_seq = self._apply_min_current_to_seq(technique_num, seq, i)
+            mapped_seq = self._apply_max_voltage_to_seq(technique_num, seq, i)
+            mapped_seq = self._apply_min_voltage_to_seq(technique_num, seq, i)
+
+            for mapper in self.seq_mappers + extra_mappers:
+                mapped_seq = mapper(technique_nume, seq, i)
+
+            mapped_seqs.append(mapped_seq)
+
+        return mapped_seqs
+
+    
 
         # based on sample biologic mps file
 
