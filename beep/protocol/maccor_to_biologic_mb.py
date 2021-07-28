@@ -1157,7 +1157,7 @@ class MaccorToBiologicMb:
 
                     if prev_measurement_step_num == -1:
                         cycle_advances_on_tech_start += adv_cycle_count
-                    else:
+                    elif adv_cycle_count > 0:
                         transition = (prev_measurement_step_num, step_num)
                         cycle_advances_by_step_transition[transition] = adv_cycle_count
                     prev_measurement_step_num = step_num
