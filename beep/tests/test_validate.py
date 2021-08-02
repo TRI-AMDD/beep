@@ -366,6 +366,7 @@ class SimpleValidatorTest(unittest.TestCase):
                 "FastCharge_000000_CH29.csv",
                 "FastCharge_000025_CH8.csv",
                 "PredictionDiagnostics_000151_test.052",
+                "PriorLAMVal_000101_000080_CH2.csv",
             ]
             paths = [os.path.join(TEST_FILE_DIR, path) for path in paths]
             validate_record = v.validate_from_paths(
@@ -383,6 +384,10 @@ class SimpleValidatorTest(unittest.TestCase):
             self.assertEqual(
                 validate_record["PredictionDiagnostics_000151_test.052"]["method"],
                 "schema-maccor-2170.yaml",
+            )
+            self.assertEqual(
+                validate_record["PriorLAMVal_000101_000080_CH2.csv"]["method"],
+                "schema-arbin-18650-2170.yaml",
             )
 
     def test_validation_from_json(self):
