@@ -1,0 +1,2 @@
+,test_id,device_id,iv_ch_id,first_start_datetime,resumed_times,last_resume_datetime,last_end_datetime,schedule_file_name,databases,item_id,grade_id,has_aux,has_special,schedule_version,log_aux_data_flag,log_special_data_flag,rowstate,canconfig_filename,m_ncanconfigmd5,smbconfig_filename,smbconfigmd5,value,value2
+0,8,03603603,1,1627598403,0,0,1627881350,Validation\priorLAMVal_000100.sdu,"ArbinResult_1,ArbinResult_2,",,0,1,0,Schedule Version 7.00.13,1,0,0,,,,,0.0,0.0
