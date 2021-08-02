@@ -1,5 +1,20 @@
 
 
+v2021.8.2.15
+------------
+* Add validation for new projects
+* Update conversion code - Thanks Will Powelson!
+* don't include non-advancements in in transition mappings
+* document partition rationale
+* mps file creator utils
+* create cycle advancement rules
+* convert seqs
+* split steps into parts
+* technique partition utility classes
+* rename cycle transition to cycle advancement
+* Working version of new interpolation for CV steps
+
+
 v2021.7.21.18
 -------------
 * Adds CV_time and CV_current summary stats - Thanks Dan Cogswell!
