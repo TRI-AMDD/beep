@@ -149,6 +149,11 @@ def plot_voltage_curves_for_cell(processed_cycler_run,
 
 
 class IntracellAnalysis:
+    # IA constants
+    UPPER_VOLTAGE = 4.2
+    LOWER_VOLTAGE = 2.7
+    THRESHOLD = 4.84 * 0.8
+
     def __init__(self,
                  pe_pristine_file,
                  ne_pristine_file,
@@ -169,7 +174,6 @@ class IntracellAnalysis:
             step_type (int): charge or discharge (0 for charge, 1 for discharge)
             ne_2neg_file (str): file name of the data for the negative component of the anode
             ne_2pos_file (str): file name of the data for the positive component of the anode
-
 
         """
 
@@ -208,9 +212,6 @@ class IntracellAnalysis:
 
         self.cycle_type = cycle_type
         self.step_type = step_type
-        self.upper_voltage = 4.2
-        self.lower_voltage = 2.7
-        self.threshold = 4.84 * 0.8
 
     def process_beep_cycle_data_for_candidate_halfcell_analysis(self,
                                                                 cell_struct,
@@ -234,8 +235,8 @@ class IntracellAnalysis:
         real_cell_candidate_charge_profile = diag_type_cycles.loc[
             (diag_type_cycles.cycle_index == cycle_index)
             & (diag_type_cycles.step_type == 0)  # step_type = 0 is charge, 1 is discharge
-            & (diag_type_cycles.voltage < self.upper_voltage)
-            & (diag_type_cycles.voltage > self.lower_voltage)][['voltage', 'charge_capacity']]
+            & (diag_type_cycles.voltage < self.UPPER_VOLTAGE)
+            & (diag_type_cycles.voltage > self.LOWER_VOLTAGE)][['voltage', 'charge_capacity']]
 
         real_cell_candidate_charge_profile['SOC'] = (
                 (real_cell_candidate_charge_profile['charge_capacity'] -
@@ -255,7 +256,7 @@ class IntracellAnalysis:
                                                                bounds_error=False)
         real_cell_candidate_charge_profile_aligned['Voltage_aligned'] = real_cell_candidate_charge_profile_interper(
             SOC_vec)
-        real_cell_candidate_charge_profile_aligned['Voltage_aligned'].fillna(self.lower_voltage, inplace=True)
+        real_cell_candidate_charge_profile_aligned['Voltage_aligned'].fillna(self.LOWER_VOLTAGE, inplace=True)
         real_cell_candidate_charge_profile_aligned['SOC_aligned'] = SOC_vec / np.max(
             real_cell_initial_charge_profile_aligned['SOC_aligned'].loc[
                 ~real_cell_initial_charge_profile_aligned['Voltage_aligned'].isna()]) * 100
@@ -290,8 +291,8 @@ class IntracellAnalysis:
         real_cell_initial_charge_profile = diag_type_cycles.loc[
             (diag_type_cycles.cycle_index == cycle_index_of_cycle_type)
             & (diag_type_cycles.step_type == step_type)  # step_type = 0 is charge, 1 is discharge
-            & (diag_type_cycles.voltage < self.upper_voltage)
-            & (diag_type_cycles.voltage > self.lower_voltage)][['voltage', capacity_col]]
+            & (diag_type_cycles.voltage < self.UPPER_VOLTAGE)
+            & (diag_type_cycles.voltage > self.LOWER_VOLTAGE)][['voltage', capacity_col]]
 
         real_cell_initial_charge_profile['SOC'] = (
                 (
@@ -695,8 +696,8 @@ class IntracellAnalysis:
 
         # Scaling
 
-        emulated_full_cell_centered.loc[(emulated_full_cell_centered['Voltage_aligned'] > self.upper_voltage) | (
-                    emulated_full_cell_centered['Voltage_aligned'] < self.lower_voltage)] = np.nan
+        emulated_full_cell_centered.loc[(emulated_full_cell_centered['Voltage_aligned'] > self.UPPER_VOLTAGE) | (
+                    emulated_full_cell_centered['Voltage_aligned'] < self.LOWER_VOLTAGE)] = np.nan
 
         scaling_value = np.max(emulated_full_cell_centered['SOC_aligned'].loc[~emulated_full_cell_centered[
             'Voltage_aligned'].isna()])  # value to scale emulated back to 100% SOC
@@ -720,7 +721,7 @@ class IntracellAnalysis:
             bounds_error=False, fill_value='extrapolate', kind='quadratic')
         real_full_cell_interper = interp1d(df_real.SOC_aligned,
                                            df_real.Voltage_aligned,
-                                           bounds_error=False, fill_value=(self.lower_voltage, self.upper_voltage))
+                                           bounds_error=False, fill_value=(self.LOWER_VOLTAGE, self.UPPER_VOLTAGE))
 
         # Interpolate the emulated full-cell profile
         SOC_vec_full_cell = np.linspace(0, 100.0, 1001)
@@ -865,7 +866,7 @@ class IntracellAnalysis:
         ne_translation += lli
 
         # Update degradation shifts for LAM_PE
-        upper_voltage_limit = self.upper_voltage
+        upper_voltage_limit = self.UPPER_VOLTAGE
         pe_soc_setpoint = pe_pristine['SOC_aligned'].loc[
             np.argmin(np.abs(pe_pristine['Voltage_aligned']
                              - ne_pristine[
@@ -876,7 +877,7 @@ class IntracellAnalysis:
         pe_shrinkage += lam_pe  # shrinkage of PE capacity due to LAM_PE
 
         #  Update degradation shifts for LAM_NE
-        lower_voltage_limit = self.lower_voltage
+        lower_voltage_limit = self.LOWER_VOLTAGE
         ne_soc_setpoint = ne_pristine['SOC_aligned'].loc[
             np.argmin((pe_pristine['Voltage_aligned']
                        - ne_pristine[

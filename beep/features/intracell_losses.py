@@ -51,7 +51,8 @@ class IntracellCycles(BeepFeatures):
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
-            gets featurized. These could be filters for column or row operations
+                gets featurized. These could be filters for column or row operations
+
         Returns:
             bool: True/False indication of ability to proceed with feature generation
         """
@@ -66,6 +67,14 @@ class IntracellCycles(BeepFeatures):
         elif processed_cycler_run.diagnostic_summary.empty:
             return False
         else:
+            # Ensure overlap of cycle indices above threshold and matching cycle type
+            eol_cycle_index_list = processed_cycler_run.diagnostic_summary[
+                (processed_cycler_run.diagnostic_summary.cycle_type == params_dict["diagnostic_cycle_type"]) &
+                (processed_cycler_run.diagnostic_summary.discharge_capacity > IntracellAnalysis.THRESHOLD)
+                ].cycle_index.to_list()
+            if not eol_cycle_index_list:
+                return False
+
             conditions.append(
                 any(
                     [
@@ -89,7 +98,6 @@ class IntracellCycles(BeepFeatures):
             parameters_path (str): Root directory storing project parameter files.
             cell_info_path (str): Root directory for cell half cell data
 
-
         Returns:
              (pd.DataFrame) containing the cell material parameters as a function of cycle index
         """
@@ -111,10 +119,10 @@ class IntracellCycles(BeepFeatures):
 
         eol_cycle_index_list = processed_cycler_run.diagnostic_summary[
             (processed_cycler_run.diagnostic_summary.cycle_type == ia.cycle_type) &
-            (processed_cycler_run.diagnostic_summary.discharge_capacity > ia.threshold)
+            (processed_cycler_run.diagnostic_summary.discharge_capacity > ia.THRESHOLD)
             ].cycle_index.to_list()
 
-        # # initializations before for loop
+        # initialize dicts before for loop
         dataset_dict_of_cell_degradation_path = dict()
         real_cell_dict_of_profiles = dict()
         for i, cycle_index in enumerate(eol_cycle_index_list):
@@ -186,7 +194,7 @@ class IntracellFeatures(IntracellCycles):
 
         eol_cycle_index_list = processed_cycler_run.diagnostic_summary[
             (processed_cycler_run.diagnostic_summary.cycle_type == ia.cycle_type) &
-            (processed_cycler_run.diagnostic_summary.discharge_capacity > ia.threshold)
+            (processed_cycler_run.diagnostic_summary.discharge_capacity > ia.THRESHOLD)
             ].cycle_index.to_list()
 
         # # initializations before for loop
