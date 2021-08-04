@@ -205,7 +205,7 @@ class IntracellAnalysisTest(unittest.TestCase):
 
         eol_cycle_index_list = self.cell_struct.diagnostic_summary[
             (self.cell_struct.diagnostic_summary.cycle_type == ia.cycle_type) &
-            (self.cell_struct.diagnostic_summary.discharge_capacity > ia.threshold)
+            (self.cell_struct.diagnostic_summary.discharge_capacity > ia.THRESHOLD)
             ].cycle_index.to_list()
         #
         # initial bounds (for first cycle); they expand as the cell degrades (see update further down).
@@ -313,7 +313,7 @@ class IntracellAnalysisTest(unittest.TestCase):
 
         eol_cycle_index_list = self.cell_struct.diagnostic_summary[
             (self.cell_struct.diagnostic_summary.cycle_type == ia.cycle_type) &
-            (self.cell_struct.diagnostic_summary.discharge_capacity > ia.threshold)
+            (self.cell_struct.diagnostic_summary.discharge_capacity > ia.THRESHOLD)
             ].cycle_index.to_list()
 
         # # initializations before for loop
@@ -398,3 +398,27 @@ class IntracellFeaturesTest(unittest.TestCase):
             self.assertEqual(featurizer.X.shape, (1, 34))
             self.assertAlmostEqual(featurizer.X["diag_0_LLI"].iloc[0], -9.999983, 5)
             self.assertAlmostEqual(featurizer.X["diag_1_Li_mass"].iloc[0], 12.312480, 3)
+
+    def test_validation(self):
+        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+        with ScratchDir("."):
+            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+            params_dict = {
+                'diagnostic_cycle_type': 'rpt_0.2C',
+                'step_type': 0,
+                'anode_file': 'anode_test.csv',
+                'cathode_file': 'cathode_test.csv'
+            }
+            run_path = os.path.join(
+                TEST_FILE_DIR, "PreDiag_000220_00005E_structure_omit.json"
+            )
+            pcycler_run = auto_load_processed(run_path)
+
+            # Modify pcycler_run to be invalid
+            mask = pcycler_run.diagnostic_summary.cycle_type == "rpt_0.2C"
+            pcycler_run.diagnostic_summary.loc[mask, "discharge_capacity"] = 3.5
+
+            featurizer = IntracellFeatures.from_run(
+                run_path, os.getcwd(), pcycler_run, params_dict=params_dict
+            )
+            self.assertFalse(featurizer)
