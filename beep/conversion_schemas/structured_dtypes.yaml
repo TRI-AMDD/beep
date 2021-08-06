@@ -28,6 +28,8 @@ summary:
   charge_duration: 'float32'
   time_temperature_integrated: 'float64'
   paused: 'int32'
+  CV_time: 'float32'
+  CV_current: 'float32'
 
 diagnostic_summary:
   discharge_capacity: 'float64'
@@ -42,6 +44,8 @@ diagnostic_summary:
   coulombic_efficiency: 'float64'
   paused: 'int32'
   cycle_type: 'category'
+  CV_time: 'float32'
+  CV_current: 'float32'
 
 diagnostic_interpolated:
   voltage: 'float32'

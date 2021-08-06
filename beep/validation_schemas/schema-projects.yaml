@@ -13,3 +13,7 @@ ClosedLoopOED:
 Talos:
   arbin: schema-arbin-18650-2170.yaml
   maccor: schema-maccor-2170.yaml
+PriorLAMVal:
+  arbin: schema-arbin-18650-2170.yaml
+LAMVal:
+  arbin: schema-arbin-18650-2170.yaml

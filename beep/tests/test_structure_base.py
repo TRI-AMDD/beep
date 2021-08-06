@@ -279,7 +279,6 @@ class TestBEEPDatapath(unittest.TestCase):
         interval = discharge.iloc[measurement_index: measurement_index + 2]
         interval = interval.drop(columns=["date_time_iso"])  # Drop non-numeric column
 
-
         # Test interpolation with a by-hand calculation of slope
         diff = np.diff(interval, axis=0)
         pred = interval.iloc[[0]] + diff * (
@@ -334,6 +333,8 @@ class TestBEEPDatapath(unittest.TestCase):
                     "charge_energy",
                     "discharge_energy",
                     "energy_efficiency",
+                    "CV_time",
+                    "CV_current",
                 },
                 set(summary_diag.columns),
             )
@@ -341,6 +342,8 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertEqual(summary_diag["cycle_index"].tolist(), list(range(0, 13)))
         self.assertEqual(len(summary_diag.index), len(summary_diag["date_time_iso"]))
         self.assertEqual(summary_diag["paused"].max(), 0)
+        self.assertEqual(summary_diag["CV_time"][1], np.float32(160111.796875))
+        self.assertEqual(summary_diag["CV_current"][1], np.float32(0.4699016))
         self.run_dtypes_check(summary_diag)
 
         # incorporates test_get_energy and get_charge_throughput
@@ -417,6 +420,8 @@ class TestBEEPDatapath(unittest.TestCase):
     def test_summarize_diagnostic(self):
         diag_summary = self.datapath_diag.summarize_diagnostic(self.diagnostic_available)
         self.assertEqual(diag_summary["paused"].max(), 0)
+        self.assertEqual(diag_summary["CV_time"][0], np.float32(125502.578125))
+        self.assertEqual(diag_summary["CV_current"][0], np.float32(2.3499656))
 
     # based on RCRT.test_determine_paused
     def test_paused_intervals(self):
@@ -555,6 +560,19 @@ class TestBEEPDatapath(unittest.TestCase):
         plt.plot(hppc_dischg1.test_time, hppc_dischg1.voltage)
         plt.savefig(os.path.join(TEST_FILE_DIR, "hppc_discharge_pulse_1.png"))
         self.assertEqual(len(hppc_dischg1), 176)
+
+        hppc_dischg2 = diag_interpolated[
+            (diag_interpolated.cycle_index == 37)
+            & (diag_interpolated.step_type == 6)
+            # & (diag_interpolated.step_index_counter == 3)
+            & ~pd.isnull(diag_interpolated.current)
+            ]
+        print(hppc_dischg2.step_type.unique())
+        self.assertAlmostEqual(hppc_dischg2.voltage.min(), hppc_dischg2.voltage.max(), 3)
+        plt.figure()
+        plt.plot(hppc_dischg2.test_time, hppc_dischg2.current)
+        plt.savefig(os.path.join(TEST_FILE_DIR, "hppc_cv.png"))
+        self.assertEqual(len(hppc_dischg2), 1000)
 
         # processed_cycler_run = cycler_run.to_processed_cycler_run()
         md.autostructure()

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests related to feature generation"""
-
+import shutil
 import unittest
 import os
 import json
@@ -24,9 +24,7 @@ from beep.featurize import (
     DeltaQFastCharge,
     TrajectoryFastCharge,
     DegradationPredictor,
-    RPTdQdVFeatures,
     HPPCResistanceVoltageFeatures,
-    HPPCRelaxationFeatures,
     DiagnosticProperties,
     DiagnosticSummaryStats,
     CycleSummaryStats
@@ -39,11 +37,15 @@ from monty.serialization import dumpfn, loadfn
 from monty.tempfile import ScratchDir
 from beep.utils.s3 import download_s3_object
 from beep.tests.constants import TEST_FILE_DIR, BIG_FILE_TESTS, SKIP_MSG
+from beep import MODULE_DIR
 
 
 MACCOR_FILE_W_DIAGNOSTICS = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000020_CH71.071")
 MACCOR_FILE_W_PARAMETERS = os.path.join(
     TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010"
+)
+FEATURE_HYPERPARAMS = loadfn(
+    os.path.join(MODULE_DIR, "features/feature_hyperparameters.yaml")
 )
 
 
@@ -186,6 +188,14 @@ class TestFeaturizer(unittest.TestCase):
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
             # os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
+            shutil.copy(os.path.join(TEST_FILE_DIR, "data-share", "raw", "cell_info", "anode_test.csv"),
+                        os.path.join(TEST_FILE_DIR, "data-share", "raw", "cell_info",
+                                     FEATURE_HYPERPARAMS["IntracellFeatures"]["anode_file"])
+                        )
+            shutil.copy(os.path.join(TEST_FILE_DIR, "data-share", "raw", "cell_info", "cathode_test.csv"),
+                        os.path.join(TEST_FILE_DIR, "data-share", "raw", "cell_info",
+                                     FEATURE_HYPERPARAMS["IntracellFeatures"]["cathode_file"])
+                        )
 
             # Create dummy json obj
             json_obj = {
@@ -203,13 +213,13 @@ class TestFeaturizer(unittest.TestCase):
             self.assertIsInstance(reloaded["file_list"][-1], str)
 
             # Ensure first is correct
-            features_reloaded = loadfn(reloaded["file_list"][4])
+            features_reloaded = loadfn(reloaded["file_list"][2])
             self.assertIsInstance(features_reloaded, DeltaQFastCharge)
             self.assertEqual(
                 features_reloaded.X.loc[0, "nominal_capacity_by_median"],
                 0.07114775279999999,
             )
-            features_reloaded = loadfn(reloaded["file_list"][-1])
+            features_reloaded = loadfn(reloaded["file_list"][4])
             self.assertIsInstance(features_reloaded, DiagnosticProperties)
             self.assertListEqual(
                 list(features_reloaded.X.iloc[2, :]),
@@ -266,31 +276,6 @@ class TestFeaturizer(unittest.TestCase):
             self.assertEqual("featurizing", output_json["action"])
             self.assertEqual("incomplete", output_json["status"])
 
-    def test_RPTdQdVFeatures_class(self):
-        with ScratchDir("."):
-            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-            pcycler_run_loc = os.path.join(
-                TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
-            )
-            pcycler_run = auto_load_processed(pcycler_run_loc)
-            params_dict = {
-                "test_time_filter_sec": 1000000,
-                "cycle_index_filter": 6,
-                "diag_ref": 0,
-                "diag_nr": 2,
-                "charge_y_n": 1,
-                "rpt_type": "rpt_2C",
-                "plotting_y_n": 0,
-            }
-            featurizer = RPTdQdVFeatures.from_run(
-                pcycler_run_loc, os.getcwd(), pcycler_run, params_dict
-            )
-            path, local_filename = os.path.split(featurizer.name)
-            folder = os.path.split(path)[-1]
-            dumpfn(featurizer, featurizer.name)
-            self.assertEqual(folder, "RPTdQdVFeatures")
-            self.assertEqual(featurizer.X.shape[1], 11)
-            self.assertEqual(featurizer.metadata["parameters"], params_dict)
 
     def test_HPPCResistanceVoltageFeatures_class(self):
         with ScratchDir("."):
@@ -307,40 +292,12 @@ class TestFeaturizer(unittest.TestCase):
             dumpfn(featurizer, featurizer.name)
             self.assertEqual(folder, "HPPCResistanceVoltageFeatures")
             self.assertEqual(featurizer.X.shape[1], 76)
-            self.assertListEqual(
-                [featurizer.X.columns[0], featurizer.X.columns[-1]],
-                ["ohmic_r_d0", "D_8"],
-            )
+            self.assertEqual(featurizer.X.columns[0], "r_c_0s_00")
+            self.assertEqual(featurizer.X.columns[-1], "D_8")
 
-    def test_HPPCRelaxationFeatures_class(self):
-        with ScratchDir("."):
-            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-            pcycler_run_loc = os.path.join(
-                TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
-            )
-            pcycler_run = auto_load_processed(pcycler_run_loc)
-            featurizer = HPPCRelaxationFeatures.from_run(
-                pcycler_run_loc, os.getcwd(), pcycler_run
-            )
-            path, local_filename = os.path.split(featurizer.name)
-            folder = os.path.split(path)[-1]
-            dumpfn(featurizer, featurizer.name)
-            params_dict = {
-                "test_time_filter_sec": 1000000,
-                "cycle_index_filter": 6,
-                "n_soc_windows": 8,
-                "soc_list": [90, 80, 70, 60, 50, 40, 30, 20, 10],
-                "percentage_list": [50, 80, 99],
-                "hppc_list": [0, 1],
-            }
-
-            self.assertEqual(folder, "HPPCRelaxationFeatures")
-            self.assertEqual(featurizer.X.shape[1], 30)
-            self.assertListEqual(
-                [featurizer.X.columns[0], featurizer.X.columns[-1]],
-                ["var_50%", "SOC10%_degrad99%"],
-            )
-            self.assertEqual(featurizer.metadata["parameters"], params_dict)
+            self.assertAlmostEqual(featurizer.X.iloc[0, 0], -0.08845776922490017, 6)
+            self.assertAlmostEqual(featurizer.X.iloc[0, 5], -0.1280224700339366, 6)
+            self.assertAlmostEqual(featurizer.X.iloc[0, 27], -0.10378359476555565, 6)
 
     def test_DiagnosticSummaryStats_class(self):
         with ScratchDir("."):
@@ -560,20 +517,6 @@ class TestFeaturizerHelpers(unittest.TestCase):
         self.assertEqual(sum_diag['diagnostic_interval'].iloc[0], 200)
         self.assertEqual(sum_diag['epoch_time'].iloc[0], 1598156928)
 
-    def test_generate_dQdV_peak_fits(self):
-        processed_cycler_run_path = os.path.join(
-            TEST_FILE_DIR, "PreDiag_000304_000153_truncated_structure.json"
-        )
-        with ScratchDir("."):
-            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-            pcycler_run = auto_load_processed(processed_cycler_run_path)
-            peaks_df = featurizer_helpers.generate_dQdV_peak_fits(pcycler_run, 'rpt_0.2C', 0, 1, plotting_y_n=1)
-            print(len(peaks_df.columns))
-            self.assertEqual(peaks_df.columns.tolist(),
-                             ['m0_Amp_rpt_0.2C_1', 'm0_Mu_rpt_0.2C_1', 'm1_Amp_rpt_0.2C_1',
-                              'm1_Mu_rpt_0.2C_1', 'm2_Amp_rpt_0.2C_1', 'm2_Mu_rpt_0.2C_1',
-                              'trough_height_0_rpt_0.2C_1', 'trough_height_1_rpt_0.2C_1'])
-
     def test_get_v_diff(self):
         processed_cycler_run_path_1 = os.path.join(
             TEST_FILE_DIR, "Talos_001383_NCR18650618001_CH31_truncated_structure.json"
@@ -657,13 +600,13 @@ class TestFeaturizerHelpers(unittest.TestCase):
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
         pcycler_run = auto_load_processed(pcycler_run_loc)
         hppc_ocv_features = featurizer_helpers.get_hppc_ocv(pcycler_run, 1)
-        self.assertEqual(np.round(hppc_ocv_features['var_ocv'].iloc[0], 6), 0.000016)
-        self.assertEqual(np.round(hppc_ocv_features['min_ocv'].iloc[0], 6), -0.001291)
-        self.assertEqual(np.round(hppc_ocv_features['mean_ocv'].iloc[0], 6), 0.002221)
-        self.assertEqual(np.round(hppc_ocv_features['skew_ocv'].iloc[0], 6), 1.589392)
-        self.assertEqual(np.round(hppc_ocv_features['kurtosis_ocv'].iloc[0], 6), 7.041016)
-        self.assertEqual(np.round(hppc_ocv_features['sum_ocv'].iloc[0], 6), 0.025126)
-        self.assertEqual(np.round(hppc_ocv_features['sum_square_ocv'].iloc[0], 6), 0.000188)
+        self.assertAlmostEqual(hppc_ocv_features['var_ocv'].iloc[0], 0.000016, 6)
+        self.assertAlmostEqual(hppc_ocv_features['min_ocv'].iloc[0], -0.001291, 6)
+        self.assertAlmostEqual(hppc_ocv_features['mean_ocv'].iloc[0], 0.002221, 6)
+        self.assertAlmostEqual(hppc_ocv_features['skew_ocv'].iloc[0], 1.589392, 6)
+        self.assertAlmostEqual(hppc_ocv_features['kurtosis_ocv'].iloc[0], 7.041016, 6)
+        self.assertAlmostEqual(hppc_ocv_features['sum_ocv'].iloc[0], 0.025126, 6)
+        self.assertAlmostEqual(hppc_ocv_features['sum_square_ocv'].iloc[0], 0.000188, 6)
 
     def test_get_step_index(self):
         pcycler_run_loc = os.path.join(
@@ -846,5 +789,12 @@ class TestRawToFeatures(unittest.TestCase):
 
             result_list = ['success'] * 7
             self.assertEqual(reloaded['result_list'], result_list)
-            rpt_df = loadfn(reloaded['file_list'][0])
-            self.assertEqual(np.round(rpt_df.X['m0_Amp_rpt_0.2C_1'].iloc[0], 6), 0.867371)
+            res_df = loadfn(reloaded['file_list'][0])
+            self.assertEqual(res_df.class_feature_name, "HPPCResistanceVoltageFeatures")
+            print(res_df.X)
+            self.assertAlmostEqual(res_df.X['r_c_0s_00'].iloc[0], -0.159771397, 5)
+            self.assertAlmostEqual(res_df.X['r_c_0s_10'].iloc[0], -0.143679, 5)
+            self.assertAlmostEqual(res_df.X['r_c_0s_20'].iloc[0], -0.146345, 5)
+            self.assertAlmostEqual(res_df.X['D_6'].iloc[0], -0.167919, 5)
+            self.assertAlmostEqual(res_df.X['D_7'].iloc[0], 0.094136, 5)
+            self.assertAlmostEqual(res_df.X['D_8'].iloc[0], 0.172496, 5)

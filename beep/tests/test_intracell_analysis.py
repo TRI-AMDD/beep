@@ -20,6 +20,8 @@ import pandas as pd
 from scipy.optimize import differential_evolution
 from beep.structure.cli import auto_load_processed
 from beep.features.intracell_analysis import IntracellAnalysis, get_halfcell_voltages
+from beep.features.intracell_losses import IntracellCycles, IntracellFeatures
+from monty.tempfile import ScratchDir
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
@@ -203,11 +205,11 @@ class IntracellAnalysisTest(unittest.TestCase):
 
         eol_cycle_index_list = self.cell_struct.diagnostic_summary[
             (self.cell_struct.diagnostic_summary.cycle_type == ia.cycle_type) &
-            (self.cell_struct.diagnostic_summary.discharge_capacity > ia.threshold)
-        ].cycle_index.to_list()
-#
-# initial bounds (for first cycle); they expand as the cell degrades (see update further down).
-# allow negative degradation, as it may reflect gained capacity from electrolyte wetting or other phenomena
+            (self.cell_struct.diagnostic_summary.discharge_capacity > ia.THRESHOLD)
+            ].cycle_index.to_list()
+        #
+        # initial bounds (for first cycle); they expand as the cell degrades (see update further down).
+        # allow negative degradation, as it may reflect gained capacity from electrolyte wetting or other phenomena
         degradation_bounds = ((-10, 50),  # LLI
                               (-10, 50),  # LAM_PE
                               (-10, 50),  # LAM_NE
@@ -215,8 +217,8 @@ class IntracellAnalysisTest(unittest.TestCase):
                               (0.1, 0.1),  # (0.01,0.1)
                               (0.1, 0.1),  # (0.01,0.1)
                               )
-#
-# # initializations before for loop
+        #
+        # # initializations before for loop
         dataset_dict_of_cell_degradation_path = dict()
         real_cell_dict_of_profiles = dict()
         for i, cycle_index in enumerate(eol_cycle_index_list):
@@ -250,17 +252,17 @@ class IntracellAnalysisTest(unittest.TestCase):
              dVdQ_over_SOC_emulated,
              df_real_interped,
              emulated_full_cell_interped) = ia.get_dQdV_over_V_from_degradation_matching(
-                                                    degradation_optimization_result.x,
-                                                    PE_pristine_matched,
-                                                    NE_pristine_matched,
-                                                    ia.ne_2_pristine_pos,
-                                                    ia.ne_2_pristine_neg,
-                                                    real_cell_candidate_charge_profile_aligned)
-#
+                degradation_optimization_result.x,
+                PE_pristine_matched,
+                NE_pristine_matched,
+                ia.ne_2_pristine_pos,
+                ia.ne_2_pristine_neg,
+                real_cell_candidate_charge_profile_aligned)
+            #
             (PE_upper_voltage, PE_lower_voltage, PE_upper_SOC, PE_lower_SOC, PE_mass,
              NE_upper_voltage, NE_lower_voltage, NE_upper_SOC, NE_lower_SOC, NE_mass,
              SOC_upper, SOC_lower, Li_mass) = get_halfcell_voltages(PE_out_centered, NE_out_centered)
-#
+            #
             LLI = degradation_optimization_result.x[0]
             LAM_PE = degradation_optimization_result.x[1]
             LAM_NE = degradation_optimization_result.x[2]
@@ -287,15 +289,136 @@ class IntracellAnalysisTest(unittest.TestCase):
         # print(degradation_df.iloc[0].to_list())
         self.assertAlmostEqual(degradation_df['LLI'].iloc[0], -0.027076, 5)
         self.assertAlmostEqual(degradation_df['LAM_PE'].iloc[0], 0.06750165, 5)
-        self.assertAlmostEqual(degradation_df['LAM_NE'].iloc[0],  0.3055425, 5)
+        self.assertAlmostEqual(degradation_df['LAM_NE'].iloc[0], 0.3055425, 5)
         self.assertAlmostEqual(degradation_df['PE_upper_voltage'].iloc[0], 4.25095116, 5)
         self.assertAlmostEqual(degradation_df['PE_lower_voltage'].iloc[0], 3.62354913951, 5)
         self.assertAlmostEqual(degradation_df['PE_upper_SOC'].iloc[0], 95.7202505, 5)
-        self.assertAlmostEqual(degradation_df['PE_mass'].iloc[0],  109.24224079, 5)
+        self.assertAlmostEqual(degradation_df['PE_mass'].iloc[0], 109.24224079, 5)
 
         self.assertAlmostEqual(degradation_df['NE_upper_voltage'].iloc[0], 0.050515360, 5)
-        self.assertAlmostEqual(degradation_df['NE_lower_voltage'].iloc[0],  0.8564127166, 5)
+        self.assertAlmostEqual(degradation_df['NE_lower_voltage'].iloc[0], 0.8564127166, 5)
         self.assertAlmostEqual(degradation_df['NE_upper_SOC'].iloc[0], 91.832460, 5)
-        self.assertAlmostEqual(degradation_df['NE_mass'].iloc[0],  108.900146, 5)
+        self.assertAlmostEqual(degradation_df['NE_mass'].iloc[0], 108.900146, 5)
 
         self.assertAlmostEqual(degradation_df['Li_mass'].iloc[0], 104.680978, 5)
+
+    def test_intracell_wrappers(self):
+        ia = IntracellAnalysis(os.path.join(TEST_FILE_DIR, 'data-share', 'raw', 'cell_info', 'cathode_test.csv'),
+                               os.path.join(TEST_FILE_DIR, 'data-share', 'raw', 'cell_info', 'anode_test.csv'),
+                               cycle_type='rpt_0.2C',
+                               step_type=0
+                               )
+
+        (cell_init_aligned, cell_init_profile, PE_matched, NE_matched) = ia.intracell_wrapper_init(self.cell_struct)
+
+        eol_cycle_index_list = self.cell_struct.diagnostic_summary[
+            (self.cell_struct.diagnostic_summary.cycle_type == ia.cycle_type) &
+            (self.cell_struct.diagnostic_summary.discharge_capacity > ia.THRESHOLD)
+            ].cycle_index.to_list()
+
+        # # initializations before for loop
+        dataset_dict_of_cell_degradation_path = dict()
+        real_cell_dict_of_profiles = dict()
+        for i, cycle_index in enumerate(eol_cycle_index_list):
+            loss_dict, profiles_dict = ia.intracell_values_wrapper(cycle_index,
+                                                                   self.cell_struct,
+                                                                   cell_init_aligned,
+                                                                   cell_init_profile,
+                                                                   PE_matched,
+                                                                   NE_matched,
+                                                                   )
+            dataset_dict_of_cell_degradation_path.update(loss_dict)
+            real_cell_dict_of_profiles.update(profiles_dict)
+
+        degradation_df = pd.DataFrame(dataset_dict_of_cell_degradation_path,
+                                      index=['LLI', 'LAM_PE', 'LAM_NE', 'x_NE_2', 'alpha_real', 'alpha_emulated',
+                                             'PE_upper_voltage', 'PE_lower_voltage', 'PE_upper_SOC', 'PE_lower_SOC',
+                                             'PE_mass', 'NE_upper_voltage', 'NE_lower_voltage', 'NE_upper_SOC',
+                                             'NE_lower_SOC', 'NE_mass', 'Li_mass'
+                                             ]).T
+        print(degradation_df['LLI'])
+        print(degradation_df['LAM_PE'])
+        print(degradation_df['Li_mass'])
+        self.assertAlmostEqual(degradation_df['LLI'].iloc[0], -9.999983, 5)
+        self.assertAlmostEqual(degradation_df['LLI'].iloc[1], -9.999556, 5)
+        self.assertAlmostEqual(degradation_df['LAM_PE'].iloc[0], 49.984768, 5)
+        self.assertAlmostEqual(degradation_df['LAM_PE'].iloc[1], 49.984877, 5)
+        self.assertAlmostEqual(degradation_df["Li_mass"].iloc[1], 12.312480, 3)
+
+        # Values for real anode and cathode measurements
+        # self.assertAlmostEqual(degradation_df['LLI'].iloc[0], -0.027076, 5)
+        # self.assertAlmostEqual(degradation_df['LLI'].iloc[1], 2.712016, 5)
+        # self.assertAlmostEqual(degradation_df['LAM_PE'].iloc[0], 0.06750165, 5)
+        # self.assertAlmostEqual(degradation_df['LAM_PE'].iloc[1], 2.745720, 5)
+        # self.assertAlmostEqual(degradation_df["Li_mass"].iloc[1], 101.82022, 3)
+
+
+class IntracellFeaturesTest(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        pass
+
+    def testIntracellCycles(self):
+        run_path = os.path.join(TEST_FILE_DIR, 'PreDiag_000220_00005E_structure_omit.json')
+        cell_struct = auto_load_processed(run_path)
+        with ScratchDir("."):
+            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+            params_dict = {
+                'diagnostic_cycle_type': 'rpt_0.2C',
+                'step_type': 0,
+                'anode_file': 'anode_test.csv',
+                'cathode_file': 'cathode_test.csv'
+            }
+            featurizer = IntracellCycles.from_run(
+                run_path, os.getcwd(), cell_struct, params_dict=params_dict
+            )
+            print(featurizer.X)
+            self.assertEqual(featurizer.X.shape, (2, 17))
+            self.assertAlmostEqual(featurizer.X["LLI"].iloc[0], -9.999983, 5)
+            self.assertAlmostEqual(featurizer.X["Li_mass"].iloc[1], 12.312480, 3)
+
+    def testIntracellFeatures(self):
+        run_path = os.path.join(TEST_FILE_DIR, 'PreDiag_000220_00005E_structure_omit.json')
+        cell_struct = auto_load_processed(run_path)
+        with ScratchDir("."):
+            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+            params_dict = {
+                'diagnostic_cycle_type': 'rpt_0.2C',
+                'step_type': 0,
+                'anode_file': 'anode_test.csv',
+                'cathode_file': 'cathode_test.csv'
+            }
+
+            featurizer = IntracellFeatures.from_run(
+                run_path, os.getcwd(), cell_struct, params_dict=params_dict
+            )
+            print(featurizer.X)
+            self.assertEqual(featurizer.X.shape, (1, 34))
+            self.assertAlmostEqual(featurizer.X["diag_0_LLI"].iloc[0], -9.999983, 5)
+            self.assertAlmostEqual(featurizer.X["diag_1_Li_mass"].iloc[0], 12.312480, 3)
+
+    def test_validation(self):
+        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+        with ScratchDir("."):
+            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+            params_dict = {
+                'diagnostic_cycle_type': 'rpt_0.2C',
+                'step_type': 0,
+                'anode_file': 'anode_test.csv',
+                'cathode_file': 'cathode_test.csv'
+            }
+            run_path = os.path.join(
+                TEST_FILE_DIR, "PreDiag_000220_00005E_structure_omit.json"
+            )
+            pcycler_run = auto_load_processed(run_path)
+
+            # Modify pcycler_run to be invalid
+            mask = pcycler_run.diagnostic_summary.cycle_type == "rpt_0.2C"
+            pcycler_run.diagnostic_summary.loc[mask, "discharge_capacity"] = 3.5
+
+            featurizer = IntracellFeatures.from_run(
+                run_path, os.getcwd(), pcycler_run, params_dict=params_dict
+            )
+            self.assertFalse(featurizer)

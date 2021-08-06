@@ -31,8 +31,6 @@ from beep.structure.battery_archive import BatteryArchiveDatapath
 from beep.tests.constants import TEST_FILE_DIR
 
 
-
-
 class TestArbinDatapath(unittest.TestCase):
     """
     Tests specific to Arbin cyclers.
@@ -52,7 +50,6 @@ class TestArbinDatapath(unittest.TestCase):
         )
 
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-
 
     # from RCRT.test_serialization
     def test_serialization(self):
@@ -82,9 +79,11 @@ class TestArbinDatapath(unittest.TestCase):
         # print(diag['parameter_set'])
         self.assertEqual(diag['parameter_set'], 'NCR18650-618')
         diag_interp = rcycler_run.interpolate_diagnostic_cycles(diag, resolution=1000, v_resolution=0.0005)
-        # print(diag_interp[diag_interp.cycle_index == 1].charge_capacity.median())
-        self.assertEqual(np.around(diag_interp[diag_interp.cycle_index == 1].charge_capacity.median(), 3),
-                         np.around(3.428818545441403, 3))
+        self.assertAlmostEqual(diag_interp[(diag_interp.cycle_index == 1) &
+                                           (diag_interp.step_index == 5)].charge_capacity.max(),
+                               3.39608899, 3)
+        self.assertAlmostEqual(diag_interp[(diag_interp.cycle_type == "hppc")].charge_capacity.max(),
+                               3.4919972, 3)
 
 
 class TestMaccorDatapath(unittest.TestCase):
@@ -326,7 +325,7 @@ class TestBioLogicDatapath(unittest.TestCase):
     def test_from_file(self):
 
         biologic_file = os.path.join(
-            TEST_FILE_DIR, "raw", "biologic_test_file_short.mpt"
+            TEST_FILE_DIR, "raw", "test_loopsnewoutput_MB_CE1_short10k.csv"
         )
         dp = BiologicDatapath.from_file(biologic_file)
 

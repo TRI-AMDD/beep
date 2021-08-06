@@ -1,5 +1,45 @@
 
 
+v2021.8.2.15
+------------
+* Add validation for new projects
+* Update conversion code - Thanks Will Powelson!
+* don't include non-advancements in in transition mappings
+* document partition rationale
+* mps file creator utils
+* create cycle advancement rules
+* convert seqs
+* split steps into parts
+* technique partition utility classes
+* rename cycle transition to cycle advancement
+* Working version of new interpolation for CV steps
+
+
+v2021.7.21.18
+-------------
+* Adds CV_time and CV_current summary stats - Thanks Dan Cogswell!
+* Tolerances for CV segment extraction are now input variables.
+* Adds dtypes for CV_time and CV_current.
+* CV time stat now set to None for cycles which don't have charge steps.
+* Adds CV_time and CV_current as summary stats, and a helper function to extract the CV portion of charge.
+* Converts test_time from float32 to float64. It can get large enough that decimal points are truncated with float32, producing data points with exactly the same test_time.
+* Add file copy to test so that generation can run automatically
+* Working version of intracell features - thanks Patrick Asinger!
+
+v2021.7.21.14
+-------------
+* use correct test file and cycle_index column
+* update to biologic data file parsing
+* update biologic test to new requirements
+* Remove RPTdQdVFeature and HPPCRelaxationFeature for futher development
+* Update HPPCResistanceFeature - Thanks Xiao Cui!
+* adding in some numerical values
+* add one numerical value
+* add IndexError for except
+* in order to pass the test, changed the name of the strings (column names)
+* make the fitting better for the initial part
+* I changed the resistance features with the current code and also changed the features to be percentage change
+
 v2021.6.3.21
 ------------
 * Update threshold method per Patrick Asinger's suggestion

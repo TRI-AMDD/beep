@@ -41,7 +41,7 @@ class BatteryArchiveDatapath(BEEPDatapath):
 
     # Mapping of data types for BEEP columns
     DATA_TYPES = {
-        "test_time": "float32",
+        "test_time": "float64",
         "cycle_index": "int32",
         "current": "float32",
         "voltage": "float32",
