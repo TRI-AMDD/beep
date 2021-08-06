@@ -31,6 +31,19 @@ BEEP_CMDS = ["structure", "featurize", "run_model"]
 STRUCTURED_SUFFIX = "-structured"
 FEATURIZED_SUFFIX = "-featurized"
 
+# todo: add run id
+# - name of the file, md5sum of the file
+# - resolution
+# - version of beep
+
+# add ability to pass in run id
+
+# fastcharge don't have diagnostic
+
+# ragged featurizers apply is ok
+
+
+
 
 class ContextPersister:
     """
