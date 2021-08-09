@@ -468,6 +468,7 @@ def structure(
                 logger.info(f"{log_prefix}: Structured: Written to {output_fname}")
 
         except KeyboardInterrupt:
+            logging.critical("Keyboard interrupt caught - exiting...")
             click.Context.exit(1)
 
         except BaseException:
