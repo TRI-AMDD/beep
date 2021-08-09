@@ -14,14 +14,16 @@ import click
 from monty.serialization import dumpfn
 
 from beep import logger, BEEP_PARAMETERS_DIR, S3_CACHE, formatter_jsonl, __version__
-from beep.structure.cli import auto_load
+from beep.structure.cli import auto_load, auto_load_processed
 from beep.featurize import \
     HPPCResistanceVoltageFeatures, \
     DiagnosticSummaryStats, \
     DiagnosticProperties, \
     TrajectoryFastCharge, \
     DeltaQFastCharge, \
-    BeepFeatures
+    BeepFeatures, \
+    intracell_losses, \
+    FEATURE_HYPERPARAMS
 from beep.utils.s3 import list_s3_objects, download_s3_object
 from beep.validate import BeepValidationError
 
@@ -148,6 +150,7 @@ def cli(ctx, log_file, run_id, tags):
         hdlr = logging.FileHandler(log_file, "a")
         hdlr.setFormatter(formatter_jsonl)
         logger.addHandler(hdlr)
+
 
 @cli.command(
     help="Structure and/or validate one or more files. Argument "
@@ -535,16 +538,6 @@ def structure(
          "databases. If not set, status json is not written."
 )
 @click.option(
-    '--output-filenames',
-    '-o',
-    type=click.Path(),
-    help="Filenames to write each input filename to. "
-         "If not specified, auto-names each file by appending"
-         "`-featurized` before the file extension inside "
-         "the current working dir.",
-    multiple=True
-)
-@click.option(
     '--output-dir',
     '-d',
     type=CLICK_DIR,
@@ -574,22 +567,14 @@ def structure(
          "errors are encountered on any file with any featurizer. "
          "Otherwise, logs critical errors to the status json.",
 )
-@click.option(
-    '--autocheck',
-    is_flag=True,
-    default=False,
-    help="Automatically check the featurizers"
-)
 @click.pass_context
 def featurize(
         ctx,
         files,
         output_status_json,
-        output_filenames,
         output_dir,
         featurizers,
         halt_on_error,
-        autocheck
 ):
     files = [os.path.abspath(f) for f in files]
     n_files = len(files)
@@ -597,13 +582,13 @@ def featurize(
     logger.info(f"Featurizing {n_files} files")
 
     allowed_featurizers = {
-        "rptdqdv": RPTdQdVFeatures,
         "hppcresistance": HPPCResistanceVoltageFeatures,
-        "hppcrelaxation": HPPCRelaxationFeatures,
         "diagsumstats": DiagnosticSummaryStats,
         "diagprops": DiagnosticProperties,
         "trajfastcharge": TrajectoryFastCharge,
-        "dqfastcharge": DeltaQFastCharge
+        "dqfastcharge": DeltaQFastCharge,
+        "iccycles": intracell_losses.IntracellCycles,
+        "icfeatures": intracell_losses.IntracellFeatures
     }
 
     f_map = {}
@@ -638,11 +623,109 @@ def featurize(
 
     # ragged featurizers apply is ok
 
+    status_json = {}
+    i = 0
     for file in files:
-        pass
+        log_prefix = f"File {i + 1} of {n_files}"
+
+        t0_file = time.time()
+        op_result = {
+            "walltime": None,
+            "processed_md5_chksum": md5sum(file)
+
+        }
+
+        logger.debug(f"{log_prefix}: Loading processed run '{file}'.")
+        processed_run = auto_load_processed(file)
+        logger.debug(f"{log_prefix}: Loaded processed run '{file}' into memory.")
 
 
-    # add metadata to status json
+        for fclassname, fclass in f_map.items():
+            op_subresult = {
+                "output": None,
+                "valid": False,
+                "featurized": False,
+                "walltime": None,
+                "traceback": None
+            }
+
+            t0 = time.time()
+            try:
+                params = FEATURE_HYPERPARAMS.get(fclass.class_feature_name, None)
+                f = fclass.from_run(file, output_dir, processed_run, params)
+
+                if f:
+                    logger.info(f"{log_prefix}: Featurizer {fclassname} valid for '{file}' and applied")
+                    output_path = os.path.abspath(f.name)
+                    dumpfn(f, output_path)
+                    logger.info(f"{log_prefix}: Featurizer {fclassname} features for '{file}' written to '{output_path}'")
+                    op_subresult["valid"] = True
+                    op_subresult["featurized"] = True
+                    op_subresult["output"] = output_path
+                else:
+                    logger.info(f"{log_prefix}: Featurizer {fclassname} invalid for '{file}' (insufficient or incorrect data).")
+
+            except KeyboardInterrupt:
+                logger.critical("Keyboard interrupt caught - exiting...")
+                click.Context.exit(1)
+
+            except BaseException:
+                tbinfo = sys.exc_info()
+                tbfmt = traceback.format_exception(*tbinfo)
+                logger.error(
+                    f"{log_prefix}: Failed/invalid: ({tbinfo[0].__name__}): {f}")
+                op_subresult["traceback"] = tbfmt
+
+                if halt_on_error:
+                    raise
+
+            t1 = time.time()
+            op_subresult["walltime"] = t1 - t0
+            op_result[fclassname] = op_subresult
+
+        t1_file = time.time()
+        op_result["walltime"] = t1_file - t0_file
+        status_json[file] = op_result
+        i += 1
+
+    status_json = add_metadata_to_status_json(status_json, ctx.obj.run_id, ctx.obj.tags)
+
+    # Generate a summary output
+
+    logger.info("Featurization report:")
+
+    all_succeeded, some_succeeded, none_succeeded = [], [], []
+    for file, data in status_json.items():
+        if file not in ["metadata"]:
+
+            feats_succeeded = []
+            for fname, fdata in data.items():
+                if fname not in ["walltime", "processed_md5_chksum"]:
+                    feats_succeeded.append(fdata["featurized"])
+
+            n_success = sum(feats_succeeded)
+            if n_success == len(featurizers):
+                all_succeeded.append((file, n_success))
+            elif n_success == 0:
+                none_succeeded.append((file, n_success))
+            else:
+                some_succeeded.append((file, n_success))
+
+    logger.info(f"\tAll {len(featurizers)} featurizers succeeded: {len(all_succeeded)}/{n_files}")
+    if len(all_succeeded) > 0:
+        for filename, _ in all_succeeded:
+            logger.info(f"\t\t- {filename}")
+
+    if len(featurizers) > 1:
+        logger.info(f"\tSome featurizers succeeded: {len(some_succeeded)}/{n_files}")
+        if len(some_succeeded) > 0:
+            for filename, n_success in some_succeeded:
+                logger.info(f"\t\t- {filename}: {n_success}/{len(featurizers)}")
+
+    logger.info(f"\tNo featurizers succeeded or file failed: {len(none_succeeded)}/{n_files}")
+    if len(none_succeeded) > 0:
+        for filename, _ in none_succeeded:
+            logger.info(f"\t\t- {filename}")
 
 
 
