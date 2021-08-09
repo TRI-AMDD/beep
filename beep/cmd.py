@@ -119,8 +119,8 @@ def md5sum(filename):
     "-r",
     type=click.INT,
     multiple=False,
-    help="An integer run_id which can be optionally assigned to this run."
-         "It will be output in the metadata status json for any subcommand"
+    help="An integer run_id which can be optionally assigned to this run. "
+         "It will be output in the metadata status json for any subcommand "
          "if the status json is enabled."
 )
 @click.option(
