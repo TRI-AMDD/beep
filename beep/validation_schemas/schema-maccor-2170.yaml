@@ -1,9 +1,9 @@
 # This is a placeholder for maccor schema for future development.
-rec#:
+data_point:
   schema:
     type: integer
   type: list
-cyc#:
+cycle_index:
   schema:
     min: 0
     min_is_below: 2
@@ -11,34 +11,34 @@ cyc#:
     type: integer
     monotonic: 'increasing'
   type: list
-state:
+_state:
   schema:
     type: string
   type: list
-volts:
+voltage:
   schema:
     max: 5.0
     min: 0
     type: float
   type: list
-amps:
+current:
   schema:
     max: 15.0
     min: -15.0
     min_is_below: 0.0
     type: float
   type: list
-test (sec):
+test_time:
   schema:
     min: 0.0
     type: float
   type: list
-step (sec):
+step_time:
   schema:
     min: 0.0
     type: float
   type: list
-dpt time:
+date_time:
   schema:
     type: string
   type: list
