@@ -98,7 +98,7 @@ def md5sum(filename):
     Returns:
         (str) Hash digest h.
     """
-    with open(filename) as f:
+    with open(filename, "rb") as f:
         d = f.read()
         h = hashlib.md5(d).hexdigest()
     return h
@@ -434,8 +434,10 @@ def structure(
 
         t0 = time.time()
         try:
-
             log_prefix = f"File {i + 1} of {n_files}"
+            logger.debug(f"Hashing file '{f}' to MD5")
+            op_result["raw_file_sha256"] = md5sum(f)
+
             logger.info(f"{log_prefix}: Reading raw file {f} from disk...")
             dp = auto_load(f)
             logger.info(f"{log_prefix}: Validating: {f} according to schema file '{dp.schema}'")
