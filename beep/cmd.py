@@ -359,6 +359,7 @@ def structure(
     for i, f in enumerate(files):
         op_result = {
             "validated": False,
+            "validation_schema": None,
             "structured": False,
             "output": None,
             "traceback": None,
@@ -372,6 +373,8 @@ def structure(
             logger.info(f"{log_prefix}: Reading raw file {f} from disk...")
             dp = auto_load(f)
             logger.info(f"{log_prefix}: Validating: {f} according to schema file '{dp.schema}'")
+            op_result["validation_schema"] = dp.schema
+
             is_valid, validation_reason = dp.validate()
             op_result["validated"] = is_valid
 
