@@ -465,6 +465,7 @@ def structure(
                 output_fname = output_files[i]
                 dp.to_json_file(output_fname, omit_raw=no_raw)
                 op_result["structured"] = True
+                op_result["output"] = output_fname
                 logger.info(f"{log_prefix}: Structured: Written to {output_fname}")
 
         except KeyboardInterrupt:
