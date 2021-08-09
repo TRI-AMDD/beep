@@ -124,7 +124,7 @@ def md5sum(filename):
          "if the status json is enabled."
 )
 @click.option(
-    "--tags"
+    "--tags",
     "-t",
     type=click.STRING,
     multiple=True,
@@ -352,6 +352,10 @@ def structure(
         files = local_files + local_files_from_s3
 
     files = [os.path.abspath(f) for f in files]
+
+    for file in files:
+        if not os.path.exists(file):
+            raise FileNotFoundError(f"File '{file}' not found on filesystem!")
     n_files = len(files)
 
     logger.info(f"Structuring {n_files} files")
