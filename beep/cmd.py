@@ -429,14 +429,14 @@ def structure(
             "output": None,
             "traceback": None,
             "walltime": None,
-            "raw_file_sha256": None
+            "raw_md5_chksum": None
         }
 
         t0 = time.time()
         try:
             log_prefix = f"File {i + 1} of {n_files}"
             logger.debug(f"Hashing file '{f}' to MD5")
-            op_result["raw_file_sha256"] = md5sum(f)
+            op_result["raw_md5_chksum"] = md5sum(f)
 
             logger.info(f"{log_prefix}: Reading raw file {f} from disk...")
             dp = auto_load(f)
