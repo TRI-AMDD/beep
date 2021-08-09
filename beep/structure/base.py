@@ -22,7 +22,7 @@ from beep.conversion_schemas import (
 )
 
 from beep.utils import parameters_lookup
-from beep import logger
+from beep import logger, VALIDATION_SCHEMA_DIR
 from beep.validate import SimpleValidator
 
 
@@ -154,7 +154,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             # Extra metadata will always be in .raw
             self.raw = metadata_dict
 
-    def __init__(self, raw_data, metadata, paths=None, impute_missing=True):
+    def __init__(self, raw_data, metadata, paths=None, schema=None, impute_missing=True):
         """
 
         Args:
@@ -164,6 +164,8 @@ class BEEPDatapath(abc.ABC, MSONable):
                 have to.
             paths ({str: str, Pathlike}): Should contain "raw" and "metadata" keys, even if they are the same
                 filepath.
+            schema (str): the name of the validation schema file to use. Should be located in the
+                VALIDATION_SCHEMA_DIR directory, or can alternatively be an absolute filepath.
             impute_missing (bool): Impute missing columns such as temperature and internal_resistance if they
                 are not included in raw_data.
         """
@@ -184,6 +186,19 @@ class BEEPDatapath(abc.ABC, MSONable):
                 for col in self.IMPUTABLE_COLUMNS:
                     if col not in raw_data:
                         raw_data[col] = np.NaN
+
+        if not schema:
+            self.schema = schema
+        else:
+            if os.path.isabs(schema):
+                abs_schema = schema
+            else:
+                abs_schema = os.path.join(VALIDATION_SCHEMA_DIR, schema)
+
+            if os.path.exists(abs_schema):
+                self.schema = abs_schema
+            else:
+                raise FileNotFoundError(f"The schema file specified for validation could not be found: {schema}.")
 
         self.structured_summary = None     # equivalent of PCR.summary
         self.structured_data = None        # equivalent of PCR.cycles_interpolated
@@ -262,7 +277,11 @@ class BEEPDatapath(abc.ABC, MSONable):
             (bool) True if the raw data is valid, false otherwise.
 
         """
-        v = SimpleValidator()
+
+        if self.schema:
+            v = SimpleValidator(schema_filename=self.schema)
+        else:
+            v = SimpleValidator()
         is_valid = v.validate(self.raw_data)
         return is_valid
 
@@ -355,7 +374,11 @@ class BEEPDatapath(abc.ABC, MSONable):
             "summary": summary,
             "cycles_interpolated": cycles_interpolated,
             "diagnostic_summary": diagnostic_summary,
-            "diagnostic_interpolated": diagnostic_interpolated
+            "diagnostic_interpolated": diagnostic_interpolated,
+
+            # Provence for validation
+            "schema_path": self.schema,
+
         }
 
     @classmethod
@@ -375,6 +398,7 @@ class BEEPDatapath(abc.ABC, MSONable):
                         d[obj][column] = pd.Series(d[obj][column], dtype=dtype)
 
         paths = d.get("paths", None)
+        schema = d.get("schema_path", None)
 
         # support legacy operations
         # support loads when raw_data not available
@@ -387,7 +411,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             metadata = d.get("metadata")
             is_legacy = False
 
-        datapath = cls(raw_data=raw_data, metadata=metadata, paths=paths)
+        datapath = cls(raw_data=raw_data, metadata=metadata, paths=paths, schema=schema)
         datapath._is_legacy = is_legacy
 
         datapath.structured_data = pd.DataFrame(d["cycles_interpolated"])

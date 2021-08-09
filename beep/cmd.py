@@ -14,9 +14,7 @@ from monty.serialization import dumpfn
 from beep import logger, BEEP_PARAMETERS_DIR, S3_CACHE, formatter_jsonl
 from beep.structure.cli import auto_load
 from beep.featurize import \
-    RPTdQdVFeatures, \
     HPPCResistanceVoltageFeatures, \
-    HPPCRelaxationFeatures, \
     DiagnosticSummaryStats, \
     DiagnosticProperties, \
     TrajectoryFastCharge, \
@@ -370,7 +368,7 @@ def structure(
         t0 = time.time()
         try:
             dp = auto_load(f)
-            logger.info(f"File {i + 1} of {n_files}: Validating: {f}")
+            logger.info(f"File {i + 1} of {n_files}: Validating: {f} according to schema file '{dp.schema}'")
             is_valid = dp.validate()
             op_result["validated"] = is_valid
 
@@ -394,6 +392,9 @@ def structure(
                 dp.to_json_file(output_fname, omit_raw=no_raw)
                 op_result["structured"] = True
                 logger.info(f"File {i + 1} of {n_files}: Structured: Written to {output_fname}")
+
+        except KeyboardInterrupt:
+            click.Context.exit(1)
 
         except BaseException:
             tbinfo = sys.exc_info()
@@ -562,3 +563,44 @@ def featurize(
 
 
 
+
+if __name__ == "__main__":
+    # {'file_list': [
+    #     '/home/ec2-user/SageMaker/notebooks/TRI/ForJoachim/PreDiag_000433_0000F5.043',
+    #     '/home/ec2-user/SageMaker/notebooks/TRI/ForJoachim/FastCharge_000047_CH21.csv',
+    #     '/home/ec2-user/SageMaker/notebooks/TRI/ForJoachim/PreDiag_000403_000083.013',
+    #     '/home/ec2-user/SageMaker/notebooks/TRI/ForJoachim/PreDiag_000342_000176.054',
+    #     '/home/ec2-user/SageMaker/notebooks/TRI/ForJoachim/PreDiag_000401_000086.011',
+    #     '/home/ec2-user/SageMaker/notebooks/TRI/ForJoachim/FastCharge_000046_CH31.csv',
+    #     '/home/ec2-user/SageMaker/notebooks/TRI/ForJoachim/Talos_000303_000154.013',
+    #     '/home/ec2-user/SageMaker/notebooks/TRI/ForJoachim/PreDiag_000402_000087.012',
+    #     '/home/ec2-user/SageMaker/notebooks/TRI/ForJoachim/PreDiag_000274_0000D7.079',
+    #     '/home/ec2-user/SageMaker/notebooks/TRI/ForJoachim/PreDiag_000400_000084.010',
+    #     '/home/ec2-user/SageMaker/notebooks/TRI/ForJoachim/FastCharge_000045_CH4.csv'],
+    #  'run_list': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    #  'validity': ['invalid', 'valid', 'valid', 'invalid', 'valid', 'valid',
+    #               'invalid', 'valid', 'valid', 'valid', 'invalid'],
+    #  'message_list': [{'comment': '',
+    #                    'error': 'cyc# needs to reach at least 1 for processing, instead found:value=0'},
+    #                   {'comment': '', 'error': ''},
+    #                   {'comment': '', 'error': ''}, {'comment': '',
+    #                                                  'error': 'cyc# needs to be monotonically increasing for processing'},
+    #                   {'comment': '', 'error': ''},
+    #                   {'comment': '', 'error': ''}, {'comment': '',
+    #                                                  'error': 'Column cyc#: integer type check failed at index 1603009 with value nan'},
+    #                   {'comment': '', 'error': ''},
+    #                   {'comment': '', 'error': ''},
+    #                   {'comment': '', 'error': ''}, {'comment': '',
+    #                                                  'error': 'cycle_index needs to reach at least 1 for processing, instead found:value=0.0'}]}
+# FastCharge_000045_CH4.csv - invalid
+# FastCharge_000046_CH31.csv
+# FastCharge_000047_CH21.csv
+# PreDiag_000274_0000D7.079
+# PreDiag_000342_000176.054 - invalid
+# PreDiag_000400_000084.010
+# PreDiag_000401_000086.011
+# PreDiag_000402_000087.012
+# PreDiag_000403_000083.013
+# PreDiag_000433_0000F5.043 - invalid
+# Talos_000303_000154.013 - invalid
+    pass

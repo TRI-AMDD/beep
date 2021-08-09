@@ -461,6 +461,7 @@ class SimpleValidator(object):
 
         return True, ""
 
+    # todo: this can be removed in new CLI
     def validate_from_paths(
         self,
         paths,
@@ -668,4 +669,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # main()
+
+
+    v = SimpleValidator()
+    output = v.validate_from_paths(["/Users/ardunn/alex/tri/code/beep/beep/CLI_TEST_FILES/FastCharge_000045_CH4.csv"])
+    print(output)

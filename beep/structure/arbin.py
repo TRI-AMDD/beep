@@ -9,8 +9,9 @@ from monty.serialization import loadfn
 import pandas as pd
 
 from beep.conversion_schemas import ARBIN_CONFIG
-from beep import logger, tqdm
+from beep import logger, VALIDATION_SCHEMA_DIR
 from beep.structure.base import BEEPDatapath
+from beep.validate import PROJECT_SCHEMA
 
 
 class ArbinDatapath(BEEPDatapath):
@@ -74,4 +75,14 @@ class ArbinDatapath(BEEPDatapath):
             "metadata": metadata_path if metadata else None
         }
 
-        return cls(data, metadata, paths)
+        # Set schema from filename, if possible; otherwise, use default arbin schema
+        project_schema = loadfn(PROJECT_SCHEMA)
+        name = os.path.basename(path)
+        special_schema_filename = project_schema.get(name.split("_")[0], {}).get("arbin")
+
+        if special_schema_filename:
+            schema = os.path.join(VALIDATION_SCHEMA_DIR, special_schema_filename)
+        else:
+            schema = os.path.join(VALIDATION_SCHEMA_DIR, "schema-arbin-lfp.yaml")
+
+        return cls(data, metadata, paths=paths, schema=schema)
