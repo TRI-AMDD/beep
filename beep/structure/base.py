@@ -282,6 +282,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             v = SimpleValidator(schema_filename=self.schema)
         else:
             v = SimpleValidator()
+
         is_valid, reason = v.validate(self.raw_data)
         return is_valid, reason
 

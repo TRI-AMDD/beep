@@ -87,6 +87,10 @@ class MaccorDatapath(BEEPDatapathWithEIS):
         data.rename(str.lower, axis="columns", inplace=True)
         data = data.astype(MACCOR_CONFIG["data_types"])
         data.rename(MACCOR_CONFIG["data_columns"], axis="columns", inplace=True)
+
+        # Needed for validating correctly
+        data["_state"] = data["_state"].astype(str)
+
         data["charge_capacity"] = cls.quantity_sum(
             data, "capacity", "charge"
         )

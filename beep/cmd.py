@@ -367,8 +367,11 @@ def structure(
 
         t0 = time.time()
         try:
+
+            log_prefix = f"File {i + 1} of {n_files}"
+            logger.info(f"{log_prefix}: Reading raw file {f} from disk...")
             dp = auto_load(f)
-            logger.info(f"File {i + 1} of {n_files}: Validating: {f} according to schema file '{dp.schema}'")
+            logger.info(f"{log_prefix}: Validating: {f} according to schema file '{dp.schema}'")
             is_valid, validation_reason = dp.validate()
             op_result["validated"] = is_valid
 
@@ -378,7 +381,7 @@ def structure(
             logger.info(f"File {i + 1} of {n_files}: Validated: {f}")
 
             if not validation_only:
-                logger.info(f"File {i + 1} of {n_files}: Structuring: Read from {f}")
+                logger.info(f"{log_prefix}: Structuring: Read from {f}")
                 if automatic:
                     dp.autostructure(
                         charge_axis=charge_axis,
@@ -391,7 +394,7 @@ def structure(
                 output_fname = output_files[i]
                 dp.to_json_file(output_fname, omit_raw=no_raw)
                 op_result["structured"] = True
-                logger.info(f"File {i + 1} of {n_files}: Structured: Written to {output_fname}")
+                logger.info(f"{log_prefix}: Structured: Written to {output_fname}")
 
         except KeyboardInterrupt:
             click.Context.exit(1)
@@ -399,7 +402,7 @@ def structure(
         except BaseException:
             tbinfo = sys.exc_info()
             tbfmt = traceback.format_exception(*tbinfo)
-            logger.error(f"File {i + 1} of {n_files}: Failed/invalid: ({tbinfo[0].__name__}): {f}")
+            logger.error(f"{log_prefix}: Failed/invalid: ({tbinfo[0].__name__}): {f}")
             op_result["traceback"] = tbfmt
 
             if halt_on_error:
