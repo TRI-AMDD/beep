@@ -1,9 +1,11 @@
-import logging
+import datetime
 import os
 import sys
 import time
 import pprint
 import fnmatch
+import hashlib
+import logging
 import functools
 import traceback
 import importlib
@@ -11,7 +13,7 @@ import importlib
 import click
 from monty.serialization import dumpfn
 
-from beep import logger, BEEP_PARAMETERS_DIR, S3_CACHE, formatter_jsonl
+from beep import logger, BEEP_PARAMETERS_DIR, S3_CACHE, formatter_jsonl, __version__
 from beep.structure.cli import auto_load
 from beep.featurize import \
     HPPCResistanceVoltageFeatures, \
@@ -29,30 +31,31 @@ BEEP_CMDS = ["structure", "featurize", "run_model"]
 STRUCTURED_SUFFIX = "-structured"
 FEATURIZED_SUFFIX = "-featurized"
 
-# todo: add run id
-# - name of the file, md5sum of the file
-# - resolution
-# - version of beep
-
-# add ability to pass in run id
-
-# fastcharge don't have diagnostic
-
-# ragged featurizers apply is ok
-
-
-
 
 class ContextPersister:
     """
     Class to hold persisting objects for downstream
     BEEP tasks.
     """
-    def __init__(self, cwd=None):
+    def __init__(self, cwd=None, run_id=None, tags=None):
         self.cwd = cwd
+        self.run_id = run_id
+        self.tags = tags
 
 
 def add_suffix(full_path, output_dir, suffix, modified_ext=None):
+    """
+    Add structured filename suffixes.
+
+    Args:
+        full_path:
+        output_dir:
+        suffix:
+        modified_ext:
+
+    Returns:
+
+    """
     basename = os.path.basename(full_path)
     stripped_basename, ext = os.path.splitext(basename)
     if modified_ext:
@@ -62,6 +65,44 @@ def add_suffix(full_path, output_dir, suffix, modified_ext=None):
         output_dir,
         new_basename
     )
+
+
+def add_metadata_to_status_json(status_dict, run_id, tags):
+    """Add some basic metadata to the status json.
+
+    Args:
+        status_dict (dict): Dictionary which will be written to status hson.
+        run_id (int): Run id of this operation.
+        tags ([str]): List of short string tags tagging an operation.
+
+    Returns:
+        (dict): Dictionary including BEEP metadata
+    """
+    metadata = {
+        "beep_verison": __version__,
+        "op_datetime_utc": datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+        "run_id": run_id,
+        "tags": tags
+    }
+    status_dict["metadata"] = metadata
+    return status_dict
+
+
+def md5sum(filename):
+    """
+    Get md5 sum hash of a file.
+
+    Args:
+        filename (str): Name of the file.
+
+    Returns:
+        (str) Hash digest h.
+    """
+    with open(filename) as f:
+        d = f.read()
+        h = hashlib.md5(d).hexdigest()
+    return h
+
 
 @click.group(invoke_without_command=False)
 @click.option(
@@ -73,8 +114,26 @@ def add_suffix(full_path, output_dir, suffix, modified_ext=None):
          "readable form to stdout, but if --log-file is specified, it will "
          "be additionally logged to a jsonl (json-lines) formatted file.",
 )
+@click.option(
+    "--run-id",
+    "-r",
+    type=click.INT,
+    multiple=False,
+    help="An integer run_id which can be optionally assigned to this run."
+         "It will be output in the metadata status json for any subcommand"
+         "if the status json is enabled."
+)
+@click.option(
+    "--tags"
+    "-t",
+    type=click.STRING,
+    multiple=True,
+    help="Add optional tags to the status json metadata. Can be later used for"
+         "large-scale queries on database data about sets of BEEP runs. Example:"
+         "'experiments_for_kristin'."
+)
 @click.pass_context
-def cli(ctx, log_file):
+def cli(ctx, log_file, run_id, tags):
     """
     Base command for all BEEP subcommands. Sets CWD and persistent
     context.
@@ -82,6 +141,8 @@ def cli(ctx, log_file):
     ctx.ensure_object(ContextPersister)
     cwd = os.path.abspath(os.getcwd())
     ctx.obj.cwd = cwd
+    ctx.obj.tags = tags
+    ctx.obj.run_id = run_id
 
     if log_file:
         hdlr = logging.FileHandler(log_file, "a")
@@ -364,6 +425,7 @@ def structure(
             "output": None,
             "traceback": None,
             "walltime": None,
+            "raw_file_sha256": None
         }
 
         t0 = time.time()
@@ -436,6 +498,8 @@ def structure(
     logger.info(f"\t{'Validated, not structured' if validation_only else 'Failed'}: {len(failed)}/{n_files}")
     for fail in failed:
         logger.info(f"\t\t- {fail}")
+
+    status_json = add_metadata_to_status_json(status_json, ctx.obj.run_id, ctx.obj.tags)
 
     if output_status_json:
         dumpfn(status_json, output_status_json)
@@ -564,9 +628,28 @@ def featurize(
 
     logger.info(f"Applying {len(f_map)} featurizers: {list(f_map.keys())}")
 
+    # ragged featurizers apply is ok
+
     for file in files:
         pass
 
+
+    # add metadata to status json
+
+
+
+@cli.command(
+    help="Run a machine learning model using pre-featurized cell data as input"
+         "and returning predictions as output."
+)
+@click.argument(
+    'files',
+    nargs=-1,
+    type=CLICK_FILE,
+)
+@click.pass_context
+def run_model(ctx, files):
+    pass
 
 
 
