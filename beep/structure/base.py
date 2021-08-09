@@ -282,8 +282,8 @@ class BEEPDatapath(abc.ABC, MSONable):
             v = SimpleValidator(schema_filename=self.schema)
         else:
             v = SimpleValidator()
-        is_valid = v.validate(self.raw_data)
-        return is_valid
+        is_valid, reason = v.validate(self.raw_data)
+        return is_valid, reason
 
     @classmethod
     def from_json_file(cls, filename):

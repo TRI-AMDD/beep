@@ -668,10 +668,3 @@ def main():
     return None
 
 
-if __name__ == "__main__":
-    # main()
-
-
-    v = SimpleValidator()
-    output = v.validate_from_paths(["/Users/ardunn/alex/tri/code/beep/beep/CLI_TEST_FILES/FastCharge_000045_CH4.csv"])
-    print(output)

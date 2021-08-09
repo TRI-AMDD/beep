@@ -38,7 +38,7 @@ class ArbinDatapath(BEEPDatapath):
         Returns:
             (ArbinDatapath)
         """
-        data = pd.read_csv(path)
+        data = pd.read_csv(path, index_col=0)
         data.rename(str.lower, axis="columns", inplace=True)
 
         for column, dtype in ARBIN_CONFIG["data_types"].items():

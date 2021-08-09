@@ -369,11 +369,11 @@ def structure(
         try:
             dp = auto_load(f)
             logger.info(f"File {i + 1} of {n_files}: Validating: {f} according to schema file '{dp.schema}'")
-            is_valid = dp.validate()
+            is_valid, validation_reason = dp.validate()
             op_result["validated"] = is_valid
 
             if not is_valid:
-                raise BeepValidationError
+                raise BeepValidationError(validation_reason)
 
             logger.info(f"File {i + 1} of {n_files}: Validated: {f}")
 
