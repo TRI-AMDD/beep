@@ -16,6 +16,7 @@
 import os
 import unittest
 import xmltodict
+import copy
 from collections import OrderedDict
 from monty.tempfile import ScratchDir
 from pydash import get
@@ -24,7 +25,11 @@ from beep.protocol import (
     BIOLOGIC_TEMPLATE_DIR,
     PROCEDURE_TEMPLATE_DIR,
 )
-from beep.protocol.maccor_to_biologic_mb import MaccorToBiologicMb, CycleAdvancementRules, CycleAdvancementRulesSerializer
+from beep.protocol.maccor_to_biologic_mb import (
+    MaccorToBiologicMb,
+    CycleAdvancementRules,
+    CycleAdvancementRulesSerializer
+)
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
@@ -408,6 +413,23 @@ class ConversionTest(unittest.TestCase):
 
         self.single_step_to_single_seq_test(xml, diff_dict)
         pass
+
+    def test_header_insertion(self):
+        converter = MaccorToBiologicMb()
+
+        def set_i_range(tech_num, seq, idx):
+            seq_copy = copy.deepcopy(seq)
+            seq_copy["I Range"] = "100 mA"
+            return seq_copy
+        converter.seq_mappers.append(set_i_range)
+        converter.min_voltage_v = 0
+        converter.max_voltage_v = 4.45
+
+        print(converter._mps_header_template)
+        self.assertEqual(1, 2)
+
+        converter.convert("/Users/patrickherring/Code/beep/beep/protocol/procedure_templates/formation_061621.000",
+                          "/Users/patrickherring/Code/beep/beep/protocol/biologic_templates", "formation_061621")
 
     def test_cycle_transition_serialization(self):
         cycle_transition_rules = CycleAdvancementRules(

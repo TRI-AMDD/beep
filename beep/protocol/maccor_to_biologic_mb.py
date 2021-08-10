@@ -69,8 +69,8 @@ class MaccorToBiologicMb:
             "Device : BCS-815\r\n"
             "Ecell ctrl range : min = 0.00 V, max = 9.00 V\r\n"
             "Safety Limits :\r\n"
-            "	Ecell min = 2.90 V\r\n"
-            "	Ecell max = 4.3 V\r\n"
+            "	Ecell min = {}\r\n"
+            "	Ecell max = {}\r\n"
             "	for t > 100 ms\r\n"
             "Electrode material : \r\n"
             "Initial state : \r\n"
@@ -454,7 +454,7 @@ class MaccorToBiologicMb:
         loop_seq = self._blank_seq.copy()
         loop_seq["Ns"] = seq_num
         loop_seq["ctrl_type"] = "Loop"
-        loop_seq["ctrl_repeat"] = num_loops
+        loop_seq["ctrl_repeat"] = num_loops - 1
         loop_seq["ctrl_seq"] = seq_num_to_loop_to
         # automatically added to loops, semantically useless
         loop_seq["lim1_seq"] = seq_num + 1
@@ -495,6 +495,7 @@ class MaccorToBiologicMb:
 
     def _technique_to_str(self, technique_num, seqs, tech_does_loop=False, num_loops=0, col_width=20):
         technique_str = "\r\nTechnique : {}\r\n".format(technique_num)
+        technique_str += "Modulo Bat\r\n"
         technique_str += self._seqs_to_str(seqs)
         if tech_does_loop:
             tech_header = "\r\nTechnique : {}\r\n".format(technique_num + 1)
@@ -1207,6 +1208,17 @@ class MaccorToBiologicMb:
     """
 
     def convert(self, maccor_fp, out_dir, out_filename):
+        # Insert safety limits into the header for the file output
+        if self.min_voltage_v is None:
+            safety_min_v = "0 V"
+        else:
+            safety_min_v = str(self.min_voltage_v) + " V"
+        if self.max_voltage_v is None:
+            safety_max_v = "4.45 V"
+        else:
+            safety_max_v = str(self.max_voltage_v) + " V"
+        self._mps_header_template.format(safety_max_v, safety_max_v)
+
         maccor_ast = self.load_maccor_ast(maccor_fp)
         steps = get(maccor_ast, "MaccorTestProcedure.ProcSteps.TestStep")
 
