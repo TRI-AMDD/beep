@@ -455,7 +455,7 @@ class MaccorToBiologicMb:
         loop_seq["Ns"] = seq_num
         loop_seq["ctrl_type"] = "Loop"
         loop_seq["ctrl_repeat"] = num_loops - 1
-        loop_seq["ctrl_seq"] = seq_num_to_loop_to
+        loop_seq["ctrl_seq"] = seq_num_to_loop_to -1
         # automatically added to loops, semantically useless
         loop_seq["lim1_seq"] = seq_num + 1
         loop_seq["lim2_seq"] = seq_num + 1
@@ -511,8 +511,17 @@ class MaccorToBiologicMb:
         assert len(technique_partitions_post_conversion) > 0
         last_tech = technique_partitions_post_conversion[-1]
         num_techniques = last_tech.technique_num + 1 if last_tech.tech_does_loop else last_tech.technique_num
+        # Insert safety limits into the header for the file output
+        if self.min_voltage_v is None:
+            safety_min_v = "0 V"
+        else:
+            safety_min_v = str(self.min_voltage_v) + " V"
+        if self.max_voltage_v is None:
+            safety_max_v = "4.45 V"
+        else:
+            safety_max_v = str(self.max_voltage_v) + " V"
 
-        file_str = self._mps_header_template.format(num_techniques)
+        file_str = self._mps_header_template.format(num_techniques, safety_min_v, safety_max_v)
         for tp in technique_partitions_post_conversion:
             file_str += self._technique_to_str(
                 technique_num=tp.technique_num,
@@ -1208,16 +1217,6 @@ class MaccorToBiologicMb:
     """
 
     def convert(self, maccor_fp, out_dir, out_filename):
-        # Insert safety limits into the header for the file output
-        if self.min_voltage_v is None:
-            safety_min_v = "0 V"
-        else:
-            safety_min_v = str(self.min_voltage_v) + " V"
-        if self.max_voltage_v is None:
-            safety_max_v = "4.45 V"
-        else:
-            safety_max_v = str(self.max_voltage_v) + " V"
-        self._mps_header_template.format(safety_max_v, safety_max_v)
 
         maccor_ast = self.load_maccor_ast(maccor_fp)
         steps = get(maccor_ast, "MaccorTestProcedure.ProcSteps.TestStep")

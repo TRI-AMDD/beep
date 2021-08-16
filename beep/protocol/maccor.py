@@ -1300,7 +1300,7 @@ class Procedure(DashOrderedDict):
 
         return self
 
-    def set_skip_to_end_diagnostic(self, max_v, min_v, step_key='070'):
+    def set_skip_to_end_diagnostic(self, max_v, min_v, step_key='070', new_step_key=None):
         """
         Helper function for setting the limits that cause the protocol to
         skip to the ending diagnostic.
@@ -1310,6 +1310,7 @@ class Procedure(DashOrderedDict):
             min_v (float): Lower voltage limit to skip to ending diagnostic
             step_key (str): Step for the ending diagnostic in order to
                 recognize which EndEntry should be altered
+            new_step_key (str): New value for goto step for the ending diagnostic
 
         Returns:
             dict
@@ -1321,8 +1322,12 @@ class Procedure(DashOrderedDict):
                 for end in step['Ends']['EndEntry']:
                     if end['Step'] == step_key and end['EndType'] == 'Voltage' and end['Oper'] == '>=':
                         end['Value'] = max_v
+                        if new_step_key:
+                            end['Step'] = new_step_key
                     elif end['Step'] == step_key and end['EndType'] == 'Voltage' and end['Oper'] == '<=':
                         end['Value'] = min_v
+                        if new_step_key:
+                            end['Step'] = new_step_key
 
         return self
 

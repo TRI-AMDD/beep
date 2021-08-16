@@ -17,7 +17,7 @@ import os
 import unittest
 import xmltodict
 import copy
-from collections import OrderedDict
+import pandas as pd
 from monty.tempfile import ScratchDir
 from pydash import get
 from beep.protocol import (
@@ -25,6 +25,7 @@ from beep.protocol import (
     BIOLOGIC_TEMPLATE_DIR,
     PROCEDURE_TEMPLATE_DIR,
 )
+from beep.protocol.maccor import Procedure
 from beep.protocol.maccor_to_biologic_mb import (
     MaccorToBiologicMb,
     CycleAdvancementRules,
@@ -414,6 +415,7 @@ class ConversionTest(unittest.TestCase):
         self.single_step_to_single_seq_test(xml, diff_dict)
         pass
 
+    @unittest.skip
     def test_header_insertion(self):
         converter = MaccorToBiologicMb()
 
