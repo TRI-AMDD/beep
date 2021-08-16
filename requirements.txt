@@ -1,5 +1,5 @@
 # Base requirements
-numpy==1.21.1
+numpy==1.21.2
 monty[yaml]==2021.7.8
 scipy==1.5.4
 scikit-learn==0.24.2
