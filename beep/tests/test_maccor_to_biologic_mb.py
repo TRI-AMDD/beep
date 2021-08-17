@@ -488,9 +488,25 @@ class ConversionTest(unittest.TestCase):
 
             converter.convert(os.path.join(scratch_dir, "BioTest_000001.000"),
                               TEST_FILE_DIR, "BioTest_000001")
+            f = open(os.path.join(TEST_FILE_DIR, "BioTest_000001.mps"), encoding="ISO-8859-1")
+            file = f.readlines()
+            control_list = [
+                'ctrl_type', 'Rest', 'CC', 'Rest', 'CC', 'CV', 'CC', 'Loop', 'CC', 'CV', 'Rest', 'CC',
+                'Rest', 'CC', 'CC', 'Loop', 'CV', 'CC', 'CC', 'CV', 'CC', 'CC', 'CV', 'CC', 'CC', 'CV',
+                'CC', 'CC', 'CC', 'CV', 'Rest', 'CC', 'Rest', 'Loop'
+            ]
+            self.assertListEqual(control_list, file[35].split())
+            value_list = [
+                'ctrl1_val', '240.000', '34.300', '4.400', '34.300', '100.000', '80.000', '4.400', '240.000',
+                '180.000', '80.000', '100.000', '3.000', '80.000', '48.000', '4.400', '48.000', '48.000', '4.400',
+                '240.000', '48.000', '4.400', '480.000', '720.000', '720.000', '4.300', '480.000', '100.000'
+            ]
+            self.assertListEqual(value_list, file[37].split())
 
-            print(converter._mps_header_template[225:259])
-            self.assertEqual(converter._mps_header_template[225:260], '\tEcell min = {}\r\n\tEcell max = {}\r\n\t')
+            voltage_min = '\tEcell min = 2.0 V\n'
+            self.assertEqual(voltage_min, file[9])
+            voltage_max = '\tEcell max = 4.4 V\n'
+            self.assertEqual(voltage_max, file[10])
 
     def test_cycle_transition_serialization(self):
         cycle_transition_rules = CycleAdvancementRules(
