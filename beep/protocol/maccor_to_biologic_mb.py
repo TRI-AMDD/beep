@@ -455,7 +455,7 @@ class MaccorToBiologicMb:
         loop_seq["Ns"] = seq_num
         loop_seq["ctrl_type"] = "Loop"
         loop_seq["ctrl_repeat"] = num_loops - 1
-        loop_seq["ctrl_seq"] = seq_num_to_loop_to -1
+        loop_seq["ctrl_seq"] = seq_num_to_loop_to - 1
         # automatically added to loops, semantically useless
         loop_seq["lim1_seq"] = seq_num + 1
         loop_seq["lim2_seq"] = seq_num + 1
