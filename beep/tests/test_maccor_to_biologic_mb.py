@@ -503,9 +503,9 @@ class ConversionTest(unittest.TestCase):
             ]
             self.assertListEqual(value_list, file[37].split())
 
-            voltage_min = '\tEcell min = 2.0 V\n'
+            voltage_min = '\tEcell min = 2.00 V\n'
             self.assertEqual(voltage_min, file[9])
-            voltage_max = '\tEcell max = 4.4 V\n'
+            voltage_max = '\tEcell max = 4.40 V\n'
             self.assertEqual(voltage_max, file[10])
 
     def test_cycle_transition_serialization(self):
