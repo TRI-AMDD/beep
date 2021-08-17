@@ -427,11 +427,70 @@ class ConversionTest(unittest.TestCase):
         converter.min_voltage_v = 0
         converter.max_voltage_v = 4.45
 
-        print(converter._mps_header_template)
-        self.assertEqual(1, 2)
-
         converter.convert("/Users/patrickherring/Code/beep/beep/protocol/procedure_templates/formation_061621.000",
                           "/Users/patrickherring/Code/beep/beep/protocol/biologic_templates", "formation_061621")
+
+        print(converter._mps_header_template[225:259])
+        self.assertEqual(converter._mps_header_template[225:260], '\tEcell min = {}\r\n\tEcell max = {}\r\n\t')
+
+    def test_conversion_with_updated(self):
+        converter = MaccorToBiologicMb()
+
+        with ScratchDir(".") as scratch_dir:
+            reg_params = {
+                'project_name': {0: 'FormDegrade'},
+                'seq_num': {0: 0},
+                'template': {0: 'diagnosticV5.000'},
+                'charge_constant_current_1': {0: 3.0},
+                'charge_percent_limit_1': {0: 30},
+                'charge_constant_current_2': {0: 3.0},
+                'charge_cutoff_voltage': {0: 4.3},
+                'charge_constant_voltage_time': {0: 60},
+                'charge_rest_time': {0: 5},
+                'discharge_constant_current': {0: 2.0},
+                'discharge_cutoff_voltage': {0: 2.7},
+                'discharge_rest_time': {0: 15},
+                'cell_temperature_nominal': {0: 25},
+                'cell_type': {0: 'LiFun240'},
+                'capacity_nominal': {0: 0.240},
+                'diagnostic_type': {0: 'HPPC+RPT'},
+                'diagnostic_parameter_set': {0: 'LiFunForm'},
+                'diagnostic_start_cycle': {0: 100},
+                'diagnostic_interval': {0: 100}
+                          }
+
+            protocol_params_df = pd.DataFrame.from_dict(reg_params)
+            index = 0
+            protocol_params = protocol_params_df.iloc[index]
+            diag_params_df = pd.read_csv(
+                os.path.join(PROCEDURE_TEMPLATE_DIR, "PreDiag_parameters - DP.csv")
+            )
+            diagnostic_params = diag_params_df[
+                diag_params_df["diagnostic_parameter_set"]
+                == protocol_params["diagnostic_parameter_set"]
+                ].squeeze()
+
+            procedure = Procedure.generate_procedure_regcyclev3(index, protocol_params)
+            procedure.generate_procedure_diagcyclev3(
+                protocol_params["capacity_nominal"], diagnostic_params
+            )
+            procedure.set_skip_to_end_diagnostic(4.4, 2.0, step_key="070", new_step_key="095")
+
+            def set_i_range(tech_num, seq, idx):
+                seq_copy = copy.deepcopy(seq)
+                seq_copy["I Range"] = "100 mA"
+                return seq_copy
+            converter.seq_mappers.append(set_i_range)
+            converter.min_voltage_v = 2.0
+            converter.max_voltage_v = 4.4
+
+            procedure.to_file(os.path.join(scratch_dir, "BioTest_000001.000"))
+
+            converter.convert(os.path.join(scratch_dir, "BioTest_000001.000"),
+                              TEST_FILE_DIR, "BioTest_000001")
+
+            print(converter._mps_header_template[225:259])
+            self.assertEqual(converter._mps_header_template[225:260], '\tEcell min = {}\r\n\tEcell max = {}\r\n\t')
 
     def test_cycle_transition_serialization(self):
         cycle_transition_rules = CycleAdvancementRules(

@@ -896,8 +896,8 @@ class MaccorToBiologicMb:
                     )
                 )
 
-            step_part_2 = copy.deepcopy(step)
-            end_entries = get(step_part_2, "EndsEndEntries")
+            step_part_1 = copy.deepcopy(step)
+            end_entries = get(step_part_1, "EndsEndEntries")
             if end_entries is None:
                 end_entries = []
             elif not isinstance(end_entries, list):
@@ -917,18 +917,22 @@ class MaccorToBiologicMb:
                 raise Exception("Unsupported StepMode {} at step num {}".format(step_type, step_num))
 
             new_end_entry = copy.deepcopy(self._blank_end_entry)
-            set_(new_end_entry, "EndType", step_mode)
+            set_(new_end_entry, "EndType", acceptable_limit)
             set_(new_end_entry, "Oper", oper)
             set_(new_end_entry, "Value", lim)
             set_(new_end_entry, "Step", str(step_num + 1).zfill(3))
 
             filtered_end_entries.append(new_end_entry)
             new_end_entries = filtered_end_entries if len(filtered_end_entries) > 1 else filtered_end_entries[0]
-            set_(step_part_2, "Ends.EndEntry", new_end_entries)
+            set_(step_part_1, "Ends.EndEntry", new_end_entries)
 
-            set_(step_part_2, "StepNote", "Inserted by MaccorToBiologicConversion")
+            set_(step_part_1, "StepNote", "Inserted by MaccorToBiologicConversion")
 
-            return [step, step_part_2]
+            step_part_2 = copy.deepcopy(step)
+            set_(step_part_2, "StepMode", acceptable_limit)
+            set_(step_part_2, "StepValue", lim)
+
+            return [step_part_1, step_part_2]
         else:
             raise Exception("Step {} has Limit for step of that is not Voltage or Current".format(step_num))
 
