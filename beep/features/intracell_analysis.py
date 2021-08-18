@@ -248,7 +248,8 @@ class IntracellAnalysis:
         real_cell_candidate_charge_profile_aligned = pd.DataFrame()
         real_cell_candidate_charge_profile_interper = interp1d(real_cell_candidate_charge_profile['SOC'],
                                                                real_cell_candidate_charge_profile['Voltage'],
-                                                               bounds_error=False,fill_value=(self.LOWER_VOLTAGE,self.UPPER_VOLTAGE))
+                                                               bounds_error=False,
+                                                               fill_value=(self.LOWER_VOLTAGE, self.UPPER_VOLTAGE))
         real_cell_candidate_charge_profile_aligned['Voltage_aligned'] = real_cell_candidate_charge_profile_interper(
             SOC_vec)
 #         real_cell_candidate_charge_profile_aligned['Voltage_aligned'].fillna(self.LOWER_VOLTAGE, inplace=True)
@@ -831,11 +832,18 @@ class IntracellAnalysis:
     def _get_error_from_halfcell_initial_matching(self, x, *params):
         df_1, df_2, df_real_interped, emulated_full_cell_interped = self.halfcell_initial_matching_v2(x, *params)
 
-        error = distance.euclidean(df_real_interped['Voltage_aligned'].loc[(~df_real_interped['Voltage_aligned'].isna()) & ((~emulated_full_cell_interped['Voltage_aligned'].isna()))],
-                                   emulated_full_cell_interped['Voltage_aligned'].loc[(~df_real_interped['Voltage_aligned'].isna()) &
-                                                                                      ((~emulated_full_cell_interped['Voltage_aligned'].isna()))]
-                                  ) + 0.01 * len(emulated_full_cell_interped['Voltage_aligned'].loc[
-            emulated_full_cell_interped['Voltage_aligned'].isna()])
+        error_dis = distance.euclidean(
+            df_real_interped['Voltage_aligned'].loc[
+                (~df_real_interped['Voltage_aligned'].isna())
+                & (~emulated_full_cell_interped['Voltage_aligned'].isna())],
+            emulated_full_cell_interped['Voltage_aligned'].loc[
+                (~df_real_interped['Voltage_aligned'].isna())
+                & (~emulated_full_cell_interped['Voltage_aligned'].isna())]
+                                  )
+
+        error = error_dis + 0.01 * len(emulated_full_cell_interped['Voltage_aligned'].loc[
+            emulated_full_cell_interped['Voltage_aligned'].isna()]
+                                                 )
 
         return error
 
@@ -1210,7 +1218,7 @@ class IntracellAnalysis:
         Args:
              cell_struct (beep.structure): dataframe to determine whether
                 charging or discharging
-             chg (bool): Charge state; True if charging
+             initial_matching_bounds (tuple): Bounds for fitting parameters
         Returns:
             (bool): True if step is the charge state specified.
         """
