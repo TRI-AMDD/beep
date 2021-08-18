@@ -419,6 +419,7 @@ class ConversionTest(unittest.TestCase):
         converter = MaccorToBiologicMb()
 
         with ScratchDir(".") as scratch_dir:
+            # Generate a protocol that can be used with the existing cells for testing purposes
             reg_params = {
                 'project_name': {0: 'FormDegrade'},
                 'seq_num': {0: 0},
@@ -457,7 +458,9 @@ class ConversionTest(unittest.TestCase):
                 protocol_params["capacity_nominal"], diagnostic_params
             )
             procedure.set_skip_to_end_diagnostic(4.4, 2.0, step_key="070", new_step_key="095")
+            procedure.to_file(os.path.join(scratch_dir, "BioTest_000001.000"))
 
+            # Setup the converter and run it
             def set_i_range(tech_num, seq, idx):
                 seq_copy = copy.deepcopy(seq)
                 seq_copy["I Range"] = "100 mA"
@@ -465,8 +468,6 @@ class ConversionTest(unittest.TestCase):
             converter.seq_mappers.append(set_i_range)
             converter.min_voltage_v = 2.0
             converter.max_voltage_v = 4.4
-
-            procedure.to_file(os.path.join(scratch_dir, "BioTest_000001.000"))
 
             converter.convert(os.path.join(scratch_dir, "BioTest_000001.000"),
                               TEST_FILE_DIR, "BioTest_000001")
