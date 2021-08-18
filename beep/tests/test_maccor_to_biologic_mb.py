@@ -415,24 +415,6 @@ class ConversionTest(unittest.TestCase):
         self.single_step_to_single_seq_test(xml, diff_dict)
         pass
 
-    @unittest.skip
-    def test_header_insertion(self):
-        converter = MaccorToBiologicMb()
-
-        def set_i_range(tech_num, seq, idx):
-            seq_copy = copy.deepcopy(seq)
-            seq_copy["I Range"] = "100 mA"
-            return seq_copy
-        converter.seq_mappers.append(set_i_range)
-        converter.min_voltage_v = 0
-        converter.max_voltage_v = 4.45
-
-        converter.convert("/Users/patrickherring/Code/beep/beep/protocol/procedure_templates/formation_061621.000",
-                          "/Users/patrickherring/Code/beep/beep/protocol/biologic_templates", "formation_061621")
-
-        print(converter._mps_header_template[225:259])
-        self.assertEqual(converter._mps_header_template[225:260], '\tEcell min = {}\r\n\tEcell max = {}\r\n\t')
-
     def test_conversion_with_updated(self):
         converter = MaccorToBiologicMb()
 
