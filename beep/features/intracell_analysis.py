@@ -12,7 +12,6 @@ CELL_INFO_DIR = os.path.join('data-share', 'raw', 'cell_info')
 
 def blend_electrodes(electrode_1, electrode_2_pos, electrode_2_neg, x_2):
     """
-
     Inputs:
     electrode_1: Primary material in electrode, typically Gr. DataFrame supplied with SOC evenly spaced and voltage.
     electrode_2: Secondary material in electrode, typically Si. DataFrame supplied with SOC evenly spaced and
@@ -164,7 +163,6 @@ class IntracellAnalysis:
         """
         Invokes the cell electrode analysis class. This is a class designed to fit the cell and electrode
         parameters in order to determine changes of electrodes within the full cell from only full cell cycling data.
-
         Args:
             pe_pristine_file (str): file name for the half cell data of the pristine (uncycled) positive
                 electrode
@@ -174,7 +172,6 @@ class IntracellAnalysis:
             step_type (int): charge or discharge (0 for charge, 1 for discharge)
             ne_2neg_file (str): file name of the data for the negative component of the anode
             ne_2pos_file (str): file name of the data for the positive component of the anode
-
         """
 
         if not os.path.split(pe_pristine_file)[0]:
@@ -219,13 +216,11 @@ class IntracellAnalysis:
                                                                 real_cell_initial_charge_profile,
                                                                 cycle_index):
         """
-
         Inputs:
         diag_type_cycles: beep cell_struct.diagnostic_interpolated filtered to one diagnostic type
         real_cell_initial_charge_profile_aligned: dataframe containing SOC (equally spaced) and voltage columns
         real_cell_initial_charge_profile: dataframe containing SOC and voltage columns
         cycle_index: cycle number to evaluate at
-
         Outputs
         real_cell_candidate_charge_profile_aligned: a dataframe containing columns SOC_aligned (evenly spaced) and 
         Voltage_aligned
@@ -236,7 +231,7 @@ class IntracellAnalysis:
             (diag_type_cycles.cycle_index == cycle_index)
             & (diag_type_cycles.step_type == 0)  # step_type = 0 is charge, 1 is discharge
             & (diag_type_cycles.voltage < self.UPPER_VOLTAGE)
-            & (diag_type_cycles.voltage > self.LOWER_VOLTAGE)][['voltage', 'charge_capacity']]
+            & (diag_type_cycles[self.capacity_col] > 0)][['voltage', 'charge_capacity']]
 
         real_cell_candidate_charge_profile['SOC'] = (
                 (real_cell_candidate_charge_profile['charge_capacity'] -
@@ -253,10 +248,10 @@ class IntracellAnalysis:
         real_cell_candidate_charge_profile_aligned = pd.DataFrame()
         real_cell_candidate_charge_profile_interper = interp1d(real_cell_candidate_charge_profile['SOC'],
                                                                real_cell_candidate_charge_profile['Voltage'],
-                                                               bounds_error=False)
+                                                               bounds_error=False,fill_value=(self.LOWER_VOLTAGE,self.UPPER_VOLTAGE))
         real_cell_candidate_charge_profile_aligned['Voltage_aligned'] = real_cell_candidate_charge_profile_interper(
             SOC_vec)
-        real_cell_candidate_charge_profile_aligned['Voltage_aligned'].fillna(self.LOWER_VOLTAGE, inplace=True)
+#         real_cell_candidate_charge_profile_aligned['Voltage_aligned'].fillna(self.LOWER_VOLTAGE, inplace=True)
         real_cell_candidate_charge_profile_aligned['SOC_aligned'] = SOC_vec / np.max(
             real_cell_initial_charge_profile_aligned['SOC_aligned'].loc[
                 ~real_cell_initial_charge_profile_aligned['Voltage_aligned'].isna()]) * 100
@@ -269,20 +264,18 @@ class IntracellAnalysis:
         """
         This function extracts the initial (non-degraded) voltage and soc profiles for the cell with columns
         interpolated on voltage and soc.
-
         Inputs
         cell_struct: beep cell_struct.diagnostic_interpolated filtered to one diagnostic type
         step_type: specifies whether the cell is charging or discharging. 0 is charge, 1 is discharge.
-
         Outputs
         real_cell_initial_charge_profile_aligned: a dataframe containing columns SOC_aligned (evenly spaced)
             and Voltage_aligned
         real_cell_initial_charge_profile: a dataframe containing columns Voltage (evenly spaced), capacity, and SOC
         """
         if step_type == 0:
-            capacity_col = 'charge_capacity'
+            self.capacity_col = 'charge_capacity'
         else:
-            capacity_col = 'discharge_capacity'
+            self.capacity_col = 'discharge_capacity'
 
         diag_type_cycles = cell_struct.diagnostic_data.loc[cell_struct.diagnostic_data['cycle_type'] == self.cycle_type]
         soc_vec = np.linspace(0, 100.0, 1001)
@@ -292,16 +285,16 @@ class IntracellAnalysis:
             (diag_type_cycles.cycle_index == cycle_index_of_cycle_type)
             & (diag_type_cycles.step_type == step_type)  # step_type = 0 is charge, 1 is discharge
             & (diag_type_cycles.voltage < self.UPPER_VOLTAGE)
-            & (diag_type_cycles.voltage > self.LOWER_VOLTAGE)][['voltage', capacity_col]]
+            & (diag_type_cycles.voltage > self.LOWER_VOLTAGE)][['voltage', self.capacity_col]]
 
         real_cell_initial_charge_profile['SOC'] = (
                 (
-                        real_cell_initial_charge_profile[capacity_col] -
-                        np.min(real_cell_initial_charge_profile[capacity_col])
+                        real_cell_initial_charge_profile[self.capacity_col] -
+                        np.min(real_cell_initial_charge_profile[self.capacity_col])
                 ) /
                 (
-                       np.max(real_cell_initial_charge_profile[capacity_col]) -
-                       np.min(real_cell_initial_charge_profile[capacity_col])
+                       np.max(real_cell_initial_charge_profile[self.capacity_col]) -
+                       np.min(real_cell_initial_charge_profile[self.capacity_col])
                 ) * 100
                                                    )
         real_cell_initial_charge_profile['Voltage'] = real_cell_initial_charge_profile['voltage']
@@ -500,7 +493,6 @@ class IntracellAnalysis:
 
     def blend_electrodes_robust(self, ne_pristine_matched, ne_2_pos, ne_2_neg, x_ne_2):
         """
-
         """
         if ne_2_pos.empty:
             df_blended = ne_pristine_matched
@@ -542,7 +534,6 @@ class IntracellAnalysis:
 
     def blend_electrodes_robust_v2(self, ne_pristine_matched, ne_2_pos, ne_2_neg, x_ne_2):
         """
-
         """
         if ne_2_pos.empty:
             df_blended = ne_pristine_matched
@@ -617,7 +608,6 @@ class IntracellAnalysis:
         to fit the emulated full cell profile to a real cell profile. Alternatively, this function can be used for
         emulation of full cell voltage profiles from its electrode constituents with specified capacity ratio and
         offset of the two electrodes.
-
         Inputs:
         x: an array of 2 or 3 parameters containing scale_ratio, offset, and optionally NE_2_x. scale_ratio is equal
             to the capacity of the
@@ -740,7 +730,6 @@ class IntracellAnalysis:
         """
         Augments halfcell voltage profiles by scaling and translating them. Typically used in an optimization
         routine to fit the emulated full cell profile to a real cell profile.
-
         Inputs:
         x: an array of 4 or 5 parameters containing scale_pe, offset_pe,scale_pe, scale_ne, offset_ne,
             and optionally ne_2_x
@@ -842,9 +831,11 @@ class IntracellAnalysis:
     def _get_error_from_halfcell_initial_matching(self, x, *params):
         df_1, df_2, df_real_interped, emulated_full_cell_interped = self.halfcell_initial_matching_v2(x, *params)
 
-        error = distance.euclidean(df_real_interped['Voltage_aligned'],
-                                   emulated_full_cell_interped['Voltage_aligned']) + 0.01 * len(
-            emulated_full_cell_interped['Voltage_aligned'].loc[emulated_full_cell_interped['Voltage_aligned'].isna()])
+        error = distance.euclidean(df_real_interped['Voltage_aligned'].loc[(~df_real_interped['Voltage_aligned'].isna()) & ((~emulated_full_cell_interped['Voltage_aligned'].isna()))],
+                                   emulated_full_cell_interped['Voltage_aligned'].loc[(~df_real_interped['Voltage_aligned'].isna()) &
+                                                                                      ((~emulated_full_cell_interped['Voltage_aligned'].isna()))]
+                                  ) + 0.01 * len(emulated_full_cell_interped['Voltage_aligned'].loc[
+            emulated_full_cell_interped['Voltage_aligned'].isna()])
 
         return error
 
@@ -1216,12 +1207,10 @@ class IntracellAnalysis:
         """
         Wrapper function that calls all of the functions to get the initial values for the cell
         before fitting all of the
-
         Args:
              cell_struct (beep.structure): dataframe to determine whether
                 charging or discharging
              chg (bool): Charge state; True if charging
-
         Returns:
             (bool): True if step is the charge state specified.
         """
