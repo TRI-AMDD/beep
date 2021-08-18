@@ -55,8 +55,8 @@ class MaccorToBiologicMb:
         )
         self.step_mappers = []
         self.seq_mappers = []
-        self.max_voltage_v = None
-        self.min_voltage_v = None
+        self.max_voltage_v = 4.45
+        self.min_voltage_v = 0
         self.max_current_a = None
         self.min_current_a = None
         self._mps_header_template = (
@@ -512,14 +512,8 @@ class MaccorToBiologicMb:
         last_tech = technique_partitions_post_conversion[-1]
         num_techniques = last_tech.technique_num + 1 if last_tech.tech_does_loop else last_tech.technique_num
         # Insert safety limits into the header for the file output
-        if self.min_voltage_v is None:
-            safety_min_v = "0 V"
-        else:
-            safety_min_v = "{:.2f}".format(self.min_voltage_v) + " V"
-        if self.max_voltage_v is None:
-            safety_max_v = "4.45 V"
-        else:
-            safety_max_v = "{:.2f}".format(self.max_voltage_v) + " V"
+        safety_min_v = "{:.2f}".format(self.min_voltage_v) + " V"
+        safety_max_v = "{:.2f}".format(self.max_voltage_v) + " V"
 
         file_str = self._mps_header_template.format(num_techniques, safety_min_v, safety_max_v)
         for tp in technique_partitions_post_conversion:
