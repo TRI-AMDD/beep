@@ -994,7 +994,7 @@ class MaccorToBiologicMb:
         one_past_final_step_num = step_num_offset + len(steps) + 1
         goto_upperbound = one_past_final_step_num
         goto_lowerbound = step_num_offset
-        prev_loop_open = -1
+        prev_loop_open_step_num = -1
 
         seqs = []
         for i, (step, parts) in enumerate(steps_and_parts):
@@ -1002,13 +1002,13 @@ class MaccorToBiologicMb:
             step_num = step_num_offset + 1 + i
             step_type = get(step, "StepType")
             if step_type in loop_open_types:
-                prev_loop_open = step_num
+                prev_loop_open_step_num = step_num
                 # cannot goto befoer a Do
-                goto_lowerbound = prev_loop_open + 1
+                goto_lowerbound = prev_loop_open_step_num + 1
             elif step_type == "AdvCycle":
                 continue
             elif step_type in loop_close_types:
-                if prev_loop_open == -1:
+                if prev_loop_open_step_num == -1:
                     raise Exception("Unclosed loop at {}".format(step_num))
 
                 assert len(seq_nums_by_step_num[step_num]) == 1
@@ -1018,7 +1018,7 @@ class MaccorToBiologicMb:
                     int(get(step, "Ends.EndEntry.Value")) - 1,
                     0,
                 )
-                seq_num_to_loop_to = seq_nums_by_step_num[prev_loop_open][0]
+                seq_num_to_loop_to = seq_nums_by_step_num[prev_loop_open_step_num][0]
 
                 loop_seq = self._create_loop_seq(
                     seq_num=seq_num,
@@ -1028,7 +1028,7 @@ class MaccorToBiologicMb:
                 seqs.append(loop_seq)
 
                 # book keep the loop
-                prev_loop_open = -1
+                prev_loop_open_step_num = -1
                 goto_lowerbound = step_num + 1
             else:
                 step_seq_parts = self._convert_step_parts(
