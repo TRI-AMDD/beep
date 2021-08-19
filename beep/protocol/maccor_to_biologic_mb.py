@@ -1019,7 +1019,7 @@ class MaccorToBiologicMb:
                     0,
                 )
                 seq_num_to_loop_to = seq_nums_by_step_num[prev_loop_open][0]
-                
+
                 loop_seq = self._create_loop_seq(
                     seq_num=seq_num,
                     seq_num_to_loop_to=seq_num_to_loop_to,
