@@ -454,9 +454,8 @@ class MaccorToBiologicMb:
         loop_seq = self._blank_seq.copy()
         loop_seq["Ns"] = seq_num
         loop_seq["ctrl_type"] = "Loop"
-        loop_seq["ctrl_repeat"] = num_loops - 1
-        # TODO for some reason the GOTO for the loop is off by one, the -1 subtraction here should be fixed upstream
-        loop_seq["ctrl_seq"] = seq_num_to_loop_to - 1
+        loop_seq["ctrl_repeat"] = num_loops
+        loop_seq["ctrl_seq"] = seq_num_to_loop_to
         # automatically added to loops, semantically useless
         loop_seq["lim1_seq"] = seq_num + 1
         loop_seq["lim2_seq"] = seq_num + 1
@@ -1014,11 +1013,16 @@ class MaccorToBiologicMb:
 
                 assert len(seq_nums_by_step_num[step_num]) == 1
                 seq_num = seq_nums_by_step_num[step_num][0]
-
-                num_loops = int(get(step, "Ends.EndEntry.Value"))
+                num_loops = max(
+                    # the way maccor and biologic count loops varies by 1
+                    int(get(step, "Ends.EndEntry.Value")) - 1,
+                    0,
+                )
+                seq_num_to_loop_to = seq_nums_by_step_num[prev_loop_open][0]
+                
                 loop_seq = self._create_loop_seq(
                     seq_num=seq_num,
-                    seq_num_to_loop_to=prev_loop_open,
+                    seq_num_to_loop_to=seq_num_to_loop_to,
                     num_loops=num_loops,
                 )
                 seqs.append(loop_seq)
