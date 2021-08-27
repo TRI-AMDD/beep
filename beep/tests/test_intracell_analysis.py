@@ -416,7 +416,7 @@ class IntracellFeaturesTest(unittest.TestCase):
 
             # Modify pcycler_run to be invalid
             mask = pcycler_run.diagnostic_summary.cycle_type == "rpt_0.2C"
-            pcycler_run.diagnostic_summary.loc[mask, "discharge_capacity"] = 3.5
+            pcycler_run.diagnostic_summary.loc[mask, "discharge_capacity"] = 3.35
 
             featurizer = IntracellFeatures.from_run(
                 run_path, os.getcwd(), pcycler_run, params_dict=params_dict
