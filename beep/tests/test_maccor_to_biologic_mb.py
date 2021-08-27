@@ -16,7 +16,8 @@
 import os
 import unittest
 import xmltodict
-from collections import OrderedDict
+import copy
+import pandas as pd
 from monty.tempfile import ScratchDir
 from pydash import get
 from beep.protocol import (
@@ -24,7 +25,12 @@ from beep.protocol import (
     BIOLOGIC_TEMPLATE_DIR,
     PROCEDURE_TEMPLATE_DIR,
 )
-from beep.protocol.maccor_to_biologic_mb import MaccorToBiologicMb, CycleAdvancementRules, CycleAdvancementRulesSerializer
+from beep.protocol.maccor import Procedure
+from beep.protocol.maccor_to_biologic_mb import (
+    MaccorToBiologicMb,
+    CycleAdvancementRules,
+    CycleAdvancementRulesSerializer
+)
 
 TEST_DIR = os.path.dirname(__file__)
 TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
@@ -408,6 +414,82 @@ class ConversionTest(unittest.TestCase):
 
         self.single_step_to_single_seq_test(xml, diff_dict)
         pass
+
+    def test_conversion_with_updated(self):
+        converter = MaccorToBiologicMb()
+
+        with ScratchDir(".") as scratch_dir:
+            # Generate a protocol that can be used with the existing cells for testing purposes
+            reg_params = {
+                'project_name': {0: 'FormDegrade'},
+                'seq_num': {0: 0},
+                'template': {0: 'diagnosticV5.000'},
+                'charge_constant_current_1': {0: 3.0},
+                'charge_percent_limit_1': {0: 30},
+                'charge_constant_current_2': {0: 3.0},
+                'charge_cutoff_voltage': {0: 4.3},
+                'charge_constant_voltage_time': {0: 60},
+                'charge_rest_time': {0: 5},
+                'discharge_constant_current': {0: 2.0},
+                'discharge_cutoff_voltage': {0: 2.7},
+                'discharge_rest_time': {0: 15},
+                'cell_temperature_nominal': {0: 25},
+                'cell_type': {0: 'LiFun240'},
+                'capacity_nominal': {0: 0.240},
+                'diagnostic_type': {0: 'HPPC+RPT'},
+                'diagnostic_parameter_set': {0: 'LiFunForm'},
+                'diagnostic_start_cycle': {0: 100},
+                'diagnostic_interval': {0: 100}
+                          }
+
+            protocol_params_df = pd.DataFrame.from_dict(reg_params)
+            index = 0
+            protocol_params = protocol_params_df.iloc[index]
+            diag_params_df = pd.read_csv(
+                os.path.join(PROCEDURE_TEMPLATE_DIR, "PreDiag_parameters - DP.csv")
+            )
+            diagnostic_params = diag_params_df[
+                diag_params_df["diagnostic_parameter_set"]
+                == protocol_params["diagnostic_parameter_set"]
+                ].squeeze()
+
+            procedure = Procedure.generate_procedure_regcyclev3(index, protocol_params)
+            procedure.generate_procedure_diagcyclev3(
+                protocol_params["capacity_nominal"], diagnostic_params
+            )
+            procedure.set_skip_to_end_diagnostic(4.4, 2.0, step_key="070", new_step_key="095")
+            procedure.to_file(os.path.join(scratch_dir, "BioTest_000001.000"))
+
+            # Setup the converter and run it
+            def set_i_range(tech_num, seq, idx):
+                seq_copy = copy.deepcopy(seq)
+                seq_copy["I Range"] = "100 mA"
+                return seq_copy
+            converter.seq_mappers.append(set_i_range)
+            converter.min_voltage_v = 2.0
+            converter.max_voltage_v = 4.4
+
+            converter.convert(os.path.join(scratch_dir, "BioTest_000001.000"),
+                              TEST_FILE_DIR, "BioTest_000001")
+            f = open(os.path.join(TEST_FILE_DIR, "BioTest_000001.mps"), encoding="ISO-8859-1")
+            file = f.readlines()
+            control_list = [
+                'ctrl_type', 'Rest', 'CC', 'Rest', 'CC', 'CV', 'CC', 'Loop', 'CC', 'CV', 'Rest', 'CC',
+                'Rest', 'CC', 'CC', 'Loop', 'CV', 'CC', 'CC', 'CV', 'CC', 'CC', 'CV', 'CC', 'CC', 'CV',
+                'CC', 'CC', 'CC', 'CV', 'Rest', 'CC', 'Rest', 'Loop'
+            ]
+            self.assertListEqual(control_list, file[35].split())
+            value_list = [
+                'ctrl1_val', '240.000', '34.300', '4.400', '34.300', '100.000', '80.000', '4.400', '240.000',
+                '180.000', '80.000', '100.000', '3.000', '80.000', '48.000', '4.400', '48.000', '48.000', '4.400',
+                '240.000', '48.000', '4.400', '480.000', '720.000', '720.000', '4.300', '480.000', '100.000'
+            ]
+            self.assertListEqual(value_list, file[37].split())
+
+            voltage_min = '\tEcell min = 2.00 V\n'
+            self.assertEqual(voltage_min, file[9])
+            voltage_max = '\tEcell max = 4.40 V\n'
+            self.assertEqual(voltage_max, file[10])
 
     def test_cycle_transition_serialization(self):
         cycle_transition_rules = CycleAdvancementRules(

@@ -55,8 +55,8 @@ class MaccorToBiologicMb:
         )
         self.step_mappers = []
         self.seq_mappers = []
-        self.max_voltage_v = None
-        self.min_voltage_v = None
+        self.max_voltage_v = 4.45
+        self.min_voltage_v = 0
         self.max_current_a = None
         self.min_current_a = None
         self._mps_header_template = (
@@ -69,8 +69,8 @@ class MaccorToBiologicMb:
             "Device : BCS-815\r\n"
             "Ecell ctrl range : min = 0.00 V, max = 9.00 V\r\n"
             "Safety Limits :\r\n"
-            "	Ecell min = 2.90 V\r\n"
-            "	Ecell max = 4.3 V\r\n"
+            "	Ecell min = {}\r\n"
+            "	Ecell max = {}\r\n"
             "	for t > 100 ms\r\n"
             "Electrode material : \r\n"
             "Initial state : \r\n"
@@ -495,6 +495,7 @@ class MaccorToBiologicMb:
 
     def _technique_to_str(self, technique_num, seqs, tech_does_loop=False, num_loops=0, col_width=20):
         technique_str = "\r\nTechnique : {}\r\n".format(technique_num)
+        technique_str += "Modulo Bat\r\n"
         technique_str += self._seqs_to_str(seqs)
         if tech_does_loop:
             tech_header = "\r\nTechnique : {}\r\n".format(technique_num + 1)
@@ -510,8 +511,11 @@ class MaccorToBiologicMb:
         assert len(technique_partitions_post_conversion) > 0
         last_tech = technique_partitions_post_conversion[-1]
         num_techniques = last_tech.technique_num + 1 if last_tech.tech_does_loop else last_tech.technique_num
+        # Insert safety limits into the header for the file output
+        safety_min_v = "{:.2f}".format(self.min_voltage_v) + " V"
+        safety_max_v = "{:.2f}".format(self.max_voltage_v) + " V"
 
-        file_str = self._mps_header_template.format(num_techniques)
+        file_str = self._mps_header_template.format(num_techniques, safety_min_v, safety_max_v)
         for tp in technique_partitions_post_conversion:
             file_str += self._technique_to_str(
                 technique_num=tp.technique_num,
@@ -886,8 +890,8 @@ class MaccorToBiologicMb:
                     )
                 )
 
-            step_part_2 = copy.deepcopy(step)
-            end_entries = get(step_part_2, "EndsEndEntries")
+            step_part_1 = copy.deepcopy(step)
+            end_entries = get(step_part_1, "EndsEndEntries")
             if end_entries is None:
                 end_entries = []
             elif not isinstance(end_entries, list):
@@ -907,18 +911,22 @@ class MaccorToBiologicMb:
                 raise Exception("Unsupported StepMode {} at step num {}".format(step_type, step_num))
 
             new_end_entry = copy.deepcopy(self._blank_end_entry)
-            set_(new_end_entry, "EndType", step_mode)
+            set_(new_end_entry, "EndType", acceptable_limit)
             set_(new_end_entry, "Oper", oper)
             set_(new_end_entry, "Value", lim)
             set_(new_end_entry, "Step", str(step_num + 1).zfill(3))
 
             filtered_end_entries.append(new_end_entry)
             new_end_entries = filtered_end_entries if len(filtered_end_entries) > 1 else filtered_end_entries[0]
-            set_(step_part_2, "Ends.EndEntry", new_end_entries)
+            set_(step_part_1, "Ends.EndEntry", new_end_entries)
 
-            set_(step_part_2, "StepNote", "Inserted by MaccorToBiologicConversion")
+            set_(step_part_1, "StepNote", "Inserted by MaccorToBiologicConversion")
 
-            return [step, step_part_2]
+            step_part_2 = copy.deepcopy(step)
+            set_(step_part_2, "StepMode", acceptable_limit)
+            set_(step_part_2, "StepValue", lim)
+
+            return [step_part_1, step_part_2]
         else:
             raise Exception("Step {} has Limit for step of that is not Voltage or Current".format(step_num))
 
@@ -986,7 +994,7 @@ class MaccorToBiologicMb:
         one_past_final_step_num = step_num_offset + len(steps) + 1
         goto_upperbound = one_past_final_step_num
         goto_lowerbound = step_num_offset
-        prev_loop_open = -1
+        prev_loop_open_step_num = -1
 
         seqs = []
         for i, (step, parts) in enumerate(steps_and_parts):
@@ -994,28 +1002,33 @@ class MaccorToBiologicMb:
             step_num = step_num_offset + 1 + i
             step_type = get(step, "StepType")
             if step_type in loop_open_types:
-                prev_loop_open = step_num
+                prev_loop_open_step_num = step_num
                 # cannot goto befoer a Do
-                goto_lowerbound = prev_loop_open + 1
+                goto_lowerbound = prev_loop_open_step_num + 1
             elif step_type == "AdvCycle":
                 continue
             elif step_type in loop_close_types:
-                if prev_loop_open == -1:
+                if prev_loop_open_step_num == -1:
                     raise Exception("Unclosed loop at {}".format(step_num))
 
                 assert len(seq_nums_by_step_num[step_num]) == 1
                 seq_num = seq_nums_by_step_num[step_num][0]
+                num_loops = max(
+                    # the way maccor and biologic count loops varies by 1
+                    int(get(step, "Ends.EndEntry.Value")) - 1,
+                    0,
+                )
+                seq_num_to_loop_to = seq_nums_by_step_num[prev_loop_open_step_num][0]
 
-                num_loops = int(get(step, "Ends.EndEntry.Value"))
                 loop_seq = self._create_loop_seq(
                     seq_num=seq_num,
-                    seq_num_to_loop_to=prev_loop_open,
+                    seq_num_to_loop_to=seq_num_to_loop_to,
                     num_loops=num_loops,
                 )
                 seqs.append(loop_seq)
 
                 # book keep the loop
-                prev_loop_open = -1
+                prev_loop_open_step_num = -1
                 goto_lowerbound = step_num + 1
             else:
                 step_seq_parts = self._convert_step_parts(
@@ -1207,6 +1220,7 @@ class MaccorToBiologicMb:
     """
 
     def convert(self, maccor_fp, out_dir, out_filename):
+
         maccor_ast = self.load_maccor_ast(maccor_fp)
         steps = get(maccor_ast, "MaccorTestProcedure.ProcSteps.TestStep")
 
