@@ -98,11 +98,6 @@ class BEEPFeaturizer(MSONable, abc.ABC):
         self.metadata = self.datapath.metadata
 
     @abc.abstractmethod
-    @property
-    def required_hyperparameters(self) -> Iterable:
-        raise NotImplementedError
-
-    @abc.abstractmethod
     def validate(self) -> bool:
         raise NotImplementedError
 

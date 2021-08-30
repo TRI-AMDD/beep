@@ -19,16 +19,19 @@ import json
 import numpy as np
 import tempfile
 from pathlib import Path
-from beep.featurize import (
-    process_file_list_from_json,
-    DeltaQFastCharge,
-    TrajectoryFastCharge,
-    DegradationPredictor,
-    HPPCResistanceVoltageFeatures,
-    DiagnosticProperties,
-    DiagnosticSummaryStats,
-    CycleSummaryStats
-)
+# from beep.featurize import (
+#     process_file_list_from_json,
+#     DeltaQFastCharge,
+#     TrajectoryFastCharge,
+#     DegradationPredictor,
+#     HPPCResistanceVoltageFeatures,
+#     DiagnosticProperties,
+#     DiagnosticSummaryStats,
+#     CycleSummaryStats
+# )
+
+from beep.features.core import DeltaQFastCharge
+
 from beep.structure.maccor import MaccorDatapath
 from beep.structure.cli import auto_load_processed
 from beep.features import featurizer_helpers
@@ -44,34 +47,33 @@ MACCOR_FILE_W_DIAGNOSTICS = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000020_CH71.
 MACCOR_FILE_W_PARAMETERS = os.path.join(
     TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010"
 )
-FEATURE_HYPERPARAMS = loadfn(
-    os.path.join(MODULE_DIR, "features/feature_hyperparameters.yaml")
-)
+# FEATURE_HYPERPARAMS = loadfn(
+#     os.path.join(MODULE_DIR, "features/feature_hyperparameters.yaml")
+# )
 
 
 class TestFeaturizer(unittest.TestCase):
     def setUp(self):
-        self.processed_cycler_file = "2017-06-30_2C-10per_6C_CH10_structure.json"
+        self.structured_cycler_file = "2017-06-30_2C-10per_6C_CH10_structure.json"
         self.processed_cycler_file_insuf = "structure_insufficient.json"
 
     def test_feature_generation_full_model(self):
-        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.processed_cycler_file)
+        structured_cycler_path = os.path.join(TEST_FILE_DIR, self.structured_cycler_file)
         with ScratchDir("."):
-            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
-            pcycler_run = auto_load_processed(processed_cycler_run_path)
-            featurizer = DeltaQFastCharge.from_run(
-                processed_cycler_run_path, os.getcwd(), pcycler_run
-            )
+            # os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
+            structured_datapath = auto_load_processed(structured_cycler_path)
+            f = DeltaQFastCharge(structured_datapath)
+            f.create_features()
 
-            self.assertEqual(len(featurizer.X), 1)  # just test if works for now
+            self.assertEqual(len(f.features), 1)  # just test if works for now
             # Ensure no NaN values
             # print(featurizer.X.to_dict())
-            self.assertFalse(np.any(featurizer.X.isnull()))
-            self.assertEqual(np.round(featurizer.X.loc[0, 'intercept_discharge_capacity_cycle_number_91:100'], 6),
+            self.assertFalse(np.any(f.features.isnull()))
+            self.assertEqual(np.round(f.features.loc[0, 'intercept_discharge_capacity_cycle_number_91:100'], 6),
                              np.round(1.1050065801818196, 6))
 
     def test_feature_old_class(self):
-        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.processed_cycler_file)
+        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.structured_cycler_file)
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
             predictor = DegradationPredictor.from_processed_cycler_run_file(
@@ -80,7 +82,7 @@ class TestFeaturizer(unittest.TestCase):
             self.assertEqual(predictor.feature_labels[4], "charge_time_cycles_1:5")
 
     def test_feature_label_full_model(self):
-        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.processed_cycler_file)
+        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.structured_cycler_file)
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
             pcycler_run = auto_load_processed(processed_cycler_run_path)
@@ -91,7 +93,7 @@ class TestFeaturizer(unittest.TestCase):
             self.assertEqual(featurizer.X.columns.tolist()[4], "charge_time_cycles_1:5")
 
     def test_feature_serialization(self):
-        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.processed_cycler_file)
+        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.structured_cycler_file)
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
             pcycler_run = auto_load_processed(processed_cycler_run_path)
@@ -109,7 +111,7 @@ class TestFeaturizer(unittest.TestCase):
             )
 
     def test_feature_serialization_for_training(self):
-        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.processed_cycler_file)
+        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.structured_cycler_file)
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
             pcycler_run = auto_load_processed(processed_cycler_run_path)
