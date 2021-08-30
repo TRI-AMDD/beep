@@ -70,20 +70,18 @@ class BEEPFeaturizer(MSONable, abc.ABC):
         self.datapath = processed_datapath
         self.hyperparameters = hyperparameters
 
-
     @abc.abstractmethod
     @property
     def required_hyperparameters(self) -> Iterable:
-        return NotImplementedError
-
+        raise NotImplementedError
 
     @abc.abstractmethod
     def validate(self) -> bool:
-        return NotImplementedError
+        raise NotImplementedError
 
     @abc.abstractmethod
     def add_features(self) -> pd.DataFrame:
-        return NotImplementedError
+        raise NotImplementedError
 
 
 
