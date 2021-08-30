@@ -44,10 +44,11 @@ $ featurize '{"invalid_file_list": ["/data-share/renamed_cycler_files/FastCharge
 {"file_list": ["/data-share/features/FastCharge_2_CH29_full_model_features.json"]}
 ```
 """
-
+import abc
 import os
 import pandas as pd
 from abc import ABCMeta, abstractmethod
+from typing import Iterable
 from monty.json import MSONable
 from monty.serialization import loadfn
 
@@ -56,7 +57,35 @@ from beep import FEATURES_DIR
 
 FEATURE_HYPERPARAMS = loadfn(os.path.join(FEATURES_DIR, "feature_hyperparameters.yaml"))
 
-s = {"service": "DataAnalyzer"}
+
+
+
+class BEEPFeaturizer(MSONable, abc.ABC):
+    """
+    Base class for all beep feature generation.
+
+    """
+
+    def __init__(self, processed_datapath, hyperparameters=None):
+        self.datapath = processed_datapath
+        self.hyperparameters = hyperparameters
+
+
+    @abc.abstractmethod
+    @property
+    def required_hyperparameters(self) -> Iterable:
+        return NotImplementedError
+
+
+    @abc.abstractmethod
+    def validate(self) -> bool:
+        return NotImplementedError
+
+    @abc.abstractmethod
+    def add_features(self) -> pd.DataFrame:
+        return NotImplementedError
+
+
 
 
 class BeepFeatures(MSONable, metaclass=ABCMeta):

@@ -6,6 +6,9 @@ from beep.features.base import BeepFeatures, FEATURE_HYPERPARAMS
 from beep.features.intracell_analysis import IntracellAnalysis
 
 
+HYPERPARAMTERS_DEFAULT = FEATURE_HYPERPARAMS["IntracellCycles"]
+
+
 class IntracellCycles(BeepFeatures):
     """
     Object corresponding to the fitted material parameters of the cell. Material parameters
@@ -28,7 +31,7 @@ class IntracellCycles(BeepFeatures):
             X (pandas.DataFrame): features in DataFrame format.
             metadata (dict): information about the data and code used to produce features
         """
-        super().__init__(name, X, metadata)
+        super().__init__(anode_file, cathode_file, diagnostic_cycle_type, step_type)
         self.name = name
         self.X = X
         self.metadata = metadata
@@ -79,9 +82,7 @@ class IntracellCycles(BeepFeatures):
         return all(conditions)
 
     @classmethod
-    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
-                                           parameters_path="data-share/raw/parameters",
-                                           cell_info_path="data-share/raw/cell_info"):
+    def features_from_processed_cycler_run(cls, processed_cycler_run, parameters_path, cell_info_path, hyperparams_dict=None):
         """
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun)

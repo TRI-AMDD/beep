@@ -57,7 +57,7 @@ from scipy.stats import skew, kurtosis
 from beep.structure.cli import auto_load_processed
 from beep.utils import WorkflowOutputs
 from beep.features import featurizer_helpers, intracell_losses
-from beep.features.base import BeepFeatures
+from beep.features.base import BeepFeatures, BEEPFeaturizer
 from beep import logger, __version__
 
 MODULE_DIR = os.path.dirname(__file__)
@@ -66,6 +66,76 @@ FEATURE_HYPERPARAMS = loadfn(
 )
 
 s = {"service": "DataAnalyzer"}
+
+
+
+class HPPCResistanceBVoltageFeatures(BEEPFeaturizer):
+
+    def validate(self):
+        conditions = []
+        if not hasattr(self.datapath, "diagnostic_summary") & hasattr(
+            self.datapath, "diagnostic_data"
+        ):
+            return False
+        if self.datapath.diagnostic_summary is None:
+            return False
+        elif self.datapath.diagnostic_summary.empty:
+            return False
+        else:
+            conditions.append(
+                any(
+                    [
+                        "hppc" in x
+                        for x in self.datapath.diagnostic_summary.cycle_type.unique()
+                    ]
+                )
+            )
+        return all(conditions)
+
+
+    def create_features(self):
+        if params_dict is None:
+            params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
+
+        # Filter out low cycle numbers at the end of the test, corresponding to the "final" diagnostic
+        self.datapath.diagnostic_data = self.datapath.diagnostic_data[
+                ~((self.datapath.diagnostic_data.test_time > params_dict['test_time_filter_sec']) &
+                  (self.datapath.diagnostic_data.cycle_index < params_dict['cycle_index_filter']))
+            ]
+        self.datapath.diagnostic_data = self.datapath.diagnostic_data.groupby(
+            ["cycle_index", "step_index", "step_index_counter"]
+        ).filter(lambda x: ~x["test_time"].isnull().all())
+
+        # diffusion features
+        diffusion_features = featurizer_helpers.get_diffusion_features(
+            self.datapath, params_dict["diag_pos"]
+        )
+
+        hppc_r = pd.DataFrame()
+        # the 9 by 6 dataframe
+        df_dr = featurizer_helpers.get_dr_df(
+            self.datapath, params_dict["diag_pos"]
+        )
+        # transform this dataframe to be 1 by 54
+        columns = df_dr.columns
+        for column in columns:
+            for r in range(len(df_dr[column])):
+                name = column + str(r)
+                hppc_r[name] = [df_dr[column][r]]
+
+        # the variance of ocv features
+        hppc_ocv = featurizer_helpers.get_hppc_ocv(
+            self.datapath, params_dict["diag_pos"]
+        )
+
+        # the v_diff features
+        v_diff = featurizer_helpers.get_v_diff(
+            self.datapath, params_dict["diag_pos"], params_dict["soc_window"]
+        )
+
+        # merge everything together as a final result dataframe
+        return pd.concat([hppc_r, hppc_ocv, v_diff, diffusion_features], axis=1)
+
 
 
 class HPPCResistanceVoltageFeatures(BeepFeatures):
