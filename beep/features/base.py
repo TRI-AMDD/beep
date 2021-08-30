@@ -52,11 +52,9 @@ from monty.json import MSONable
 from monty.serialization import loadfn
 
 from beep.collate import scrub_underscore_suffix, add_suffix_to_filename
-from beep import MODULE_DIR
+from beep import FEATURES_DIR
 
-FEATURE_HYPERPARAMS = loadfn(
-    os.path.join(MODULE_DIR, "features/feature_hyperparameters.yaml")
-)
+FEATURE_HYPERPARAMS = loadfn(os.path.join(FEATURES_DIR, "feature_hyperparameters.yaml"))
 
 s = {"service": "DataAnalyzer"}
 

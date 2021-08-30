@@ -2,16 +2,8 @@ import os
 import pandas as pd
 from monty.serialization import loadfn
 
-from beep.features.base import BeepFeatures
+from beep.features.base import BeepFeatures, FEATURE_HYPERPARAMS
 from beep.features.intracell_analysis import IntracellAnalysis
-from beep import MODULE_DIR
-
-
-FEATURE_HYPERPARAMS = loadfn(
-    os.path.join(MODULE_DIR, "features/feature_hyperparameters.yaml")
-)
-
-s = {"service": "DataAnalyzer"}
 
 
 class IntracellCycles(BeepFeatures):

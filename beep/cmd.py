@@ -560,6 +560,16 @@ def structure(
          "class name e.g., my_package.my_module.MyClass."
 )
 @click.option(
+    "--hyperparameter-dir",
+    "-h",
+    type=CLICK_DIR,
+    help="Specify the directory where BEEP can find hyperparameters "
+         "or configuration files for feature classes. The files must "
+         "be appropriately named for the featurizers being applied. "
+         "By default, will use the current directory to look for featurizer "
+         "configuration files."
+)
+@click.option(
     '--halt-on-error',
     is_flag=True,
     default=False,
@@ -574,6 +584,7 @@ def featurize(
         output_status_json,
         output_dir,
         featurizers,
+        hyperparameter_dir,
         halt_on_error,
 ):
     files = [os.path.abspath(f) for f in files]
@@ -652,6 +663,12 @@ def featurize(
             t0 = time.time()
             try:
                 params = FEATURE_HYPERPARAMS.get(fclass.class_feature_name, None)
+
+                # todo: fix this
+                if hyperparameter_dir:
+                    pass
+
+
                 f = fclass.from_run(file, output_dir, processed_run, params)
 
                 if f:
