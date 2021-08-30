@@ -47,28 +47,46 @@ $ featurize '{"invalid_file_list": ["/data-share/renamed_cycler_files/FastCharge
 import abc
 import os
 import pandas as pd
+import json
 from abc import ABCMeta, abstractmethod
-from typing import Iterable
+from typing import Iterable, Union
 from monty.json import MSONable
-from monty.serialization import loadfn
+from monty.serialization import loadfn, dumpfn, zopen
 
 from beep.collate import scrub_underscore_suffix, add_suffix_to_filename
+from beep.structure.base import BEEPDatapath
 from beep import FEATURES_DIR
 
 FEATURE_HYPERPARAMS = loadfn(os.path.join(FEATURES_DIR, "feature_hyperparameters.yaml"))
 
 
+class BEEPFeaturizationError(BaseException):
+    """Raise when a featurization-specific error occurs"""
+    pass
 
 
 class BEEPFeaturizer(MSONable, abc.ABC):
     """
     Base class for all beep feature generation.
 
+    Input a structured datapath, get an object which can generate features based
+    on that data.
+
     """
 
-    def __init__(self, processed_datapath, hyperparameters=None):
-        self.datapath = processed_datapath
+    def __init__(self, structured_datapath: Union[BEEPDatapath, None], hyperparameters: Union[dict, None] = None):
+
+        if not structured_datapath is not None and structured_datapath.is_structured:
+            raise BEEPFeaturizationError("BEEPDatapath input is not structured!")
+        self.datapath = structured_datapath
         self.hyperparameters = hyperparameters
+        self.features = None
+
+        # In case these features are loaded from file
+        # Allow attrs which can hold relevant metadata without having
+        # to reload the original datapath
+        self.paths = self.datapath.paths
+        self.metadata = self.datapath.metadata
 
     @abc.abstractmethod
     @property
@@ -80,8 +98,101 @@ class BEEPFeaturizer(MSONable, abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def add_features(self) -> pd.DataFrame:
+    def create_features(self) -> None:
+        """
+        Should assign a dataframe to self.features.
+
+        Returns:
+            None
+        """
         raise NotImplementedError
+
+    def as_dict(self):
+        """Serialize a BEEPDatapath as a dictionary.
+
+        Must not be loaded from legacy.
+
+        Returns:
+            (dict): corresponding to dictionary for serialization.
+
+        """
+
+        if not self.features:
+            raise BEEPFeaturizationError("Cannot serialize features which have not been generated.")
+
+        features = self.features.to_dict("list")
+
+        return {
+            "@module": self.__class__.__module__,
+            "@class": self.__class__.__name__,
+
+            # Core parts of BEEPFeaturizer
+            "features": features,
+            "hyperparameters": self.hyperparameters,
+            "paths": self.paths,
+            "metadata": self.metadata
+        }
+
+    @classmethod
+    def from_dict(cls, d):
+        """Create a BEEPDatapath object from a dictionary.
+
+        Args:
+            d (dict): dictionary represenation.
+
+        Returns:
+            beep.structure.ProcessedCyclerRun: deserialized ProcessedCyclerRun.
+        """
+
+        # no need for original datapath
+        bf = cls.__init__(structured_datapath=None, hyperparameters=d["hyperparameters"])
+        bf.features = pd.DataFrame(d["features"])
+        bf.paths = d["paths"]
+        bf.metadata = d["metadata"]
+        return bf
+
+    @classmethod
+    def from_json_file(cls, filename):
+        """Load a structured run previously saved to file.
+
+        .json.gz files are supported.
+
+        Loads a BEEPFeatures from json.
+
+        Can be used in combination with files serialized with BEEPFeatures.to_json_file.
+
+        Args:
+            filename (str, Pathlike): a json file from a structured run, serialzed with to_json_file.
+
+        Returns:
+            None
+        """
+        with zopen(filename, "r") as f:
+            d = json.load(f)
+
+        # Add this structured file path to the paths dict
+        paths = d.get("paths", {})
+        paths["features"] = os.path.abspath(filename)
+        d["paths"] = paths
+        return cls.from_dict(d)
+
+    def to_json_file(self, filename, omit_raw=False):
+        """Save a BEEPFeatures to disk as a json.
+
+        .json.gz files are supported.
+
+        Not named from_json to avoid conflict with MSONable.from_json(*)
+
+        Args:
+            filename (str, Pathlike): The filename to save the file to.
+            omit_raw (bool): If True, saves only structured (NOT RAW) data.
+                More efficient for saving/writing to disk.
+
+        Returns:
+            None
+        """
+        d = self.as_dict()
+        dumpfn(d, filename)
 
 
 

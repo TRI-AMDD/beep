@@ -93,7 +93,7 @@ class HPPCResistanceBVoltageFeatures(BEEPFeaturizer):
         return all(conditions)
 
 
-    def create_features(self):
+    def add_features(self):
         if params_dict is None:
             params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
 
@@ -135,6 +135,10 @@ class HPPCResistanceBVoltageFeatures(BEEPFeaturizer):
 
         # merge everything together as a final result dataframe
         return pd.concat([hppc_r, hppc_ocv, v_diff, diffusion_features], axis=1)
+
+
+    def required_hyperparameters(self):
+        return "diag_pos", "test_time_filter_sec", "soc_window", "cycle_index_filter"
 
 
 
