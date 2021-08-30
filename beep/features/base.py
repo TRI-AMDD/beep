@@ -48,16 +48,11 @@ import abc
 import os
 import pandas as pd
 import json
-from abc import ABCMeta, abstractmethod
 from typing import Iterable, Union
 from monty.json import MSONable
-from monty.serialization import loadfn, dumpfn, zopen
+from monty.serialization import dumpfn, zopen
 
-from beep.collate import scrub_underscore_suffix, add_suffix_to_filename
 from beep.structure.base import BEEPDatapath
-from beep import FEATURES_DIR
-
-FEATURE_HYPERPARAMS = loadfn(os.path.join(FEATURES_DIR, "feature_hyperparameters.yaml"))
 
 
 class BEEPFeaturizationError(BaseException):

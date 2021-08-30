@@ -1,16 +1,9 @@
-import json
-import os
 import numpy as np
 import pandas as pd
-from monty.json import MSONable
-from monty.serialization import loadfn, dumpfn
 from scipy.stats import skew, kurtosis
 
-from beep import FEATURES_DIR
-from beep.structure.cli import auto_load_processed
-from beep.utils import WorkflowOutputs
-from beep.features import featurizer_helpers, intracell_losses
-from beep.features.base import BeepFeatures, FEATURE_HYPERPARAMS, BEEPFeaturizer, BEEPFeaturizationError
+from beep.features import featurizer_helpers
+from beep.features.base import BEEPFeaturizer, BEEPFeaturizationError
 
 
 class HPPCResistanceBVoltageFeatures(BEEPFeaturizer):
@@ -354,9 +347,6 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         Returns:
             X (pd.DataFrame): Dataframe containing the feature
         """
-        if self.hyperparameters is None:
-            self.hyperparameters = FEATURE_HYPERPARAMS[cls.class_feature_name]
-
         # Filter out "final" diagnostic cycles that have been appended to the end of the file with the wrong
         # cycle number(test time is monotonic)
         self.datapath.diagnostic_data = self.datapath.diagnostic_data[
