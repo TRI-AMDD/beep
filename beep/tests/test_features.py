@@ -54,51 +54,41 @@ MACCOR_FILE_W_PARAMETERS = os.path.join(
 
 class TestFeaturizer(unittest.TestCase):
     def setUp(self):
-        self.structured_cycler_file = "2017-06-30_2C-10per_6C_CH10_structure.json"
-        self.processed_cycler_file_insuf = "structure_insufficient.json"
+        self.structured_cycler_file_path = os.path.join(TEST_FILE_DIR, "2017-06-30_2C-10per_6C_CH10_structure.json")
+        self.structured_cycler_file_path_insuf = os.path.join(TEST_FILE_DIR, "structure_insufficient.json")
 
-    def test_feature_generation_full_model(self):
-        structured_cycler_path = os.path.join(TEST_FILE_DIR, self.structured_cycler_file)
-        with ScratchDir("."):
-            # os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
-            structured_datapath = auto_load_processed(structured_cycler_path)
-            f = DeltaQFastCharge(structured_datapath)
-            f.create_features()
+    def test_featurization_basic_DeltaQFastCharge(self):
+        structured_datapath = auto_load_processed(self.structured_cycler_file_path)
+        f = DeltaQFastCharge(structured_datapath)
+        self.assertTrue(f.validate())
+        f.create_features()
 
-            self.assertEqual(len(f.features), 1)  # just test if works for now
-            # Ensure no NaN values
-            # print(featurizer.X.to_dict())
-            self.assertFalse(np.any(f.features.isnull()))
-            self.assertEqual(np.round(f.features.loc[0, 'intercept_discharge_capacity_cycle_number_91:100'], 6),
-                             np.round(1.1050065801818196, 6))
+        self.assertEqual(len(f.features), 1)  # just test if works for now
+        # Ensure no NaN values
+        # print(featurizer.X.to_dict())
+        self.assertFalse(np.any(f.features.isnull()))
+        self.assertEqual(np.round(f.features.loc[0, 'intercept_discharge_capacity_cycle_number_91:100'], 6),
+                         np.round(1.1050065801818196, 6))
 
-    def test_feature_old_class(self):
-        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.structured_cycler_file)
-        with ScratchDir("."):
-            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
-            predictor = DegradationPredictor.from_processed_cycler_run_file(
-                processed_cycler_run_path, features_label="full_model"
-            )
-            self.assertEqual(predictor.feature_labels[4], "charge_time_cycles_1:5")
+        self.assertEqual(f.features.columns.tolist()[4], "charge_time_cycles_1:5")
 
-    def test_feature_label_full_model(self):
-        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.structured_cycler_file)
-        with ScratchDir("."):
-            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
-            pcycler_run = auto_load_processed(processed_cycler_run_path)
-            featurizer = DeltaQFastCharge.from_run(
-                processed_cycler_run_path, os.getcwd(), pcycler_run
-            )
+    # def test_feature_old_class(self):
+    #     processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.structured_cycler_file)
+    #     with ScratchDir("."):
+    #         os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
+    #         predictor = DegradationPredictor.from_processed_cycler_run_file(
+    #             processed_cycler_run_path, features_label="full_model"
+    #         )
+    #         self.assertEqual(predictor.feature_labels[4], "charge_time_cycles_1:5")
 
-            self.assertEqual(featurizer.X.columns.tolist()[4], "charge_time_cycles_1:5")
 
     def test_feature_serialization(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.structured_cycler_file)
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
-            pcycler_run = auto_load_processed(processed_cycler_run_path)
+            structured_datapath = auto_load_processed(processed_cycler_run_path)
             featurizer = DeltaQFastCharge.from_run(
-                processed_cycler_run_path, os.getcwd(), pcycler_run
+                processed_cycler_run_path, os.getcwd(), structured_datapath
             )
 
             dumpfn(featurizer, featurizer.name)
@@ -114,9 +104,9 @@ class TestFeaturizer(unittest.TestCase):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.structured_cycler_file)
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
-            pcycler_run = auto_load_processed(processed_cycler_run_path)
+            structured_datapath = auto_load_processed(processed_cycler_run_path)
             featurizer = DeltaQFastCharge.from_run(
-                processed_cycler_run_path, os.getcwd(), pcycler_run
+                processed_cycler_run_path, os.getcwd(), structured_datapath
             )
 
             dumpfn(featurizer, featurizer.name)
@@ -127,12 +117,12 @@ class TestFeaturizer(unittest.TestCase):
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
 
-            pcycler_run_loc = os.path.join(
+            structured_datapath_loc = os.path.join(
                 TEST_FILE_DIR, "2017-06-30_2C-10per_6C_CH10_structure.json"
             )
-            pcycler_run = auto_load_processed(pcycler_run_loc)
+            structured_datapath = auto_load_processed(structured_datapath_loc)
             featurizer = DeltaQFastCharge.from_run(
-                pcycler_run_loc, os.getcwd(), pcycler_run
+                structured_datapath_loc, os.getcwd(), structured_datapath
             )
             path, local_filename = os.path.split(featurizer.name)
             folder = os.path.split(path)[-1]
@@ -152,7 +142,7 @@ class TestFeaturizer(unittest.TestCase):
             featurizer_classes = [DeltaQFastCharge, TrajectoryFastCharge]
             for featurizer_class in featurizer_classes:
                 featurizer = featurizer_class.from_run(
-                    pcycler_run_loc, os.getcwd(), pcycler_run
+                    structured_datapath_loc, os.getcwd(), structured_datapath
                 )
                 if featurizer:
                     self.assertEqual(featurizer.metadata["channel_id"], 9)
@@ -164,7 +154,7 @@ class TestFeaturizer(unittest.TestCase):
                     processed_result_list.append("success")
                     processed_message_list.append({"comment": "", "error": ""})
                 else:
-                    processed_paths_list.append(pcycler_run_loc)
+                    processed_paths_list.append(structured_datapath_loc)
                     processed_run_list.append(run_id)
                     processed_result_list.append("incomplete")
                     processed_message_list.append(
@@ -282,12 +272,12 @@ class TestFeaturizer(unittest.TestCase):
     def test_HPPCResistanceVoltageFeatures_class(self):
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-            pcycler_run_loc = os.path.join(
+            structured_datapath_loc = os.path.join(
                 TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
             )
-            pcycler_run = auto_load_processed(pcycler_run_loc)
+            structured_datapath = auto_load_processed(structured_datapath_loc)
             featurizer = HPPCResistanceVoltageFeatures.from_run(
-                pcycler_run_loc, os.getcwd(), pcycler_run
+                structured_datapath_loc, os.getcwd(), structured_datapath
             )
             path, local_filename = os.path.split(featurizer.name)
             folder = os.path.split(path)[-1]
@@ -304,10 +294,10 @@ class TestFeaturizer(unittest.TestCase):
     def test_DiagnosticSummaryStats_class(self):
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-            pcycler_run_loc = os.path.join(TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json")
-            pcycler_run = auto_load_processed(pcycler_run_loc)
+            structured_datapath_loc = os.path.join(TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json")
+            structured_datapath = auto_load_processed(structured_datapath_loc)
             featurizer = DiagnosticSummaryStats.from_run(
-                pcycler_run_loc, os.getcwd(), pcycler_run
+                structured_datapath_loc, os.getcwd(), structured_datapath
             )
             path, local_filename = os.path.split(featurizer.name)
             folder = os.path.split(path)[-1]
@@ -343,10 +333,10 @@ class TestFeaturizer(unittest.TestCase):
             self.assertEqual(np.around(featurizer.X['var_discharging_capacity'].iloc[0], 6),
                              np.around(-3.771727344982484, 6))
 
-            pcycler_run_loc = os.path.join(TEST_FILE_DIR,
+            structured_datapath_loc = os.path.join(TEST_FILE_DIR,
                                            "PredictionDiagnostics_000136_00002D_truncated_structure.json")
-            pcycler_run = auto_load_processed(pcycler_run_loc)
-            featurizer = DiagnosticSummaryStats.from_run(pcycler_run_loc, os.getcwd(), pcycler_run)
+            structured_datapath = auto_load_processed(structured_datapath_loc)
+            featurizer = DiagnosticSummaryStats.from_run(structured_datapath_loc, os.getcwd(), structured_datapath)
             x = [-2.4602845133649374, -0.7912059829821004, -1.3246516129064152, -0.5577484175221676,
                  0.22558675296269257, 1.4107424811304434, 0.44307560772987753, -2.968731527885897,
                  -1.003386799815887, -1.2861922579124305, 0.010393880890967514, 0.4995216948726259,
@@ -370,14 +360,14 @@ class TestFeaturizer(unittest.TestCase):
     def test_CycleSummaryStats_class(self):
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-            pcycler_run_loc = os.path.join(
+            structured_datapath_loc = os.path.join(
                 TEST_FILE_DIR, "PreDiag_000296_00270E_truncated_structure.json"
             )
 
             # Test diagnostic with regular cycles
-            pcycler_run = auto_load_processed(pcycler_run_loc)
+            structured_datapath = auto_load_processed(structured_datapath_loc)
             featurizer = CycleSummaryStats.from_run(
-                pcycler_run_loc, os.getcwd(), pcycler_run
+                structured_datapath_loc, os.getcwd(), structured_datapath
             )
             self.assertAlmostEqual(featurizer.X['square_discharging_capacity'].iloc[0], 0.764316, 6)
 
@@ -386,19 +376,19 @@ class TestFeaturizer(unittest.TestCase):
                 "cycle_comp_num": [11, 100]
             }
             features = CycleSummaryStats.from_run(
-                pcycler_run_loc, os.getcwd(), pcycler_run, params_dict
+                structured_datapath_loc, os.getcwd(), structured_datapath, params_dict
             )
             self.assertAlmostEqual(features.X['square_discharging_capacity'].iloc[0], 0.7519596, 6)
 
     def test_DiagnosticProperties_class(self):
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-            pcycler_run_loc = os.path.join(
+            structured_datapath_loc = os.path.join(
                 TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
             )
-            pcycler_run = auto_load_processed(pcycler_run_loc)
+            structured_datapath = auto_load_processed(structured_datapath_loc)
             featurizer = DiagnosticProperties.from_run(
-                pcycler_run_loc, os.getcwd(), pcycler_run
+                structured_datapath_loc, os.getcwd(), structured_datapath
             )
             path, local_filename = os.path.split(featurizer.name)
             folder = os.path.split(path)[-1]
@@ -448,9 +438,9 @@ class TestFeaturizer(unittest.TestCase):
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
             for file in files:
-                pcycler_run_path = os.path.join(TEST_FILE_DIR, file)
+                structured_datapath_path = os.path.join(TEST_FILE_DIR, file)
                 json_obj = {
-                    "file_list": [pcycler_run_path],
+                    "file_list": [structured_datapath_path],
                     "run_list": [0],
                 }
                 json_string = json.dumps(json_obj)
@@ -468,13 +458,13 @@ class TestFeaturizerHelpers(unittest.TestCase):
         processed_cycler_run_path_1 = os.path.join(
             TEST_FILE_DIR, "PreDiag_000233_00021F_truncated_structure.json"
         )
-        pcycler_run = auto_load_processed(processed_cycler_run_path_1)
-        pcycler_run.structured_summary = pcycler_run.structured_summary[
-            ~pcycler_run.structured_summary.cycle_index.isin(pcycler_run.diagnostic_summary.cycle_index)]
+        structured_datapath = auto_load_processed(processed_cycler_run_path_1)
+        structured_datapath.structured_summary = structured_datapath.structured_summary[
+            ~structured_datapath.structured_summary.cycle_index.isin(structured_datapath.diagnostic_summary.cycle_index)]
 
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
 
-        sum_diag = featurizer_helpers.get_fractional_quantity_remaining_nx(pcycler_run,
+        sum_diag = featurizer_helpers.get_fractional_quantity_remaining_nx(structured_datapath,
                                                                            metric="discharge_energy",
                                                                            diagnostic_cycle_type="hppc")
         print(sum_diag["normalized_regular_throughput"])
@@ -488,7 +478,7 @@ class TestFeaturizerHelpers(unittest.TestCase):
         self.assertEqual(sum_diag['diagnostic_interval'].iloc[0], 100)
         self.assertEqual(sum_diag['epoch_time'].iloc[0], 1576641695)
 
-        sum_diag = featurizer_helpers.get_fractional_quantity_remaining_nx(pcycler_run,
+        sum_diag = featurizer_helpers.get_fractional_quantity_remaining_nx(structured_datapath,
                                                                            metric="discharge_energy",
                                                                            diagnostic_cycle_type="rpt_1C")
         self.assertEqual(len(sum_diag.index), 16)
@@ -503,11 +493,11 @@ class TestFeaturizerHelpers(unittest.TestCase):
         processed_cycler_run_path_2 = os.path.join(
             TEST_FILE_DIR, "Talos_001383_NCR18650618001_CH31_truncated_structure.json"
         )
-        pcycler_run = auto_load_processed(processed_cycler_run_path_2)
+        structured_datapath = auto_load_processed(processed_cycler_run_path_2)
 
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
 
-        sum_diag = featurizer_helpers.get_fractional_quantity_remaining_nx(pcycler_run,
+        sum_diag = featurizer_helpers.get_fractional_quantity_remaining_nx(structured_datapath,
                                                                            metric="discharge_energy",
                                                                            diagnostic_cycle_type="hppc")
         self.assertEqual(len(sum_diag.index), 3)
@@ -536,8 +526,8 @@ class TestFeaturizerHelpers(unittest.TestCase):
             os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
 
             # processed_cycler_run_path_1
-            pcycler_run = auto_load_processed(processed_cycler_run_path_1)
-            v_vars_df = featurizer_helpers.get_v_diff(pcycler_run, 1, 8)
+            structured_datapath = auto_load_processed(processed_cycler_run_path_1)
+            v_vars_df = featurizer_helpers.get_v_diff(structured_datapath, 1, 8)
             print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var_v_diff'], decimals=8),
                              np.round(0.00472705, decimals=8))
@@ -551,8 +541,8 @@ class TestFeaturizerHelpers(unittest.TestCase):
                                  [0.00472705, 0.0108896, 0.13865059, 0.59427689, 2.36743208, 176.50219843, 30.4896637])
 
             # processed_cycler_run_path_2
-            pcycler_run = auto_load_processed(processed_cycler_run_path_2)
-            v_vars_df = featurizer_helpers.get_v_diff(pcycler_run, 1, 8)
+            structured_datapath = auto_load_processed(processed_cycler_run_path_2)
+            v_vars_df = featurizer_helpers.get_v_diff(structured_datapath, 1, 8)
             print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var_v_diff'], decimals=8),
                              np.round(2.664e-05, decimals=8))
@@ -566,8 +556,8 @@ class TestFeaturizerHelpers(unittest.TestCase):
                                  [2.664e-05, 0.01481062, 0.01993318, 1.70458503, 4.89453871, 6.83708111, 0.14542267])
 
             # processed_cycler_run_path_3
-            pcycler_run = auto_load_processed(processed_cycler_run_path_3)
-            v_vars_df = featurizer_helpers.get_v_diff(pcycler_run, 1, 8)
+            structured_datapath = auto_load_processed(processed_cycler_run_path_3)
+            v_vars_df = featurizer_helpers.get_v_diff(structured_datapath, 1, 8)
             print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var_v_diff'], decimals=8),
                              np.round(4.82e-06, decimals=8))
@@ -581,8 +571,8 @@ class TestFeaturizerHelpers(unittest.TestCase):
                                  [4.82e-06, 0.01134005, 0.01569094, -0.01052989, 3.25562527, 4.07964428, 0.06526675])
 
             # processed_cycler_run_path_4
-            pcycler_run = auto_load_processed(processed_cycler_run_path_4)
-            v_vars_df = featurizer_helpers.get_v_diff(pcycler_run, 1, 8)
+            structured_datapath = auto_load_processed(processed_cycler_run_path_4)
+            v_vars_df = featurizer_helpers.get_v_diff(structured_datapath, 1, 8)
             print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var_v_diff'], decimals=8),
                              np.round(9.71e-06, decimals=8))
@@ -596,12 +586,12 @@ class TestFeaturizerHelpers(unittest.TestCase):
                                  [9.71e-06, -0.01138431, 0.00490308, -3.09586327, 13.72199015, 2.16744705, 0.01306312])
 
     def test_get_hppc_ocv(self):
-        pcycler_run_loc = os.path.join(
+        structured_datapath_loc = os.path.join(
             TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
         )
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-        pcycler_run = auto_load_processed(pcycler_run_loc)
-        hppc_ocv_features = featurizer_helpers.get_hppc_ocv(pcycler_run, 1)
+        structured_datapath = auto_load_processed(structured_datapath_loc)
+        hppc_ocv_features = featurizer_helpers.get_hppc_ocv(structured_datapath, 1)
         self.assertAlmostEqual(hppc_ocv_features['var_ocv'].iloc[0], 0.000016, 6)
         self.assertAlmostEqual(hppc_ocv_features['min_ocv'].iloc[0], -0.001291, 6)
         self.assertAlmostEqual(hppc_ocv_features['mean_ocv'].iloc[0], 0.002221, 6)
@@ -611,17 +601,17 @@ class TestFeaturizerHelpers(unittest.TestCase):
         self.assertAlmostEqual(hppc_ocv_features['sum_square_ocv'].iloc[0], 0.000188, 6)
 
     def test_get_step_index(self):
-        pcycler_run_loc = os.path.join(
+        structured_datapath_loc = os.path.join(
             TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
         )
 
         parameters_path = os.path.join(TEST_FILE_DIR, "data-share", "raw", "parameters")
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-        pcycler_run = auto_load_processed(pcycler_run_loc)
-        data = pcycler_run.diagnostic_data
+        structured_datapath = auto_load_processed(structured_datapath_loc)
+        data = structured_datapath.diagnostic_data
         hppc_cycles = data.loc[data.cycle_type == "hppc"]
         print(hppc_cycles.step_index.unique())
-        _, protocol_name = os.path.split(pcycler_run.metadata.protocol)
+        _, protocol_name = os.path.split(structured_datapath.metadata.protocol)
         parameter_row, _ = parameters_lookup.get_protocol_parameters(protocol_name, parameters_path=parameters_path)
 
         for cycle in hppc_cycles.cycle_index.unique():
@@ -635,7 +625,7 @@ class TestFeaturizerHelpers(unittest.TestCase):
                                             parameter_row["capacity_nominal"].iloc[0], 2)
                     print(step, median_crate, duration)
 
-        step_ind = featurizer_helpers.get_step_index(pcycler_run,
+        step_ind = featurizer_helpers.get_step_index(structured_datapath,
                                                      cycle_type="hppc",
                                                      diag_pos=0)
         self.assertEqual(len(step_ind.values()), 6)
@@ -653,7 +643,7 @@ class TestFeaturizerHelpers(unittest.TestCase):
             'hppc_charge_pulse': 14,
             'hppc_discharge_to_next_soc': 15
         })
-        step_ind = featurizer_helpers.get_step_index(pcycler_run,
+        step_ind = featurizer_helpers.get_step_index(structured_datapath,
                                                      cycle_type="hppc",
                                                      diag_pos=1)
         self.assertEqual(len(step_ind.values()), 6)
@@ -667,16 +657,16 @@ class TestFeaturizerHelpers(unittest.TestCase):
         })
 
     def test_get_step_index_2(self):
-        pcycler_run_loc = os.path.join(
+        structured_datapath_loc = os.path.join(
             TEST_FILE_DIR, "PreDiag_000400_000084_truncated_structure.json"
         )
         parameters_path = os.path.join(TEST_FILE_DIR, "data-share", "raw", "parameters")
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-        pcycler_run = auto_load_processed(pcycler_run_loc)
-        _, protocol_name = os.path.split(pcycler_run.metadata.protocol)
+        structured_datapath = auto_load_processed(structured_datapath_loc)
+        _, protocol_name = os.path.split(structured_datapath.metadata.protocol)
         parameter_row, _ = parameters_lookup.get_protocol_parameters(protocol_name, parameters_path=parameters_path)
 
-        step_ind = featurizer_helpers.get_step_index(pcycler_run,
+        step_ind = featurizer_helpers.get_step_index(structured_datapath,
                                                      cycle_type="hppc",
                                                      diag_pos=0)
         self.assertEqual(len(step_ind.values()), 7)
@@ -690,7 +680,7 @@ class TestFeaturizerHelpers(unittest.TestCase):
             'hppc_discharge_to_next_soc': 15,
             'hppc_final_discharge': 17
         })
-        step_ind = featurizer_helpers.get_step_index(pcycler_run,
+        step_ind = featurizer_helpers.get_step_index(structured_datapath,
                                                      cycle_type="hppc",
                                                      diag_pos=1)
         self.assertEqual(len(step_ind.values()), 7)
@@ -703,43 +693,43 @@ class TestFeaturizerHelpers(unittest.TestCase):
             'hppc_discharge_to_next_soc': 47,
             'hppc_final_discharge': 49
         })
-        step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="reset", diag_pos=0)
+        step_ind = featurizer_helpers.get_step_index(structured_datapath, cycle_type="reset", diag_pos=0)
         self.assertEqual(step_ind, {'reset_charge': 5, 'reset_discharge': 6})
-        step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="reset", diag_pos=1)
+        step_ind = featurizer_helpers.get_step_index(structured_datapath, cycle_type="reset", diag_pos=1)
         self.assertEqual(step_ind, {'reset_charge': 38, 'reset_discharge': 39})
 
-        step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="rpt_0.2C", diag_pos=0)
+        step_ind = featurizer_helpers.get_step_index(structured_datapath, cycle_type="rpt_0.2C", diag_pos=0)
         self.assertEqual(step_ind, {'rpt_0.2C_charge': 19, 'rpt_0.2C_discharge': 20})
-        step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="rpt_0.2C", diag_pos=1)
+        step_ind = featurizer_helpers.get_step_index(structured_datapath, cycle_type="rpt_0.2C", diag_pos=1)
         self.assertEqual(step_ind, {'rpt_0.2C_charge': 51, 'rpt_0.2C_discharge': 52})
 
-        step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="rpt_1C", diag_pos=0)
+        step_ind = featurizer_helpers.get_step_index(structured_datapath, cycle_type="rpt_1C", diag_pos=0)
         self.assertEqual(step_ind, {'rpt_1C_charge': 22, 'rpt_1C_discharge': 23})
-        step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="rpt_1C", diag_pos=1)
+        step_ind = featurizer_helpers.get_step_index(structured_datapath, cycle_type="rpt_1C", diag_pos=1)
         self.assertEqual(step_ind, {'rpt_1C_charge': 54, 'rpt_1C_discharge': 55})
 
-        step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="rpt_2C", diag_pos=0)
+        step_ind = featurizer_helpers.get_step_index(structured_datapath, cycle_type="rpt_2C", diag_pos=0)
         self.assertEqual(step_ind, {'rpt_2C_charge': 25, 'rpt_2C_discharge': 26})
-        step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="rpt_2C", diag_pos=1)
+        step_ind = featurizer_helpers.get_step_index(structured_datapath, cycle_type="rpt_2C", diag_pos=1)
         self.assertEqual(step_ind, {'rpt_2C_charge': 57, 'rpt_2C_discharge': 58})
 
     def test_get_step_index_3(self):
-        pcycler_run_loc = os.path.join(
+        structured_datapath_loc = os.path.join(
             TEST_FILE_DIR, "PredictionDiagnostics_000136_00002D_truncated_structure.json"
         )
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-        pcycler_run = auto_load_processed(pcycler_run_loc)
-        step_ind = featurizer_helpers.get_step_index(pcycler_run, cycle_type="hppc", diag_pos=0)
+        structured_datapath = auto_load_processed(structured_datapath_loc)
+        step_ind = featurizer_helpers.get_step_index(structured_datapath, cycle_type="hppc", diag_pos=0)
         self.assertEqual(len(step_ind.values()), 6)
 
     def test_get_diffusion_coeff(self):
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-            pcycler_run_loc = os.path.join(
+            structured_datapath_loc = os.path.join(
                 TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
             )
-            pcycler_run = auto_load_processed(pcycler_run_loc)
-            diffusion_df = featurizer_helpers.get_diffusion_coeff(pcycler_run, 1)
+            structured_datapath = auto_load_processed(structured_datapath_loc)
+            diffusion_df = featurizer_helpers.get_diffusion_coeff(structured_datapath, 1)
             print(np.round(diffusion_df.iloc[0].to_list(), 3))
             self.assertEqual(np.round(diffusion_df.iloc[0].to_list(), 3)[0], -0.016)
             self.assertEqual(np.round(diffusion_df.iloc[0].to_list(), 3)[5], -0.011)
