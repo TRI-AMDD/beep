@@ -74,12 +74,26 @@ class BEEPFeaturizer(MSONable, abc.ABC):
 
     """
 
+    DEFAULT_HYPERPARAMETERS = {}
+
     def __init__(self, structured_datapath: Union[BEEPDatapath, None], hyperparameters: Union[dict, None] = None):
+        # If all required hyperparameters are specified, use those
+        # If some subset of required hyperparameters are specified, throw error
+        # If no hyperparameters are specified, use defaults
+        if hyperparameters:
+            if all(k in hyperparameters for k in self.DEFAULT_HYPERPARAMETERS):
+                self.hyperparameters = hyperparameters
+            else:
+                raise BEEPFeaturizationError(
+                    f"Features cannot be created with incomplete set of "
+                    f"hyperparameters {self.hyperparameters} < "
+                    f"{self.DEFAULT_HYPERPARAMETERS.keys()}!")
+        else:
+            self.hyperparameters = self.DEFAULT_HYPERPARAMETERS
 
         if not structured_datapath is not None and structured_datapath.is_structured:
             raise BEEPFeaturizationError("BEEPDatapath input is not structured!")
         self.datapath = structured_datapath
-        self.hyperparameters = hyperparameters
         self.features = None
 
         # In case these features are loaded from file
@@ -106,6 +120,7 @@ class BEEPFeaturizer(MSONable, abc.ABC):
             None
         """
         raise NotImplementedError
+
 
     def as_dict(self):
         """Serialize a BEEPDatapath as a dictionary.
@@ -193,154 +208,3 @@ class BEEPFeaturizer(MSONable, abc.ABC):
         """
         d = self.as_dict()
         dumpfn(d, filename)
-
-
-
-
-class BeepFeatures(MSONable, metaclass=ABCMeta):
-    """
-    Class corresponding to feature baseline feature object.
-
-    Attributes:
-        name (str): predictor object name.
-        X (pandas.DataFrame): features in DataFrame format.
-        metadata (dict): information about the conditions, data
-            and code used to produce features
-    """
-
-    class_feature_name = "Base"
-
-    def __init__(self, name, X, metadata):
-        """
-        Invokes BeepFeatures object
-
-        Args:
-            name (str): predictor object name.
-            X (pandas.DataFrame): features in DataFrame format.
-            metadata (dict): information about the conditions, data
-                and code used to produce features
-
-        """
-        self.name = name
-        self.X = X
-        self.metadata = metadata
-
-    @classmethod
-    def from_run(
-        cls, input_filename, feature_dir, processed_cycler_run,
-            params_dict=None, parameters_path="data-share/raw/parameters"
-    ):
-        """
-        This method contains the workflow for the creation of the feature class
-        Since the workflow should be the same for all of the feature classed this
-        method should not be overridden in any of the derived classes. If the class
-        can be created (feature generation succeeds, etc.) then the class is returned.
-        Otherwise the return value is False
-        Args:
-            input_filename (str): path to the input data from processed cycler run
-            feature_dir (str): path to the base directory for the feature sets.
-            processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
-            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
-            gets featurized. These could be filters for column or row operations
-            parameters_path (str): Root directory storing project parameter files.
-
-        Returns:
-            (beep.featurize.BeepFeatures): class object for the feature set
-        """
-
-        if cls.validate_data(processed_cycler_run, params_dict):
-            output_filename = cls.get_feature_object_name_and_path(
-                input_filename, feature_dir
-            )
-            feature_object = cls.features_from_processed_cycler_run(
-                processed_cycler_run, params_dict, parameters_path=parameters_path
-            )
-            metadata = cls.metadata_from_processed_cycler_run(
-                processed_cycler_run, params_dict
-            )
-            return cls(output_filename, feature_object, metadata)
-        else:
-            return False
-
-    @classmethod
-    @abstractmethod
-    def validate_data(cls, processed_cycler_run, params_dict=None):
-        """
-        Method for validation of input data, e.g. processed_cycler_runs
-
-        Args:
-            processed_cycler_run (ProcessedCyclerRun): processed_cycler_run
-                to validate
-            params_dict (dict): parameter dictionary for validation
-
-        Returns:
-            (bool): boolean for whether data is validated
-
-        """
-        raise NotImplementedError
-
-    @classmethod
-    def get_feature_object_name_and_path(cls, input_path, feature_dir):
-        """
-        This function determines how to name the object for a specific feature class
-        and creates the full path to save the object. This full path is also used as
-        the feature name attribute
-        Args:
-            input_path (str): path to the input data from processed cycler run
-            feature_dir (str): path to the base directory for the feature sets.
-        Returns:
-            str: the full path (including filename) to use for saving the feature
-                object
-        """
-        new_filename = os.path.basename(input_path)
-        new_filename = scrub_underscore_suffix(new_filename)
-
-        # Append model_name along with "features" to demarcate
-        # different models when saving the feature vectors.
-        new_filename = add_suffix_to_filename(
-            new_filename, "_features" + "_" + cls.class_feature_name
-        )
-        if not os.path.isdir(os.path.join(feature_dir, cls.class_feature_name)):
-            os.makedirs(os.path.join(feature_dir, cls.class_feature_name))
-        feature_path = os.path.join(feature_dir, cls.class_feature_name, new_filename)
-        feature_path = os.path.abspath(feature_path)
-        return feature_path
-
-    @classmethod
-    @abstractmethod
-    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
-                                           parameters_path="data-share/raw/parameters"):
-        raise NotImplementedError
-
-    @classmethod
-    def metadata_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None):
-        if params_dict is None:
-            params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
-        metadata = {
-            "barcode": processed_cycler_run.metadata.barcode,
-            "protocol": processed_cycler_run.metadata.protocol,
-            "channel_id": processed_cycler_run.metadata.channel_id,
-            "parameters": params_dict,
-        }
-        return metadata
-
-    def as_dict(self):
-        """
-        Method for dictionary serialization
-        Returns:
-            dict: corresponding to dictionary for serialization
-        """
-        obj = {
-            "@module": self.__class__.__module__,
-            "@class": self.__class__.__name__,
-            "name": self.name,
-            "X": self.X.to_dict("list"),
-            "metadata": self.metadata,
-        }
-        return obj
-
-    @classmethod
-    def from_dict(cls, d):
-        """MSONable deserialization method"""
-        d["X"] = pd.DataFrame(d["X"])
-        return cls(**d)
