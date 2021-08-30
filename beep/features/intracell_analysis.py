@@ -159,7 +159,8 @@ class IntracellAnalysis:
                  cycle_type='rpt_0.2C',
                  step_type=0,
                  ne_2pos_file=None,
-                 ne_2neg_file=None):
+                 ne_2neg_file=None
+                 ):
         """
         Invokes the cell electrode analysis class. This is a class designed to fit the cell and electrode
         parameters in order to determine changes of electrodes within the full cell from only full cell cycling data.
@@ -173,36 +174,12 @@ class IntracellAnalysis:
             ne_2neg_file (str): file name of the data for the negative component of the anode
             ne_2pos_file (str): file name of the data for the positive component of the anode
         """
-
-        if not os.path.split(pe_pristine_file)[0]:
-            self.pe_pristine = pd.read_csv(os.path.join(os.environ.get("BEEP_PROCESSING_DIR", "/"),
-                                                        CELL_INFO_DIR,
-                                                        pe_pristine_file),
-                                           usecols=['SOC_aligned', 'Voltage_aligned'])
-        else:
-            self.pe_pristine = pd.read_csv(os.path.join(pe_pristine_file),
-                                           usecols=['SOC_aligned', 'Voltage_aligned'])
-
-        if not os.path.split(ne_pristine_file)[0]:
-            self.ne_1_pristine = pd.read_csv(os.path.join(os.environ.get("BEEP_PROCESSING_DIR", "/"),
-                                                          CELL_INFO_DIR,
-                                                          ne_pristine_file),
-                                             usecols=['SOC_aligned', 'Voltage_aligned'])
-        else:
-            self.ne_1_pristine = pd.read_csv(os.path.join(ne_pristine_file),
-                                             usecols=['SOC_aligned', 'Voltage_aligned'])
+        self.pe_pristine = pd.read_csv(pe_pristine_file, usecols=['SOC_aligned', 'Voltage_aligned'])
+        self.ne_1_pristine = pd.read_csv(ne_pristine_file, usecols=['SOC_aligned', 'Voltage_aligned'])
 
         if ne_2neg_file and ne_2pos_file:
-            if not os.path.split(ne_2neg_file)[0] and not os.path.split(ne_2pos_file)[0]:
-                self.ne_2_pristine_pos = pd.read_csv(os.path.join(os.environ.get("BEEP_PROCESSING_DIR", "/"),
-                                                                  CELL_INFO_DIR,
-                                                                  ne_2pos_file))
-                self.ne_2_pristine_neg = pd.read_csv(os.path.join(os.environ.get("BEEP_PROCESSING_DIR", "/"),
-                                                                  CELL_INFO_DIR,
-                                                                  ne_2neg_file))
-            else:
-                self.ne_2_pristine_pos = pd.read_csv(ne_2pos_file)
-                self.ne_2_pristine_neg = pd.read_csv(ne_2neg_file)
+            self.ne_2_pristine_pos = pd.read_csv(ne_2pos_file)
+            self.ne_2_pristine_neg = pd.read_csv(ne_2neg_file)
         else:
             self.ne_2_pristine_pos = pd.DataFrame()
             self.ne_2_pristine_neg = pd.DataFrame()
