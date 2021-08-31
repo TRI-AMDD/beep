@@ -30,7 +30,13 @@ from pathlib import Path
 #     CycleSummaryStats
 # )
 
-from beep.features.core import DeltaQFastCharge
+from beep.features.core import (
+    DeltaQFastCharge,
+    TrajectoryFastCharge,
+    DiagnosticProperties,
+    DiagnosticSummaryStats,
+
+)
 
 from beep.structure.maccor import MaccorDatapath
 from beep.structure.cli import auto_load_processed
@@ -100,126 +106,58 @@ class TestFeaturizer(unittest.TestCase):
             1.0628421000000001
         )
 
-    def test_feature_class(self):
-        with ScratchDir("."):
-            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
+    def test_sequential_multiple_features(self):
+        structured_datapath = auto_load_processed(self.structured_cycler_file_path)
+        for fclass in [DeltaQFastCharge, TrajectoryFastCharge]:
+            f = fclass(structured_datapath)
+            self.assertTrue(f.validate())
+            f.create_features()
 
-            structured_datapath_loc = os.path.join(
-                TEST_FILE_DIR, "2017-06-30_2C-10per_6C_CH10_structure.json"
-            )
-            structured_datapath = auto_load_processed(structured_datapath_loc)
-            featurizer = DeltaQFastCharge.from_run(
-                structured_datapath_loc, os.getcwd(), structured_datapath
-            )
-            path, local_filename = os.path.split(featurizer.name)
-            folder = os.path.split(path)[-1]
-            self.assertEqual(
-                local_filename,
-                "2017-06-30_2C-10per_6C_CH10_features_DeltaQFastCharge.json",
-            )
-            self.assertEqual(folder, "DeltaQFastCharge")
-            dumpfn(featurizer, featurizer.name)
+            self.assertEqual(f.metadata["channel_id"], 9)
+            self.assertEqual(f.metadata["protocol"], '2017-06-30_tests\\20170629-2C_10per_6C.sdu')
+            self.assertEqual(f.metadata["barcode"], 'el150800460605')
 
-            processed_run_list = []
-            processed_result_list = []
-            processed_message_list = []
-            processed_paths_list = []
-            run_id = 1
+            filename = f.__class__.__name__ + ".json"
+            dumpfn(f, filename)
 
-            featurizer_classes = [DeltaQFastCharge, TrajectoryFastCharge]
-            for featurizer_class in featurizer_classes:
-                featurizer = featurizer_class.from_run(
-                    structured_datapath_loc, os.getcwd(), structured_datapath
-                )
-                if featurizer:
-                    self.assertEqual(featurizer.metadata["channel_id"], 9)
-                    self.assertEqual(featurizer.metadata["protocol"], '2017-06-30_tests\\20170629-2C_10per_6C.sdu')
-                    self.assertEqual(featurizer.metadata["barcode"], 'el150800460605')
-                    dumpfn(featurizer, featurizer.name)
-                    processed_paths_list.append(featurizer.name)
-                    processed_run_list.append(run_id)
-                    processed_result_list.append("success")
-                    processed_message_list.append({"comment": "", "error": ""})
-                else:
-                    processed_paths_list.append(structured_datapath_loc)
-                    processed_run_list.append(run_id)
-                    processed_result_list.append("incomplete")
-                    processed_message_list.append(
-                        {
-                            "comment": "Insufficient or incorrect data for featurization",
-                            "error": "",
-                        }
-                    )
+        traj = loadfn("TrajectoryFastCharge.json")
+        self.assertEqual(traj.features.loc[0, "capacity_0.8"], 161)
 
-            self.assertEqual(processed_result_list, ["success", "success"])
-            trajectory = loadfn(
-                os.path.join(
-                    "TrajectoryFastCharge",
-                    "2017-06-30_2C-10per_6C_CH10_features_TrajectoryFastCharge.json",
-                )
-            )
-            self.assertEqual(trajectory.X.loc[0, "capacity_0.8"], 161)
-
-    def test_feature_generation_list_to_json(self):
-        processed_cycler_run_path = os.path.join(
+    def test_sequential_multiple_features2(self):
+        structured_cycler_path = os.path.join(
             TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
         )
-        with ScratchDir("."):
-            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-            # os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
-            shutil.copy(os.path.join(TEST_FILE_DIR, "data-share", "raw", "cell_info", "anode_test.csv"),
-                        os.path.join(TEST_FILE_DIR, "data-share", "raw", "cell_info",
-                                     FEATURE_HYPERPARAMS["IntracellFeatures"]["anode_file"])
-                        )
-            shutil.copy(os.path.join(TEST_FILE_DIR, "data-share", "raw", "cell_info", "cathode_test.csv"),
-                        os.path.join(TEST_FILE_DIR, "data-share", "raw", "cell_info",
-                                     FEATURE_HYPERPARAMS["IntracellFeatures"]["cathode_file"])
-                        )
+        structured_datapath = auto_load_processed(structured_cycler_path)
 
-            # Create dummy json obj
-            json_obj = {
-                "file_list": [processed_cycler_run_path, processed_cycler_run_path],
-                "run_list": [0, 1],
-            }
-            json_string = json.dumps(json_obj)
+        parameters_path = os.path.join(
+            TEST_FILE_DIR,
+            "data-share/raw/parameters"
+        )
 
-            newjsonpaths = process_file_list_from_json(
-                json_string, processed_dir=os.getcwd()
-            )
-            reloaded = json.loads(newjsonpaths)
+        dp_params = {
+            "quantities": ["discharge_energy", "discharge_capacity"],
+            "parameters_dir": parameters_path
+        }
 
-            # Check that at least strings are output
-            self.assertIsInstance(reloaded["file_list"][-1], str)
+        dp = DiagnosticProperties(structured_datapath, dp_params)
+        dq = DeltaQFastCharge(structured_datapath)
 
-            # Ensure first is correct
-            features_reloaded = loadfn(reloaded["file_list"][2])
-            self.assertIsInstance(features_reloaded, DeltaQFastCharge)
-            self.assertEqual(
-                features_reloaded.X.loc[0, "nominal_capacity_by_median"],
-                0.07114775279999999,
-            )
-            features_reloaded = loadfn(reloaded["file_list"][4])
-            self.assertIsInstance(features_reloaded, DiagnosticProperties)
-            self.assertListEqual(
-                list(features_reloaded.X.iloc[2, :]),
+
+        self.assertTrue(dp.validate())
+        self.assertTrue(dq.validate())
+
+        dp.create_features()
+        dq.create_features()
+
+        self.assertEqual(dq.features.loc[0, "nominal_capacity_by_median"], 0.07114775279999999)
+        self.assertListEqual(list(dp.features.iloc[2, :]),
                 [141, 0.9859837086597274, 7.885284043, 4.323121513988055,
                  21.12108276469096, 30, 100, 1577338063, 'reset', 'discharge_energy'],
             )
 
-            # Workflow output
-            output_file_path = Path(tempfile.gettempdir()) / "results.json"
-            self.assertTrue(output_file_path.exists())
-
-            output_data = json.loads(output_file_path.read_text())
-            output_json = output_data[0]
-
-            self.assertEqual(reloaded["file_list"][0], output_json["filename"])
-            self.assertEqual(os.path.getsize(output_json["filename"]), output_json["size"])
-            self.assertEqual(0, output_json["run_id"])
-            self.assertEqual("featurizing", output_json["action"])
-            self.assertEqual("success", output_json["status"])
-
     def test_insufficient_data_file(self):
+
+        for f in
         processed_cycler_run_path = os.path.join(
             TEST_FILE_DIR, self.processed_cycler_file_insuf
         )
