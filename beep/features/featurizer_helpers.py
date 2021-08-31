@@ -627,7 +627,7 @@ def get_step_index(pcycler_run, cycle_type="hppc", diag_pos=0, parameters_path=P
     return step_indices_annotated
 
 
-def check_diagnostic_summary_validation(datapath):
+def check_diagnostic_validation(datapath):
     if not hasattr(datapath, "diagnostic_summary") & hasattr(
             datapath, "diagnostic_data"
     ):

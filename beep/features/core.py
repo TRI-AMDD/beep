@@ -17,7 +17,7 @@ class HPPCResistanceBVoltageFeatures(BEEPFeaturizer):
     }
 
     def validate(self):
-        val, msg = featurizer_helpers.check_diagnostic_summary_validation(self.datapath)
+        val, msg = featurizer_helpers.check_diagnostic_validation(self.datapath)
         if val:
             conditions = []
             conditions.append(
@@ -285,7 +285,7 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         Returns:
             bool: True/False indication of ability to proceed with feature generation
         """
-        val, msg = featurizer_helpers.check_diagnostic_summary_validation(self.datapath)
+        val, msg = featurizer_helpers.check_diagnostic_validation(self.datapath)
         if val:
             df = self.datapath.diagnostic_summary
             df = df[df.cycle_type == self.hyperparameters["diagnostic_cycle_type"]]
@@ -738,7 +738,7 @@ class DiagnosticProperties(BEEPFeaturizer):
         Returns:
             bool: True/False indication of ability to proceed with feature generation
         """
-        return featurizer_helpers.check_diagnostic_summary_validation(self.datapath)
+        return featurizer_helpers.check_diagnostic_validation(self.datapath)
 
     def create_features(self):
         """
