@@ -239,8 +239,9 @@ class CycleSummaryStats(BEEPFeaturizer):
         if "mean" in stats_names:
             stats.append(np.log10(np.absolute(np.mean(array))))
         if "skew" in stats_names:
-            stats.append(np.log10(
-                np.absolute(kurtosis(array, fisher=False, bias=False))))
+            stats.append(np.log10(np.absolute(skew(array))))
+        if "kurtosis" in stats_names:
+            stats.append(np.log10(np.absolute(kurtosis(array, fisher=False, bias=False))))
         if "abs" in stats_names:
             stats.append(np.log10(np.sum(np.absolute(array))))
         if "square" in stats_names:
@@ -296,7 +297,12 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         else:
             return val, msg
 
-    def get_summary_diff(self, pos=None, cycle_types=None, metrics=None):
+    def get_summary_diff(
+            self,
+            pos=None,
+            cycle_types=("rpt_0.2C", "rpt_1C", "rpt_2C"),
+            metrics=("discharge_capacity", "discharge_energy", "charge_capacity", "charge_energy")
+    ):
         """
         Helper function to calculate difference between summary values in the diagnostic cycles
 
@@ -310,13 +316,7 @@ class DiagnosticSummaryStats(CycleSummaryStats):
                     values (list): List of difference values to insert into the dataframe
                     names (list): List of column headers to use in the creation of the dataframe
                 """
-        if pos is None:
-            pos = self.DEFAULT_HYPERPARAMETERS["diag_pos_list"]
-        if cycle_types is None:
-            cycle_types = ["rpt_0.2C", "rpt_1C", "rpt_2C"]
-        if metrics is None:
-            metrics = ["discharge_capacity", "discharge_energy",
-                       "charge_capacity", "charge_energy"]
+        pos = self.hyperparameters["diag_pos_list"] if not pos else pos
 
         values = []
         names = []
@@ -448,9 +448,9 @@ class DiagnosticSummaryStats(CycleSummaryStats):
 
         X.loc[0, 35:41] = self.get_summary_statistics(dQdVdDiff)
 
-        X.loc[0, 42:53], names = self.get_summary_diff(self.datapath,
-                                                       self.hyperparameters[
-                                                           "diag_pos_list"])
+        X.loc[0, 42:53], names = self.get_summary_diff(
+            self.hyperparameters["diag_pos_list"]
+        )
 
         quantities = [
             "charging_capacity",
@@ -462,7 +462,7 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         ]
 
         X.columns = [y + "_" + x for x in quantities for y in
-                     self.DEFAULT_HYPERPARAMETERS["statistics"]] + names
+                     self.hyperparameters["statistics"]] + names
         self.features = X
 
 

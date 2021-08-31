@@ -56,22 +56,20 @@ MACCOR_FILE_W_DIAGNOSTICS = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000020_CH71.
 MACCOR_FILE_W_PARAMETERS = os.path.join(
     TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010"
 )
-# FEATURE_HYPERPARAMS = loadfn(
-#     os.path.join(MODULE_DIR, "features/feature_hyperparameters.yaml")
-# )
 
 
 class TestFeaturizer(unittest.TestCase):
     def setUp(self):
         self.structured_cycler_file_path = os.path.join(TEST_FILE_DIR, "2017-06-30_2C-10per_6C_CH10_structure.json")
         self.structured_cycler_file_path_insuf = os.path.join(TEST_FILE_DIR, "structure_insufficient.json")
+        self.structured_cycler_file_path_trunc = os.path.join(TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json")
 
 
 
     def test_featurization_basic_DeltaQFastCharge(self):
         structured_datapath = auto_load_processed(self.structured_cycler_file_path)
         f = DeltaQFastCharge(structured_datapath)
-        self.assertTrue(f.validate())
+        self.assertTrue(f.validate()[0])
         f.create_features()
 
         self.assertEqual(len(f.features), 1)  # just test if works for now
@@ -113,7 +111,7 @@ class TestFeaturizer(unittest.TestCase):
         structured_datapath = auto_load_processed(self.structured_cycler_file_path)
         for fclass in [DeltaQFastCharge, TrajectoryFastCharge]:
             f = fclass(structured_datapath)
-            self.assertTrue(f.validate())
+            self.assertTrue(f.validate()[0])
             f.create_features()
 
             self.assertEqual(f.metadata["channel_id"], 9)
@@ -127,10 +125,7 @@ class TestFeaturizer(unittest.TestCase):
         self.assertEqual(traj.features.loc[0, "capacity_0.8"], 161)
 
     def test_sequential_multiple_features2(self):
-        structured_cycler_path = os.path.join(
-            TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
-        )
-        structured_datapath = auto_load_processed(structured_cycler_path)
+        structured_datapath = auto_load_processed(self.structured_cycler_file_path_trunc)
 
         parameters_path = os.path.join(
             TEST_FILE_DIR,
@@ -146,8 +141,8 @@ class TestFeaturizer(unittest.TestCase):
         dq = DeltaQFastCharge(structured_datapath)
 
 
-        self.assertTrue(dp.validate())
-        self.assertTrue(dq.validate())
+        self.assertTrue(dp.validate()[0])
+        self.assertTrue(dq.validate()[0])
 
         dp.create_features()
         dq.create_features()
@@ -159,26 +154,25 @@ class TestFeaturizer(unittest.TestCase):
             )
 
     def test_must_fail_featurization(self):
-
         # insufficient structured file must fail
         structured_insuf = auto_load_processed(self.structured_cycler_file_path_insuf)
 
         f = DiagnosticSummaryStats(structured_insuf)
-        self.assertFalse(f.validate())
+
+        val, msg = f.validate()
+
+        self.assertFalse(val)
+        self.assertEqual(msg, "Datapath does not have diagnostic summary")
 
         unstructured = auto_load(os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29.csv"))
         with self.assertRaises(BEEPFeaturizationError):
             DiagnosticSummaryStats(unstructured)
 
     def test_HPPCResistanceVoltageFeatures(self):
-
-        structured_datapath_loc = os.path.join(
-            TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
-        )
-        structured_datapath = auto_load_processed(structured_datapath_loc)
+        structured_datapath = auto_load_processed(self.structured_cycler_file_path_trunc)
         
         f = HPPCResistanceBVoltageFeatures(structured_datapath)
-        self.assertTrue(f.validate())
+        self.assertTrue(f.validate()[0])
         f.create_features()
         
         self.assertEqual(f.features.shape[1], 76)
@@ -189,71 +183,164 @@ class TestFeaturizer(unittest.TestCase):
         self.assertAlmostEqual(f.features.iloc[0, 5], -0.1280224700339366, 6)
         self.assertAlmostEqual(f.features.iloc[0, 27], -0.10378359476555565, 6)
         
-    def test_DiagnosticSummaryStats_class(self):
-        with ScratchDir("."):
-            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-            structured_datapath_loc = os.path.join(TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json")
-            structured_datapath = auto_load_processed(structured_datapath_loc)
-            featurizer = DiagnosticSummaryStats.from_run(
-                structured_datapath_loc, os.getcwd(), structured_datapath
-            )
-            path, local_filename = os.path.split(featurizer.name)
-            folder = os.path.split(path)[-1]
-            dumpfn(featurizer, featurizer.name)
-            self.assertEqual(folder, "DiagnosticSummaryStats")
-            self.assertEqual(featurizer.X.shape[1], 54)
-            self.assertListEqual(
-                [featurizer.X.columns[0], featurizer.X.columns[41]],
-                ["var_charging_capacity", "square_discharging_dQdV"],
-            )
-            self.assertListEqual(
-                [featurizer.X.columns[42], featurizer.X.columns[53]],
-                ["diag_sum_diff_0_1_rpt_0.2Cdischarge_capacity", "diag_sum_diff_0_1_rpt_2Ccharge_energy"],
-            )
-            x = [-3.622991274215596, -1.4948801528128568, -2.441732890889216, -0.794422489658189, 0.4889470327970021,
-                 0.7562360890191123, -0.9122534588595697, -3.771727344982484, -1.6613278517299095, -3.9279757071656616,
-                 0.1418911233780052, 0.7493913209640308, 0.6755655006191633, -1.0823827139302122, -2.484906394983077,
-                 -0.8949449222504844, -1.7523322777749897, -1.4575307327423712, 0.4467463228405364, 1.3265006178265961,
-                 0.2422557417274141, -2.6373799375134594, -1.230847957965504, -2.046540216421213, 0.2334339752067063,
-                 0.8239822694093881, 1.2085578295115413, 0.06687710057927358, -1.0135736732168983, 0.12101479889802537,
-                 -2.2735196264247866, 0.37844357940755063, 1.425189114118929, 1.8786507359201035, 1.6731897281287798,
-                 -1.1875358619917917, 0.1361208058450041, -1.8275104616090456, -0.2665523054105704, 1.1375831683815445,
-                 1.84972885518774, 1.5023615714170622, -0.00472514151532623, -0.003475275535937185,
-                 -0.008076419207993832, -0.008621551983451683, 7.413107429038043e-05, 0.0013748657878274915,
-                 -0.005084993748595586, -0.005675990891556979, -0.002536196993382343, -0.0018987653783979423,
-                 -0.00016598153694586686, -0.00105148083990717]
-            computed = featurizer.X.iloc[0].tolist()
-            for indx, value in enumerate(x):
-                precision = 5
-                self.assertEqual(np.around(np.float32(value), precision),
-                                 np.around(np.float32(computed[indx]), precision))
+    def test_DiagnosticSummaryStats(self):
+        structured_datapath = auto_load_processed(self.structured_cycler_file_path_trunc)
 
-            self.assertEqual(np.around(featurizer.X['var_discharging_capacity'].iloc[0], 6),
-                             np.around(-3.771727344982484, 6))
+        f = DiagnosticSummaryStats(structured_datapath)
+        self.assertTrue(f.validate()[0])
 
-            structured_datapath_loc = os.path.join(TEST_FILE_DIR,
-                                           "PredictionDiagnostics_000136_00002D_truncated_structure.json")
-            structured_datapath = auto_load_processed(structured_datapath_loc)
-            featurizer = DiagnosticSummaryStats.from_run(structured_datapath_loc, os.getcwd(), structured_datapath)
-            x = [-2.4602845133649374, -0.7912059829821004, -1.3246516129064152, -0.5577484175221676,
-                 0.22558675296269257, 1.4107424811304434, 0.44307560772987753, -2.968731527885897,
-                 -1.003386799815887, -1.2861922579124305, 0.010393880890967514, 0.4995216948726259,
-                 1.4292366107477192, 0.2643953383205679, -1.3377336978836682, -0.21470956778563194,
-                 -0.7617667690573674, -0.47886877345098366, 0.23547492071796852, 1.9699615602673914,
-                 1.566893893282218, -1.8282011110054657, -0.46311299104523346, -0.7166620260036703,
-                 0.06268262404068164, 0.5400910355865228, 2.00139593781454, 1.4038773986895716,
-                 0.46799197793006897, 0.5117431282997131, -1.4615182876586914, 1.2889420237956628,
-                 2.6205135712205725, 2.176016330718994, 3.1539101600646973, -0.9218153953552246,
-                 0.23360896110534668, -1.1706260442733765, -0.5070897459236073, 1.1722059184617377,
-                 2.0029776096343994, 1.7837194204330444, -0.021425815851990795, -0.020270314430328763,
-                 -0.028696091773302315, -0.02782930233422708, -0.017478835661355316, -0.019788159842565697,
-                 -0.021354840746757066, -0.021056601447539146, -0.026599426370616085, -0.03017946374275189,
-                 -0.017983518726387225, -0.01771638489069907]
-            computed = featurizer.X.iloc[0].tolist()
-            for indx, value in enumerate(x):
-                precision = 5
-                self.assertEqual(np.around(np.float32(value), precision),
-                                 np.around(np.float32(computed[indx]), precision))
+        f.create_features()
+
+        self.assertEqual(f.features.shape[1], 54)
+        self.assertListEqual(
+            [f.features.columns[0], f.features.columns[41]],
+            ["var_charging_capacity", "square_discharging_dQdV"],
+        )
+        self.assertListEqual(
+            [f.features.columns[42], f.features.columns[53]],
+            ["diag_sum_diff_0_1_rpt_0.2Cdischarge_capacity",
+             "diag_sum_diff_0_1_rpt_2Ccharge_energy"],
+        )
+        x = [-3.622991274215596, -1.4948801528128568, -2.441732890889216,
+             -0.794422489658189, 0.4889470327970021,
+             0.7562360890191123, -0.9122534588595697, -3.771727344982484,
+             -1.6613278517299095, -3.9279757071656616,
+             0.1418911233780052, 0.7493913209640308, 0.6755655006191633,
+             -1.0823827139302122, -2.484906394983077,
+             -0.8949449222504844, -1.7523322777749897, -1.4575307327423712,
+             0.4467463228405364, 1.3265006178265961,
+             0.2422557417274141, -2.6373799375134594, -1.230847957965504,
+             -2.046540216421213, 0.2334339752067063,
+             0.8239822694093881, 1.2085578295115413, 0.06687710057927358,
+             -1.0135736732168983, 0.12101479889802537,
+             -2.2735196264247866, 0.37844357940755063, 1.425189114118929,
+             1.8786507359201035, 1.6731897281287798,
+             -1.1875358619917917, 0.1361208058450041, -1.8275104616090456,
+             -0.2665523054105704, 1.1375831683815445,
+             1.84972885518774, 1.5023615714170622, -0.00472514151532623,
+             -0.003475275535937185,
+             -0.008076419207993832, -0.008621551983451683,
+             7.413107429038043e-05, 0.0013748657878274915,
+             -0.005084993748595586, -0.005675990891556979,
+             -0.002536196993382343, -0.0018987653783979423,
+             -0.00016598153694586686, -0.00105148083990717]
+        computed = f.features.iloc[0].tolist()
+        for indx, value in enumerate(x):
+            precision = 5
+            self.assertEqual(np.around(np.float32(value), precision),
+                             np.around(np.float32(computed[indx]), precision))
+
+        self.assertEqual(
+            np.around(f.features['var_discharging_capacity'].iloc[0], 6),
+            np.around(-3.771727344982484, 6))
+
+        structured_datapath_loc2 = os.path.join(TEST_FILE_DIR,
+                                               "PredictionDiagnostics_000136_00002D_truncated_structure.json")
+        structured_datapath2 = auto_load_processed(structured_datapath_loc2)
+
+        f2 = DiagnosticSummaryStats(structured_datapath2)
+        self.assertTrue(f2.validate()[0])
+
+        f2.create_features()
+
+        x = [-2.4602845133649374, -0.7912059829821004, -1.3246516129064152,
+             -0.5577484175221676,
+             0.22558675296269257, 1.4107424811304434, 0.44307560772987753,
+             -2.968731527885897,
+             -1.003386799815887, -1.2861922579124305, 0.010393880890967514,
+             0.4995216948726259,
+             1.4292366107477192, 0.2643953383205679, -1.3377336978836682,
+             -0.21470956778563194,
+             -0.7617667690573674, -0.47886877345098366, 0.23547492071796852,
+             1.9699615602673914,
+             1.566893893282218, -1.8282011110054657, -0.46311299104523346,
+             -0.7166620260036703,
+             0.06268262404068164, 0.5400910355865228, 2.00139593781454,
+             1.4038773986895716,
+             0.46799197793006897, 0.5117431282997131, -1.4615182876586914,
+             1.2889420237956628,
+             2.6205135712205725, 2.176016330718994, 3.1539101600646973,
+             -0.9218153953552246,
+             0.23360896110534668, -1.1706260442733765, -0.5070897459236073,
+             1.1722059184617377,
+             2.0029776096343994, 1.7837194204330444, -0.021425815851990795,
+             -0.020270314430328763,
+             -0.028696091773302315, -0.02782930233422708, -0.017478835661355316,
+             -0.019788159842565697,
+             -0.021354840746757066, -0.021056601447539146,
+             -0.026599426370616085, -0.03017946374275189,
+             -0.017983518726387225, -0.01771638489069907]
+        computed = f2.features.iloc[0].tolist()
+        for indx, value in enumerate(x):
+            precision = 5
+            self.assertEqual(np.around(np.float32(value), precision),
+                             np.around(np.float32(computed[indx]), precision))
+        
+
+        # with ScratchDir("."):
+        #     os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
+        #     structured_datapath_loc = os.path.join(TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json")
+        #     structured_datapath = auto_load_processed(structured_datapath_loc)
+        #     featurizer = DiagnosticSummaryStats.from_run(
+        #         structured_datapath_loc, os.getcwd(), structured_datapath
+        #     )
+        #     path, local_filename = os.path.split(featurizer.name)
+        #     folder = os.path.split(path)[-1]
+        #     dumpfn(featurizer, featurizer.name)
+        #     self.assertEqual(folder, "DiagnosticSummaryStats")
+        #     self.assertEqual(featurizer.X.shape[1], 54)
+        #     self.assertListEqual(
+        #         [featurizer.X.columns[0], featurizer.X.columns[41]],
+        #         ["var_charging_capacity", "square_discharging_dQdV"],
+        #     )
+        #     self.assertListEqual(
+        #         [featurizer.X.columns[42], featurizer.X.columns[53]],
+        #         ["diag_sum_diff_0_1_rpt_0.2Cdischarge_capacity", "diag_sum_diff_0_1_rpt_2Ccharge_energy"],
+        #     )
+        #     x = [-3.622991274215596, -1.4948801528128568, -2.441732890889216, -0.794422489658189, 0.4889470327970021,
+        #          0.7562360890191123, -0.9122534588595697, -3.771727344982484, -1.6613278517299095, -3.9279757071656616,
+        #          0.1418911233780052, 0.7493913209640308, 0.6755655006191633, -1.0823827139302122, -2.484906394983077,
+        #          -0.8949449222504844, -1.7523322777749897, -1.4575307327423712, 0.4467463228405364, 1.3265006178265961,
+        #          0.2422557417274141, -2.6373799375134594, -1.230847957965504, -2.046540216421213, 0.2334339752067063,
+        #          0.8239822694093881, 1.2085578295115413, 0.06687710057927358, -1.0135736732168983, 0.12101479889802537,
+        #          -2.2735196264247866, 0.37844357940755063, 1.425189114118929, 1.8786507359201035, 1.6731897281287798,
+        #          -1.1875358619917917, 0.1361208058450041, -1.8275104616090456, -0.2665523054105704, 1.1375831683815445,
+        #          1.84972885518774, 1.5023615714170622, -0.00472514151532623, -0.003475275535937185,
+        #          -0.008076419207993832, -0.008621551983451683, 7.413107429038043e-05, 0.0013748657878274915,
+        #          -0.005084993748595586, -0.005675990891556979, -0.002536196993382343, -0.0018987653783979423,
+        #          -0.00016598153694586686, -0.00105148083990717]
+        #     computed = featurizer.X.iloc[0].tolist()
+        #     for indx, value in enumerate(x):
+        #         precision = 5
+        #         self.assertEqual(np.around(np.float32(value), precision),
+        #                          np.around(np.float32(computed[indx]), precision))
+        # 
+        #     self.assertEqual(np.around(featurizer.X['var_discharging_capacity'].iloc[0], 6),
+        #                      np.around(-3.771727344982484, 6))
+        # 
+        #     structured_datapath_loc = os.path.join(TEST_FILE_DIR,
+        #                                    "PredictionDiagnostics_000136_00002D_truncated_structure.json")
+        #     structured_datapath = auto_load_processed(structured_datapath_loc)
+        #     featurizer = DiagnosticSummaryStats.from_run(structured_datapath_loc, os.getcwd(), structured_datapath)
+        #     x = [-2.4602845133649374, -0.7912059829821004, -1.3246516129064152, -0.5577484175221676,
+        #          0.22558675296269257, 1.4107424811304434, 0.44307560772987753, -2.968731527885897,
+        #          -1.003386799815887, -1.2861922579124305, 0.010393880890967514, 0.4995216948726259,
+        #          1.4292366107477192, 0.2643953383205679, -1.3377336978836682, -0.21470956778563194,
+        #          -0.7617667690573674, -0.47886877345098366, 0.23547492071796852, 1.9699615602673914,
+        #          1.566893893282218, -1.8282011110054657, -0.46311299104523346, -0.7166620260036703,
+        #          0.06268262404068164, 0.5400910355865228, 2.00139593781454, 1.4038773986895716,
+        #          0.46799197793006897, 0.5117431282997131, -1.4615182876586914, 1.2889420237956628,
+        #          2.6205135712205725, 2.176016330718994, 3.1539101600646973, -0.9218153953552246,
+        #          0.23360896110534668, -1.1706260442733765, -0.5070897459236073, 1.1722059184617377,
+        #          2.0029776096343994, 1.7837194204330444, -0.021425815851990795, -0.020270314430328763,
+        #          -0.028696091773302315, -0.02782930233422708, -0.017478835661355316, -0.019788159842565697,
+        #          -0.021354840746757066, -0.021056601447539146, -0.026599426370616085, -0.03017946374275189,
+        #          -0.017983518726387225, -0.01771638489069907]
+        #     computed = featurizer.X.iloc[0].tolist()
+        #     for indx, value in enumerate(x):
+        #         precision = 5
+        #         self.assertEqual(np.around(np.float32(value), precision),
+        #                          np.around(np.float32(computed[indx]), precision))
 
     def test_CycleSummaryStats_class(self):
         with ScratchDir("."):
