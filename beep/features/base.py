@@ -48,7 +48,7 @@ import abc
 import os
 import pandas as pd
 import json
-from typing import Iterable, Union
+from typing import Union, Tuple
 from monty.json import MSONable
 from monty.serialization import dumpfn, zopen
 
@@ -98,7 +98,7 @@ class BEEPFeaturizer(MSONable, abc.ABC):
         self.metadata = self.datapath.metadata.raw if self.datapath else {}
 
     @abc.abstractmethod
-    def validate(self) -> bool:
+    def validate(self) -> Tuple[bool, str]:
         raise NotImplementedError
 
     @abc.abstractmethod

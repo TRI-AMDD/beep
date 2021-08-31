@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import skew, kurtosis
 
+from beep import PROTOCOL_PARAMETERS_DIR
 from beep.features import featurizer_helpers
 from beep.features.base import BEEPFeaturizer, BEEPFeaturizationError
 
@@ -11,7 +12,8 @@ class HPPCResistanceBVoltageFeatures(BEEPFeaturizer):
         "test_time_filter_sec": 1000000,
         "cycle_index_filter": 6,
         "diag_pos": 1,
-        "soc_window": 8
+        "soc_window": 8,
+        "parameters_path": PROTOCOL_PARAMETERS_DIR
     }
 
     def validate(self):
@@ -67,13 +69,17 @@ class HPPCResistanceBVoltageFeatures(BEEPFeaturizer):
 
         # the variance of ocv features
         hppc_ocv = featurizer_helpers.get_hppc_ocv(
-            self.datapath, self.hyperparameters["diag_pos"]
+            self.datapath,
+            self.hyperparameters["diag_pos"],
+            parameters_path=self.hyperparameters["parameters_path"]
         )
 
         # the v_diff features
         v_diff = featurizer_helpers.get_v_diff(
-            self.datapath, self.hyperparameters["diag_pos"],
-            self.hyperparameters["soc_window"]
+            self.datapath,
+            self.hyperparameters["diag_pos"],
+            self.hyperparameters["soc_window"],
+            self.hyperparameters["parameters_path"]
         )
 
         # merge everything together as a final result dataframe
@@ -262,7 +268,8 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         "diagnostic_cycle_type": 'rpt_0.2C',
         "diag_pos_list": [0, 1],
         "statistics": ["var", "min", "mean", "skew", "kurtosis", "abs",
-                       "square"]
+                       "square"],
+        "parameters_path": PROTOCOL_PARAMETERS_DIR
     }
 
     def validate(self):
@@ -367,20 +374,18 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         cycles = diag_intrp.cycle_index[diag_intrp.cycle_type ==
                                         self.hyperparameters[
                                             "diagnostic_cycle_type"]].unique()
-        step_dict_0 = featurizer_helpers.get_step_index(self.datapath,
-                                                        cycle_type=
-                                                        self.hyperparameters[
-                                                            "diagnostic_cycle_type"],
-                                                        diag_pos=
-                                                        self.hyperparameters[
-                                                            "diag_pos_list"][0])
-        step_dict_1 = featurizer_helpers.get_step_index(self.datapath,
-                                                        cycle_type=
-                                                        self.hyperparameters[
-                                                            "diagnostic_cycle_type"],
-                                                        diag_pos=
-                                                        self.hyperparameters[
-                                                            "diag_pos_list"][1])
+        step_dict_0 = featurizer_helpers.get_step_index(
+            self.datapath,
+            cycle_type=self.hyperparameters["diagnostic_cycle_type"],
+            diag_pos=self.hyperparameters["diag_pos_list"][0],
+            parameters_path=self.hyperparameters["parameters_path"]
+        )
+        step_dict_1 = featurizer_helpers.get_step_index(
+            self.datapath,
+            cycle_type=self.hyperparameters["diagnostic_cycle_type"],
+            diag_pos=self.hyperparameters["diag_pos_list"][1],
+            parameters_path=self.hyperparameters["parameters_path"]
+        )
 
         # Create masks for each position in the data
         mask_pos_0_charge = ((diag_intrp.cycle_index == cycles[
@@ -670,7 +675,7 @@ class TrajectoryFastCharge(DeltaQFastCharge):
      portion of the regular fast charge cycles.
 
     """
-    
+
     DEFAULT_HYPERPARAMETERS = {
         "thresh_max_cap": 0.98,
         "thresh_min_cap": 0.78,
@@ -692,7 +697,8 @@ class TrajectoryFastCharge(DeltaQFastCharge):
         """
         conditions = []
         cap = self.datapath.structured_summary.discharge_capacity
-        conditions.append(cap.min() / cap.max() < self.hyperparameters["thresh_max_cap"])
+        conditions.append(
+            cap.min() / cap.max() < self.hyperparameters["thresh_max_cap"])
 
         return all(conditions)
 
@@ -747,7 +753,8 @@ class DiagnosticProperties(BEEPFeaturizer):
         """
 
         if not self.hyperparameters["parameters_dir"]:
-            raise BEEPFeaturizationError("No valid parameters_dir directory containing protocol parameters.")
+            raise BEEPFeaturizationError(
+                "No valid parameters_dir directory containing protocol parameters.")
 
         if not hasattr(self.datapath, "diagnostic_summary") & hasattr(
                 self.datapath, "diagnostic_data"

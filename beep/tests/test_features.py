@@ -32,9 +32,11 @@ from pathlib import Path
 
 from beep.features.core import (
     DeltaQFastCharge,
+    CycleSummaryStats,
     TrajectoryFastCharge,
     DiagnosticProperties,
     DiagnosticSummaryStats,
+    HPPCResistanceBVoltageFeatures
 
 )
 from beep.features.base import BEEPFeaturizationError
@@ -166,33 +168,27 @@ class TestFeaturizer(unittest.TestCase):
 
         unstructured = auto_load(os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29.csv"))
         with self.assertRaises(BEEPFeaturizationError):
-            f = DiagnosticSummaryStats(unstructured)
+            DiagnosticSummaryStats(unstructured)
 
+    def test_HPPCResistanceVoltageFeatures(self):
 
+        structured_datapath_loc = os.path.join(
+            TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
+        )
+        structured_datapath = auto_load_processed(structured_datapath_loc)
+        
+        f = HPPCResistanceBVoltageFeatures(structured_datapath)
+        self.assertTrue(f.validate())
+        f.create_features()
+        
+        self.assertEqual(f.features.shape[1], 76)
+        self.assertEqual(f.features.columns[0], "r_c_0s_00")
+        self.assertEqual(f.features.columns[-1], "D_8")
 
-
-    def test_HPPCResistanceVoltageFeatures_class(self):
-        with ScratchDir("."):
-            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-            structured_datapath_loc = os.path.join(
-                TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
-            )
-            structured_datapath = auto_load_processed(structured_datapath_loc)
-            featurizer = HPPCResistanceVoltageFeatures.from_run(
-                structured_datapath_loc, os.getcwd(), structured_datapath
-            )
-            path, local_filename = os.path.split(featurizer.name)
-            folder = os.path.split(path)[-1]
-            dumpfn(featurizer, featurizer.name)
-            self.assertEqual(folder, "HPPCResistanceVoltageFeatures")
-            self.assertEqual(featurizer.X.shape[1], 76)
-            self.assertEqual(featurizer.X.columns[0], "r_c_0s_00")
-            self.assertEqual(featurizer.X.columns[-1], "D_8")
-
-            self.assertAlmostEqual(featurizer.X.iloc[0, 0], -0.08845776922490017, 6)
-            self.assertAlmostEqual(featurizer.X.iloc[0, 5], -0.1280224700339366, 6)
-            self.assertAlmostEqual(featurizer.X.iloc[0, 27], -0.10378359476555565, 6)
-
+        self.assertAlmostEqual(f.features.iloc[0, 0], -0.08845776922490017, 6)
+        self.assertAlmostEqual(f.features.iloc[0, 5], -0.1280224700339366, 6)
+        self.assertAlmostEqual(f.features.iloc[0, 27], -0.10378359476555565, 6)
+        
     def test_DiagnosticSummaryStats_class(self):
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
