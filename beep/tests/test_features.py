@@ -100,19 +100,6 @@ class TestFeaturizer(unittest.TestCase):
             1.0628421000000001
         )
 
-    def test_feature_serialization_for_training(self):
-        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.structured_cycler_file)
-        with ScratchDir("."):
-            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
-            structured_datapath = auto_load_processed(processed_cycler_run_path)
-            featurizer = DeltaQFastCharge.from_run(
-                processed_cycler_run_path, os.getcwd(), structured_datapath
-            )
-
-            dumpfn(featurizer, featurizer.name)
-            features_reloaded = loadfn(featurizer.name)
-            self.assertIsInstance(features_reloaded, DeltaQFastCharge)
-
     def test_feature_class(self):
         with ScratchDir("."):
             os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
