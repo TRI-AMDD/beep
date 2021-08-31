@@ -17,16 +17,9 @@ class HPPCResistanceBVoltageFeatures(BEEPFeaturizer):
     }
 
     def validate(self):
-        conditions = []
-        if not hasattr(self.datapath, "diagnostic_summary") & hasattr(
-                self.datapath, "diagnostic_data"
-        ):
-            return False, "Datapath does not have diagnostic summary"
-        if self.datapath.diagnostic_summary is None:
-            return False, "Datapath does not have diagnostic summary"
-        elif self.datapath.diagnostic_summary.empty:
-            return False, "Datapath has empty diagnostic summary"
-        else:
+        val, msg = featurizer_helpers.check_diagnostic_summary_validation(self.datapath)
+        if val:
+            conditions = []
             conditions.append(
                 any(
                     [
@@ -40,6 +33,8 @@ class HPPCResistanceBVoltageFeatures(BEEPFeaturizer):
                 return True, None
             else:
                 return False, "HPPC conditions not met for this cycler run"
+        else:
+            return val, msg
 
     def create_features(self):
         # Filter out low cycle numbers at the end of the test, corresponding to the "final" diagnostic
@@ -290,27 +285,16 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         Returns:
             bool: True/False indication of ability to proceed with feature generation
         """
-        conditions = []
-        if not hasattr(self.datapath, "diagnostic_summary") & hasattr(
-                self.datapath, "diagnostic_data"
-        ):
-            return False, "Datapath does not have diagnostic summary"
-        if self.datapath.diagnostic_summary is None:
-            return False, "Datapath does not have diagnostic summary"
-        elif self.datapath.diagnostic_summary.empty:
-            return False, "Datapath has empty diagnostic summary"
-        else:
+        val, msg = featurizer_helpers.check_diagnostic_summary_validation(self.datapath)
+        if val:
             df = self.datapath.diagnostic_summary
-            df = df[
-                df.cycle_type == self.hyperparameters["diagnostic_cycle_type"]]
-            conditions.append(
-                df.cycle_index.nunique() >= max(
-                    self.hyperparameters["diag_pos_list"]) + 1
-            )
-            if all(conditions):
+            df = df[df.cycle_type == self.hyperparameters["diagnostic_cycle_type"]]
+            if df.cycle_index.nunique() >= max(self.hyperparameters["diag_pos_list"]) + 1:
                 return True, None
             else:
                 return False, "Diagnostic cycles insufficient for featurization"
+        else:
+            return val, msg
 
     def get_summary_diff(self, pos=None, cycle_types=None, metrics=None):
         """
@@ -754,17 +738,7 @@ class DiagnosticProperties(BEEPFeaturizer):
         Returns:
             bool: True/False indication of ability to proceed with feature generation
         """
-
-        if not hasattr(self.datapath, "diagnostic_summary") & hasattr(
-                self.datapath, "diagnostic_data"
-        ):
-            return False, "Datapath does not have diagnostic summary"
-        if self.datapath.diagnostic_summary is None:
-            return False, "Datapath does not have diagnostic summary"
-        elif self.datapath.diagnostic_summary.empty:
-            return False, "Datapath has empty diagnostic summary"
-        else:
-            return True, None
+        return featurizer_helpers.check_diagnostic_summary_validation(self.datapath)
 
     def create_features(self):
         """

@@ -625,3 +625,16 @@ def get_step_index(pcycler_run, cycle_type="hppc", diag_pos=0, parameters_path=P
     assert len(cycle.step_index.unique()) == len(step_indices_annotated.values())
 
     return step_indices_annotated
+
+
+def check_diagnostic_summary_validation(datapath):
+    if not hasattr(datapath, "diagnostic_summary") & hasattr(
+            datapath, "diagnostic_data"
+    ):
+        return False, "Datapath does not have diagnostic summary"
+    if datapath.diagnostic_summary is None:
+        return False, "Datapath does not have diagnostic summary"
+    elif datapath.diagnostic_summary.empty:
+        return False, "Datapath has empty diagnostic summary"
+    else:
+        return True, None
