@@ -1,5 +1,6 @@
 import pandas as pd
 
+import beep.features.featurizer_helpers
 from beep.features.base import BEEPFeaturizer
 from beep.features.intracell_analysis import IntracellAnalysis
 
