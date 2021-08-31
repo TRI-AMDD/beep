@@ -276,7 +276,7 @@ class TestFeaturizer(unittest.TestCase):
             self.assertEqual(np.around(np.float32(value), precision),
                              np.around(np.float32(computed[indx]), precision))
 
-    def test_CycleSummaryStats_class(self):
+    def test_CycleSummaryStats(self):
         structured_datapath_loc = os.path.join(
             TEST_FILE_DIR, "PreDiag_000296_00270E_truncated_structure.json"
         )
@@ -296,28 +296,24 @@ class TestFeaturizer(unittest.TestCase):
         f2.create_features()
         self.assertAlmostEqual(f2.features['square_discharging_capacity'].iloc[0], 0.7519596, 6)
 
+    def test_DiagnosticProperties(self):
+        structured_datapath_loc = os.path.join(
+            TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
+        )
+        structured_datapath = auto_load_processed(structured_datapath_loc)
 
-    def test_DiagnosticProperties_class(self):
-        with ScratchDir("."):
-            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-            structured_datapath_loc = os.path.join(
-                TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
-            )
-            structured_datapath = auto_load_processed(structured_datapath_loc)
-            featurizer = DiagnosticProperties.from_run(
-                structured_datapath_loc, os.getcwd(), structured_datapath
-            )
-            path, local_filename = os.path.split(featurizer.name)
-            folder = os.path.split(path)[-1]
-            dumpfn(featurizer, featurizer.name)
-            self.assertEqual(folder, "DiagnosticProperties")
-            self.assertEqual(featurizer.X.shape, (30, 10))
-            print(list(featurizer.X.iloc[2, :]))
-            self.assertListEqual(
-                list(featurizer.X.iloc[2, :]),
-                [141, 0.9859837086597274, 7.885284043, 4.323121513988055,
-                 21.12108276469096, 30, 100, 1577338063, 'reset', 'discharge_energy']
-            )
+        f = DiagnosticProperties(structured_datapath)
+        self.assertTrue(f.validate()[0])
+
+        f.create_features()
+
+        self.assertEqual(f.features.shape, (30, 10))
+        print(list(f.features.iloc[2, :]))
+        self.assertListEqual(
+            list(f.features.iloc[2, :]),
+            [141, 0.9859837086597274, 7.885284043, 4.323121513988055,
+             21.12108276469096, 30, 100, 1577338063, 'reset', 'discharge_energy']
+        )
 
     @unittest.skip
     def test_features_on_list(self):
