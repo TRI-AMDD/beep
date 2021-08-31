@@ -57,6 +57,8 @@ class TestFeaturizer(unittest.TestCase):
         self.structured_cycler_file_path = os.path.join(TEST_FILE_DIR, "2017-06-30_2C-10per_6C_CH10_structure.json")
         self.structured_cycler_file_path_insuf = os.path.join(TEST_FILE_DIR, "structure_insufficient.json")
 
+
+
     def test_featurization_basic_DeltaQFastCharge(self):
         structured_datapath = auto_load_processed(self.structured_cycler_file_path)
         f = DeltaQFastCharge(structured_datapath)
@@ -81,24 +83,22 @@ class TestFeaturizer(unittest.TestCase):
     #         )
     #         self.assertEqual(predictor.feature_labels[4], "charge_time_cycles_1:5")
 
-
     def test_feature_serialization(self):
-        processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.structured_cycler_file)
-        with ScratchDir("."):
-            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
-            structured_datapath = auto_load_processed(processed_cycler_run_path)
-            featurizer = DeltaQFastCharge.from_run(
-                processed_cycler_run_path, os.getcwd(), structured_datapath
-            )
+        structured_datapath = auto_load_processed(self.structured_cycler_file_path)
 
-            dumpfn(featurizer, featurizer.name)
-            features_reloaded = loadfn(featurizer.name)
-            self.assertIsInstance(features_reloaded, DeltaQFastCharge)
-            # test nominal capacity is being generated
-            self.assertEqual(
-                features_reloaded.X.loc[0, "nominal_capacity_by_median"],
-                1.0628421000000001
-            )
+        f = DeltaQFastCharge(structured_datapath)
+        f.create_features()
+
+        filename = f.__class__.__name__
+        dumpfn(f, filename)
+
+        f_reloaded = loadfn(filename)
+        self.assertIsInstance(f_reloaded, DeltaQFastCharge)
+        # test nominal capacity is being generated
+        self.assertEqual(
+            f_reloaded.features.loc[0, "nominal_capacity_by_median"],
+            1.0628421000000001
+        )
 
     def test_feature_serialization_for_training(self):
         processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.structured_cycler_file)

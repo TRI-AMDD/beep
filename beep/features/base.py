@@ -86,7 +86,7 @@ class BEEPFeaturizer(MSONable, abc.ABC):
         else:
             self.hyperparameters = self.DEFAULT_HYPERPARAMETERS
 
-        if not structured_datapath is not None and structured_datapath.is_structured:
+        if structured_datapath is not None and not structured_datapath.is_structured:
             raise BEEPFeaturizationError("BEEPDatapath input is not structured!")
         self.datapath = structured_datapath
         self.features = None
@@ -94,8 +94,8 @@ class BEEPFeaturizer(MSONable, abc.ABC):
         # In case these features are loaded from file
         # Allow attrs which can hold relevant metadata without having
         # to reload the original datapath
-        self.paths = self.datapath.paths
-        self.metadata = self.datapath.metadata
+        self.paths = self.datapath.paths if self.datapath else {}
+        self.metadata = self.datapath.metadata.raw if self.datapath else {}
 
     @abc.abstractmethod
     def validate(self) -> bool:
@@ -122,7 +122,7 @@ class BEEPFeaturizer(MSONable, abc.ABC):
 
         """
 
-        if not self.features:
+        if self.features is None:
             raise BEEPFeaturizationError("Cannot serialize features which have not been generated.")
 
         features = self.features.to_dict("list")
@@ -150,7 +150,7 @@ class BEEPFeaturizer(MSONable, abc.ABC):
         """
 
         # no need for original datapath
-        bf = cls.__init__(structured_datapath=None, hyperparameters=d["hyperparameters"])
+        bf = cls(structured_datapath=None, hyperparameters=d["hyperparameters"])
         bf.features = pd.DataFrame(d["features"])
         bf.paths = d["paths"]
         bf.metadata = d["metadata"]
@@ -181,7 +181,7 @@ class BEEPFeaturizer(MSONable, abc.ABC):
         d["paths"] = paths
         return cls.from_dict(d)
 
-    def to_json_file(self, filename, omit_raw=False):
+    def to_json_file(self, filename):
         """Save a BEEPFeatures to disk as a json.
 
         .json.gz files are supported.
