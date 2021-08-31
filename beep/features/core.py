@@ -21,11 +21,11 @@ class HPPCResistanceBVoltageFeatures(BEEPFeaturizer):
         if not hasattr(self.datapath, "diagnostic_summary") & hasattr(
                 self.datapath, "diagnostic_data"
         ):
-            return False
+            return False, "Datapath does not have diagnostic summary"
         if self.datapath.diagnostic_summary is None:
-            return False
+            return False, "Datapath does not have diagnostic summary"
         elif self.datapath.diagnostic_summary.empty:
-            return False
+            return False, "Datapath has empty diagnostic summary"
         else:
             conditions.append(
                 any(
@@ -36,7 +36,10 @@ class HPPCResistanceBVoltageFeatures(BEEPFeaturizer):
                     ]
                 )
             )
-        return all(conditions)
+            if all(conditions):
+                return True, None
+            else:
+                return False, "HPPC conditions not met for this cycler run"
 
     def create_features(self):
         # Filter out low cycle numbers at the end of the test, corresponding to the "final" diagnostic
