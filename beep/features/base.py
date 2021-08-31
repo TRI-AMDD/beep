@@ -111,7 +111,6 @@ class BEEPFeaturizer(MSONable, abc.ABC):
         """
         raise NotImplementedError
 
-
     def as_dict(self):
         """Serialize a BEEPDatapath as a dictionary.
 

@@ -37,9 +37,10 @@ from beep.features.core import (
     DiagnosticSummaryStats,
 
 )
+from beep.features.base import BEEPFeaturizationError
 
 from beep.structure.maccor import MaccorDatapath
-from beep.structure.cli import auto_load_processed
+from beep.structure.cli import auto_load_processed, auto_load
 from beep.features import featurizer_helpers
 from beep.utils import parameters_lookup
 from monty.serialization import dumpfn, loadfn
@@ -155,43 +156,19 @@ class TestFeaturizer(unittest.TestCase):
                  21.12108276469096, 30, 100, 1577338063, 'reset', 'discharge_energy'],
             )
 
-    def test_insufficient_data_file(self):
+    def test_must_fail_featurization(self):
 
-        for f in
-        processed_cycler_run_path = os.path.join(
-            TEST_FILE_DIR, self.processed_cycler_file_insuf
-        )
-        with ScratchDir("."):
-            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
+        # insufficient structured file must fail
+        structured_insuf = auto_load_processed(self.structured_cycler_file_path_insuf)
 
-            json_obj = {
-                "file_list": [processed_cycler_run_path],
-                "run_list": [1],
-            }
-            json_string = json.dumps(json_obj)
+        f = DiagnosticSummaryStats(structured_insuf)
+        self.assertFalse(f.validate())
 
-            json_path = process_file_list_from_json(
-                json_string, processed_dir=os.getcwd()
-            )
-            output_obj = json.loads(json_path)
-            self.assertEqual(output_obj["result_list"][0], "incomplete")
-            self.assertEqual(
-                output_obj["message_list"][0]["comment"],
-                "Insufficient or incorrect data for featurization",
-            )
+        unstructured = auto_load(os.path.join(TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29.csv"))
+        with self.assertRaises(BEEPFeaturizationError):
+            f = DiagnosticSummaryStats(unstructured)
 
-            # Workflow output
-            output_file_path = Path(tempfile.gettempdir()) / "results.json"
-            self.assertTrue(output_file_path.exists())
 
-            output_data = json.loads(output_file_path.read_text())
-            output_json = output_data[0]
-
-            self.assertEqual(output_obj["file_list"][0], output_json["filename"])
-            self.assertEqual(os.path.getsize(output_json["filename"]), output_json["size"])
-            self.assertEqual(1, output_json["run_id"])
-            self.assertEqual("featurizing", output_json["action"])
-            self.assertEqual("incomplete", output_json["status"])
 
 
     def test_HPPCResistanceVoltageFeatures_class(self):
