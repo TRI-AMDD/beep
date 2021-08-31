@@ -41,17 +41,10 @@ class IntracellCycles(BEEPFeaturizer):
         Returns:
             bool: True/False indication of ability to proceed with feature generation
         """
-        conditions = []
+        val, msg = featurizer_helpers.check_diagnostic_validation(self.datapath)
+        if val:
+            conditions = []
 
-        if not hasattr(self.datapath, "diagnostic_summary") & hasattr(
-            self.datapath, "diagnostic_data"
-        ):
-            return False
-        if self.datapath.diagnostic_summary is None:
-            return False
-        elif self.datapath.diagnostic_summary.empty:
-            return False
-        else:
             # Ensure overlap of cycle indices above threshold and matching cycle type
             eol_cycle_index_list = self.datapath.diagnostic_summary[
                 (self.datapath.diagnostic_summary.cycle_type == self.hyperparameters["diagnostic_cycle_type"]) &
@@ -69,7 +62,12 @@ class IntracellCycles(BEEPFeaturizer):
                 )
             )
 
-        return all(conditions)
+            if all(conditions):
+                return True, None
+            else:
+                return False, "Insufficient RPT cycles in diagnostic"
+        else:
+            return val, msg
 
     def create_features(self):
         """
