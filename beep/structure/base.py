@@ -22,7 +22,7 @@ from beep.conversion_schemas import (
 )
 
 from beep.utils import parameters_lookup
-from beep import logger, VALIDATION_SCHEMA_DIR
+from beep import logger, VALIDATION_SCHEMA_DIR, PROTOCOL_PARAMETERS_DIR
 from beep.validate import SimpleValidator
 
 
@@ -478,7 +478,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             self,
             charge_axis='charge_capacity',
             discharge_axis='voltage',
-            parameters_path=None,
+            parameters_path=PROTOCOL_PARAMETERS_DIR,
     ):
         """
         Automatically run structuring based on automatically determined structuring parameters.

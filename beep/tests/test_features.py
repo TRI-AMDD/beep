@@ -64,8 +64,6 @@ class TestFeaturizer(unittest.TestCase):
         self.structured_cycler_file_path_insuf = os.path.join(TEST_FILE_DIR, "structure_insufficient.json")
         self.structured_cycler_file_path_trunc = os.path.join(TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json")
 
-
-
     def test_featurization_basic_DeltaQFastCharge(self):
         structured_datapath = auto_load_processed(self.structured_cycler_file_path)
         f = DeltaQFastCharge(structured_datapath)
@@ -80,15 +78,6 @@ class TestFeaturizer(unittest.TestCase):
                          np.round(1.1050065801818196, 6))
 
         self.assertEqual(f.features.columns.tolist()[4], "charge_time_cycles_1:5")
-
-    # def test_feature_old_class(self):
-    #     processed_cycler_run_path = os.path.join(TEST_FILE_DIR, self.structured_cycler_file)
-    #     with ScratchDir("."):
-    #         os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
-    #         predictor = DegradationPredictor.from_processed_cycler_run_file(
-    #             processed_cycler_run_path, features_label="full_model"
-    #         )
-    #         self.assertEqual(predictor.feature_labels[4], "charge_time_cycles_1:5")
 
     def test_feature_serialization(self):
         structured_datapath = auto_load_processed(self.structured_cycler_file_path)
@@ -308,59 +297,12 @@ class TestFeaturizer(unittest.TestCase):
         f.create_features()
 
         self.assertEqual(f.features.shape, (30, 10))
-        print(list(f.features.iloc[2, :]))
+        # print(list(f.features.iloc[2, :]))
         self.assertListEqual(
             list(f.features.iloc[2, :]),
             [141, 0.9859837086597274, 7.885284043, 4.323121513988055,
              21.12108276469096, 30, 100, 1577338063, 'reset', 'discharge_energy']
         )
-
-    @unittest.skip
-    def test_features_on_list(self):
-        files = [
-            "PredictionDiagnostics_000102_0001B1_structure.json",
-            "PredictionDiagnostics_000103_0001B3_structure.json",
-            "PredictionDiagnostics_000114_00003C_structure.json",
-            "PredictionDiagnostics_000117_00003E_structure.json",
-            "PredictionDiagnostics_000120_000041_structure.json",
-            "PredictionDiagnostics_000122_000043_structure.json",
-            "PredictionDiagnostics_000124_000049_structure.json",
-            "PredictionDiagnostics_000130_000044_structure.json",
-            "PredictionDiagnostics_000133_00004D_structure (2).json",
-            "PredictionDiagnostics_000136_00002D_structure (1).json",
-            "PredictionDiagnostics_000139_000034_structure.json",
-            "PredictionDiagnostics_000144_00002E_structure.json",
-            "PredictionDiagnostics_000148_000038_structure.json",
-            "PredictionDiagnostics_000150_00003B_structure.json",
-
-            "PredictionDiagnostics_000156_000023_structure.json",
-            "PredictionDiagnostics_000160_000251_structure.json",
-            "PredictionDiagnostics_000163_000022_structure.json",
-            "PredictionDiagnostics_000163_000022_structure.json",
-            "PredictionDiagnostics_000164_000239_structure.json",
-            "PredictionDiagnostics_000167_000255_structure.json",
-            "PredictionDiagnostics_000168_000253_structure.json",
-            "PredictionDiagnostics_000175_000247_structure.json",
-            "PredictionDiagnostics_000178_00023B_structure.json",
-            "PredictionDiagnostics_000181_00023A_structure.json",
-
-            "PredictionDiagnostics_000184_000244_structure.json",
-            "PredictionDiagnostics_000186_00024E_structure.json",
-            "PredictionDiagnostics_000194_000242_structure.json",
-        ]
-        with ScratchDir("."):
-            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-            for file in files:
-                structured_datapath_path = os.path.join(TEST_FILE_DIR, file)
-                json_obj = {
-                    "file_list": [structured_datapath_path],
-                    "run_list": [0],
-                }
-                json_string = json.dumps(json_obj)
-
-                newjsonpaths = process_file_list_from_json(
-                    json_string, processed_dir=os.getcwd()
-                )
 
 
 class TestFeaturizerHelpers(unittest.TestCase):
@@ -375,12 +317,10 @@ class TestFeaturizerHelpers(unittest.TestCase):
         structured_datapath.structured_summary = structured_datapath.structured_summary[
             ~structured_datapath.structured_summary.cycle_index.isin(structured_datapath.diagnostic_summary.cycle_index)]
 
-        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-
         sum_diag = featurizer_helpers.get_fractional_quantity_remaining_nx(structured_datapath,
                                                                            metric="discharge_energy",
                                                                            diagnostic_cycle_type="hppc")
-        print(sum_diag["normalized_regular_throughput"])
+        # print(sum_diag["normalized_regular_throughput"])
         self.assertEqual(len(sum_diag.index), 16)
         self.assertEqual(sum_diag.cycle_index.max(), 1507)
         self.assertEqual(np.around(sum_diag["initial_regular_throughput"].iloc[0], 3), np.around(237.001769, 3))
@@ -436,12 +376,10 @@ class TestFeaturizerHelpers(unittest.TestCase):
             TEST_FILE_DIR, "Talos_001375_NCR18650319002_CH15_truncated_structure.json"
         )
         with ScratchDir("."):
-            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-
             # processed_cycler_run_path_1
             structured_datapath = auto_load_processed(processed_cycler_run_path_1)
             v_vars_df = featurizer_helpers.get_v_diff(structured_datapath, 1, 8)
-            print(v_vars_df)
+            # print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var_v_diff'], decimals=8),
                              np.round(0.00472705, decimals=8))
             self.assertListEqual(list(v_vars_df.columns),
@@ -456,7 +394,7 @@ class TestFeaturizerHelpers(unittest.TestCase):
             # processed_cycler_run_path_2
             structured_datapath = auto_load_processed(processed_cycler_run_path_2)
             v_vars_df = featurizer_helpers.get_v_diff(structured_datapath, 1, 8)
-            print(v_vars_df)
+            # print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var_v_diff'], decimals=8),
                              np.round(2.664e-05, decimals=8))
             self.assertListEqual(list(v_vars_df.columns),
@@ -471,7 +409,7 @@ class TestFeaturizerHelpers(unittest.TestCase):
             # processed_cycler_run_path_3
             structured_datapath = auto_load_processed(processed_cycler_run_path_3)
             v_vars_df = featurizer_helpers.get_v_diff(structured_datapath, 1, 8)
-            print(v_vars_df)
+            # print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var_v_diff'], decimals=8),
                              np.round(4.82e-06, decimals=8))
             self.assertListEqual(list(v_vars_df.columns),
@@ -486,7 +424,7 @@ class TestFeaturizerHelpers(unittest.TestCase):
             # processed_cycler_run_path_4
             structured_datapath = auto_load_processed(processed_cycler_run_path_4)
             v_vars_df = featurizer_helpers.get_v_diff(structured_datapath, 1, 8)
-            print(v_vars_df)
+            # print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var_v_diff'], decimals=8),
                              np.round(9.71e-06, decimals=8))
             self.assertListEqual(list(v_vars_df.columns),
@@ -502,7 +440,6 @@ class TestFeaturizerHelpers(unittest.TestCase):
         structured_datapath_loc = os.path.join(
             TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
         )
-        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
         structured_datapath = auto_load_processed(structured_datapath_loc)
         hppc_ocv_features = featurizer_helpers.get_hppc_ocv(structured_datapath, 1)
         self.assertAlmostEqual(hppc_ocv_features['var_ocv'].iloc[0], 0.000016, 6)
@@ -519,11 +456,10 @@ class TestFeaturizerHelpers(unittest.TestCase):
         )
 
         parameters_path = os.path.join(TEST_FILE_DIR, "data-share", "raw", "parameters")
-        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
         structured_datapath = auto_load_processed(structured_datapath_loc)
         data = structured_datapath.diagnostic_data
         hppc_cycles = data.loc[data.cycle_type == "hppc"]
-        print(hppc_cycles.step_index.unique())
+        # print(hppc_cycles.step_index.unique())
         _, protocol_name = os.path.split(structured_datapath.metadata.protocol)
         parameter_row, _ = parameters_lookup.get_protocol_parameters(protocol_name, parameters_path=parameters_path)
 
@@ -536,7 +472,7 @@ class TestFeaturizerHelpers(unittest.TestCase):
                     duration = hppc_cycle_step_iter.test_time.max() - hppc_cycle_step_iter.test_time.min()
                     median_crate = np.round(hppc_cycle_step.current.median() /
                                             parameter_row["capacity_nominal"].iloc[0], 2)
-                    print(step, median_crate, duration)
+                    # print(step, median_crate, duration)
 
         step_ind = featurizer_helpers.get_step_index(structured_datapath,
                                                      cycle_type="hppc",
@@ -630,14 +566,12 @@ class TestFeaturizerHelpers(unittest.TestCase):
         structured_datapath_loc = os.path.join(
             TEST_FILE_DIR, "PredictionDiagnostics_000136_00002D_truncated_structure.json"
         )
-        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
         structured_datapath = auto_load_processed(structured_datapath_loc)
         step_ind = featurizer_helpers.get_step_index(structured_datapath, cycle_type="hppc", diag_pos=0)
         self.assertEqual(len(step_ind.values()), 6)
 
     def test_get_diffusion_coeff(self):
         with ScratchDir("."):
-            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
             structured_datapath_loc = os.path.join(
                 TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
             )
@@ -667,7 +601,6 @@ class TestRawToFeatures(unittest.TestCase):
                            destination_path=self.maccor_file_w_parameters)
 
         with ScratchDir("."):
-            os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
             # os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
             dp = MaccorDatapath.from_file(self.maccor_file_w_parameters)
             dp.autostructure()
