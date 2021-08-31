@@ -40,6 +40,7 @@ from beep.features.core import (
 
 )
 from beep.features.base import BEEPFeaturizationError
+from beep.features.intracell_losses import IntracellFeatures, IntracellCycles
 
 from beep.structure.maccor import MaccorDatapath
 from beep.structure.cli import auto_load_processed, auto_load
@@ -592,7 +593,7 @@ class TestRawToFeatures(unittest.TestCase):
             TEST_FILE_DIR, "PreDiag_000287_000128.092"
         )
 
-    @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
+    # @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_raw_to_features(self):
         os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
 
@@ -607,32 +608,29 @@ class TestRawToFeatures(unittest.TestCase):
             processed_run_path = os.path.join(
                 TEST_FILE_DIR, "processed_diagnostic.json"
             )
+
             # Dump to the structured file and check the file size
             dumpfn(dp, processed_run_path)
-            # Create dummy json obj
-            json_obj = {
-                "file_list": [processed_run_path],
-                "run_list": [0],
-            }
-            json_string = json.dumps(json_obj)
 
-            newjsonpaths = process_file_list_from_json(
-                json_string, processed_dir=os.getcwd()
-            )
+            dp = loadfn(processed_run_path)
 
-            reloaded = json.loads(newjsonpaths)
 
-            import pprint
-            pprint.pprint(reloaded)
+            for fclass in (
+                DeltaQFastCharge,
+                CycleSummaryStats,
+                TrajectoryFastCharge,
+                DiagnosticProperties,
+                DiagnosticSummaryStats,
+                HPPCResistanceBVoltageFeatures,
+            ):
+                f = fclass(dp)
+                self.assertTrue(f.validate()[0])
+                f.create_features()
 
-            result_list = ['success'] * 7
-            self.assertEqual(reloaded['result_list'], result_list)
-            res_df = loadfn(reloaded['file_list'][0])
-            self.assertEqual(res_df.class_feature_name, "HPPCResistanceVoltageFeatures")
-            print(res_df.X)
-            self.assertAlmostEqual(res_df.X['r_c_0s_00'].iloc[0], -0.159771397, 5)
-            self.assertAlmostEqual(res_df.X['r_c_0s_10'].iloc[0], -0.143679, 5)
-            self.assertAlmostEqual(res_df.X['r_c_0s_20'].iloc[0], -0.146345, 5)
-            self.assertAlmostEqual(res_df.X['D_6'].iloc[0], -0.167919, 5)
-            self.assertAlmostEqual(res_df.X['D_7'].iloc[0], 0.094136, 5)
-            self.assertAlmostEqual(res_df.X['D_8'].iloc[0], 0.172496, 5)
+                if fclass.__class__.__name__ == "HPPCResistanceVoltageFeatures":
+                    self.assertAlmostEqual(f.features['r_c_0s_00'].iloc[0], -0.159771397, 5)
+                    self.assertAlmostEqual(f.features['r_c_0s_10'].iloc[0], -0.143679, 5)
+                    self.assertAlmostEqual(f.features['r_c_0s_20'].iloc[0], -0.146345, 5)
+                    self.assertAlmostEqual(f.features['D_6'].iloc[0], -0.167919, 5)
+                    self.assertAlmostEqual(f.features['D_7'].iloc[0], 0.094136, 5)
+                    self.assertAlmostEqual(f.features['D_8'].iloc[0], 0.172496, 5)
