@@ -98,7 +98,7 @@ class BEEPFeaturizer(MSONable, abc.ABC):
         self.metadata = self.datapath.metadata.raw if self.datapath else {}
 
     @abc.abstractmethod
-    def validate(self) -> Tuple[bool, str]:
+    def validate(self) -> Tuple[bool, Union[str, None]]:
         raise NotImplementedError
 
     @abc.abstractmethod

@@ -119,7 +119,7 @@ class CycleSummaryStats(BEEPFeaturizer):
         cycle_2 = self.datapath.structured_data[
             self.datapath.structured_data.cycle_index == index_2]
         if len(cycle_1) == 0 or len(cycle_2) == 0:
-            return False
+            return False, "Length of one or more comparison cycles is zero"
 
         # TODO: check whether this is good
         # Check for relevant data
@@ -132,9 +132,10 @@ class CycleSummaryStats(BEEPFeaturizer):
         pcycler_run_columns = self.datapath.structured_data.columns
         if not all(
                 [column in pcycler_run_columns for column in required_columns]):
-            return False
+            return False, f"Required column not present in all structured data " \
+                          f"(must have all of: {required_columns})"
 
-        return True
+        return True, None
 
     def create_features(self):
         """
@@ -293,11 +294,11 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         if not hasattr(self.datapath, "diagnostic_summary") & hasattr(
                 self.datapath, "diagnostic_data"
         ):
-            return False
+            return False, "Datapath does not have diagnostic summary"
         if self.datapath.diagnostic_summary is None:
-            return False
+            return False, "Datapath does not have diagnostic summary"
         elif self.datapath.diagnostic_summary.empty:
-            return False
+            return False, "Datapath has empty diagnostic summary"
         else:
             df = self.datapath.diagnostic_summary
             df = df[
@@ -306,7 +307,10 @@ class DiagnosticSummaryStats(CycleSummaryStats):
                 df.cycle_index.nunique() >= max(
                     self.hyperparameters["diag_pos_list"]) + 1
             )
-        return all(conditions)
+            if all(conditions):
+                return True, None
+            else:
+                return False, "Diagnostic cycles insufficient for featurization"
 
     def get_summary_diff(self, pos=None, cycle_types=None, metrics=None):
         """
@@ -509,26 +513,21 @@ class DeltaQFastCharge(BEEPFeaturizer):
             bool: True/False indication of ability to proceed with feature generation
         """
 
-        conditions = []
+        if not self.datapath.structured_summary.index.max() > self.hyperparameters["final_pred_cycle"]:
+            return False, "Structured summary index max is less than final pred cycle"
+        elif not self.datapath.structured_summary.index.min() <= self.hyperparameters["init_pred_cycle"]:
+            return False, "Structured symmary index min is more than initial pred cycle"
+        elif "cycle_index" not in self.datapath.structured_summary.columns:
+            return False, "Structured summary missing critical data: 'cycle_index'"
+        elif "cycle_index" not in self.datapath.structured_data.columns:
+            return False, "Structured data missing critical data: 'cycle_index'"
+        elif not self.hyperparameters["mid_pred_cycle"] > 10:
+            return False, "Middle pred. cycle less than threshold value of 10"
+        elif not self.hyperparameters["final_pred_cycle"] > self.hyperparameters["mid_pred_cycle"]:
+            return False, "Final pred cycle less than middle pred cycle"
+        else:
+            return True, None
 
-        conditions.append(
-            self.datapath.structured_summary.index.max()
-            > self.hyperparameters["final_pred_cycle"]
-        )
-        conditions.append(
-            self.datapath.structured_summary.index.min()
-            <= self.hyperparameters["init_pred_cycle"]
-        )
-        conditions.append(
-            "cycle_index" in self.datapath.structured_summary.columns)
-        conditions.append(
-            "cycle_index" in self.datapath.structured_data.columns)
-        conditions.append(self.hyperparameters["mid_pred_cycle"] > 10)
-        conditions.append(
-            self.hyperparameters["final_pred_cycle"] > self.hyperparameters[
-                "mid_pred_cycle"])
-
-        return all(conditions)
 
     def create_features(self):
         """
@@ -698,12 +697,13 @@ class TrajectoryFastCharge(DeltaQFastCharge):
         Returns:
             bool: True/False indication of ability to proceed with feature generation
         """
-        conditions = []
         cap = self.datapath.structured_summary.discharge_capacity
-        conditions.append(
-            cap.min() / cap.max() < self.hyperparameters["thresh_max_cap"])
-
-        return all(conditions)
+        cap_ratio = cap.min() / cap.max()
+        max_cap = self.hyperparameters["thresh_max_cap"]
+        if not cap_ratio < max_cap:
+            return False, f"thresh_max_cap hyperparameter exceeded: {cap_ratio} !< {max_cap}"
+        else:
+            return True, None
 
     def create_features(self):
         """
@@ -737,7 +737,7 @@ class DiagnosticProperties(BEEPFeaturizer):
             and code used to produce features
     """
     DEFAULT_HYPERPARAMETERS = {
-        "parameters_dir": None,
+        "parameters_dir": PROTOCOL_PARAMETERS_DIR,
         "quantities": ['discharge_energy', 'discharge_capacity']
     }
 
@@ -755,20 +755,16 @@ class DiagnosticProperties(BEEPFeaturizer):
             bool: True/False indication of ability to proceed with feature generation
         """
 
-        if not self.hyperparameters["parameters_dir"]:
-            raise BEEPFeaturizationError(
-                "No valid parameters_dir directory containing protocol parameters.")
-
         if not hasattr(self.datapath, "diagnostic_summary") & hasattr(
                 self.datapath, "diagnostic_data"
         ):
-            return False
+            return False, "Datapath does not have diagnostic summary"
         if self.datapath.diagnostic_summary is None:
-            return False
+            return False, "Datapath does not have diagnostic summary"
         elif self.datapath.diagnostic_summary.empty:
-            return False
+            return False, "Datapath has empty diagnostic summary"
         else:
-            return True
+            return True, None
 
     def create_features(self):
         """
