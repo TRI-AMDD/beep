@@ -1,3 +1,21 @@
+"""
+The entire BEEP CLI.
+
+Guiding principles of how the CLI works:
+ - Errors are thrown (stderr) if the *command itself* is bad.
+ - Errors on individual files are caught during processing and
+   reported via logging or status json.
+
+
+The main "beep" command with no subcommand can specify where
+and how to log all output and results (i.e., reporting).
+
+The subcommands themselves specify where and how to process
+actual BEEP operations such as structuring, featurization,
+protocol generation, and running models.
+
+"""
+
 import os
 import ast
 import sys
@@ -140,8 +158,18 @@ def md5sum(filename):
          "large-scale queries on database data about sets of BEEP runs. Example:"
          "'experiments_for_kristin'."
 )
+@click.option(
+    '--output-status-json',
+    '-s',
+    type=CLICK_FILE,
+    multiple=False,
+    help="File to output with JSON info about the states of "
+         "featurized and unfeaturized entries. Useful for "
+         "high-throughput featurization or storage in NoSQL"
+         "databases. If not set, status json is not written."
+)
 @click.pass_context
-def cli(ctx, log_file, run_id, tags):
+def cli(ctx, log_file, run_id, tags, output_status_json):
     """
     Base command for all BEEP subcommands. Sets CWD and persistent
     context.
@@ -151,6 +179,7 @@ def cli(ctx, log_file, run_id, tags):
     ctx.obj.cwd = cwd
     ctx.obj.tags = tags
     ctx.obj.run_id = run_id
+    ctx.obj.output_status_json = output_status_json
 
     if log_file:
         hdlr = logging.FileHandler(log_file, "a")
@@ -166,16 +195,6 @@ def cli(ctx, log_file, run_id, tags):
     'files',
     nargs=-1,
     type=CLICK_FILE,
-)
-@click.option(
-    '--output-status-json',
-    '-s',
-    type=CLICK_FILE,
-    multiple=False,
-    help="File to output with JSON info about the states of "
-         "structured and unstrutured entries. Useful for "
-         "high-throughput structuring or storage in NoSQL"
-         "databases. If not set, status json is not written."
 )
 @click.option(
     '--output-filenames',
@@ -302,7 +321,6 @@ def cli(ctx, log_file, run_id, tags):
 def structure(
         ctx,
         files,
-        output_status_json,
         output_filenames,
         output_dir,
         protocol_parameters_dir,
@@ -518,9 +536,10 @@ def structure(
 
     status_json = add_metadata_to_status_json(status_json, ctx.obj.run_id, ctx.obj.tags)
 
-    if output_status_json:
-        dumpfn(status_json, output_status_json)
-        logger.info(f"Wrote status json file to {output_status_json}")
+    osj = ctx.obj.output_status_json
+    if osj:
+        dumpfn(status_json, osj)
+        logger.info(f"Wrote status json file to {osj}")
 
 
 @cli.command(
@@ -534,16 +553,6 @@ def structure(
     type=CLICK_FILE,
 )
 @click.option(
-    '--output-status-json',
-    '-s',
-    type=CLICK_FILE,
-    multiple=False,
-    help="File to output with JSON info about the states of "
-         "featurized and unfeaturized entries. Useful for "
-         "high-throughput featurization or storage in NoSQL"
-         "databases. If not set, status json is not written."
-)
-@click.option(
     '--output-dir',
     '-d',
     type=CLICK_DIR,
@@ -553,20 +562,31 @@ def structure(
 @click.option(
     '--featurize-with',
     "-f",
-    default=("all",),
+    default="all",
     multiple=True,
     type=click.STRING,
-    help="Specify 
-         "class name e.g., my_package.my_module.MyClass."
+    help="Specify a featurizer to apply by class name, e.g. "
+         "HPPCResistanceVoltageFeatures. To apply more than one "
+         "featurizer, use multiple -f <FEATURIZER> commands. To apply"
+         "all core BEEP featurizers, pass the value 'all'. All "
+         "feautrizers are "
+         "attempted to apply with default hyperparameters; to specify"
+         "your own hyperparameters, use --featurize-with-hyperparams."
+         "Classes from installed modules not in core BEEP can be "
+         "specified with the class name in absolute import format, "
+         "e.g., my_package.my_module.MyClass."
 )
 @click.option(
     "--featurize-with-hyperparams",
     "-h",
     multiple=True,
-    help="Specify a featurizer to apply by class name. To override default hyperparameters"
+    help="Specify a featurizer to apply by class name with your own hyperparameters."
          "(such as parameter directories or specific values for hyperparameters"
          "for this featurizer), pass a dictionary in the format:"
-         "'{\"FEATURIZER_NAME\": {\"HYPERPARAM1\": \"VALUE1\"...}}'"
+         "'{\"FEATURIZER_NAME\": {\"HYPERPARAM1\": \"VALUE1\"...}}' including the "
+         "single quotes around the outside and double quotes for internal strings."
+         "Custom hyperparameters will be merged with default hyperparameters if the "
+         "hyperparameter dictionary is underspecified."
 )
 @click.option(
     '--halt-on-error',
@@ -580,7 +600,6 @@ def structure(
 def featurize(
         ctx,
         files,
-        output_status_json,
         output_dir,
         featurize_with,
         featurize_with_params,
