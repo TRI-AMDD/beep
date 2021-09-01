@@ -7,7 +7,7 @@ from beep.features import featurizer_helpers
 from beep.features.base import BEEPFeaturizer
 
 
-class HPPCResistanceBVoltageFeatures(BEEPFeaturizer):
+class HPPCResistanceVoltageFeatures(BEEPFeaturizer):
     DEFAULT_HYPERPARAMETERS = {
         "test_time_filter_sec": 1000000,
         "cycle_index_filter": 6,

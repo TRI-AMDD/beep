@@ -36,7 +36,7 @@ from beep.features.core import (
     TrajectoryFastCharge,
     DiagnosticProperties,
     DiagnosticSummaryStats,
-    HPPCResistanceBVoltageFeatures
+    HPPCResistanceVoltageFeatures
 
 )
 from beep.features.base import BEEPFeaturizationError
@@ -161,7 +161,7 @@ class TestFeaturizer(unittest.TestCase):
     def test_HPPCResistanceVoltageFeatures(self):
         structured_datapath = auto_load_processed(self.structured_cycler_file_path_trunc)
         
-        f = HPPCResistanceBVoltageFeatures(structured_datapath)
+        f = HPPCResistanceVoltageFeatures(structured_datapath)
         self.assertTrue(f.validate()[0])
         f.create_features()
         
@@ -616,12 +616,12 @@ class TestRawToFeatures(unittest.TestCase):
 
 
             for fclass in (
-                DeltaQFastCharge,
-                CycleSummaryStats,
-                TrajectoryFastCharge,
-                DiagnosticProperties,
-                DiagnosticSummaryStats,
-                HPPCResistanceBVoltageFeatures,
+                    DeltaQFastCharge,
+                    CycleSummaryStats,
+                    TrajectoryFastCharge,
+                    DiagnosticProperties,
+                    DiagnosticSummaryStats,
+                    HPPCResistanceVoltageFeatures,
             ):
                 f = fclass(dp)
                 self.assertTrue(f.validate()[0])

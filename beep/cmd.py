@@ -1,5 +1,5 @@
-import datetime
 import os
+import ast
 import sys
 import time
 import pprint
@@ -7,6 +7,7 @@ import fnmatch
 import hashlib
 import logging
 import functools
+import datetime
 import traceback
 import importlib
 
@@ -15,21 +16,26 @@ from monty.serialization import dumpfn
 
 from beep import logger, BEEP_PARAMETERS_DIR, S3_CACHE, formatter_jsonl, __version__
 from beep.structure.cli import auto_load, auto_load_processed
-from beep.featurize import \
-    HPPCResistanceVoltageFeatures, \
-    DiagnosticSummaryStats, \
-    DiagnosticProperties, \
-    TrajectoryFastCharge, \
-    DeltaQFastCharge, \
-    BeepFeatures, \
-    intracell_losses, \
-    FEATURE_HYPERPARAMS
+# from beep.featurize import \
+#     HPPCResistanceVoltageFeatures, \
+#     DiagnosticSummaryStats, \
+#     DiagnosticProperties, \
+#     TrajectoryFastCharge, \
+#     DeltaQFastCharge, \
+#     intracell_losses
+from beep.features.core import (
+    HPPCResistanceVoltageFeatures,
+    DeltaQFastCharge,
+    TrajectoryFastCharge,
+    CycleSummaryStats,
+    DiagnosticProperties,
+    DiagnosticSummaryStats
+)
 from beep.utils.s3 import list_s3_objects, download_s3_object
 from beep.validate import BeepValidationError
 
 CLICK_FILE = click.Path(file_okay=True, dir_okay=False, writable=False, readable=True)
 CLICK_DIR = click.Path(file_okay=False, dir_okay=True, writable=True, readable=True)
-BEEP_CMDS = ["structure", "featurize", "run_model"]
 STRUCTURED_SUFFIX = "-structured"
 FEATURIZED_SUFFIX = "-featurized"
 
@@ -545,29 +551,22 @@ def structure(
          "--output-filenames is not specified."
 )
 @click.option(
-    '--featurizers',
+    '--featurize-with',
     "-f",
     default=("all",),
     multiple=True,
     type=click.STRING,
-    help="List featurizers to apply (space-separated). BEEP "
-         "native featurizers include rptdqdv, hppcresistance, "
-         "hppcrelaxation, diagsumstats, dqfastcharge, diagprops, and "
-         "trajfastcharge. "
-         "For all featurizers, use 'all'. For external featurizers"
-         "that inherit the BeepFeatures class, specify the featurizer"
-         "name with a fully specified importable module name and "
+    help="Specify 
          "class name e.g., my_package.my_module.MyClass."
 )
 @click.option(
-    "--hyperparameter-dir",
+    "--featurize-with-hyperparams",
     "-h",
-    type=CLICK_DIR,
-    help="Specify the directory where BEEP can find hyperparameters "
-         "or configuration files for feature classes. The files must "
-         "be appropriately named for the featurizers being applied. "
-         "By default, will use the current directory to look for featurizer "
-         "configuration files."
+    multiple=True,
+    help="Specify a featurizer to apply by class name. To override default hyperparameters"
+         "(such as parameter directories or specific values for hyperparameters"
+         "for this featurizer), pass a dictionary in the format:"
+         "'{\"FEATURIZER_NAME\": {\"HYPERPARAM1\": \"VALUE1\"...}}'"
 )
 @click.option(
     '--halt-on-error',
@@ -583,7 +582,8 @@ def featurize(
         files,
         output_status_json,
         output_dir,
-        featurizers,
+        featurize_with,
+        featurize_with_params,
         hyperparameter_dir,
         halt_on_error,
 ):
@@ -598,8 +598,8 @@ def featurize(
         "diagprops": DiagnosticProperties,
         "trajfastcharge": TrajectoryFastCharge,
         "dqfastcharge": DeltaQFastCharge,
-        "iccycles": intracell_losses.IntracellCycles,
-        "icfeatures": intracell_losses.IntracellFeatures
+        # "iccycles": intracell_losses.IntracellCycles,
+        # "icfeatures": intracell_losses.IntracellFeatures
     }
 
     f_map = {}
@@ -662,14 +662,9 @@ def featurize(
 
             t0 = time.time()
             try:
-                params = FEATURE_HYPERPARAMS.get(fclass.class_feature_name, None)
-
-                # todo: fix this
-                if hyperparameter_dir:
-                    pass
-
 
                 f = fclass.from_run(file, output_dir, processed_run, params)
+                f = fclass
 
                 if f:
                     logger.info(f"{log_prefix}: Featurizer {fclassname} valid for '{file}' and applied")
@@ -758,6 +753,45 @@ def featurize(
 @click.pass_context
 def run_model(ctx, files):
     pass
+
+
+
+
+@cli.command(
+    help="Test core beep subcommand functionality"
+)
+# @click.argument(
+#     "dictionary",
+#     nargs=1,
+#     type=click.STRING
+# )
+@click.option(
+    "--featurize-with",
+    "-f",
+    multiple=True,
+    help="Specify a featurizer to apply by class name. To override default hyperparameters"
+         "(such as parameter directories or specific values for hyperparameters"
+         "for this featurizer), pass a dictionary in the format:"
+         "'{\"FEATURIZER_NAME\": {\"HYPERPARAM1\": \"VALUE1\"...}}'"
+)
+@click.pass_context
+def testcmd(ctx, featurize_with):
+
+    print(featurize_with)
+
+
+    featurizer_params = [ast.literal_eval(fexpr) for fexpr in featurize_with]
+
+
+    pprint.pprint(featurizer_params)
+    # d = ast.literal_eval(dictionary)
+    #
+    # print(d)
+    # print(type(d))
+    #
+    #
+    # print
+
 
 
 
