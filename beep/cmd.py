@@ -6,7 +6,6 @@ Guiding principles of how the CLI works:
  - Errors on individual files are caught during processing and
    reported via logging or status json.
 
-
 The main "beep" command with no subcommand can specify where
 and how to log all output and results (i.e., reporting).
 
@@ -20,6 +19,7 @@ import os
 import ast
 import sys
 import time
+import copy
 import pprint
 import fnmatch
 import hashlib
@@ -41,6 +41,7 @@ from beep.structure.cli import auto_load, auto_load_processed
 #     TrajectoryFastCharge, \
 #     DeltaQFastCharge, \
 #     intracell_losses
+from beep.features.base import BEEPFeaturizer, BEEPFeaturizationError
 from beep.features.core import (
     HPPCResistanceVoltageFeatures,
     DeltaQFastCharge,
@@ -63,10 +64,20 @@ class ContextPersister:
     Class to hold persisting objects for downstream
     BEEP tasks.
     """
-    def __init__(self, cwd=None, run_id=None, tags=None):
+    def __init__(
+            self,
+            cwd=None,
+            run_id=None,
+            tags=None,
+            output_status_json=None,
+            halt_on_error=None
+
+    ):
         self.cwd = cwd
         self.run_id = run_id
         self.tags = tags
+        self.output_status_json = output_status_json
+        self.halt_on_error = halt_on_error
 
 
 def add_suffix(full_path, output_dir, suffix, modified_ext=None):
@@ -164,12 +175,21 @@ def md5sum(filename):
     type=CLICK_FILE,
     multiple=False,
     help="File to output with JSON info about the states of "
-         "featurized and unfeaturized entries. Useful for "
-         "high-throughput featurization or storage in NoSQL"
-         "databases. If not set, status json is not written."
+         "files which have had any beep subcommand operation"
+         "run on them (e.g., structuring). Contains comprehensive"
+         "info about the success of the operation for all files."
+         "1 status json = 1 operation."
+)
+@click.option(
+    '--halt-on-error',
+    is_flag=True,
+    default=False,
+    help="Set to halt BEEP if critical featurization "
+         "errors are encountered on any file with any featurizer. "
+         "Otherwise, logs critical errors to the status json.",
 )
 @click.pass_context
-def cli(ctx, log_file, run_id, tags, output_status_json):
+def cli(ctx, log_file, run_id, tags, output_status_json, halt_on_error):
     """
     Base command for all BEEP subcommands. Sets CWD and persistent
     context.
@@ -180,6 +200,8 @@ def cli(ctx, log_file, run_id, tags, output_status_json):
     ctx.obj.tags = tags
     ctx.obj.run_id = run_id
     ctx.obj.output_status_json = output_status_json
+    ctx.obj.halt_on_error = halt_on_error
+
 
     if log_file:
         hdlr = logging.FileHandler(log_file, "a")
@@ -331,7 +353,6 @@ def structure(
         charge_axis,
         discharge_axis,
         s3_bucket,
-        halt_on_error,
         automatic,
         validation_only,
         no_raw,
@@ -448,6 +469,7 @@ def structure(
     }
 
     status_json = {}
+    log_prefix = "No file"
     for i, f in enumerate(files):
         op_result = {
             "validated": False,
@@ -505,7 +527,7 @@ def structure(
             logger.error(f"{log_prefix}: Failed/invalid: ({tbinfo[0].__name__}): {f}")
             op_result["traceback"] = tbfmt
 
-            if halt_on_error:
+            if ctx.obj.halt_on_error:
                 raise
 
         t1 = time.time()
@@ -545,7 +567,9 @@ def structure(
 @cli.command(
     help="Featurize one or more files. Argument "
          "is a space-separated list of files or globs. The same "
-         "features are applied to each file."
+         "features are applied to each file. Naming of output"
+         "files is done automatically, but the output directory "
+         "can be specified."
 )
 @click.argument(
     'files',
@@ -556,8 +580,7 @@ def structure(
     '--output-dir',
     '-d',
     type=CLICK_DIR,
-    help="Directory to dump auto-named files to. Only works if"
-         "--output-filenames is not specified."
+    help="Directory to dump auto-named files to."
 )
 @click.option(
     '--featurize-with',
@@ -588,68 +611,80 @@ def structure(
          "Custom hyperparameters will be merged with default hyperparameters if the "
          "hyperparameter dictionary is underspecified."
 )
-@click.option(
-    '--halt-on-error',
-    is_flag=True,
-    default=False,
-    help="Set to halt BEEP if critical featurization "
-         "errors are encountered on any file with any featurizer. "
-         "Otherwise, logs critical errors to the status json.",
-)
+
 @click.pass_context
 def featurize(
         ctx,
         files,
         output_dir,
         featurize_with,
-        featurize_with_params,
-        hyperparameter_dir,
-        halt_on_error,
+        featurize_with_hyperparams,
 ):
     files = [os.path.abspath(f) for f in files]
     n_files = len(files)
+    output_dir = os.path.abspath(output_dir) if output_dir else ctx.obj.cwd
 
     logger.info(f"Featurizing {n_files} files")
 
-    allowed_featurizers = {
-        "hppcresistance": HPPCResistanceVoltageFeatures,
-        "diagsumstats": DiagnosticSummaryStats,
-        "diagprops": DiagnosticProperties,
-        "trajfastcharge": TrajectoryFastCharge,
-        "dqfastcharge": DeltaQFastCharge,
-        # "iccycles": intracell_losses.IntracellCycles,
-        # "icfeatures": intracell_losses.IntracellFeatures
-    }
 
-    f_map = {}
-    for f in featurizers:
-        if f in allowed_featurizers:
-            f_str = allowed_featurizers[f].__name__
-            if f_str not in f_map:
-                f_map[f_str] = allowed_featurizers[f]
-        elif f == "all":
-            for fcls in allowed_featurizers.values():
-                f_map[fcls.__name__] = fcls
+    core_fclasses = [
+        HPPCResistanceVoltageFeatures,
+        DeltaQFastCharge,
+        TrajectoryFastCharge,
+        CycleSummaryStats,
+        DiagnosticProperties,
+        DiagnosticSummaryStats
+    ]
+
+    core_fclasses_map = {fclass.__class__.__name__: fclass for fclass in core_fclasses}
+    if featurize_with == "all":
+        featurize_with = list(core_fclasses_map.keys())
+
+    # Feature class names along with hyperparameters
+    # These are all default
+    fclass_names_w_params = [(fclass_name, None) for fclass_name in featurize_with]
+
+    # Add featurizers with custom parameters to list of featurizers to apply
+    for fstr in featurize_with_hyperparams:
+        fdict = ast.literal_eval(fstr)
+        if not isinstance(fdict, dict):
+            raise TypeError(f"Could not parse input featurizer with parameters string {fdict}")
+        if len(fdict) != 1:
+            raise ValueError(f"Featurizer must be specified as sole root key of hyperparam dictionary: {fdict}")
+        fclass_name_w_params = [(k, v) for k, v in fdict.items()][0]
+        fclass_names_w_params.append(fclass_name_w_params)
+
+    # Determine actual classes to apply by joining with external modules
+    fclass_tuples = []
+    for fclass_name, fclass_params in fclass_names_w_params:
+        if fclass_name in core_fclasses_map:
+            fclass = core_fclasses_map[fclass_name]
         else:
             # it is assumed it will be an external module
-            if "." not in f:
+            if "." not in fclass_name:
                 logging.critical(
-                    f"'{f}' not recognized as BEEP native featurizer "
+                    f"'{fclass_name}' not recognized as BEEP native featurizer "
                     f"or importable module."
                 )
                 click.Context.exit(1)
 
-            modname, _, clsname = f.rpartition('.')
+            modname, _, clsname = fclass_name.rpartition('.')
             mod = importlib.import_module(modname)
             cls = getattr(mod, clsname)
 
-            if not issubclass(cls, BeepFeatures):
+            if not issubclass(cls, BEEPFeaturizer):
                 logging.critical(f"Class {cls.__name__} is not a subclass of BeepFeatures.")
                 click.Context.exit(1)
+            fclass = cls
 
-            f_map[cls.__name__] = cls
+        # check parameter arguments and update with full hyperparameter specifications
+        hps = fclass.DEFAULT_HYPERPARAMETERS
+        if fclass_params is not None:
+            hps.update(fclass_params)
+        fclass_tuples.append((fclass, hps))
 
-    logger.info(f"Applying {len(f_map)} featurizers: {list(f_map.keys())}")
+
+    logger.info(f"Applying {len(fclass_tuples)} featurizers to each of {n_files} files")
 
     # ragged featurizers apply is ok
 
@@ -666,35 +701,46 @@ def featurize(
         }
 
         logger.debug(f"{log_prefix}: Loading processed run '{file}'.")
-        processed_run = auto_load_processed(file)
+        structured_datapath = auto_load_processed(file)
         logger.debug(f"{log_prefix}: Loaded processed run '{file}' into memory.")
 
-
-        for fclassname, fclass in f_map.items():
+        for fclass, f_hyperparams in fclass_tuples:
             op_subresult = {
                 "output": None,
                 "valid": False,
                 "featurized": False,
                 "walltime": None,
-                "traceback": None
+                "traceback": None,
+                "op_md5_chksum": None
             }
 
             t0 = time.time()
             try:
 
-                f = fclass.from_run(file, output_dir, processed_run, params)
-                f = fclass
+                f = fclass(
+                    structured_datapath=structured_datapath,
+                    hyperparameters=f_hyperparams
+                )
 
-                if f:
-                    logger.info(f"{log_prefix}: Featurizer {fclassname} valid for '{file}' and applied")
-                    output_path = os.path.abspath(f.name)
-                    dumpfn(f, output_path)
-                    logger.info(f"{log_prefix}: Featurizer {fclassname} features for '{file}' written to '{output_path}'")
+                is_valid, reason = f.validate()
+
+                if is_valid:
                     op_subresult["valid"] = True
-                    op_subresult["featurized"] = True
-                    op_subresult["output"] = output_path
+                    logger.info(f"{log_prefix}: Featurizer {fclass} with params {f_hyperparams} valid for '{file}' and applied")
                 else:
-                    logger.info(f"{log_prefix}: Featurizer {fclassname} invalid for '{file}' (insufficient or incorrect data).")
+                    raise BEEPFeaturizationError(reason)
+
+                f.create_features()
+                op_subresult["featurized"] = True
+
+                fcn = f.__class__.__name__
+                output_filename = f"{fcn}-{os.path.basename(file)}"
+                output_path = os.path.join(output_dir, output_filename)
+                dumpfn(f, output_path)
+                logger.info(
+                    f"{log_prefix}: Featurizer {fcn} features for '{file}' written to '{output_path}'")
+                op_subresult["output"] = output_path
+                op_subresult["op_md5_chksum"] = md5sum(output_path)
 
             except KeyboardInterrupt:
                 logger.critical("Keyboard interrupt caught - exiting...")
@@ -707,7 +753,7 @@ def featurize(
                     f"{log_prefix}: Failed/invalid: ({tbinfo[0].__name__}): {f}")
                 op_subresult["traceback"] = tbfmt
 
-                if halt_on_error:
+                if ctx.obj.halt_on_error:
                     raise
 
             t1 = time.time()
