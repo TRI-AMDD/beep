@@ -1,5 +1,11 @@
 
 
+v2021.9.1.10
+------------
+* Modify test condition to allow 70% threshold to pass for 4.84Ah cells - Thanks Patrick Asinger!
+* fix looping goto logic, cleanup num loops - Thanks Will Powelson!
+* add test and validation for non-overlapping intracell criteria - Thanks Joseph Montoya!
+
 v2021.8.2.15
 ------------
 * Add validation for new projects
