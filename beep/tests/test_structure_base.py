@@ -14,12 +14,14 @@
 """Unit tests related to cycler run data structures"""
 
 import os
+import copy
 import unittest
+
 import numpy as np
 import pandas as pd
-
 import matplotlib.pyplot as plt
 from monty.serialization import loadfn, dumpfn
+from monty.tempfile import ScratchDir
 
 from beep.conversion_schemas import STRUCTURE_DTYPES
 from beep.utils.s3 import download_s3_object
@@ -687,6 +689,31 @@ class TestBEEPDatapath(unittest.TestCase):
         datapath = self.BEEPDatapathChildTest.from_json_file(self.cycle_run_file)
         capacities = datapath.cycles_to_capacities()
         self.assertLessEqual(capacities.iloc[0, 0], 1.1)
+
+    def test_semiunique_id(self):
+        dp = copy.deepcopy(self.datapath_small_params)
+
+        # Ensure repeated calls produce the same id
+        self.assertEqual(dp.semiunique_id, dp.semiunique_id)
+
+        if dp.is_structured:
+            dp.unstructure()
+        h_unstructured = dp.semiunique_id
+
+        dp.structure()
+
+        # Ensure repeated calls return the same hash (deterministic somewhat)
+        h_structured = dp.semiunique_id
+        self.assertNotEqual(h_unstructured, h_structured)
+
+        # Changing paths must change the semiunique id
+        # As differently datapaths with identical raw but different structuring
+        # data saved under different filenames must appear as different
+        with ScratchDir("."):
+            dp.to_json_file("dp_test_hash.json", omit_raw=True)
+            dp = self.BEEPDatapathChildTest.from_json_file("dp_test_hash.json")
+
+            self.assertNotEqual(dp.semiunique_id, h_structured)
 
 
 class TestBaseEIS(unittest.TestCase):

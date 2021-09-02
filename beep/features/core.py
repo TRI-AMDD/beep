@@ -1,10 +1,11 @@
 import numpy as np
 import pandas as pd
 from scipy.stats import skew, kurtosis
+from scipy.interpolate import interp1d
 
 from beep import PROTOCOL_PARAMETERS_DIR
 from beep.features import featurizer_helpers
-from beep.features.base import BEEPFeaturizer
+from beep.features.base import BEEPFeaturizer, BEEPFeaturizationError
 
 
 class HPPCResistanceVoltageFeatures(BEEPFeaturizer):
@@ -722,7 +723,13 @@ class DiagnosticProperties(BEEPFeaturizer):
     """
     DEFAULT_HYPERPARAMETERS = {
         "parameters_dir": PROTOCOL_PARAMETERS_DIR,
-        "quantities": ['discharge_energy', 'discharge_capacity']
+        "quantities": ['discharge_energy', 'discharge_capacity'],
+        "threshold": 0.8,
+        "metric": "discharge_energy",
+        "filter_kinks": None,
+        "interpolation_axes": ["normalized_regular_throughput", "cycle_index"],
+        "cycle_type": "rpt_1C",
+        "extrapolate_threshold": True
     }
 
     def validate(self):
@@ -769,4 +776,97 @@ class DiagnosticProperties(BEEPFeaturizer):
                 summary_diag_cycle_type.loc[:, "metric"] = quantity
                 X = X.append(summary_diag_cycle_type)
 
-        self.features = X
+        X_condensed = get_threshold_targets(
+            df=X,
+            cycle_type=self.hyperparameters["cycle_type"],
+            metric=self.hyperparameters["metric"],
+            interpolation_axes=self.hyperparameters["interpolation_axes"],
+            threshold=self.hyperparameters["threshold"],
+            filter_kinks=self.hyperparameters["filter_kinks"],
+            extrapolate_threshold=self.hyperparameters["extrapolate_threshold"]
+        )
+        self.features = X_condensed
+        
+
+def get_threshold_targets(df, cycle_type, metric, interpolation_axes, threshold, filter_kinks, extrapolate_threshold):
+    if filter_kinks and np.any(
+            df['fractional_metric'].diff().diff() < filter_kinks):
+        last_good_cycle = df[
+            df['fractional_metric'].diff().diff() < filter_kinks][
+            'cycle_index'].min()
+        df = df[
+            df['cycle_index'] < last_good_cycle]
+
+    x_axes = []
+    for type in interpolation_axes:
+        x_axes.append(df[type])
+    y_interpolation_axis = df['fractional_metric']
+
+    # Logic around how to deal with cells that have not crossed the threshold
+    if df['fractional_metric'].min() > threshold and not extrapolate_threshold:
+        BEEPFeaturizationError(
+            "DiagnosticProperties data has not crossed threshold and extrapolation inaccurate"
+        )
+    elif df['fractional_metric'].min() > threshold and extrapolate_threshold:
+        fill_value = "extrapolate"
+        bounds_error = False
+        x_linspaces = []
+        for x_axis in x_axes:
+            y1 = y_interpolation_axis.iloc[-2]
+            y2 = y_interpolation_axis.iloc[-1]
+            x1 = x_axis.iloc[-2]
+            x2 = x_axis.iloc[-1]
+            x_thresh_extrap = (threshold - 0.1 - y1) * (x2 - x1) / (
+                        y2 - y1) + x1
+            x_linspaces.append(
+                np.linspace(x_axis.min(), x_thresh_extrap, num=1000)
+            )
+    else:
+        fill_value = np.nan
+        bounds_error = True
+        x_linspaces = []
+        for x_axis in x_axes:
+            x_linspaces.append(
+                np.linspace(x_axis.min(), x_axis.max(), num=1000))
+
+    f_axis = []
+    for x_axis in x_axes:
+        f_axis.append(
+            interp1d(
+                x_axis,
+                y_interpolation_axis,
+                kind='linear',
+                bounds_error=bounds_error,
+                fill_value=fill_value
+            )
+        )
+
+    x_to_threshold = []
+    for indx, x_linspace in enumerate(x_linspaces):
+        crossing_array = abs(f_axis[indx](x_linspace) - threshold)
+        x_to_threshold.append(x_linspace[np.argmin(crossing_array)])
+
+    if ~(x_to_threshold[0] > 0) or ~(x_to_threshold[1] > 0):
+        raise BEEPFeaturizationError(
+            "DiagnosticProperties data does not have a positive value to threshold"
+        )
+
+    if "normalized_regular_throughput" in interpolation_axes:
+        real_throughput_to_threshold = x_to_threshold[interpolation_axes.index(
+            "normalized_regular_throughput")] * \
+                                       df[
+                                           'initial_regular_throughput'].values[
+                                           0]
+        x_to_threshold.append(real_throughput_to_threshold)
+        interpolation_axes.append("real_regular_throughput")
+
+    threshold_dict = {
+        'initial_regular_throughput':
+            df['initial_regular_throughput'].values[0],
+    }
+
+    for indx, x_axis in enumerate(interpolation_axes):
+        threshold_dict[cycle_type + metric + str(threshold) + '_' + x_axis] = [
+            x_to_threshold[indx]]
+
+    return pd.DataFrame(threshold_dict)

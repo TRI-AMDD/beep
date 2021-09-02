@@ -47,7 +47,6 @@ $ featurize '{"invalid_file_list": ["/data-share/renamed_cycler_files/FastCharge
 import abc
 import os
 import json
-import hashlib
 from typing import Union, Tuple
 
 import pandas as pd
@@ -83,7 +82,7 @@ class BEEPFeaturizer(MSONable, abc.ABC):
             else:
                 raise BEEPFeaturizationError(
                     f"Features cannot be created with incomplete set of "
-                    f"hyperparameters {self.hyperparameters} < "
+                    f"hyperparameters {self.hyperparameters.keys()} < "
                     f"{self.DEFAULT_HYPERPARAMETERS.keys()}!")
         else:
             self.hyperparameters = self.DEFAULT_HYPERPARAMETERS
@@ -92,13 +91,6 @@ class BEEPFeaturizer(MSONable, abc.ABC):
             raise BEEPFeaturizationError("BEEPDatapath input is not structured!")
         self.datapath = structured_datapath
 
-        # todo: check this
-        # hopefully this is actually unique
-        if self.datapath:
-            self.datapath_sha256 = hashlib.sha256(str(structured_datapath.to_dict())).hexdigest()
-        else:
-            self.datapath_sha256 = None
-
         self.features = None
 
         # In case these features are loaded from file
@@ -106,6 +98,7 @@ class BEEPFeaturizer(MSONable, abc.ABC):
         # to reload the original datapath
         self.paths = self.datapath.paths if self.datapath else {}
         self.metadata = self.datapath.metadata.raw if self.datapath else {}
+        self.linked_semiunique_id = self.datapath.semiunique_id if self.datapath else None
 
     @abc.abstractmethod
     def validate(self) -> Tuple[bool, Union[str, None]]:
@@ -145,7 +138,7 @@ class BEEPFeaturizer(MSONable, abc.ABC):
             "hyperparameters": self.hyperparameters,
             "paths": self.paths,
             "metadata": self.metadata,
-            "datapath_sha256": self.datapath_sha256
+            "linked_datapath_semiunique_id": self.linked_semiunique_id
         }
 
     @classmethod
@@ -164,7 +157,7 @@ class BEEPFeaturizer(MSONable, abc.ABC):
         bf.features = pd.DataFrame(d["features"])
         bf.paths = d["paths"]
         bf.metadata = d["metadata"]
-        bf.datapath_sha256 = d["datapath_sha256"]
+        bf.linked_semiunique_id = d["linked_datapath_semiunique_id"]
         return bf
 
     @classmethod

@@ -6,6 +6,7 @@ import abc
 import json
 import copy
 import time
+import hashlib
 import itertools
 
 import pandas as pd
@@ -424,6 +425,28 @@ class BEEPDatapath(abc.ABC, MSONable):
             diagnostic_summary)
         datapath.diagnostic_data = diagnostic_data if diagnostic_data is None else pd.DataFrame(diagnostic_data)
         return datapath
+
+    @property
+    def semiunique_id(self):
+        """
+        An id that can identify the state of this datapath without complications
+        associated with hashing dataframes.
+
+        Returns:
+            (str): A semiunique id for this datapath.
+
+        """
+        s = f"barcode:{self.metadata.barcode}-" \
+            f"channel:{self.metadata.channel_id}-" \
+            f"protocol:{self.metadata.protocol}-" \
+            f"schema:{self.schema}-" \
+            f"structured:{self.is_structured}-" \
+            f"legacy:{self._is_legacy}"
+
+        raw = self.paths.get("raw", None)
+        structured = self.paths.get("structured", None)
+        s += f"-raw_path:{raw}-structured_path:{structured}"
+        return s
 
     @StructuringDecorators.must_not_be_legacy
     def structure(self,
