@@ -46,9 +46,11 @@ $ featurize '{"invalid_file_list": ["/data-share/renamed_cycler_files/FastCharge
 """
 import abc
 import os
-import pandas as pd
 import json
+import hashlib
 from typing import Union, Tuple
+
+import pandas as pd
 from monty.json import MSONable
 from monty.serialization import dumpfn, zopen
 
@@ -89,6 +91,14 @@ class BEEPFeaturizer(MSONable, abc.ABC):
         if structured_datapath is not None and not structured_datapath.is_structured:
             raise BEEPFeaturizationError("BEEPDatapath input is not structured!")
         self.datapath = structured_datapath
+
+        # todo: check this
+        # hopefully this is actually unique
+        if self.datapath:
+            self.datapath_sha256 = hashlib.sha256(str(structured_datapath.to_dict())).hexdigest()
+        else:
+            self.datapath_sha256 = None
+
         self.features = None
 
         # In case these features are loaded from file
@@ -134,7 +144,8 @@ class BEEPFeaturizer(MSONable, abc.ABC):
             "features": features,
             "hyperparameters": self.hyperparameters,
             "paths": self.paths,
-            "metadata": self.metadata
+            "metadata": self.metadata,
+            "datapath_sha256": self.datapath_sha256
         }
 
     @classmethod
@@ -153,6 +164,7 @@ class BEEPFeaturizer(MSONable, abc.ABC):
         bf.features = pd.DataFrame(d["features"])
         bf.paths = d["paths"]
         bf.metadata = d["metadata"]
+        bf.datapath_sha256 = d["datapath_sha256"]
         return bf
 
     @classmethod
