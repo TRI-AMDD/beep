@@ -590,10 +590,10 @@ def structure(
     help="Specify a featurizer to apply by class name, e.g. "
          "HPPCResistanceVoltageFeatures. To apply more than one "
          "featurizer, use multiple -f <FEATURIZER> commands. To apply"
-         "all core BEEP featurizers, pass the value 'all'. All "
-         "feautrizers are "
-         "attempted to apply with default hyperparameters; to specify"
-         "your own hyperparameters, use --featurize-with-hyperparams."
+         "all core BEEP featurizers, pass the value 'all'. Note if 'all'"
+         "is passed other -f featurizers will be ignored. All "
+         "feautrizers are attempted to apply with default hyperparameters; "
+         "to specify your own hyperparameters, use --featurize-with-hyperparams."
          "Classes from installed modules not in core BEEP can be "
          "specified with the class name in absolute import format, "
          "e.g., my_package.my_module.MyClass."
@@ -625,7 +625,6 @@ def featurize(
 
     logger.info(f"Featurizing {n_files} files")
 
-
     core_fclasses = [
         HPPCResistanceVoltageFeatures,
         DeltaQFastCharge,
@@ -633,11 +632,11 @@ def featurize(
         CycleSummaryStats,
         DiagnosticProperties,
         DiagnosticSummaryStats,
-        IntracellCycles,
-        IntracellFeatures
     ]
+    native_fclasses = core_fclasses + [IntracellCycles, IntracellFeatures]
 
     core_fclasses_map = {fclass.__name__: fclass for fclass in core_fclasses}
+    native_fclasses_map = {fclass.__name__: fclass for fclass in native_fclasses}
 
     # Create canonical featurizer list if "all" is selected
     if "all" in featurize_with:
@@ -660,8 +659,8 @@ def featurize(
     # Determine actual classes to apply by joining with external modules
     fclass_tuples = []
     for fclass_name, fclass_params in fclass_names_w_params:
-        if fclass_name in core_fclasses_map:
-            fclass = core_fclasses_map[fclass_name]
+        if fclass_name in native_fclasses_map:
+            fclass = native_fclasses_map[fclass_name]
         else:
             # it is assumed it will be an external module
             if "." not in fclass_name:
@@ -755,7 +754,7 @@ def featurize(
                 tbinfo = sys.exc_info()
                 tbfmt = traceback.format_exception(*tbinfo)
                 logger.error(
-                    f"{log_prefix}: Failed/invalid: ({tbinfo[0].__name__}): {f}")
+                    f"{log_prefix}: Failed/invalid: ({tbinfo[0].__name__}): {fclass.__name__}")
                 op_subresult["traceback"] = tbfmt
 
                 if ctx.obj.halt_on_error:
