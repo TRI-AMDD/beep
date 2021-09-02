@@ -12,23 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests related to feature generation"""
-import shutil
 import unittest
 import os
-import json
 import numpy as np
-import tempfile
-from pathlib import Path
-# from beep.featurize import (
-#     process_file_list_from_json,
-#     DeltaQFastCharge,
-#     TrajectoryFastCharge,
-#     DegradationPredictor,
-#     HPPCResistanceVoltageFeatures,
-#     DiagnosticProperties,
-#     DiagnosticSummaryStats,
-#     CycleSummaryStats
-# )
 
 from beep.features.core import (
     DeltaQFastCharge,
@@ -49,14 +35,13 @@ from beep.utils import parameters_lookup
 from monty.serialization import dumpfn, loadfn
 from monty.tempfile import ScratchDir
 from beep.utils.s3 import download_s3_object
-from beep.tests.constants import TEST_FILE_DIR, BIG_FILE_TESTS, SKIP_MSG
-from beep import MODULE_DIR
+from beep.tests.constants import TEST_FILE_DIR
 
 
-MACCOR_FILE_W_DIAGNOSTICS = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000020_CH71.071")
-MACCOR_FILE_W_PARAMETERS = os.path.join(
-    TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010"
-)
+# MACCOR_FILE_W_DIAGNOSTICS = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000020_CH71.071")
+# MACCOR_FILE_W_PARAMETERS = os.path.join(
+#     TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010"
+# )
 
 
 class TestFeaturizer(unittest.TestCase):

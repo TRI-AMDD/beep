@@ -37,8 +37,8 @@ class IntracellAnalysisTest(unittest.TestCase):
         pass
 
     def test_process_beep_cycle_data_for_initial_halfcell_analysis_mock(self):
-        ia = IntracellAnalysis('cathode_test.csv',
-                               'anode_test.csv',
+        ia = IntracellAnalysis(os.path.join(TEST_FILE_DIR, 'data-share/raw/cell_info/cathode_test.csv'),
+                               os.path.join(TEST_FILE_DIR, 'data-share/raw/cell_info/anode_test.csv'),
                                cycle_type='rpt_0.2C',
                                step_type=0
                                )

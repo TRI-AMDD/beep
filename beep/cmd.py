@@ -812,8 +812,7 @@ def featurize(
 
 
 @cli.command(
-    help="Run a machine learning model using pre-featurized cell data as input"
-         "and returning predictions as output."
+    help="Train a machine learning model"
 )
 @click.argument(
     'files',
@@ -821,5 +820,22 @@ def featurize(
     type=CLICK_FILE,
 )
 @click.pass_context
-def run_model(ctx, files):
+def train(ctx, files):
     pass
+
+
+@cli.command(
+    help="Predict using a pre-trained model"
+)
+@click.argument(
+    'feature_files',
+    nargs=-1,
+    type=CLICK_FILE,
+)
+@
+@click.pass_context
+def predict(ctx, files):
+    pass
+
+
+
