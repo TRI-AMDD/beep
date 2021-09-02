@@ -19,12 +19,9 @@ import os
 import ast
 import sys
 import time
-import copy
-import pprint
 import fnmatch
 import hashlib
 import logging
-import functools
 import datetime
 import traceback
 import importlib
@@ -32,15 +29,14 @@ import importlib
 import click
 from monty.serialization import dumpfn
 
-from beep import logger, BEEP_PARAMETERS_DIR, S3_CACHE, formatter_jsonl, __version__
+from beep import (
+    logger,
+    BEEP_PARAMETERS_DIR,
+    S3_CACHE,
+    formatter_jsonl,
+    __version__
+)
 from beep.structure.cli import auto_load, auto_load_processed
-# from beep.featurize import \
-#     HPPCResistanceVoltageFeatures, \
-#     DiagnosticSummaryStats, \
-#     DiagnosticProperties, \
-#     TrajectoryFastCharge, \
-#     DeltaQFastCharge, \
-#     intracell_losses
 from beep.features.base import BEEPFeaturizer, BEEPFeaturizationError
 from beep.features.core import (
     HPPCResistanceVoltageFeatures,
