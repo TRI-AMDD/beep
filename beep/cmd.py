@@ -585,7 +585,7 @@ def structure(
 @click.option(
     '--featurize-with',
     "-f",
-    default="all",
+    default=["all"],
     multiple=True,
     type=click.STRING,
     help="Specify a featurizer to apply by class name, e.g. "
@@ -636,8 +636,10 @@ def featurize(
         DiagnosticSummaryStats
     ]
 
-    core_fclasses_map = {fclass.__class__.__name__: fclass for fclass in core_fclasses}
-    if featurize_with == "all":
+    core_fclasses_map = {fclass.__name__: fclass for fclass in core_fclasses}
+
+    # Create canonical featurizer list if "all" is selected
+    if "all" in featurize_with:
         featurize_with = list(core_fclasses_map.keys())
 
     # Feature class names along with hyperparameters
@@ -713,6 +715,7 @@ def featurize(
                 "traceback": None,
                 "op_md5_chksum": None
             }
+            fclass_name = fclass.__name__
 
             t0 = time.time()
             try:
@@ -726,19 +729,20 @@ def featurize(
 
                 if is_valid:
                     op_subresult["valid"] = True
-                    logger.info(f"{log_prefix}: Featurizer {fclass} with params {f_hyperparams} valid for '{file}' and applied")
+                    logger.info(f"{log_prefix}: Featurizer {fclass_name} with params {f_hyperparams} valid for '{file}'")
                 else:
                     raise BEEPFeaturizationError(reason)
 
                 f.create_features()
                 op_subresult["featurized"] = True
+                logger.info(
+                    f"{log_prefix}: Featurizer {fclass_name} with params {f_hyperparams} applied for '{file}'")
 
-                fcn = f.__class__.__name__
-                output_filename = f"{fcn}-{os.path.basename(file)}"
+                output_filename = f"{fclass_name}-{os.path.basename(file)}"
                 output_path = os.path.join(output_dir, output_filename)
                 dumpfn(f, output_path)
                 logger.info(
-                    f"{log_prefix}: Featurizer {fcn} features for '{file}' written to '{output_path}'")
+                    f"{log_prefix}: Featurizer {fclass_name} features for '{file}' written to '{output_path}'")
                 op_subresult["output"] = output_path
                 op_subresult["op_md5_chksum"] = md5sum(output_path)
 
@@ -758,14 +762,12 @@ def featurize(
 
             t1 = time.time()
             op_subresult["walltime"] = t1 - t0
-            op_result[fclassname] = op_subresult
+            op_result[fclass_name] = op_subresult
 
         t1_file = time.time()
         op_result["walltime"] = t1_file - t0_file
         status_json[file] = op_result
         i += 1
-
-    status_json = add_metadata_to_status_json(status_json, ctx.obj.run_id, ctx.obj.tags)
 
     # Generate a summary output
 
@@ -773,37 +775,40 @@ def featurize(
 
     all_succeeded, some_succeeded, none_succeeded = [], [], []
     for file, data in status_json.items():
-        if file not in ["metadata"]:
+        feats_succeeded = []
+        for fname, fdata in data.items():
+            if fname not in ["walltime", "processed_md5_chksum"]:
+                feats_succeeded.append(fdata["featurized"])
 
-            feats_succeeded = []
-            for fname, fdata in data.items():
-                if fname not in ["walltime", "processed_md5_chksum"]:
-                    feats_succeeded.append(fdata["featurized"])
+        n_success = sum(feats_succeeded)
+        if n_success == len(fclass_tuples):
+            all_succeeded.append((file, n_success))
+        elif n_success == 0:
+            none_succeeded.append((file, n_success))
+        else:
+            some_succeeded.append((file, n_success))
 
-            n_success = sum(feats_succeeded)
-            if n_success == len(featurizers):
-                all_succeeded.append((file, n_success))
-            elif n_success == 0:
-                none_succeeded.append((file, n_success))
-            else:
-                some_succeeded.append((file, n_success))
-
-    logger.info(f"\tAll {len(featurizers)} featurizers succeeded: {len(all_succeeded)}/{n_files}")
+    logger.info(f"\tAll {len(fclass_tuples)} featurizers succeeded: {len(all_succeeded)}/{n_files}")
     if len(all_succeeded) > 0:
         for filename, _ in all_succeeded:
             logger.info(f"\t\t- {filename}")
 
-    if len(featurizers) > 1:
+    if len(fclass_tuples) > 1:
         logger.info(f"\tSome featurizers succeeded: {len(some_succeeded)}/{n_files}")
         if len(some_succeeded) > 0:
             for filename, n_success in some_succeeded:
-                logger.info(f"\t\t- {filename}: {n_success}/{len(featurizers)}")
+                logger.info(f"\t\t- {filename}: {n_success}/{len(fclass_tuples)}")
 
     logger.info(f"\tNo featurizers succeeded or file failed: {len(none_succeeded)}/{n_files}")
     if len(none_succeeded) > 0:
         for filename, _ in none_succeeded:
             logger.info(f"\t\t- {filename}")
 
+    status_json = add_metadata_to_status_json(status_json, ctx.obj.run_id, ctx.obj.tags)
+    osj = ctx.obj.output_status_json
+    if osj:
+        dumpfn(status_json, osj)
+        logger.info(f"Wrote status json file to {osj}")
 
 
 @cli.command(
@@ -833,6 +838,7 @@ def run_model(ctx, files):
 @click.option(
     "--featurize-with",
     "-f",
+    default=["all"],
     multiple=True,
     help="Specify a featurizer to apply by class name. To override default hyperparameters"
          "(such as parameter directories or specific values for hyperparameters"
@@ -844,7 +850,7 @@ def testcmd(ctx, featurize_with):
 
     print(featurize_with)
 
-
+    raise ValueError
     featurizer_params = [ast.literal_eval(fexpr) for fexpr in featurize_with]
 
 
