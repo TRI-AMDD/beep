@@ -253,6 +253,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         self._diag_aggregation.pop("internal_resistance")
         self._diag_summary_cols = copy.deepcopy(self._summary_cols)
         self._diag_summary_cols.pop(5)  # internal_resistance
+        self.structuring_parameters = {}
 
     @classmethod
     @abc.abstractmethod
@@ -378,6 +379,9 @@ class BEEPDatapath(abc.ABC, MSONable):
             "diagnostic_summary": diagnostic_summary,
             "diagnostic_interpolated": diagnostic_interpolated,
 
+            # Structuring parameters (mostly for provenance)
+            "structuring_parameters": self.structuring_parameters,
+
             # Provence for validation
             "schema_path": self.schema,
 
@@ -424,6 +428,8 @@ class BEEPDatapath(abc.ABC, MSONable):
         datapath.diagnostic_summary = diagnostic_summary if diagnostic_summary is None else pd.DataFrame(
             diagnostic_summary)
         datapath.diagnostic_data = diagnostic_data if diagnostic_data is None else pd.DataFrame(diagnostic_data)
+
+        datapath.structuring_parameters = d.get("structuring_parameters", {})
         return datapath
 
     @property
@@ -496,6 +502,17 @@ class BEEPDatapath(abc.ABC, MSONable):
             full_fast_charge=full_fast_charge,
             diagnostic_available=diagnostic_available
         )
+
+        self.structuring_parameters = {
+            "v_range": v_range,
+            "resolution": resolution,
+            "diagnostic_resolution": diagnostic_resolution,
+            "nominal_capacity": nominal_capacity,
+            "full_fast_charge": full_fast_charge,
+            "diagnostic_available": diagnostic_available,
+            "charge_axis": charge_axis,
+            "discharge_axis": discharge_axis
+        }
 
     def autostructure(
             self,
