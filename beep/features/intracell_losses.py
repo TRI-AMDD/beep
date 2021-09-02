@@ -1,8 +1,14 @@
+import os
+
 import pandas as pd
 
+from beep import PROTOCOL_PARAMETERS_DIR
 from beep.features import featurizer_helpers
 from beep.features.base import BEEPFeaturizer
 from beep.features.intracell_analysis import IntracellAnalysis
+
+
+DEFAULT_CELL_INFO_DIR = os.path.join(PROTOCOL_PARAMETERS_DIR, "intracell_info")
 
 
 class IntracellCycles(BEEPFeaturizer):
@@ -16,16 +22,21 @@ class IntracellCycles(BEEPFeaturizer):
         metadata (dict): information about the conditions, data
             and code used to produce features
     """
-    
+
     DEFAULT_HYPERPARAMETERS = {
         "diagnostic_cycle_type": 'rpt_0.2C',
         "step_type": 0,
         
         # Paths for anode files should be absolute
         # Defaults are for the specified names in the current dir
-        "anode_file": 'anode_secondMeasure_clean_cc_charge_exptl_aligned.csv',
-        "cathode_file": 'cathode_clean_cc_charge_exptl_aligned.csv',
-        
+        "anode_file": os.path.join(
+            DEFAULT_CELL_INFO_DIR,
+            'anode_test.csv'
+        ),
+        "cathode_file": os.path.join(
+            DEFAULT_CELL_INFO_DIR,
+            'cathode_test.csv'
+        ),
     }
 
     def validate(self):
