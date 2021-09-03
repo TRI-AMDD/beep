@@ -18,6 +18,10 @@ from sklearn.base import BaseEstimator
 from beep.features.base import BEEPFeaturizer, BEEPFeatureMatrix
 
 
+class BEEPMLExperimentError(BaseException):
+    """Raise when error arises specific to BEEP ML Experiments"""
+    pass
+
 class BEEPMLExperiment(MSONable):
     """
     A class for training, predicting, managing, and (de)serializing
@@ -36,21 +40,53 @@ class BEEPMLExperiment(MSONable):
             self,
             feature_matrix: BEEPFeatureMatrix,
             target_matrix: BEEPFeatureMatrix,
-            model: Union[BaseEstimator, "str"]
-
+            model: Union[BaseEstimator, "str"],
+            drop_nan_feature_thresh: float = 0.95,
+            drop_nan_sample_thresh: float = 0.50,
+            impute_strategy: str = "median",
     ):
+
         self.X = feature_matrix
         self.y = target_matrix
 
-    @classmethod
-    def from_sklearn_obj(cls):
-        pass
+
+
+        self.targets = []
+        self.multi = False
+        self.model = model if model else None
+
+
+        self.drop_nan_feature_thresh = drop_nan_feature_thresh
+        self.drop_nan_sample_thresh = drop_nan_sample_thresh
+        self.impute_strategy = impute_strategy
+
 
     def train(self, target: str):
-
         pass
 
-    def train_multi
+    def train_multi(self, targets: List[str]):
+        pass
+
+    def predict(self, ):
+        pass
+
+    def clean(self, df: pd.DataFrame):
+        """
+        Impute, drop nan, and standardize dataset
+
+        Returns:
+
+        """
+        df.dropna(axis=1, thresh=self.drop_nan_feature_thresh, inplace=True)
+        df.dropna(axis=0, thresh=self.drop_nan_sample_thresh, inplace=True)
+
+
+
+
+
+
+
+
 
     def as_dict(self):
         """Serialize a BEEPDatapath as a dictionary.
