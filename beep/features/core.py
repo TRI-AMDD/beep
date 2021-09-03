@@ -242,7 +242,8 @@ class CycleSummaryStats(BEEPFeaturizer):
         if "skew" in stats_names:
             stats.append(np.log10(np.absolute(skew(array))))
         if "kurtosis" in stats_names:
-            stats.append(np.log10(np.absolute(kurtosis(array, fisher=False, bias=False))))
+            stats.append(np.log10(
+                np.absolute(kurtosis(array, fisher=False, bias=False))))
         if "abs" in stats_names:
             stats.append(np.log10(np.sum(np.absolute(array))))
         if "square" in stats_names:
@@ -290,8 +291,10 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         val, msg = featurizer_helpers.check_diagnostic_validation(self.datapath)
         if val:
             df = self.datapath.diagnostic_summary
-            df = df[df.cycle_type == self.hyperparameters["diagnostic_cycle_type"]]
-            if df.cycle_index.nunique() >= max(self.hyperparameters["diag_pos_list"]) + 1:
+            df = df[
+                df.cycle_type == self.hyperparameters["diagnostic_cycle_type"]]
+            if df.cycle_index.nunique() >= max(
+                    self.hyperparameters["diag_pos_list"]) + 1:
                 return True, None
             else:
                 return False, "Diagnostic cycles insufficient for featurization"
@@ -302,7 +305,9 @@ class DiagnosticSummaryStats(CycleSummaryStats):
             self,
             pos=None,
             cycle_types=("rpt_0.2C", "rpt_1C", "rpt_2C"),
-            metrics=("discharge_capacity", "discharge_energy", "charge_capacity", "charge_energy")
+            metrics=(
+            "discharge_capacity", "discharge_energy", "charge_capacity",
+            "charge_energy")
     ):
         """
         Helper function to calculate difference between summary values in the diagnostic cycles
@@ -498,9 +503,11 @@ class DeltaQFastCharge(BEEPFeaturizer):
             bool: True/False indication of ability to proceed with feature generation
         """
 
-        if not self.datapath.structured_summary.index.max() > self.hyperparameters["final_pred_cycle"]:
+        if not self.datapath.structured_summary.index.max() > \
+               self.hyperparameters["final_pred_cycle"]:
             return False, "Structured summary index max is less than final pred cycle"
-        elif not self.datapath.structured_summary.index.min() <= self.hyperparameters["init_pred_cycle"]:
+        elif not self.datapath.structured_summary.index.min() <= \
+                 self.hyperparameters["init_pred_cycle"]:
             return False, "Structured symmary index min is more than initial pred cycle"
         elif "cycle_index" not in self.datapath.structured_summary.columns:
             return False, "Structured summary missing critical data: 'cycle_index'"
@@ -508,11 +515,11 @@ class DeltaQFastCharge(BEEPFeaturizer):
             return False, "Structured data missing critical data: 'cycle_index'"
         elif not self.hyperparameters["mid_pred_cycle"] > 10:
             return False, "Middle pred. cycle less than threshold value of 10"
-        elif not self.hyperparameters["final_pred_cycle"] > self.hyperparameters["mid_pred_cycle"]:
+        elif not self.hyperparameters["final_pred_cycle"] > \
+                 self.hyperparameters["mid_pred_cycle"]:
             return False, "Final pred cycle less than middle pred cycle"
         else:
             return True, None
-
 
     def create_features(self):
         """
@@ -813,20 +820,19 @@ class DiagnosticProperties(BEEPFeaturizer):
                 data for determining threshold.
 
         """
-        cycle_type = self.hyperparameters["cycle_type"],
-        metric = self.hyperparameters["metric"],
-        interpolation_axes = self.hyperparameters["interpolation_axes"],
-        threshold = self.hyperparameters["threshold"],
-        filter_kinks = self.hyperparameters["filter_kinks"],
+        cycle_type = self.hyperparameters["cycle_type"]
+        metric = self.hyperparameters["metric"]
+        interpolation_axes = self.hyperparameters["interpolation_axes"]
+        threshold = self.hyperparameters["threshold"]
+        filter_kinks = self.hyperparameters["filter_kinks"]
         extrapolate_threshold = self.hyperparameters["extrapolate_threshold"]
 
-        if filter_kinks and np.any(
-                df['fractional_metric'].diff().diff() < filter_kinks):
-            last_good_cycle = df[
-                df['fractional_metric'].diff().diff() < filter_kinks][
-                'cycle_index'].min()
-            df = df[
-                df['cycle_index'] < last_good_cycle]
+        if filter_kinks:
+            if np.any(df['fractional_metric'].diff().diff() < filter_kinks):
+                last_good_cycle = df[
+                    df['fractional_metric'].diff().diff() < filter_kinks] \
+                    ['cycle_index'].min()
+                df = df[df['cycle_index'] < last_good_cycle]
 
         x_axes = []
         for type in interpolation_axes:
@@ -835,12 +841,13 @@ class DiagnosticProperties(BEEPFeaturizer):
 
         # Logic around how to deal with cells that have not crossed threshold
         if df['fractional_metric'].min() > threshold and \
-            not extrapolate_threshold:
+                not extrapolate_threshold:
             BEEPFeaturizationError(
                 "DiagnosticProperties data has not crossed threshold "
                 "and extrapolation inaccurate"
             )
-        elif df['fractional_metric'].min() > threshold and extrapolate_threshold:
+        elif df[
+            'fractional_metric'].min() > threshold and extrapolate_threshold:
             fill_value = "extrapolate"
             bounds_error = False
             x_linspaces = []
@@ -850,7 +857,7 @@ class DiagnosticProperties(BEEPFeaturizer):
                 x1 = x_axis.iloc[-2]
                 x2 = x_axis.iloc[-1]
                 x_thresh_extrap = (threshold - 0.1 - y1) * (x2 - x1) / (
-                            y2 - y1) + x1
+                        y2 - y1) + x1
                 x_linspaces.append(
                     np.linspace(x_axis.min(), x_thresh_extrap, num=1000)
                 )
@@ -886,8 +893,9 @@ class DiagnosticProperties(BEEPFeaturizer):
             )
 
         if "normalized_regular_throughput" in interpolation_axes:
-            real_throughput_to_threshold = x_to_threshold[interpolation_axes.index(
-                "normalized_regular_throughput")] * \
+            real_throughput_to_threshold = x_to_threshold[
+                                               interpolation_axes.index(
+                                                   "normalized_regular_throughput")] * \
                                            df[
                                                'initial_regular_throughput'].values[
                                                0]
@@ -900,7 +908,8 @@ class DiagnosticProperties(BEEPFeaturizer):
         }
 
         for indx, x_axis in enumerate(interpolation_axes):
-            threshold_dict[cycle_type + metric + str(threshold) + '_' + x_axis] = [
+            threshold_dict[
+                cycle_type + metric + str(threshold) + '_' + x_axis] = [
                 x_to_threshold[indx]]
 
         return pd.DataFrame(threshold_dict)
