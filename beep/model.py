@@ -6,7 +6,7 @@ import json
 import copy
 import hashlib
 import os
-from typing import List, Union, Iterable
+from typing import List, Union, Iterable, Tuple
 from functools import reduce
 
 import numpy as np
@@ -63,7 +63,8 @@ class BEEPLinearModelExperiment(MSONable):
             kfold: int = 5,
             max_iter: int = 1e6,
             tol: float = 1e-4,
-            l1_ratio: Union[float, None] = (0.1, 0.5, 0.7, 0.9, 0.95, 1) # only relevant for elasticnet
+            # only relevant for elasticnet
+            l1_ratio: Union[Tuple[float], List[float]] = (0.1, 0.5, 0.7, 0.9, 0.95, 1)
     ):
 
         if model_name not in self.ALLOWED_MODELS:
@@ -150,11 +151,10 @@ class BEEPLinearModelExperiment(MSONable):
         self.alphas = alphas
         self.max_iter = max_iter
         self.tol = tol
-        self.l1_ratio = self.l1_ratio
+        self.l1_ratio = l1_ratio
 
 
-    def train_and_score(self):
-        pass
+        self.optimal_hyperparameters = None
 
     def train(self):
         """
@@ -203,6 +203,7 @@ class BEEPLinearModelExperiment(MSONable):
             "max_iter": self.max_iter,
         }
         model_kwargs.update(optimal_hyperparameters)
+        self.optimal_hyperparameters = optimal_hyperparameters
 
         model = model_class(**model_kwargs)
         model.fit(X, y)
@@ -214,7 +215,18 @@ class BEEPLinearModelExperiment(MSONable):
         # predict
         pass
 
-    # todo: add a regularized logistic model?
+    def train_and_score(self, train_and_val_frac=0.8):
+        """Train and adjust hyperparameters on a subset of data, then predict
+        on a test set and obtain scores automatically.
+
+        Args:
+            train_and_val_frac (float): None
+
+        Returns:
+
+        """
+        pass
+
     # todo: save mu and std
 
     # def as_dict(self):
