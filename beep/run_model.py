@@ -483,7 +483,7 @@ def train_linear_model(
         ridgecv.fit(X_scaled, y_train.values.ravel())
         # Set optimal alpha and refit model
         alpha_opt = ridgecv.alpha_
-        linear_model = Ridge(fit_intercept=True, alpha=alpha_opt)
+        linear_model = Ridge(fit_intercept=True, alpha=alpha_opt, max_iter=),
         linear_model.fit(X_scaled, y_train)
         hyperparameters["l1_ratio"] = 0
 
