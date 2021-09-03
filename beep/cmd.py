@@ -37,7 +37,11 @@ from beep import (
     __version__
 )
 from beep.structure.cli import auto_load, auto_load_processed
-from beep.features.base import BEEPFeaturizer, BEEPFeaturizationError
+from beep.features.base import (
+    BEEPFeaturizer,
+    BEEPFeaturizationError,
+    BEEPFeatureMatrix,
+)
 from beep.features.core import (
     HPPCResistanceVoltageFeatures,
     DeltaQFastCharge,
@@ -50,7 +54,6 @@ from beep.features.intracell_losses import (
     IntracellCycles,
     IntracellFeatures
 )
-from beep.model import BEEPFeatureMatrix, BEEPDatasetError
 from beep.utils.s3 import list_s3_objects, download_s3_object
 from beep.validate import BeepValidationError
 
