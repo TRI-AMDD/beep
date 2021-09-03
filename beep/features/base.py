@@ -25,7 +25,7 @@ from typing import Union, Tuple, List
 
 import pandas as pd
 from monty.io import zopen
-from monty.json import MSONable
+from monty.json import MSONable, MontyDecoder
 from monty.serialization import loadfn, dumpfn
 
 from beep.structure.base import BEEPDatapath
@@ -310,9 +310,9 @@ class BEEPFeatureMatrix(MSONable):
         Returns:
             beep.structure.ProcessedCyclerRun: deserialized ProcessedCyclerRun.
         """
-
-        # no need for original datapath
-        featurizers = [BEEPFeaturizer.from_dict(f) for f in d["featurizers"]]
+        # no need for original datapaths, as their ref paths should
+        # be in the subobjects
+        featurizers = [MontyDecoder().process_decoded(f) for f in d["featurizers"]]
         return cls(featurizers)
 
     @classmethod
@@ -331,7 +331,7 @@ class BEEPFeatureMatrix(MSONable):
         Returns:
             None
         """
-        return loadfn(d)
+        return loadfn(filename)
 
     def to_json_file(self, filename):
         """Save a BEEPFeatureMatrix to disk as a json.
@@ -352,3 +352,6 @@ class BEEPFeatureMatrix(MSONable):
         dumpfn(d, filename)
 
 
+if __name__ == "__main__":
+    fname = "/Users/ardunn/alex/tri/code/beep/beep/CLI_TEST_FILES_FEATURIZATION/FeatureMatrix-2021-02-09_21.07.50.514178.json.gz"
+    bfm = BEEPFeatureMatrix.from_json(fname)

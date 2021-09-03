@@ -131,7 +131,7 @@ class BEEPLinearModelExperiment(MSONable):
         self.y = y
 
         # These features must be present in passed dfs for predictions to work
-        self.feature_labels = self.X.columns.tolist()
+        self.feature_labels = tuple(self.X.columns.tolist())
 
         self.targets = targets
 
@@ -211,6 +211,10 @@ class BEEPLinearModelExperiment(MSONable):
 
     def predict(self, feature_matrix: BEEPFeatureMatrix):
         # condense features down to those required, throwing error if not present
+
+        X = feature_matrix.matrix
+
+        missing_features = [f for f in X.columns if f not in self.features]
 
         # predict
         pass
@@ -301,4 +305,4 @@ class BEEPLinearModelExperiment(MSONable):
 
 
 if __name__ == "__main__":
-    pass
+    bfm = BEEPFeatureMatrix.from_json_file("/Users/ardunn/alex/tri/code/beep/beep/CLI_TEST_FILES_FEATURIZATION/FeatureMatrix-2021-02-09_21.07.50.514178.json.gz")
