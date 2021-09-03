@@ -35,6 +35,7 @@ class BEEPFeaturizationError(BaseException):
     """Raise when a featurization-specific error occurs"""
     pass
 
+
 class BEEPFeatureMatrixError(BaseException):
     """ Raise when there is a BEEP-specific problem with a dataset"""
     pass
@@ -44,8 +45,13 @@ class BEEPFeaturizer(MSONable, abc.ABC):
     """
     Base class for all beep feature generation.
 
-    Input a structured datapath, get an object which can generate features based
-    on that data.
+    From a structured battery file representing many cycles of one cell,
+    (AKA a structured datapath), produce a feature vector.
+
+    Works for generating both
+     - Vectors X to use as training vectors
+     - Vectors or scalars y to use as ML targets
+        (as problems may have multiple metrics to predict)
 
     """
 
