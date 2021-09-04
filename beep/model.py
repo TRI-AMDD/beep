@@ -378,9 +378,10 @@ class BEEPLinearModelExperiment(MSONable):
             df = df.apply(lambda x: x.fillna(x.median()), axis=0)
         elif method == "mean":
             df = df.apply(lambda x: x.fillna(x.mean()), axis=0)
+        elif method is 'none':
+            return df
         else:
             raise ValueError(f"impute_strategy {method} unsupported!")
-        return df
 
     def as_dict(self):
         """Serialize a BEEPDatapath as a dictionary.
