@@ -534,6 +534,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             None
         """
         parameters_path = parameters_path if parameters_path else PROTOCOL_PARAMETERS_DIR
+        self.paths["protocol_parameters"] = parameters_path
         v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \
             self.determine_structuring_parameters(parameters_path=parameters_path)
         logger.info(f"Autostructuring determined parameters of v_range={v_range}, "

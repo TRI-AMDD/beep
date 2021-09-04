@@ -1077,6 +1077,8 @@ def train(
     # only pass in arguments which will override the defaults of the lower class
     additional_kwargs = {k: v for k, v in additional_kwargs.items() if v is not None}
 
+    logger.debug(f"Hashing file '{feature_matrix_file}' to MD5")
+    logger.debug(f"Hasshing file '{target_matrix_file}' to MD5")
     status_json = {
         "op_type": "train",
         "files": {
@@ -1204,6 +1206,8 @@ def predict(
     model_file = os.path.abspath(model_file)
     feature_matrix_file = os.path.abspath(feature_matrix_file)
 
+    logger.debug(f"Hashing file '{model_file}' to MD5")
+    logger.debug(f"Hashing file '{feature_matrix_file}' to MD5")
     status_json = {
         "op_type": "predict",
         "files": {
