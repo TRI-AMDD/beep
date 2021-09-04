@@ -17,6 +17,7 @@ protocol generation, and running models.
 
 import os
 import ast
+import pprint
 import sys
 import time
 import fnmatch
@@ -28,6 +29,7 @@ import importlib
 
 import click
 import numpy as np
+import pandas as pd
 from monty.serialization import dumpfn
 
 from beep import (
@@ -454,7 +456,6 @@ def structure(
 
     status_json = {
         "op_type": "structure",
-        "op_params": None,
         "files": {}
     }
 
@@ -1041,9 +1042,15 @@ def train(
         l1_ratios,
         homogenize_features
 ):
-    bfm = BEEPFeatureMatrix.from_json_file(os.path.abspath(feature_matrix_file))
-    btm = BEEPFeatureMatrix.from_json_file(os.path.abspath(target_matrix_file))
+    feature_matrix_file = os.path.abspath(feature_matrix_file)
+    target_matrix_file = os.path.abspath(target_matrix_file)
     targets = list(targets)
+
+
+    logger.info(
+        f"Running training using files (features) {feature_matrix_file} "
+        f"and (targets) {target_matrix_file}"
+    )
 
     alpha_params = [alpha_lower, alpha_upper, n_alphas]
     if any(alpha_params) and not all(alpha_params):
@@ -1065,23 +1072,83 @@ def train(
         "tol": tol,
         "l1_ratios": l1_ratios,
         "homogenize_features": homogenize_features,
+        "alphas": alphas,
     }
 
     # only pass in arguments which will override the defaults of the lower class
-    additional_kwargs = {k: v if v is not None for k, v in additional_kwargs.items()}
+    additional_kwargs = {k: v for k, v in additional_kwargs.items() if v is not None}
 
+    status_json = {
+        "op_type": "train",
+        "files": {
+            "features": feature_matrix_file,
+            "targets": target_matrix_file
+        },
+        "model_results": {},
+        "walltime": None,
+        "output": None,
+        "traceback": None,
+    }
 
+    t0 = time.time()
+    model, training_errors, test_errors = None, None, None
+    try:
+        bfm = BEEPFeatureMatrix.from_json_file(feature_matrix_file)
+        btm = BEEPFeatureMatrix.from_json_file(target_matrix_file)
 
-    if train_on_frac_and_score:
-        pass
-    else:
-        pass
+        blme = BEEPLinearModelExperiment(
+            feature_matrix=bfm,
+            target_matrix=btm,
+            targets=targets,
+            model_name=model_name,
+            **additional_kwargs
+        )
 
-    # Output filename specification overrides output dir
-    if output_filename:
-        output_filename = os.path.abspath(output_filename)
-    else:
-        output_filename = os.path.join(ctx.obj.cwd, default_filename)
+        if train_on_frac_and_score is not None:
+            logger.info("Beginning training and scoring on test set.")
+            model, training_errors, test_errors = blme.train_and_score(train_and_val_frac=train_on_frac_and_score)
+            status_json["model_results"]["training_error"] = training_errors
+            status_json["model_results"]["test_error"] = test_errors
+            status_json["model_results"]["test_fraction"] = train_on_frac_and_score
+        else:
+            logger.info("Beginning training on all available data")
+            model, training_errors = blme.train()
+            test_errors = None
+    except KeyboardInterrupt:
+        logging.critical("Keyboard interrupt caught - exiting...")
+        click.Context.exit(1)
+    except BaseException:
+        tbinfo = sys.exc_info()
+        tbfmt = traceback.format_exception(*tbinfo)
+        logger.error(f"Model training failed: ({tbinfo[0].__name__})")
+        status_json["traceback"] = tbfmt
+
+        if ctx.obj.halt_on_error:
+            raise
+
+    t1 = time.time()
+    status_json["walltime"] = t1 - t0
+
+    if model:
+        logger.info(f"Model {model} trained, finding optimal hyperparamters {blme.optimal_hyperparameters}.")
+        logger.info(f"Training error summary: {training_errors}")
+        if test_errors:
+            logger.info(f"Testing error summary: {test_errors}")
+
+        default_filename = f"LinearModelExperiment-{datetime.datetime.now().strftime('%Y-%d-%m_%H.%M.%S.%f')}.json.gz"
+        if output_filename:
+            output_filename = os.path.abspath(output_filename)
+        else:
+            output_filename = os.path.join(ctx.obj.cwd, default_filename)
+        dumpfn(blme, output_filename)
+        logger.info(f"Wrote model {model} to path: {output_filename}")
+        status_json["output"] = output_filename
+
+    status_json = add_metadata_to_status_json(status_json, ctx.obj.run_id, ctx.obj.tags)
+    osj = ctx.obj.output_status_json
+    if osj:
+        dumpfn(status_json, osj)
+        logger.info(f"Wrote status json file to {osj}")
 
 
 @cli.command(
@@ -1097,15 +1164,103 @@ def train(
 @click.option(
     "--feature-matrix-file",
     "-f",
-    multiple=True,
+    required=True,
+    multiple=False,
     help="Feature matrix to use as input to the model. Predictions are based"
-         "on these features. Multiple may be passed as '-f file1 -f file2'."
+         "on these features."
 )
+@click.option(
+    "--output-filename",
+    "-o",
+    required=False,
+    type=CLICK_FILE,
+    help="Filename (json) to write the final predicted dataframe to."
+)
+@click.option(
+    "--predict-sample-nan-thresh",
+    type=click.FLOAT,
+    help="Threshold to keep a sample from any prediction set."
+)
+@click.pass_context
+def predict(
+        ctx,
+        model_file,
+        feature_matrix_file,
+        output_filename,
+        predict_sample_nan_thresh,
 
-def predict():
-    pass
+):
+    if output_filename and not output_filename.endswith(".json"):
+        raise ValueError("--output-filename must end with '.json'.")
+
+    default_filename = f"PredictedDegradationDF-{datetime.datetime.now().strftime('%Y-%d-%m_%H.%M.%S.%f')}.json"
+    if output_filename:
+        output_filename = os.path.abspath(output_filename)
+    else:
+        output_filename = os.path.join(ctx.obj.cwd, default_filename)
+
+    model_file = os.path.abspath(model_file)
+    feature_matrix_file = os.path.abspath(feature_matrix_file)
+
+    status_json = {
+        "op_type": "predict",
+        "files": {
+            "model_file": model_file,
+            "predict_on_features_file": feature_matrix_file
+        },
+        "walltime": None,
+        "output": None,
+        "traceback": None,
+    }
 
 
+    t0 = time.time()
+    predicted = None
+    try:
+        logger.debug(
+            f"Loading linear model from file on disk at path: {model_file}")
 
+        bfm = BEEPFeatureMatrix.from_json_file(feature_matrix_file)
+        model = BEEPLinearModelExperiment.from_json_file(model_file)
 
+        # Optionally override the previously set sample nan thresh
+        # for prediction dataframes
+        if predict_sample_nan_thresh:
+            model.predict_sample_nan_thresh = predict_sample_nan_thresh
 
+        logging.debug(
+            f"Model instantiated ok, predicting on {bfm.matrix.shape[0]}"
+            f" inference samples."
+        )
+
+        predicted, dropped_ix = model.predict(bfm)
+        logging.info(
+            f"Successfully predicted {predicted.shape[0]} samples of "
+            f"{bfm.matrix.shape[0]} original samples."
+        )
+
+    except KeyboardInterrupt:
+        logging.critical("Keyboard interrupt caught - exiting...")
+        click.Context.exit(1)
+    except BaseException:
+        tbinfo = sys.exc_info()
+        tbfmt = traceback.format_exception(*tbinfo)
+        logger.error(f"Model inference failed: ({tbinfo[0].__name__})")
+        status_json["traceback"] = tbfmt
+
+        if ctx.obj.halt_on_error:
+            raise
+
+    t1 = time.time()
+    status_json["walltime"] = t1 - t0
+
+    if predicted is not None:
+        predicted.to_json(output_filename)
+        status_json["output"] = output_filename
+        logger.info(f"Successfully wrote predicted dataframe to {output_filename}.")
+
+    status_json = add_metadata_to_status_json(status_json, ctx.obj.run_id, ctx.obj.tags)
+    osj = ctx.obj.output_status_json
+    if osj:
+        dumpfn(status_json, osj)
+        logger.info(f"Wrote status json file to {osj}")

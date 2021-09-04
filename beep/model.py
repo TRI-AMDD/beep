@@ -262,8 +262,6 @@ class BEEPLinearModelExperiment(MSONable):
         model.fit(X, y)
         self.model = model
 
-        logger.info(f"Trained {model.__class__.__name__} and found hyperparameters {optimal_hyperparameters}")
-
         y_training = model.predict(X)
         y_training = pd.DataFrame(data=y_training, columns=self.targets)
         training_errors = self._score_arrays(y, y_training)
@@ -375,9 +373,9 @@ class BEEPLinearModelExperiment(MSONable):
     @staticmethod
     def _impute_df(df, method="median"):
         if method == "median":
-            df = df.apply(lambda x: x.fillna(x.median()), axis=0)
+            return df.apply(lambda x: x.fillna(x.median()), axis=0)
         elif method == "mean":
-            df = df.apply(lambda x: x.fillna(x.mean()), axis=0)
+            return df.apply(lambda x: x.fillna(x.mean()), axis=0)
         elif method is 'none':
             return df
         else:
