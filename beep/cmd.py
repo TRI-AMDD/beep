@@ -977,7 +977,7 @@ def featurize(
          "be nan."
 )
 @click.option(
-    "--drop-nan-training-samples",
+    "--drop-nan-training-targets",
     is_flag=True,
     default=True,
     help="Drop samples containing any nan targets. If False and "
@@ -1034,7 +1034,7 @@ def train(
         train_feature_nan_thresh,
         train_sample_nan_thresh,
         predict_sample_nan_thresh,
-        drop_nan_training_samples,
+        drop_nan_training_targets,
         impute_strategy,
         kfold,
         max_iter,
@@ -1046,10 +1046,9 @@ def train(
     target_matrix_file = os.path.abspath(target_matrix_file)
     targets = list(targets)
 
-
     logger.info(
-        f"Running training using files (features) {feature_matrix_file} "
-        f"and (targets) {target_matrix_file}"
+        f"Running training using files {feature_matrix_file} (features) "
+        f"and {target_matrix_file} (targets)."
     )
 
     alpha_params = [alpha_lower, alpha_upper, n_alphas]
@@ -1065,7 +1064,7 @@ def train(
         "train_feature_nan_thresh": train_feature_nan_thresh,
         "train_sample_nan_thresh": train_sample_nan_thresh,
         "predict_sample_nan_thresh": predict_sample_nan_thresh,
-        "drop_nan_training_samples": drop_nan_training_samples,
+        "drop_nan_training_targets": drop_nan_training_targets,
         "impute_strategy": impute_strategy,
         "kfold": kfold,
         "max_iter": max_iter,
@@ -1082,7 +1081,9 @@ def train(
         "op_type": "train",
         "files": {
             "features": feature_matrix_file,
-            "targets": target_matrix_file
+            "targets": target_matrix_file,
+            "features_md5_chksum": md5sum(feature_matrix_file),
+            "targets_md5_chksum": md5sum(target_matrix_file)
         },
         "model_results": {},
         "walltime": None,
@@ -1110,6 +1111,7 @@ def train(
             status_json["model_results"]["training_error"] = training_errors
             status_json["model_results"]["test_error"] = test_errors
             status_json["model_results"]["test_fraction"] = train_on_frac_and_score
+            status_json["model_results"]["optimal_hyperparameters"] = blme.optimal_hyperparameters
         else:
             logger.info("Beginning training on all available data")
             model, training_errors = blme.train()
@@ -1163,7 +1165,7 @@ def train(
 )
 @click.option(
     "--feature-matrix-file",
-    "-f",
+    "-fm",
     required=True,
     multiple=False,
     help="Feature matrix to use as input to the model. Predictions are based"
@@ -1205,14 +1207,15 @@ def predict(
     status_json = {
         "op_type": "predict",
         "files": {
-            "model_file": model_file,
-            "predict_on_features_file": feature_matrix_file
+            "model": model_file,
+            "predict_on_features": feature_matrix_file,
+            "model_md5_chksum": md5sum(model_file),
+            "predict_on_features_md5_chksum": md5sum(feature_matrix_file)
         },
         "walltime": None,
         "output": None,
         "traceback": None,
     }
-
 
     t0 = time.time()
     predicted = None

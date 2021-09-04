@@ -3,6 +3,7 @@ For running ML experiments on pregenerated feature files and
 reading/writing static files for battery prediction given a feature set.
 """
 import copy
+import pprint
 from typing import List, Union, Iterable, Tuple
 from math import sqrt
 
@@ -293,13 +294,15 @@ class BEEPLinearModelExperiment(MSONable):
         extra_features = [f for f in X.columns if f not in self.feature_labels]
         if missing_features:
             raise BEEPMLExperimentError(
-                f"Features present in training set not present in prediction set:"
-                f"\n{missing_features}"
+                f"{len(missing_features)} features present in training set not present "
+                f"in prediction: "
+                f"\n{pprint.pformat(missing_features)}"
             )
         if extra_features:
             logger.warning(
-                "Extra features not in training set present in prediction set - "
-                f"these will be dropped: \n{extra_features}"
+                f"{len(extra_features)} extra features not in training set present in "
+                f"prediction set due to fitting with nan threshold - these will be "
+                f"dropped: \n{pprint.pformat(extra_features)}"
             )
 
         # Assemble the correct data while retaining all features
