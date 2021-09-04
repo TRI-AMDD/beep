@@ -1,22 +1,15 @@
 """
-For assembling datasets, running ML experiments, and reading/writing static
-files for battery prediction given a feature set.
+For running ML experiments on pregenerated feature files and
+reading/writing static files for battery prediction given a feature set.
 """
-import json
 import copy
-import hashlib
-import os
 from typing import List, Union, Iterable, Tuple
-from functools import reduce
 from math import sqrt
 
 import numpy as np
 import pandas as pd
 from monty.json import MSONable
 from monty.serialization import loadfn, dumpfn
-from monty.io import zopen
-from sklearn.base import BaseEstimator
-from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import (
     Lasso,
@@ -37,7 +30,7 @@ from sklearn.metrics import (
 )
 
 from beep import logger
-from beep.features.base import BEEPFeaturizer, BEEPFeatureMatrix
+from beep.features.base import BEEPFeatureMatrix
 
 
 class BEEPMLExperimentError(BaseException):
@@ -82,8 +75,8 @@ class BEEPLinearModelExperiment(MSONable):
             train_feature_drop_nan_thresh: float = 0.95,
             train_sample_drop_nan_thresh: float = 0.50,
             predict_sample_nan_thresh: float = 0.75,
-            impute_strategy: str = "median",
             drop_nan_training_targets: bool = False,
+            impute_strategy: str = "median",
             kfold: int = 5,
             max_iter: int = 1e6,
             tol: float = 1e-4,
@@ -114,7 +107,6 @@ class BEEPLinearModelExperiment(MSONable):
             raise BEEPMLExperimentError(
                 "Can't run experiment on unequal numbers of input samples."
             )
-
         if X.shape[0] < X.shape[1]:
             logger.warning(
                 f"Number of samples ({X.shape[0]}) less than number of "
@@ -122,8 +114,8 @@ class BEEPLinearModelExperiment(MSONable):
             )
 
         # Form the clean feature matrix
-        X = X.dropna(axis=1, thresh=train_feature_drop_nan_thresh)
-        X = X.dropna(axis=0, thresh=train_sample_drop_nan_thresh)
+        X = X.dropna(axis=1, thresh=train_sample_drop_nan_thresh * X.shape[0])
+        X = X.dropna(axis=0, thresh=train_sample_drop_nan_thresh * X.shape[1])
         X = self._impute_df(X, method=impute_strategy)
         self.impute_strategy = impute_strategy
         if X.shape[0] < 2 or X.shape[1] < 1:
@@ -181,6 +173,9 @@ class BEEPLinearModelExperiment(MSONable):
         self.predict_sample_nan_thresh = predict_sample_nan_thresh
         self.drop_nan_training_targets = drop_nan_training_targets
 
+        # todo: this is only to help with deserialization, this could cause
+        # todo: contamination in judging test scores when used with
+        # todo: train_and_score()
         self.scaler = StandardScaler().fit(X)
         self.kfold = kfold
         self.alphas = alphas
@@ -303,7 +298,6 @@ class BEEPLinearModelExperiment(MSONable):
                 f"Features present in training set not present in prediction set:"
                 f"\n{missing_features}"
             )
-
         if extra_features:
             logger.warning(
                 "Extra features not in training set present in prediction set - "
@@ -312,7 +306,10 @@ class BEEPLinearModelExperiment(MSONable):
 
         # Assemble the correct data while retaining all features
         X_old = copy.deepcopy(X)
-        X = X[self.feature_labels].dropna(axis=0, thresh=self.predict_sample_nan_thresh)
+        X = X[self.feature_labels].dropna(
+            axis=0,
+            thresh=self.predict_sample_nan_thresh * X.shape[1]
+        )
         X = self._impute_df(X, self.impute_strategy)
 
         dropped = []
