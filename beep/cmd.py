@@ -860,23 +860,23 @@ def featurize(
         logger.info(f"Wrote status json file to {osj}")
 
 
-# @cli.command(
-#     help=""
-# )
-# def
-#
-#
-# @cli.command(
-#     help="Train a machine learning model"
-# )
-# @click.argument(
-#     'files',
-#     nargs=-1,
-#     type=CLICK_FILE,
-# )
-# @click.pass_context
-# def train(ctx, files):
-#     pass
+@cli.command(
+    help=""
+)
+def
+
+
+@cli.command(
+    help="Train a machine learning model"
+)
+@click.argument(
+    'files',
+    nargs=-1,
+    type=CLICK_FILE,
+)
+@click.pass_context
+def train(ctx, files):
+    pass
 
 
 # @cli.command(

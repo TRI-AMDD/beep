@@ -78,12 +78,12 @@ class BEEPLinearModelExperiment(MSONable):
             target_matrix: BEEPFeatureMatrix,
             targets: List[str],
             model_name: str,
-            alphas: Union[None, Iterable[float]],
+            alphas: Union[None, Iterable[float]] = None,
             train_feature_drop_nan_thresh: float = 0.95,
             train_sample_drop_nan_thresh: float = 0.50,
             predict_sample_nan_thresh: float = 0.75,
             impute_strategy: str = "median",
-            drop_nan_targets: bool = False,
+            drop_nan_training_targets: bool = False,
             kfold: int = 5,
             max_iter: int = 1e6,
             tol: float = 1e-4,
@@ -103,15 +103,6 @@ class BEEPLinearModelExperiment(MSONable):
         self.feature_matrix = feature_matrix
         self.target_matrix = target_matrix
 
-        missing_targets = \
-            [t for t in targets if t not in self.target_matrix.matrix.columns]
-
-        if missing_targets:
-            raise BEEPMLExperimentError(
-                f"Required target columns missing from "
-                f"target matrix: {missing_targets}"
-            )
-
         X = self.feature_matrix.matrix.replace([np.inf, -np.inf], np.nan)
         y = self.target_matrix.matrix.replace([np.inf, -np.inf], np.nan)
 
@@ -127,16 +118,14 @@ class BEEPLinearModelExperiment(MSONable):
         if X.shape[0] < X.shape[1]:
             logger.warning(
                 f"Number of samples ({X.shape[0]}) less than number of "
-                f"features ({X.shape[1]}; may cause overfitting."
+                f"features ({X.shape[1]}); may cause overfitting."
             )
 
         # Form the clean feature matrix
         X = X.dropna(axis=1, thresh=train_feature_drop_nan_thresh)
         X = X.dropna(axis=0, thresh=train_sample_drop_nan_thresh)
-
         X = self._impute_df(X, method=impute_strategy)
         self.impute_strategy = impute_strategy
-
         if X.shape[0] < 2 or X.shape[1] < 1:
             raise BEEPMLExperimentError(
                 f"Cleaned feature matrix has dimensions of less "
@@ -146,16 +135,21 @@ class BEEPLinearModelExperiment(MSONable):
             )
 
         # Form the clean target matrix
+        missing_targets = [t for t in targets if t not in y.columns]
+        if missing_targets:
+            raise BEEPMLExperimentError(
+                f"Required target columns missing from "
+                f"target matrix: {missing_targets}"
+            )
         y = y[targets].loc[X.index]
-        if y.isna().any():
-            if drop_nan_targets:
+        if y.isna().any().any():
+            if drop_nan_training_targets:
                 y = y.dropna(axis=0)
             else:
                 raise BEEPMLExperimentError(
                     "Target matrix contains nans and drop_nan_targets is "
                     "set to False."
                 )
-
         if y.shape[0] < 2:
             raise BEEPMLExperimentError(
                 "Target matrix after dropping nans is less than 2 samples."
@@ -185,8 +179,9 @@ class BEEPLinearModelExperiment(MSONable):
         self.train_feature_drop_thresh = train_feature_drop_nan_thresh
         self.train_sample_drop_thresh = train_sample_drop_nan_thresh
         self.predict_sample_nan_thresh = predict_sample_nan_thresh
+        self.drop_nan_training_targets = drop_nan_training_targets
 
-        self.scaler = StandardScaler()
+        self.scaler = StandardScaler().fit(X)
         self.kfold = kfold
         self.alphas = alphas
         self.max_iter = max_iter
@@ -194,7 +189,6 @@ class BEEPLinearModelExperiment(MSONable):
         self.l1_ratio = l1_ratio
 
         self.optimal_hyperparameters = None
-
         self.homogenize_features = homogenize_features
 
     def train(self, X: pd.DataFrame = None, y: pd.DataFrame = None):
@@ -220,7 +214,10 @@ class BEEPLinearModelExperiment(MSONable):
 
         X = self.scaler.fit_transform(X)
 
-        logger.info(f"Training on {X.shape[0]} samples with {X.shape[1]} features")
+        logger.info(
+            f"Training on {X.shape[0]} samples with {X.shape[1]} features "
+            f"predicting {y.shape[0]}"
+        )
 
         kwargs = {
             "fit_intercept": True,
@@ -273,17 +270,29 @@ class BEEPLinearModelExperiment(MSONable):
         logger.info(f"Trained {model.__class__.__name__} and found hyperparameters {optimal_hyperparameters}")
 
         y_training = model.predict(X)
+        y_training = pd.DataFrame(data=y_training, columns=self.targets)
         training_errors = self._score_arrays(y, y_training)
         return model, training_errors
 
-    def predict(self, feature_matrix: BEEPFeatureMatrix):
+    def predict(
+            self,
+            feature_matrix: Union[BEEPFeatureMatrix, pd.DataFrame],
+            homogenize_features: Union[None, bool] = None,
+    ):
+        if not self.model:
+            raise BEEPMLExperimentError("No model has been trained.")
+
         # condense features down to those required, throwing error if not present
 
-        X = feature_matrix.matrix
+        if isinstance(feature_matrix, BEEPFeatureMatrix):
+            X = feature_matrix.matrix
+        else:
+            X = feature_matrix
 
         # make sure features will have the same names if homogenize features
         # even if featurizer' hyperparameters are different
-        if self.homogenize_features:
+        homogenize_features = self.homogenize_features if homogenize_features is None else homogenize_features
+        if homogenize_features:
             X = self._remove_param_hash_from_features(X)
 
         missing_features = [f for f in self.feature_labels if
@@ -305,7 +314,6 @@ class BEEPLinearModelExperiment(MSONable):
         X_old = copy.deepcopy(X)
         X = X[self.feature_labels].dropna(axis=0, thresh=self.predict_sample_nan_thresh)
         X = self._impute_df(X, self.impute_strategy)
-        X = self.scaler.transform(X)
 
         dropped = []
         if X_old.shape[0] != X.shape[0]:
@@ -316,15 +324,14 @@ class BEEPLinearModelExperiment(MSONable):
                 f"indices is returned by .predict()."
             )
 
-        if not self.model:
-            raise BEEPMLExperimentError("No model has been trained.")
-
+        X_indices = X.index
+        X = self.scaler.transform(X)
         y_pred = self.model.predict(X)
 
         #y_pred is an array, so we reattach the same indices
         # e.g., if idx contains filenames
         # which is important in case samples were dropped
-        y_pred = pd.DataFrame(data=y_pred, columns=self.targets, index=X.index)
+        y_pred = pd.DataFrame(data=y_pred, columns=self.targets, index=X_indices)
         return y_pred, dropped
 
     def train_and_score(self, train_and_val_frac=0.8):
@@ -339,20 +346,26 @@ class BEEPLinearModelExperiment(MSONable):
         """
         X_train, X_test, y_train, y_test = train_test_split(self.X, self.y, train_size=train_and_val_frac)
         model, training_errors = self.train(X=X_train, y=y_train)
-        y_pred, dropped = self.predict(X_test)
+
+        # Features here are already homogenized
+        y_pred, dropped = self.predict(X_test, homogenize_features=False)
         test_errors = self._score_arrays(y_test, y_pred)
         return model, training_errors, test_errors
 
-    def _score_arrays(self, y: Union[pd.DataFrame, pd.Series], y_pred: Union[pd.DataFrame, pd.Series]) -> dict:
+    def _score_arrays(
+            self,
+            y: Union[pd.DataFrame, pd.Series],
+            y_pred: Union[pd.DataFrame, pd.Series]
+    ) -> dict:
         errors = {}
-        for metric, f in self.ERROR_METRICS:
+        for metric, f in self.ERROR_METRICS.items():
             if self.multi:
-                errors = {}
+                errors_per_metric = {}
                 for target in self.targets:
-                    errors[target] = f(y[target], y_pred[target])
-                errors[metric] = errors
+                    errors_per_metric[target] = f((y[target], y_pred[target]))
+                errors[metric] = errors_per_metric
             else:
-                errors[metric] = f(y, y_pred)
+                errors[metric] = f((y, y_pred))
         return errors
 
     @staticmethod
@@ -360,7 +373,7 @@ class BEEPLinearModelExperiment(MSONable):
         d = BEEPFeatureMatrix.OP_DELIMITER
         cols_stripped = [d.join(c.split(d)[:-1]) for c in X.columns]
         X.columns = cols_stripped
-        return cols_stripped
+        return X
 
     @staticmethod
     def _impute_df(df, method="median"):
@@ -372,78 +385,102 @@ class BEEPLinearModelExperiment(MSONable):
             raise ValueError(f"impute_strategy {method} unsupported!")
         return df
 
+    def as_dict(self):
+        """Serialize a BEEPDatapath as a dictionary.
 
-    # todo: save mu and std
+        Must not be loaded from legacy.
 
-    # def as_dict(self):
-    #     """Serialize a BEEPDatapath as a dictionary.
-    #
-    #     Must not be loaded from legacy.
-    #
-    #     Returns:
-    #         (dict): corresponding to dictionary for serialization.
-    #
-    #     """
-    #
-    #     return {
-    #         "@module": self.__class__.__module__,
-    #         "@class": self.__class__.__name__,
-    #
-    #         # Core parts of BEEPFeaturizer
-    #         "featurizers": [f.as_dict() for f in self.featurizers],
-    #         "matrix": self.matrix.to_dict("list"),
-    #     }
-    #
-    # @classmethod
-    # def from_dict(cls, d):
-    #     """Create a BEEPDatapath object from a dictionary.
-    #
-    #     Args:
-    #         d (dict): dictionary represenation.
-    #
-    #     Returns:
-    #         beep.structure.ProcessedCyclerRun: deserialized ProcessedCyclerRun.
-    #     """
-    #
-    #     # no need for original datapath
-    #     featurizers = [BEEPFeaturizer.from_dict(f) for f in d["featurizers"]]
-    #     return cls(featurizers)
-    #
-    # @classmethod
-    # def from_json_file(cls, filename):
-    #     """Load a structured run previously saved to file.
-    #
-    #     .json.gz files are supported.
-    #
-    #     Loads a BEEPFeatureMatrix from json.
-    #
-    #     Can be used in combination with files serialized with BEEPFeatures.to_json_file.
-    #
-    #     Args:
-    #         filename (str, Pathlike): a json file from a structured run, serialzed with to_json_file.
-    #
-    #     Returns:
-    #         None
-    #     """
-    #     return loadfn(d)
-    #
-    # def to_json_file(self, filename):
-    #     """Save a BEEPFeatureMatrix to disk as a json.
-    #
-    #     .json.gz files are supported.
-    #
-    #     Not named from_json to avoid conflict with MSONable.from_json(*)
-    #
-    #     Args:
-    #         filename (str, Pathlike): The filename to save the file to.
-    #         omit_raw (bool): If True, saves only structured (NOT RAW) data.
-    #             More efficient for saving/writing to disk.
-    #
-    #     Returns:
-    #         None
-    #     """
-    #     d = self.as_dict()
-    #     dumpfn(d, filename)
+        Returns:
+            (dict): corresponding to dictionary for serialization.
+
+        """
+        if not self.model:
+            raise ValueError("Model must be fit before serializing.")
+
+        return {
+            "@module": self.__class__.__module__,
+            "@class": self.__class__.__name__,
+
+            # To be passed as args in from_dict
+            "feature_matrix": self.feature_matrix.as_dict(),
+            "target_matrix": self.target_matrix.as_dict(),
+            "targets": self.targets,
+            "model_name": self.model_name,
+            "alphas": self.alphas,
+            "train_feature_drop_nan_thresh": self.train_feature_drop_thresh,
+            "train_sample_drop_nan_thresh": self.train_sample_drop_thresh,
+            "predict_sample_nan_thresh": self.predict_sample_nan_thresh,
+            "impute_strategy": self.impute_strategy,
+            "drop_nan_training_targets": self.drop_nan_training_targets,
+            "kfold": self.kfold,
+            "max_iter": self.max_iter,
+            "tol": self.tol,
+            "l1_ratio": self.l1_ratio,
+            "homogenize_features": self.homogenize_features,
+
+            # Serialize the model and scaler themselves
+            # requires some sklearn hackery
+            "model_sklearn": {
+                "coef_": self.model.coef_.tolist(),
+                "intercept_": self.model.intercept_.tolist(),
+                "optimal_hyperparameters": self.optimal_hyperparameters,
+            },
+
+        }
+
+    @classmethod
+    def from_dict(cls, d):
+        """Create a BEEPDatapath object from a dictionary.
+
+        Args:
+            d (dict): dictionary represenation.
+
+        Returns:
+            beep.structure.ProcessedCyclerRun: deserialized ProcessedCyclerRun.
+        """
+
+        feature_matrix = BEEPFeatureMatrix.from_dict(d["feature_matrix"])
+        target_matrix = BEEPFeatureMatrix.from_dict(d["target_matrix"])
+
+        o = cls(
+            feature_matrix=feature_matrix,
+            target_matrix=target_matrix,
+            targets=d["targets"],
+            model_name=d["model_name"],
+            alphas=d["alphas"],
+            train_feature_drop_nan_thresh=d["train_feature_drop_nan_thresh"],
+            train_sample_drop_nan_thresh=d["train_sample_drop_nan_thresh"],
+            predict_sample_nan_thresh=d["predict_sample_nan_thresh"],
+            impute_strategy=d["impute_strategy"],
+            drop_nan_training_targets=d["drop_nan_training_targets"],
+            kfold=d["kfold"],
+            max_iter=d["max_iter"],
+            tol=d["tol"],
+            l1_ratio=d["l1_ratio"],
+            homogenize_features=d["homogenize_features"]
+        )
+
+        # Hack sklearn a little bit to serialize these models to json
+        modelcls = {
+            "elasticnet": ElasticNet,
+            "lasso": Lasso,
+            "ridge": Ridge
+        }[d["model_name"]]
+
+        model_params = d["model_sklearn"]
+        model = modelcls(**model_params["optimal_hyperparameters"])
+        model.coef_ = np.asarray(model_params["coef_"])
+        model.intercept_ = np.asarray(model_params["intercept_"])
+        o.model = model
+        return o
+
+    @classmethod
+    def from_json_file(cls, filename):
+        return loadfn(filename)
+
+    def to_json_file(self, filename):
+        d = self.as_dict()
+        dumpfn(d, filename)
 
 
 if __name__ == "__main__":
@@ -453,11 +490,47 @@ if __name__ == "__main__":
     features_file = "/Users/ardunn/alex/tri/code/beep/beep/CLI_TEST_FILES_FEATURIZATION/features.json.gz"
     targets_file = "/Users/ardunn/alex/tri/code/beep/beep/CLI_TEST_FILES_FEATURIZATION/targets.json.gz"
 
-    feats = BEEPFeatureMatrix.from_json_file(features_file)
-    targets = BEEPFeatureMatrix.from_json_file(targets_file)
+    feats_bfm = BEEPFeatureMatrix.from_json_file(features_file)
+    targets_bfm = BEEPFeatureMatrix.from_json_file(targets_file)
+
+    # target = "capacity_0.8::TrajectoryFastCharge::319cec55cc030c1911b2530cae3fc2df8d3c24912ae01ee4172ea4ca4caddec8"
+    target = "capacity_0.8::TrajectoryFastCharge"
+    target2 = "capacity_0.92::TrajectoryFastCharge"
+
+    # targets = [target]
+    targets = [target, target2]
+
+    # target = "capacity_0.86::TrajectoryFastCharge::319cec55cc030c1911b2530cae3fc2df8d3c24912ae01ee4172ea4ca4caddec8"
 
 
-    print(targets.matrix)
+    beep_model = BEEPLinearModelExperiment(
+        feats_bfm,
+        targets_bfm,
+        targets,
+        "elasticnet",
+        homogenize_features=True,
+        max_iter=10000,
+        kfold=2
+    )
+
+    model, training_errors, test_errors = beep_model.train_and_score(train_and_val_frac=0.8)
+
+    print(model)
+
+    import pprint
+    pprint.pprint(training_errors)
+    pprint.pprint(test_errors)
 
 
-    # beep_model = BEEPLinearModelExperiment(feats, targets, )
+    output_path = "/Users/ardunn/alex/tri/code/beep/beep/test_json_mlexpt.json.gz"
+    beep_model.to_json_file(output_path)
+    beep_model = loadfn(output_path)
+
+    y_pred, dropped = beep_model.predict(feats_bfm, homogenize_features=True)
+
+    print("yay")
+    print(beep_model)
+    print(dropped)
+    print(y_pred)
+
+
