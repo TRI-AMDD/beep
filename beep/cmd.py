@@ -596,14 +596,14 @@ def structure(
 @click.option(
     '--featurize-with',
     "-f",
-    default=["all"],
+    default=["all_features"],
     multiple=True,
     type=click.STRING,
     help="Specify a featurizer to apply by class name, e.g. "
          "HPPCResistanceVoltageFeatures. To apply more than one "
          "featurizer, use multiple -f <FEATURIZER> commands. To apply"
-         "all core BEEP featurizers, pass the value 'all'. Note if 'all'"
-         "is passed other -f featurizers will be ignored. All "
+         "all core BEEP featurizers, pass the value 'all'. Note if 'all_features' "
+         "or 'all_targets' is passed, other -f featurizers will be ignored. All "
          "feautrizers are attempted to apply with default hyperparameters; "
          "to specify your own hyperparameters, use --featurize-with-hyperparams."
          "Classes from installed modules not in core BEEP can be "
@@ -646,22 +646,28 @@ def featurize(
 
     logger.info(f"Featurizing {n_files} files")
 
-    core_fclasses = [
+    core_fclasses_feats = [
         HPPCResistanceVoltageFeatures,
         DeltaQFastCharge,
         TrajectoryFastCharge,
-        CycleSummaryStats,
-        DiagnosticProperties,
         DiagnosticSummaryStats,
     ]
-    native_fclasses = core_fclasses + [IntracellCycles, IntracellFeatures]
 
-    core_fclasses_map = {fclass.__name__: fclass for fclass in core_fclasses}
+    core_fclasses_targets = [
+        CycleSummaryStats,
+        DiagnosticProperties,
+    ]
+    native_fclasses = core_fclasses_feats + core_fclasses_targets + [IntracellCycles, IntracellFeatures]
+
+    core_fclasses_feats_map = {fclass.__name__: fclass for fclass in core_fclasses_feats}
+    core_fclasses_targets_map = {fclass.__name__: fclass for fclass in core_fclasses_targets}
     native_fclasses_map = {fclass.__name__: fclass for fclass in native_fclasses}
 
-    # Create canonical featurizer list if "all" is selected
-    if "all" in featurize_with:
-        featurize_with = list(core_fclasses_map.keys())
+    # Create canonical featurizer list if "all" options are selected
+    if "all_features" in featurize_with:
+        featurize_with = list(core_fclasses_feats_map.keys())
+    elif "all_targets" in featurize_with:
+        featurize_with = list(core_fclasses_targets_map.keys())
 
     # Feature class names along with hyperparameters
     # These are all default
