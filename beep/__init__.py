@@ -54,10 +54,8 @@ MODEL_DIR = os.path.join(MODULE_DIR, "models")
 
 
 # All environment variables
-BEEP_PARAMETERS_KEY = "BEEP_PARAMETERS_DIR"
 BEEP_S3_CACHE_KEY = "BEEP_S3_CACHE"
 
-BEEP_PARAMETERS_DIR = os.environ.get(BEEP_PARAMETERS_KEY, "")
 # Get S3 cache location from env or use default in repo
 S3_CACHE = os.environ.get(BEEP_S3_CACHE_KEY, os.path.join(MODULE_DIR, "..", "s3_cache"))
 

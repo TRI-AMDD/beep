@@ -449,3 +449,15 @@ class BEEPLinearModelExperiment(MSONable):
 if __name__ == "__main__":
     # bfm = BEEPFeatureMatrix.from_json_file(
     #     "/Users/ardunn/alex/tri/code/beep/beep/CLI_TEST_FILES_FEATURIZATION/FeatureMatrix-2021-02-09_21.07.50.514178.json.gz")
+
+    features_file = "/Users/ardunn/alex/tri/code/beep/beep/CLI_TEST_FILES_FEATURIZATION/features.json.gz"
+    targets_file = "/Users/ardunn/alex/tri/code/beep/beep/CLI_TEST_FILES_FEATURIZATION/targets.json.gz"
+
+    feats = BEEPFeatureMatrix.from_json_file(features_file)
+    targets = BEEPFeatureMatrix.from_json_file(targets_file)
+
+
+    print(targets.matrix)
+
+
+    # beep_model = BEEPLinearModelExperiment(feats, targets, )

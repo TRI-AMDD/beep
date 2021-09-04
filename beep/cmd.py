@@ -31,7 +31,6 @@ from monty.serialization import dumpfn
 
 from beep import (
     logger,
-    BEEP_PARAMETERS_DIR,
     S3_CACHE,
     formatter_jsonl,
     __version__
@@ -309,10 +308,9 @@ def cli(ctx, log_file, run_id, tags, output_status_json, halt_on_error):
     '--automatic',
     is_flag=True,
     default=False,
-    help="If --protocol-parameters-path or the BEEP_PARAMETERS_"
-         "PATH environment variable is specified, will automatically "
-         "determine structuring parameters. Will override all "
-         "manually set structuring parameters."
+    help="If --protocol-parameters-path is specified, will "
+         "automatically determine structuring parameters. Will override "
+         "all manually set structuring parameters."
 )
 @click.option(
     '--validation-only',
@@ -378,7 +376,7 @@ def structure(
                 # globs are invalid/bad paths
                 matching_files = fnmatch.filter(s3_keys, maybe_glob)
                 if matching_files:
-                    s3_keys_matched.append(matching_files)
+                    s3_keys_matched += matching_files
                 else:
                     local_files.append(maybe_glob)
 
@@ -433,25 +431,11 @@ def structure(
                 for f in files
             ]
 
-    if protocol_parameters_dir and BEEP_PARAMETERS_DIR:
-        logger.warning(
-            "Both --protocol-parameters-dir and $BEEP_PARAMETERS_PATH were specified. "
-            "Defaulting to path from --protocol-parameters-dir."
-        )
-        params_dir = protocol_parameters_dir
-    elif protocol_parameters_dir and not BEEP_PARAMETERS_DIR:
-        params_dir = protocol_parameters_dir
-    elif not protocol_parameters_dir and BEEP_PARAMETERS_DIR:
-        params_dir = BEEP_PARAMETERS_DIR
-    else:
-        # neither are defined
-        params_dir = None
-
-    if automatic and not params_dir:
+    if automatic and not protocol_parameters_dir:
         logger.warning(
             "--automatic was passed but no protocol parameters "
-            "directory was specified! Either set BEEP_PARAMETERS_DIR "
-            "or pass --protocol-parameters-dir to use autostructuring."
+            "directory was specified! Default will be used."
+            "Pass --protocol-parameters-dir to use autostructuring."
         )
 
     params = {
@@ -507,7 +491,7 @@ def structure(
                     dp.autostructure(
                         charge_axis=charge_axis,
                         discharge_axis=discharge_axis,
-                        parameters_path=params_dir
+                        parameters_path=protocol_parameters_dir
                     )
                 else:
                     dp.structure(**params)
@@ -649,12 +633,12 @@ def featurize(
     core_fclasses_feats = [
         HPPCResistanceVoltageFeatures,
         DeltaQFastCharge,
-        TrajectoryFastCharge,
         DiagnosticSummaryStats,
+        CycleSummaryStats,
     ]
 
     core_fclasses_targets = [
-        CycleSummaryStats,
+        TrajectoryFastCharge,
         DiagnosticProperties,
     ]
     native_fclasses = core_fclasses_feats + core_fclasses_targets + [IntracellCycles, IntracellFeatures]

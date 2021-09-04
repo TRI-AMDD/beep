@@ -518,15 +518,12 @@ class BEEPDatapath(abc.ABC, MSONable):
             self,
             charge_axis='charge_capacity',
             discharge_axis='voltage',
-            parameters_path=PROTOCOL_PARAMETERS_DIR,
+            parameters_path=None,
     ):
         """
         Automatically run structuring based on automatically determined structuring parameters.
         The parameters are determined from the raw input file, so ensure the raw input file paths
         are in the 'paths' attribute.
-
-        WARNING: The BEEP_PROCESSING_DIR environment variable must have a parameters file within it
-        in order for autostructuring to work correctly.
 
         Args:
             charge_axis (str): Column to interpolate charge step
@@ -536,6 +533,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         Returns:
             None
         """
+        parameters_path = parameters_path if parameters_path else PROTOCOL_PARAMETERS_DIR
         v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \
             self.determine_structuring_parameters(parameters_path=parameters_path)
         logger.info(f"Autostructuring determined parameters of v_range={v_range}, "
