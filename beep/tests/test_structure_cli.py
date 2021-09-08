@@ -13,21 +13,11 @@
 # limitations under the License.
 """Unit tests related to cycler run data structures"""
 
-import json
 import os
-import subprocess
-import tempfile
 import unittest
-from pathlib import Path
 
-import numpy as np
-from monty.serialization import loadfn, dumpfn
-from monty.tempfile import ScratchDir
-
-from beep.utils import os_format
-from beep.structure.base import BEEPDatapath
 from beep.structure.arbin import ArbinDatapath
-from beep.structure.cli import auto_load
+from beep.structure.cli import auto_load, auto_load_processed
 from beep.tests.constants import TEST_FILE_DIR
 
 
@@ -37,41 +27,21 @@ class TestCLI(unittest.TestCase):
             TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29.csv"
         )
 
-    # based on CliTest.test_simple_conversion
-    def test_structure_command_simple_conversion(self):
-        with ScratchDir("."):
-            # Set root env
-            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
-            # Make necessary directories
-            os.mkdir("data-share")
-            os.mkdir(os.path.join("data-share", "structure"))
-            # Create dummy json obj
-            json_obj = {
-                "file_list": [self.arbin_file],
-                "run_list": [0],
-                "validity": ["valid"],
-            }
-            json_string = json.dumps(json_obj)
-
-            command = "structure {}".format(os_format(json_string))
-            result = subprocess.check_call(command, shell=True)
-            self.assertEqual(result, 0)
-            # print(os.listdir(os.path.join("data-share", "structure")))
-            processed = loadfn(
-                os.path.join(
-                    "data-share",
-                    "structure",
-                    "2017-12-04_4_65C-69per_6C_CH29_structure.json",
-                )
-            )
-
-        self.assertIsInstance(processed, BEEPDatapath)
+        self.processed_file = os.path.join(
+            TEST_FILE_DIR, "2017-06-30_2C-10per_6C_CH10_structure.json"
+        )
 
     # todo: could be more comprehensive
     # based on PCRT.test_auto_load
     def test_auto_load(self):
         dp = auto_load(self.arbin_file)
         self.assertIsInstance(dp, ArbinDatapath)
+
+
+    def test_auto_load_processed(self):
+        dp = auto_load_processed(self.processed_file)
+        self.assertIsInstance(dp, ArbinDatapath)
+        self.assertIsNotNone(dp.structured_summary)
 
 
 if __name__ == "__main__":
