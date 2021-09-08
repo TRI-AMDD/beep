@@ -1271,3 +1271,13 @@ def predict(
     if osj:
         dumpfn(status_json, osj)
         logger.info(f"Wrote status json file to {osj}")
+
+
+@cli.command(
+    help="generate protocol"
+)
+def protocol(
+
+):
+    click.secho("Protocol generation has yet to be migrated to the new CLI. May be unstable.", fg="red")
+

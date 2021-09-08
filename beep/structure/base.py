@@ -564,7 +564,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         self.diagnostic_data = None
         self.structured_summary = None
         self.diagnostic_summary = None
-        # todo: print logging statement saying structuring has been reset
+        logger.debug("Structure has been reset.")
 
     def interpolate_step(
             self,

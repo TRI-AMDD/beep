@@ -13,36 +13,6 @@
 # limitations under the License.
 """Command line/batch interface for structuring many battery cycler runs.
 
-Usage:
-    structure [INPUT_JSON]
-
-Options:
-    -h --help       Show this screen
-    --version       Show version
-
-
-The `structure` script will run the data structuring on specified filenames corresponding
-to validated raw cycler files.  It places the structured datafiles in `/data-share/structure`.
-
-The input json must contain the following fields:
-* `file_list` - a list of full path filenames which have been processed
-* `validity` - a list of boolean validation results, e. g. `[True, True, False]`
-
-The output json contains the following fields:
-
-* `invalid_file_list` - a list of invalid files according to the validity
-* `file_list` - a list of files which have been structured into processed_cycler_runs
-
-Example:
-```angular2
-$ structure '{"validity": [false, false, true],
-             file_list": ["/data-share/renamed_cycler_files/FastCharge/FastCharge_0_CH33.csv",
-                          "/data-share/renamed_cycler_files/FastCharge/FastCharge_1_CH44.csv",
-                          "/data-share/renamed_cycler_files/FastCharge/FastCharge_2_CH29.csv"]}''
-{"invalid_file_list": ["/data-share/renamed_cycler_files/FastCharge/FastCharge_0_CH33.csv",
-                       "/data-share/renamed_cycler_files/FastCharge/FastCharge_1_CH44.csv"],
- "file_list": ["/data-share/structure/FastCharge_2_CH29_structure.json"]}
-```
 """
 
 import re

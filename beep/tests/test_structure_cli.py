@@ -27,7 +27,7 @@ from monty.tempfile import ScratchDir
 from beep.utils import os_format
 from beep.structure.base import BEEPDatapath
 from beep.structure.arbin import ArbinDatapath
-from beep.structure.cli import process_file_list_from_json, auto_load
+from beep.structure.cli import auto_load
 from beep.tests.constants import TEST_FILE_DIR
 
 
@@ -67,74 +67,12 @@ class TestCLI(unittest.TestCase):
 
         self.assertIsInstance(processed, BEEPDatapath)
 
-    # based on PCRT.test_json_processing
-    def test_json_processing(self):
-
-        with ScratchDir("."):
-            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
-            os.mkdir("data-share")
-            os.mkdir(os.path.join("data-share", "structure"))
-
-            # Create dummy json obj
-            json_obj = {
-                "file_list": [self.arbin_file, "garbage_file"],
-                "run_list": [0, 1],
-                "validity": ["valid", "invalid"],
-            }
-
-
-            json_string = json.dumps(json_obj)
-
-            test_fname = "test.json"
-            dumpfn(json_obj, test_fname)
-
-
-            # test both raw json input and json from a file
-            for json_rep in (json_string, test_fname):
-
-                if json_rep == test_fname:
-                    print("Testing json processing from file")
-                else:
-                    print("Testing json processing from string")
-
-                # Get json output from method
-                json_output = process_file_list_from_json(json_rep)
-                reloaded = json.loads(json_output)
-
-                # Actual tests here
-                # Ensure garbage file doesn't have output string
-                self.assertEqual(reloaded["invalid_file_list"][0], "garbage_file")
-
-                # Ensure first is correct
-                loaded_datapath = loadfn(reloaded["file_list"][0])
-                loaded_from_raw = ArbinDatapath.from_file(
-                    json_obj["file_list"][0]
-                )
-
-                loaded_from_raw.structure()
-
-                self.assertTrue(
-                    np.all(loaded_datapath.structured_summary == loaded_from_raw.structured_summary),
-                    "Loaded processed cycler_run is not equal to that loaded from raw file",
-                )
-
-                # Workflow output
-                output_file_path = Path(tempfile.gettempdir()) / "results.json"
-                self.assertTrue(output_file_path.exists())
-
-                output_json = json.loads(output_file_path.read_text())
-
-                self.assertEqual(reloaded["file_list"][0], output_json["filename"])
-                self.assertEqual(os.path.getsize(output_json["filename"]), output_json["size"])
-                self.assertEqual(0, output_json["run_id"])
-                self.assertEqual("structuring", output_json["action"])
-                self.assertEqual("success", output_json["status"])
-
     # todo: could be more comprehensive
     # based on PCRT.test_auto_load
     def test_auto_load(self):
         dp = auto_load(self.arbin_file)
         self.assertIsInstance(dp, ArbinDatapath)
+
 
 if __name__ == "__main__":
     unittest.main()
