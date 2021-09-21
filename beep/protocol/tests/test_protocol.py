@@ -20,9 +20,15 @@ import numpy as np
 import datetime
 import shutil
 from copy import deepcopy
-import xmltodict
 
+import difflib
 import pandas as pd
+from monty.tempfile import ScratchDir
+from monty.serialization import dumpfn, loadfn
+from monty.os import makedirs_p
+
+
+
 from beep.protocol import (
     PROCEDURE_TEMPLATE_DIR,
     SCHEDULE_TEMPLATE_DIR,
@@ -35,15 +41,8 @@ from beep.protocol.maccor import Procedure, \
 from beep.protocol.arbin import Schedule
 from beep.protocol.biologic import Settings
 from beep.protocol.maccor_to_arbin import ProcedureToSchedule
-from monty.tempfile import ScratchDir
-from monty.serialization import dumpfn, loadfn
-from monty.os import makedirs_p
 from beep.utils import os_format, hash_file
-
-import difflib
-
-TEST_DIR = os.path.dirname(__file__)
-TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
+from beep.tests.constants import TEST_FILE_DIR
 
 
 class ProcedureTest(unittest.TestCase):

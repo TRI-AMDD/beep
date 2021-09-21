@@ -31,9 +31,7 @@ from beep.protocol.maccor_to_biologic_mb import (
     CycleAdvancementRules,
     CycleAdvancementRulesSerializer
 )
-
-TEST_DIR = os.path.dirname(__file__)
-TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
+from beep.tests.constants import TEST_FILE_DIR
 
 
 class ConversionTest(unittest.TestCase):

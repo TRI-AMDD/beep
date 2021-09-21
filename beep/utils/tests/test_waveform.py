@@ -19,8 +19,7 @@ import numpy as np
 from beep.utils.waveform import convert_velocity_to_power_waveform, RapidChargeWave
 import matplotlib.pyplot as plt
 
-TEST_DIR = os.path.dirname(__file__)
-TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
+from beep.tests.constants import TEST_FILE_DIR
 
 
 class ChargeWaveformTest(unittest.TestCase):

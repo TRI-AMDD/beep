@@ -23,6 +23,7 @@ from beep.utils.s3 import download_s3_object
 from beep import MODULE_DIR
 from beep.utils import parameters_lookup
 from beep.tests.constants import BIG_FILE_TESTS, TEST_FILE_DIR, SKIP_MSG
+from beep import PROTOCOL_PARAMETERS_DIR
 
 
 class SpliceTest(unittest.TestCase):
@@ -80,16 +81,12 @@ class TestStructuringUtils(unittest.TestCase):
     Tests related to utils only used in structuring.
     """
 
-    def setUp(self) -> None:
-        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-
     # based on RCRT.test_get_protocol_parameters
     def test_get_protocol_parameters(self):
         filepath = os.path.join(
             TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010"
         )
-        test_path = os.path.join("data-share", "raw", "parameters")
-        parameters, _ = parameters_lookup.get_protocol_parameters(filepath, parameters_path=test_path)
+        parameters, _ = parameters_lookup.get_protocol_parameters(filepath, parameters_path=PROTOCOL_PARAMETERS_DIR)
 
         self.assertEqual(parameters["diagnostic_type"].iloc[0], "HPPC+RPT")
         self.assertEqual(parameters["diagnostic_parameter_set"].iloc[0], "Tesla21700")
@@ -97,13 +94,13 @@ class TestStructuringUtils(unittest.TestCase):
         self.assertEqual(len(parameters.index), 1)
 
         parameters_missing, project_missing = parameters_lookup.get_protocol_parameters(
-            "Fake", parameters_path=test_path
+            "Fake", parameters_path=PROTOCOL_PARAMETERS_DIR
         )
         self.assertEqual(parameters_missing, None)
         self.assertEqual(project_missing, None)
 
         filepath = os.path.join(TEST_FILE_DIR, "PreDiag_000292_tztest.010")
-        parameters, _ = parameters_lookup.get_protocol_parameters(filepath, parameters_path=test_path)
+        parameters, _ = parameters_lookup.get_protocol_parameters(filepath, parameters_path=PROTOCOL_PARAMETERS_DIR)
         self.assertEqual(parameters["diagnostic_type"].iloc[0], "HPPC+RPT")
         self.assertEqual(parameters["seq_num"].iloc[0], 292)
 
