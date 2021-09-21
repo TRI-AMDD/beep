@@ -14,6 +14,18 @@ from beep.tests.constants import TEST_FILE_DIR, SKIP_MSG, BIG_FILE_TESTS
 
 
 class TestCLIBase(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self.output_dir = None
+        self.status_json_path = None
+        self.input_paths = []
+        self.runner = CliRunner()
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.outputs_dir)
+
+
+class TestCLI(TestCLIBase):
     def setUp(self) -> None:
         self.outputs_dir = os.path.join(TEST_FILE_DIR, "cmd_TestCLIBase")
         if not os.path.exists(self.outputs_dir):
@@ -23,7 +35,7 @@ class TestCLIBase(unittest.TestCase):
         pass
 
 
-class TestCLIStructure(unittest.TestCase):
+class TestCLIStructure(TestCLIBase):
 
     def setUp(self) -> None:
         inputs = [
@@ -37,12 +49,6 @@ class TestCLIStructure(unittest.TestCase):
 
         if not os.path.exists(self.outputs_dir):
             os.mkdir(self.outputs_dir)
-
-        self.runner = CliRunner()
-
-
-    def tearDown(self) -> None:
-        shutil.rmtree(self.outputs_dir)
 
     def test_defaults(self):
         """Test the default structuring configuration with the CLI.
@@ -74,7 +80,6 @@ class TestCLIStructure(unittest.TestCase):
 
         self.assertTrue(os.path.exists(status["files"][self.input_paths[0]]["output"]))
 
-
     def test_advanced(self):
         """Test the structuring CLI with some options specified"""
         result = self.runner.invoke(
@@ -102,31 +107,81 @@ class TestCLIStructure(unittest.TestCase):
 
         self.assertTrue(os.path.exists(status["files"][self.input_paths[0]]["output"]))
 
-    @unittest.skipUnless(SKIP_MSG, )
+    # @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_s3(self):
         """Test the structuring using files from S3"""
+        s3_key = "big_file_tests/PreDiag_000287_000128.092"
+
+        result = self.runner.invoke(
+            cli,
+            [
+                "--output-status-json",
+                self.status_json_path,
+                "structure",
+                "--output-dir",
+                self.outputs_dir,
+                "--automatic",
+                "--protocol-parameters-dir",
+                PROTOCOL_PARAMETERS_DIR,
+                "--no-raw",
+                "--s3-bucket",
+                "beep-sync-test-stage",
+                "--s3-use-cache",
+                s3_key,
+            ]
+        )
+        print(result.output)
+        self.assertEqual(result.exit_code, 0)
+        self.assertIsNotNone(result.output)
+
+
+class TestCLIFeatures(TestCLIBase):
+
+    def setUp(self) -> None:
+        pass
+
+    def tearDown(self) -> None:
+        pass
+
+    def test_defaults(self):
+        pass
+
+    def test_advanced(self):
         pass
 
 
 
+class TestCLITrain(TestCLIBase):
+    def setUp(self) -> None:
+        pass
 
-class TestCLIFeatures(unittest.TestCase):
+    def tearDown(self) -> None:
+        pass
+
+    def test_defaults(self):
+        pass
+
+    def test_advanced(self):
+        pass
+
+
+class TestCLIPredict(TestCLIBase):
+    def setUp(self) -> None:
+        pass
+
+    def tearDown(self) -> None:
+        pass
+
+    def test_defaults(self):
+        pass
+
+    def test_advanced(self):
+        pass
+
+
+class TestCLIProtocol(TestCLIBase):
     pass
 
 
-
-class TestCLITrain(unittest.TestCase):
-    pass
-
-
-
-class TestCLIPredict(unittest.TestCase):
-    pass
-
-
-class TestCLIProtocol(unittest.TestCase):
-    pass
-
-
-class TestCLIEndtoEnd(unittest.TestCase):
+class TestCLIEndtoEnd(TestCLIBase):
     pass
