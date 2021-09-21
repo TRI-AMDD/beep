@@ -9,6 +9,7 @@ from beep.tests.constants import TEST_FILE_DIR
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
+
 class TestBEEPFeaturizer(unittest.TestCase):
     class ExampleBEEPFeaturizer(BEEPFeaturizer):
 
@@ -81,7 +82,6 @@ class TestBEEPFeaturizer(unittest.TestCase):
         with self.assertRaises(BEEPFeaturizationError):
             self.ExampleBEEPFeaturizer(self.dp, hyperparameters=hps)
 
-
     def test_serialization(self):
         f = self.ExampleBEEPFeaturizer(self.dp)
         with self.assertRaises(BEEPFeaturizationError):
@@ -101,3 +101,6 @@ class TestBEEPFeaturizer(unittest.TestCase):
         self.assertEqual(f_reloaded.hyperparameters["hyperparam_B"], 13)
         self.assertEqual(f_reloaded.metadata["channel_id"], 33)
 
+
+
+class TestBEEPFeatureMatrix(unittest.TestCase):
