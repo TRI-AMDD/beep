@@ -4,9 +4,10 @@ import unittest
 import pandas as pd
 
 from beep.structure.cli import auto_load_processed
-from beep.features.base import BEEPFeaturizer, BEEPFeatureMatrix
+from beep.features.base import BEEPFeaturizer, BEEPFeatureMatrix, BEEPFeaturizationError, BEEPFeatureMatrixError
 from beep.tests.constants import TEST_FILE_DIR
 
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 class TestBEEPFeaturizer(unittest.TestCase):
     class ExampleBEEPFeaturizer(BEEPFeaturizer):
@@ -31,9 +32,6 @@ class TestBEEPFeaturizer(unittest.TestCase):
                 }
             )
 
-    class ExampleBEEPFeaturizerBad(BEEPFeaturizer):
-        pass
-
     @classmethod
     def setUpClass(cls) -> None:
         cls.dp = auto_load_processed(
@@ -42,7 +40,6 @@ class TestBEEPFeaturizer(unittest.TestCase):
         )
 
     def test_core_ops(self):
-
         # with hyperparameters not specified
         f = self.ExampleBEEPFeaturizer(self.dp, hyperparameters=None)
         val, msg = f.validate()
@@ -56,7 +53,6 @@ class TestBEEPFeaturizer(unittest.TestCase):
         self.assertEqual(X["f1"].iloc[0], 12)
         self.assertEqual(X["f2"].iloc[0], 26)
         self.assertEqual(X["f3"].iloc[0], 3)
-
 
         # with hyperparameters specified
         hps = {
@@ -78,10 +74,30 @@ class TestBEEPFeaturizer(unittest.TestCase):
         self.assertEqual(X["f3"].iloc[0], 3)
 
 
+        # with incomplete hyperparams
+        hps = {
+            "hyperparam_A": 11
+        }
+        with self.assertRaises(BEEPFeaturizationError):
+            self.ExampleBEEPFeaturizer(self.dp, hyperparameters=hps)
+
+
     def test_serialization(self):
-
         f = self.ExampleBEEPFeaturizer(self.dp)
-        d = f.as_dict()
+        with self.assertRaises(BEEPFeaturizationError):
+            f.as_dict()
 
-        import pprint
-        pprint.pprint(d)
+        f.create_features()
+        d = f.as_dict()
+        self.assertEqual(d["features"]["f1"][0], 12)
+        self.assertEqual(d["hyperparameters"]["hyperparam_A"], 12)
+        self.assertEqual(d["metadata"]["barcode"], "00004C")
+        self.assertTrue("paths" in d)
+
+        output_path = os.path.join(THIS_DIR, "BEEPFeaturizer_test_serialization.json.gz")
+        f.to_json_file(output_path)
+        f_reloaded = f.from_json_file(output_path)
+        self.assertIsInstance(f_reloaded.features, pd.DataFrame)
+        self.assertEqual(f_reloaded.hyperparameters["hyperparam_B"], 13)
+        self.assertEqual(f_reloaded.metadata["channel_id"], 33)
+

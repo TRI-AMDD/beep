@@ -67,7 +67,7 @@ class BEEPFeaturizer(MSONable, abc.ABC):
             else:
                 raise BEEPFeaturizationError(
                     f"Features cannot be created with incomplete set of "
-                    f"hyperparameters {self.hyperparameters.keys()} < "
+                    f"hyperparameters {hyperparameters.keys()} < "
                     f"{self.DEFAULT_HYPERPARAMETERS.keys()}!")
         else:
             self.hyperparameters = self.DEFAULT_HYPERPARAMETERS
