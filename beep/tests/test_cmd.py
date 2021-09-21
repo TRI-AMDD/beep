@@ -8,8 +8,9 @@ import shutil
 from monty.serialization import loadfn, dumpfn
 from click.testing import CliRunner
 
+from beep import PROTOCOL_PARAMETERS_DIR
 from beep.cmd import cli
-from beep.tests.constants import TEST_FILE_DIR
+from beep.tests.constants import TEST_FILE_DIR, SKIP_MSG, BIG_FILE_TESTS
 
 
 class TestCLIBase(unittest.TestCase):
@@ -20,8 +21,6 @@ class TestCLIBase(unittest.TestCase):
 
     def tearDown(self) -> None:
         pass
-
-
 
 
 class TestCLIStructure(unittest.TestCase):
@@ -44,8 +43,6 @@ class TestCLIStructure(unittest.TestCase):
 
     def tearDown(self) -> None:
         shutil.rmtree(self.outputs_dir)
-
-
 
     def test_defaults(self):
         """Test the default structuring configuration with the CLI.
@@ -75,18 +72,39 @@ class TestCLIStructure(unittest.TestCase):
         self.assertFalse(status["files"][self.input_paths[1]]["structured"])
         self.assertFalse(status["files"][self.input_paths[2]]["structured"])
 
+        self.assertTrue(os.path.exists(status["files"][self.input_paths[0]]["output"]))
 
 
-    def test_args1(self):
+    def test_advanced(self):
         """Test the structuring CLI with some options specified"""
-        pass
+        result = self.runner.invoke(
+            cli,
+            [
+                "--output-status-json",
+                self.status_json_path,
+                "structure",
+                "--output-dir",
+                self.outputs_dir,
+                "--automatic",
+                "--protocol-parameters-dir",
+                PROTOCOL_PARAMETERS_DIR,
+                "--no-raw",
+                *self.input_paths
+            ]
+        )
+        self.assertEqual(result.exit_code, 0)
+        self.assertIsNotNone(result.output)
+        status = loadfn(self.status_json_path)
 
-    def test_args2(self):
-        """Test the structuring CLI with more advanced options"""
-        pass
+        self.assertTrue(status["files"][self.input_paths[0]]["structured"])
+        self.assertTrue(status["files"][self.input_paths[0]]["validated"])
+        self.assertEqual(status["files"][self.input_paths[0]]["structuring_parameters"]["diagnostic_resolution"], 500)
 
+        self.assertTrue(os.path.exists(status["files"][self.input_paths[0]]["output"]))
+
+    @unittest.skipUnless(SKIP_MSG, )
     def test_s3(self):
-        """Test the structuring """
+        """Test the structuring using files from S3"""
         pass
 
 
