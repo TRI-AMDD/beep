@@ -63,7 +63,7 @@ class IntracellCycles(BEEPFeaturizer):
                 (self.datapath.diagnostic_summary.discharge_capacity > IntracellAnalysis.THRESHOLD)
                 ].cycle_index.to_list()
             if not eol_cycle_index_list:
-                return False
+                return False, "Overlap of cycle indices not above threshold for matching cycle type"
 
             conditions.append(
                 any(

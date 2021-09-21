@@ -16,10 +16,9 @@ import os
 import unittest
 import numpy as np
 from sklearn.decomposition import PCA
-from beep.principal_components import PrincipalComponents, pivot_data
+from beep.features.principal_components import PrincipalComponents, pivot_data
 
-TEST_DIR = os.path.dirname(__file__)
-TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
+from beep.tests.constants import TEST_FILE_DIR
 
 
 class PrincipalComponentsTest(unittest.TestCase):
