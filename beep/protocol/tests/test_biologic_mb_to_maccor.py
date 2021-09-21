@@ -16,9 +16,8 @@ import unittest
 import os
 import json
 from beep.protocol.biologic_mb_to_maccor import BiologicMbToMaccorProcedure
+from beep.tests.constants import TEST_FILE_DIR
 
-TEST_DIR = os.path.dirname(__file__)
-TEST_FILE_DIR = os.path.join(TEST_DIR, "test_files")
 SAMPLE_MB_FILE_NAME = "BCS - 171.64.160.115_Ta19_ourprotocol_gdocSEP2019_CC7.mps"
 CONVERTED_OUTPUT_FILE_NAME = "test_biologic_mb_to_maccor_output_diagnostic"
 
