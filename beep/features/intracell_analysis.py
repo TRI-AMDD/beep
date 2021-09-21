@@ -11,7 +11,7 @@ class IntracellAnalysis:
     # IA constants
     UPPER_VOLTAGE = 4.2
     LOWER_VOLTAGE = 2.7
-    THRESHOLD = 4.84 * 0.8
+    THRESHOLD = 4.84 * 0.7
 
     def __init__(self,
                  pe_pristine_file,
