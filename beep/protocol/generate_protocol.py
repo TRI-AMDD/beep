@@ -64,6 +64,11 @@ from beep.protocol.maccor import Procedure, insert_driving_parametersv1, insert_
 from beep.protocol.biologic import Settings
 
 
+class ProtocolException(BaseException):
+    """Errors related to generating protocol"""
+    pass
+
+
 def template_detection(filename, encoding="UTF-8"):
     """
     Reads a template and gathers metadata for use in decision logic

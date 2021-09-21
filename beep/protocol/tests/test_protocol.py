@@ -860,10 +860,8 @@ class GenerateProtocolTest(unittest.TestCase):
             csv_file = os.path.join(PROTOCOL_PARAMETERS_DIR, csv)
             results = generate_protocol_files_from_csv(csv_file, output_directory=this_dir)
             output_files, file_generation_failures, result, message = results
-
             self.assertEqual(len(output_files), res)
             self.assertEqual(len(file_generation_failures), 0)
-            # print(f"Outputs: {len(output_files)} | Failures: {len(file_generation_failures)}")
 
 
 class ProcedureToScheduleTest(unittest.TestCase):

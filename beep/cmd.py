@@ -57,6 +57,8 @@ from beep.features.intracell_losses import (
 )
 from beep.model import BEEPLinearModelExperiment
 from beep.utils.s3 import list_s3_objects, download_s3_object
+from beep.protocol.generate_protocol import generate_protocol_files_from_csv
+from beep.protocol.generate_protocol import ProtocolException
 
 
 CLICK_FILE = click.Path(file_okay=True, dir_okay=False, writable=False, readable=True)
@@ -1294,17 +1296,57 @@ def protocol(
 ):
     click.secho("Protocol generation has yet to be migrated entirely to the new CLI. May be unstable.", fg="red")
 
+    cwd = ctx.obj.cwd
+
+    csv_file = os.path.abspath(csv_file)
+    if not os.path.exists(csv_file):
+        raise FileNotFoundError(f"Input file {csv_file} does not exist")
+
+    output_dir = os.path.abspath(output_dir) if output_dir else cwd
+    if not os.path.exists(output_dir):
+        raise FileNotFoundError(f"Output dir {output_dir} does not exist.")
+
+    logger.debug(f"Generating protocol based on '{csv_file}' into '{output_dir}'.")
+
     status_json = {
         "op_type": "protocol",
         "files": {
-            "model": model_file,
-            "predict_on_features": feature_matrix_file,
-            "model_md5_chksum": md5sum(model_file),
-            "predict_on_features_md5_chksum": md5sum(feature_matrix_file)
+            "csv": csv_file,
+            "csv_md5_chksum": md5sum(csv_file)
         },
         "walltime": None,
-        "output": None,
+        "output": {},
         "traceback": None,
     }
 
+    t0 = time.time()
+    output_files, failures, result, message = [], [], "", {}
+    try:
+        results = generate_protocol_files_from_csv(csv_file, output_directory=output_dir)
+        output_files, file_generation_failures, result, message = results
 
+        if result == "error" or failures:
+            msg = message["comment"]
+            err = message["error"]
+            raise ProtocolException(f"'{err}: {msg}'")
+        else:
+            logger.info(f"Created {len(output_files)} protocol files in `{output_dir}`.")
+    except BaseException:
+        tbinfo = sys.exc_info()
+        tbfmt = traceback.format_exception(*tbinfo)
+        logger.error(f"Protocol generation failed with : ({tbinfo[0].__name__})")
+        status_json["traceback"] = tbfmt
+    t1 = time.time()
+
+    for of in output_files:
+        status_json["output"][of] = {"generated": True}
+
+    for f in failures:
+        status_json["output"][f] = {"generated": False}
+
+    status_json["walltime"] = t1 - t0
+    status_json = add_metadata_to_status_json(status_json, ctx.obj.run_id, ctx.obj.tags)
+    osj = ctx.obj.output_status_json
+    if osj:
+        dumpfn(status_json, osj)
+        logger.info(f"Wrote status json file to {osj}")
