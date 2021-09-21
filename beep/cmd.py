@@ -1273,10 +1273,38 @@ def predict(
 
 
 @cli.command(
-    help="Generate protocol for battery cyclers from a csv file. "
+    help="Generate protocol for battery cyclers from a csv file input."
 )
+@click.argument(
+    "csv_file",
+    nargs=1,
+    type=CLICK_FILE
+)
+@click.option(
+    "--output-dir",
+    "-d",
+    help="Directory to output files to. At least three subdirs will be created in this directory"
+         "in order to organize the generated protocol files."
+)
+@click.pass_context
 def protocol(
-
+        ctx,
+        csv_file,
+        output_dir
 ):
-    click.secho("Protocol generation has yet to be migrated to the new CLI. May be unstable.", fg="red")
+    click.secho("Protocol generation has yet to be migrated entirely to the new CLI. May be unstable.", fg="red")
+
+    status_json = {
+        "op_type": "protocol",
+        "files": {
+            "model": model_file,
+            "predict_on_features": feature_matrix_file,
+            "model_md5_chksum": md5sum(model_file),
+            "predict_on_features_md5_chksum": md5sum(feature_matrix_file)
+        },
+        "walltime": None,
+        "output": None,
+        "traceback": None,
+    }
+
 

@@ -480,7 +480,7 @@ class IntracellFeaturesTest(unittest.TestCase):
     def test_validation(self):
         # Modify datapath_run to be invalid
         mask = self.datapath.diagnostic_summary.cycle_type == "rpt_0.2C"
-        self.datapath.diagnostic_summary.loc[mask, "discharge_capacity"] = 3.5
+        self.datapath.diagnostic_summary.loc[mask, "discharge_capacity"] = 3.35
 
         featurizer = IntracellFeatures(self.datapath, self.params)
         val, msg = featurizer.validate()

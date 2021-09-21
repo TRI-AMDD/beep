@@ -865,6 +865,7 @@ class GenerateProtocolTest(unittest.TestCase):
             self.assertEqual(len(file_generation_failures), 0)
             # print(f"Outputs: {len(output_files)} | Failures: {len(file_generation_failures)}")
 
+
 class ProcedureToScheduleTest(unittest.TestCase):
     def setUp(self):
         pass
