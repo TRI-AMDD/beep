@@ -239,6 +239,13 @@ class BEEPLinearModelExperiment(MSONable):
             cv_class = RidgeCV
             model_class = Ridge
             kwargs.pop("l1_ratio")
+            kwargs.pop("max_iter")
+            kwargs.pop("tol")
+
+            # Ridge has to have alphas set by hand as it has no
+            # default alphas
+            if not kwargs["alphas"]:
+                kwargs["alphas"] = (1e-3, 1e-2, 1e-1, 1, 10, 100, 1000)
         else:
             raise NotImplementedError(f"Unsupported model '{self.model_name}'")
 
@@ -480,56 +487,3 @@ class BEEPLinearModelExperiment(MSONable):
     def to_json_file(self, filename):
         d = self.as_dict()
         dumpfn(d, filename)
-
-
-if __name__ == "__main__":
-    # bfm = BEEPFeatureMatrix.from_json_file(
-    #     "/Users/ardunn/alex/tri/code/beep/beep/CLI_TEST_FILES_FEATURIZATION/FeatureMatrix-2021-02-09_21.07.50.514178.json.gz")
-
-    features_file = "/Users/ardunn/alex/tri/code/beep/beep/CLI_TEST_FILES_FEATURIZATION/features.json.gz"
-    targets_file = "/Users/ardunn/alex/tri/code/beep/beep/CLI_TEST_FILES_FEATURIZATION/targets.json.gz"
-
-    feats_bfm = BEEPFeatureMatrix.from_json_file(features_file)
-    targets_bfm = BEEPFeatureMatrix.from_json_file(targets_file)
-
-    # target = "capacity_0.8::TrajectoryFastCharge::319cec55cc030c1911b2530cae3fc2df8d3c24912ae01ee4172ea4ca4caddec8"
-    target = "capacity_0.8::TrajectoryFastCharge"
-    target2 = "capacity_0.92::TrajectoryFastCharge"
-
-    # targets = [target]
-    targets = [target, target2]
-
-    # target = "capacity_0.86::TrajectoryFastCharge::319cec55cc030c1911b2530cae3fc2df8d3c24912ae01ee4172ea4ca4caddec8"
-
-
-    beep_model = BEEPLinearModelExperiment(
-        feats_bfm,
-        targets_bfm,
-        targets,
-        "elasticnet",
-        homogenize_features=True,
-        max_iter=10000,
-        kfold=2
-    )
-
-    model, training_errors, test_errors = beep_model.train_and_score(train_and_val_frac=0.8)
-
-    print(model)
-
-    import pprint
-    pprint.pprint(training_errors)
-    pprint.pprint(test_errors)
-
-
-    output_path = "/Users/ardunn/alex/tri/code/beep/beep/test_json_mlexpt.json.gz"
-    beep_model.to_json_file(output_path)
-    beep_model = loadfn(output_path)
-
-    y_pred, dropped = beep_model.predict(feats_bfm, homogenize_features=True)
-
-    print("yay")
-    print(beep_model)
-    print(dropped)
-    print(y_pred)
-
-

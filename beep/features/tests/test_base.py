@@ -7,7 +7,7 @@ from numpy.testing import assert_array_equal
 
 from beep.structure.cli import auto_load_processed
 from beep.features.base import BEEPFeaturizer, BEEPFeatureMatrix, \
-    BEEPFeaturizationError, BEEPFeatureMatrixError
+    BEEPFeaturizationError
 from beep.tests.constants import TEST_FILE_DIR
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))

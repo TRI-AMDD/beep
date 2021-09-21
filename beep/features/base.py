@@ -350,8 +350,3 @@ class BEEPFeatureMatrix(MSONable):
         """
         d = self.as_dict()
         dumpfn(d, filename)
-
-
-if __name__ == "__main__":
-    fname = "/Users/ardunn/alex/tri/code/beep/beep/CLI_TEST_FILES_FEATURIZATION/FeatureMatrix-2021-02-09_21.07.50.514178.json.gz"
-    bfm = BEEPFeatureMatrix.from_json(fname)
