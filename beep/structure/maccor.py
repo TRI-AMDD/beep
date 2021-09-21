@@ -13,7 +13,7 @@ from monty.serialization import loadfn
 from beep import tqdm, StringIO, VALIDATION_SCHEMA_DIR
 from beep.conversion_schemas import MACCOR_CONFIG
 from beep.structure.base_eis import BEEPDatapathWithEIS, EIS
-from beep.validate import PROJECT_SCHEMA
+from beep.structure.validate import PROJECT_SCHEMA
 
 
 class MaccorDatapath(BEEPDatapathWithEIS):

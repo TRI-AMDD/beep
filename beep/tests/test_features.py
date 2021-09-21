@@ -99,35 +99,6 @@ class TestFeaturizer(unittest.TestCase):
         traj = loadfn("TrajectoryFastCharge.json")
         self.assertEqual(traj.features.loc[0, "capacity_0.8"], 161)
 
-    def test_sequential_multiple_features2(self):
-        structured_datapath = auto_load_processed(self.structured_cycler_file_path_trunc)
-
-        parameters_path = os.path.join(
-            TEST_FILE_DIR,
-            "data-share/raw/parameters"
-        )
-
-        dp_params = {
-            "quantities": ["discharge_energy", "discharge_capacity"],
-            "parameters_dir": parameters_path
-        }
-
-        dp = DiagnosticProperties(structured_datapath, dp_params)
-        dq = DeltaQFastCharge(structured_datapath)
-
-
-        self.assertTrue(dp.validate()[0])
-        self.assertTrue(dq.validate()[0])
-
-        dp.create_features()
-        dq.create_features()
-
-        self.assertEqual(dq.features.loc[0, "nominal_capacity_by_median"], 0.07114775279999999)
-        self.assertListEqual(list(dp.features.iloc[2, :]),
-                [141, 0.9859837086597274, 7.885284043, 4.323121513988055,
-                 21.12108276469096, 30, 100, 1577338063, 'reset', 'discharge_energy'],
-            )
-
     def test_must_fail_featurization(self):
         # insufficient structured file must fail
         structured_insuf = auto_load_processed(self.structured_cycler_file_path_insuf)
@@ -281,6 +252,9 @@ class TestFeaturizer(unittest.TestCase):
         self.assertTrue(f.validate()[0])
 
         f.create_features()
+
+        print(f)
+        print(f.shape)
 
         self.assertEqual(f.features.shape, (30, 10))
         # print(list(f.features.iloc[2, :]))

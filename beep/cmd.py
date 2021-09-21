@@ -17,7 +17,6 @@ protocol generation, and running models.
 
 import os
 import ast
-import pprint
 import sys
 import time
 import fnmatch
@@ -29,7 +28,6 @@ import importlib
 
 import click
 import numpy as np
-import pandas as pd
 from monty.serialization import dumpfn
 
 from beep import (
@@ -39,6 +37,7 @@ from beep import (
     __version__
 )
 from beep.structure.cli import auto_load, auto_load_processed
+from beep.structure.validate import BeepValidationError
 from beep.features.base import (
     BEEPFeaturizer,
     BEEPFeaturizationError,
@@ -58,7 +57,7 @@ from beep.features.intracell_losses import (
 )
 from beep.model import BEEPLinearModelExperiment
 from beep.utils.s3 import list_s3_objects, download_s3_object
-from beep.validate import BeepValidationError
+\\
 
 CLICK_FILE = click.Path(file_okay=True, dir_okay=False, writable=False, readable=True)
 CLICK_DIR = click.Path(file_okay=False, dir_okay=True, writable=True, readable=True)

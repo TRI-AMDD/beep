@@ -24,7 +24,7 @@ from beep.conversion_schemas import (
 
 from beep.utils import parameters_lookup
 from beep import logger, VALIDATION_SCHEMA_DIR, PROTOCOL_PARAMETERS_DIR
-from beep.validate import SimpleValidator
+from beep.structure.validate import SimpleValidator
 
 
 class BEEPDatapath(abc.ABC, MSONable):
@@ -1117,7 +1117,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         resolution=1000,
         nominal_capacity=1.1,
         full_fast_charge=0.8,
-        parameters_path=None,
+        parameters_path=PROTOCOL_PARAMETERS_DIR,
     ):
         """
         Method for determining what values to use to convert raw run into processed run.
@@ -1128,7 +1128,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             resolution (int): resolution for interpolation
             nominal_capacity (float): nominal capacity for summary stats
             full_fast_charge (float): full fast charge for summary stats
-            parameters_path (str): path to parameters file
+            parameters_path (str): path to parameters files
 
         Returns:
             v_range ([float, float]): voltage range for interpolation

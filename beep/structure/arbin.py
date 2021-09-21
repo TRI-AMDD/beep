@@ -11,7 +11,7 @@ import pandas as pd
 from beep.conversion_schemas import ARBIN_CONFIG
 from beep import logger, VALIDATION_SCHEMA_DIR
 from beep.structure.base import BEEPDatapath
-from beep.validate import PROJECT_SCHEMA
+from beep.structure.validate import PROJECT_SCHEMA
 
 
 class ArbinDatapath(BEEPDatapath):

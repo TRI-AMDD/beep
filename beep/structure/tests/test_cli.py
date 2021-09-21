@@ -37,7 +37,6 @@ class TestCLI(unittest.TestCase):
         dp = auto_load(self.arbin_file)
         self.assertIsInstance(dp, ArbinDatapath)
 
-
     def test_auto_load_processed(self):
         dp = auto_load_processed(self.processed_file)
         self.assertIsInstance(dp, ArbinDatapath)
