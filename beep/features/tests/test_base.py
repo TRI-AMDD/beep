@@ -2,9 +2,12 @@ import os
 import unittest
 
 import pandas as pd
+from monty.serialization import loadfn
+from numpy.testing import assert_array_equal
 
 from beep.structure.cli import auto_load_processed
-from beep.features.base import BEEPFeaturizer, BEEPFeatureMatrix, BEEPFeaturizationError, BEEPFeatureMatrixError
+from beep.features.base import BEEPFeaturizer, BEEPFeatureMatrix, \
+    BEEPFeaturizationError, BEEPFeatureMatrixError
 from beep.tests.constants import TEST_FILE_DIR
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -74,7 +77,6 @@ class TestBEEPFeaturizer(unittest.TestCase):
         self.assertEqual(X["f2"].iloc[0], 6)
         self.assertEqual(X["f3"].iloc[0], 3)
 
-
         # with incomplete hyperparams
         hps = {
             "hyperparam_A": 11
@@ -94,7 +96,8 @@ class TestBEEPFeaturizer(unittest.TestCase):
         self.assertEqual(d["metadata"]["barcode"], "00004C")
         self.assertTrue("paths" in d)
 
-        output_path = os.path.join(THIS_DIR, "BEEPFeaturizer_test_serialization.json.gz")
+        output_path = os.path.join(THIS_DIR,
+                                   "BEEPFeaturizer_test_serialization.json.gz")
         f.to_json_file(output_path)
         f_reloaded = f.from_json_file(output_path)
         self.assertIsInstance(f_reloaded.features, pd.DataFrame)
@@ -102,5 +105,46 @@ class TestBEEPFeaturizer(unittest.TestCase):
         self.assertEqual(f_reloaded.metadata["channel_id"], 33)
 
 
-
 class TestBEEPFeatureMatrix(unittest.TestCase):
+    """Test files are 4 featurizers applied to 2 different files,
+    for a total of 4 sets of columns for 2 rows.
+    """
+
+    def setUp(self) -> None:
+        bfs = []
+
+        bf_dir = os.path.join(TEST_FILE_DIR, "featurizer_serialized_files")
+
+        for fname in os.listdir(bf_dir):
+            if fname.endswith("_structure.json"):
+                fpath = os.path.join(bf_dir, fname)
+                bf = loadfn(fpath)
+                bfs.append(bf)
+
+        self.featurizers = bfs
+
+    def test_core_ops(self):
+        bfm = BEEPFeatureMatrix(self.featurizers)
+        self.assertEqual(len(bfm.featurizers), 8)
+        self.assertTupleEqual(bfm.matrix.shape, (2, 179))
+
+        dcc = bfm.matrix[
+            "var_discharging_capacity::DiagnosticSummaryStats::" \
+            "a2c34891d9e2e10bcf61769d24bad986dba94153df4f23a8b4e5716a9b159053"
+        ].tolist()
+        self.assertAlmostEqual(dcc[0], -2.674662, 4)
+        self.assertAlmostEqual(dcc[1], -3.324690, 4)
+
+    def test_serialization(self):
+        bfm = BEEPFeatureMatrix(self.featurizers)
+
+        d = bfm.as_dict()
+        self.assertTrue("featurizers" in d)
+        self.assertTrue("matrix" in d)
+
+        bfm_path = os.path.join(TEST_FILE_DIR, "bfm.json.gz")
+        bfm.to_json_file(bfm_path)
+
+        bfm_reloaded = bfm.from_json_file(bfm_path)
+        self.assertIsInstance(bfm_reloaded.matrix, pd.DataFrame)
+        assert_array_equal(bfm_reloaded.matrix.values, bfm.matrix.values)
