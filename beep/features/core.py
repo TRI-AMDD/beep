@@ -896,9 +896,7 @@ class DiagnosticProperties(BEEPFeaturizer):
             real_throughput_to_threshold = x_to_threshold[
                                                interpolation_axes.index(
                                                    "normalized_regular_throughput")] * \
-                                           df[
-                                               'initial_regular_throughput'].values[
-                                               0]
+                                           df['initial_regular_throughput'].values[0]
             x_to_threshold.append(real_throughput_to_threshold)
             interpolation_axes.append("real_regular_throughput")
 

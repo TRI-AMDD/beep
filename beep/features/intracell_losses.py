@@ -130,7 +130,7 @@ class IntracellCycles(BEEPFeaturizer):
                                              'PE_mass', 'NE_upper_voltage', 'NE_lower_voltage', 'NE_upper_SOC',
                                              'NE_lower_SOC', 'NE_mass', 'Li_mass'
                                              ]).T
-        return degradation_df
+        self.features = degradation_df
 
 
 class IntracellFeatures(IntracellCycles):
@@ -143,9 +143,6 @@ class IntracellFeatures(IntracellCycles):
         metadata (dict): information about the conditions, data
             and code used to produce features
     """
-
-    # Class name for the feature object
-    class_feature_name = "IntracellFeatures"
 
     def create_features(self):
         """
@@ -202,4 +199,4 @@ class IntracellFeatures(IntracellCycles):
         diag_1_names = ["diag_1_" + name for name in degradation_df.columns]
         values = {0: degradation_df.iloc[0].tolist() + degradation_df.iloc[1].tolist()}
         features_df = pd.DataFrame(values, index=diag_0_names+diag_1_names).T
-        return features_df
+        self.features = features_df

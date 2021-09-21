@@ -463,14 +463,16 @@ class IntracellFeaturesTest(unittest.TestCase):
 
     def test_IntracellCycles(self):
         featurizer = IntracellCycles(self.datapath, self.params)
-        X = featurizer.create_features()
+        featurizer.create_features()
+        X = featurizer.features
         self.assertEqual(X.shape, (2, 17))
         self.assertAlmostEqual(X["LLI"].iloc[0], -9.999983, 5)
         self.assertAlmostEqual(X["Li_mass"].iloc[1], 12.312480, 3)
 
     def test_IntracellFeatures(self):
         featurizer = IntracellFeatures(self.datapath, self.params)
-        X = featurizer.create_features()
+        featurizer.create_features()
+        X = featurizer.features
         self.assertEqual(X.shape, (1, 34))
         self.assertAlmostEqual(X["diag_0_LLI"].iloc[0], -9.999983, 5)
         self.assertAlmostEqual(X["diag_1_Li_mass"].iloc[0], 12.312480, 3)

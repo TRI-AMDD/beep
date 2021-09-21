@@ -26,7 +26,6 @@ from beep.features.core import (
 
 )
 from beep.features.base import BEEPFeaturizationError
-from beep.features.intracell_losses import IntracellFeatures, IntracellCycles
 
 from beep.structure.maccor import MaccorDatapath
 from beep.structure.cli import auto_load_processed, auto_load
@@ -36,12 +35,6 @@ from monty.serialization import dumpfn, loadfn
 from monty.tempfile import ScratchDir
 from beep.utils.s3 import download_s3_object
 from beep.tests.constants import TEST_FILE_DIR
-
-
-# MACCOR_FILE_W_DIAGNOSTICS = os.path.join(TEST_FILE_DIR, "xTESLADIAG_000020_CH71.071")
-# MACCOR_FILE_W_PARAMETERS = os.path.join(
-#     TEST_FILE_DIR, "PredictionDiagnostics_000109_tztest.010"
-# )
 
 
 class TestFeaturizer(unittest.TestCase):
@@ -244,7 +237,7 @@ class TestFeaturizer(unittest.TestCase):
 
     def test_DiagnosticProperties(self):
         structured_datapath_loc = os.path.join(
-            TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
+            TEST_FILE_DIR, "PredictionDiagnostics_000132_00004C_structure.json"
         )
         structured_datapath = auto_load_processed(structured_datapath_loc)
 
@@ -253,16 +246,9 @@ class TestFeaturizer(unittest.TestCase):
 
         f.create_features()
 
-        print(f)
-        print(f.shape)
-
-        self.assertEqual(f.features.shape, (30, 10))
+        self.assertEqual(f.features.shape, (1, 4))
         # print(list(f.features.iloc[2, :]))
-        self.assertListEqual(
-            list(f.features.iloc[2, :]),
-            [141, 0.9859837086597274, 7.885284043, 4.323121513988055,
-             21.12108276469096, 30, 100, 1577338063, 'reset', 'discharge_energy']
-        )
+        self.assertAlmostEqual(f.features.iloc[0]["initial_regular_throughput"], 497.587658, 5)
 
 
 class TestFeaturizerHelpers(unittest.TestCase):
@@ -307,8 +293,6 @@ class TestFeaturizerHelpers(unittest.TestCase):
             TEST_FILE_DIR, "Talos_001383_NCR18650618001_CH31_truncated_structure.json"
         )
         structured_datapath = auto_load_processed(processed_cycler_run_path_2)
-
-        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
 
         sum_diag = featurizer_helpers.get_fractional_quantity_remaining_nx(structured_datapath,
                                                                            metric="discharge_energy",
@@ -470,7 +454,6 @@ class TestFeaturizerHelpers(unittest.TestCase):
             TEST_FILE_DIR, "PreDiag_000400_000084_truncated_structure.json"
         )
         parameters_path = os.path.join(TEST_FILE_DIR, "data-share", "raw", "parameters")
-        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
         structured_datapath = auto_load_processed(structured_datapath_loc)
         _, protocol_name = os.path.split(structured_datapath.metadata.protocol)
         parameter_row, _ = parameters_lookup.get_protocol_parameters(protocol_name, parameters_path=parameters_path)
@@ -554,42 +537,38 @@ class TestRawToFeatures(unittest.TestCase):
 
     # @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_raw_to_features(self):
-        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
 
         download_s3_object(bucket=self.maccor_file_w_parameters_s3["bucket"],
                            key=self.maccor_file_w_parameters_s3["key"],
                            destination_path=self.maccor_file_w_parameters)
 
-        with ScratchDir("."):
-            # os.environ['BEEP_PROCESSING_DIR'] = os.getcwd()
-            dp = MaccorDatapath.from_file(self.maccor_file_w_parameters)
-            dp.autostructure()
-            processed_run_path = os.path.join(
-                TEST_FILE_DIR, "processed_diagnostic.json"
-            )
+        dp = MaccorDatapath.from_file(self.maccor_file_w_parameters)
+        dp.autostructure()
+        processed_run_path = os.path.join(
+            TEST_FILE_DIR, "processed_diagnostic.json"
+        )
 
-            # Dump to the structured file and check the file size
-            dumpfn(dp, processed_run_path)
+        # Dump to the structured file and check the file size
+        dumpfn(dp, processed_run_path)
 
-            dp = loadfn(processed_run_path)
+        dp = loadfn(processed_run_path)
 
 
-            for fclass in (
-                    DeltaQFastCharge,
-                    CycleSummaryStats,
-                    TrajectoryFastCharge,
-                    DiagnosticProperties,
-                    DiagnosticSummaryStats,
-                    HPPCResistanceVoltageFeatures,
-            ):
-                f = fclass(dp)
-                self.assertTrue(f.validate()[0])
-                f.create_features()
+        for fclass in (
+                DeltaQFastCharge,
+                CycleSummaryStats,
+                TrajectoryFastCharge,
+                DiagnosticSummaryStats,
+                HPPCResistanceVoltageFeatures,
+        ):
+            f = fclass(dp)
+            self.assertTrue(f.validate()[0])
+            f.create_features()
 
-                if fclass.__class__.__name__ == "HPPCResistanceVoltageFeatures":
-                    self.assertAlmostEqual(f.features['r_c_0s_00'].iloc[0], -0.159771397, 5)
-                    self.assertAlmostEqual(f.features['r_c_0s_10'].iloc[0], -0.143679, 5)
-                    self.assertAlmostEqual(f.features['r_c_0s_20'].iloc[0], -0.146345, 5)
-                    self.assertAlmostEqual(f.features['D_6'].iloc[0], -0.167919, 5)
-                    self.assertAlmostEqual(f.features['D_7'].iloc[0], 0.094136, 5)
-                    self.assertAlmostEqual(f.features['D_8'].iloc[0], 0.172496, 5)
+            if fclass.__class__.__name__ == "HPPCResistanceVoltageFeatures":
+                self.assertAlmostEqual(f.features['r_c_0s_00'].iloc[0], -0.159771397, 5)
+                self.assertAlmostEqual(f.features['r_c_0s_10'].iloc[0], -0.143679, 5)
+                self.assertAlmostEqual(f.features['r_c_0s_20'].iloc[0], -0.146345, 5)
+                self.assertAlmostEqual(f.features['D_6'].iloc[0], -0.167919, 5)
+                self.assertAlmostEqual(f.features['D_7'].iloc[0], 0.094136, 5)
+                self.assertAlmostEqual(f.features['D_8'].iloc[0], 0.172496, 5)
