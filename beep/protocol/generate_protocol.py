@@ -55,18 +55,13 @@ import json
 import datetime
 import csv
 import pandas as pd
-from docopt import docopt
-from monty.serialization import loadfn
+from monty.os import makedirs_p
 import xmltodict
 
-from beep import logger, __version__
+from beep import logger
 from beep.protocol import PROCEDURE_TEMPLATE_DIR, BIOLOGIC_TEMPLATE_DIR
 from beep.protocol.maccor import Procedure, insert_driving_parametersv1, insert_charging_parametersv1
 from beep.protocol.biologic import Settings
-
-from beep.utils import WorkflowOutputs
-
-s = {"service": "ProtocolGenerator"}
 
 
 def template_detection(filename, encoding="UTF-8"):
@@ -108,6 +103,12 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
     message = {"comment": "", "error": ""}
     if output_directory is None:
         output_directory = PROCEDURE_TEMPLATE_DIR
+
+    # Create required directories if not already present
+    for subdir in ["settings", "procedures", "names"]:
+        subdir_path = os.path.abspath(os.path.join(output_directory, subdir))
+        if not os.path.exists(subdir_path):
+            makedirs_p(subdir_path)
 
     for index, protocol_params in protocol_params_df.iterrows():
         template = protocol_params["template"]
@@ -187,7 +188,7 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
                 "error": "Not Implemented"
             }
             file_generation_failures.append(failure)
-            logger.warning("Schedule file generation not yet implemented", extra=s)
+            logger.warning("Schedule file generation not yet implemented")
             result = "error"
             continue
         else:  # Unable to match to any known template format
@@ -200,7 +201,7 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
             result = "error"
             continue
 
-        logger.info(filename, extra=s)
+        logger.info(filename)
         protocol.to_file(filename)
         successfully_generated_files.append(filename)
         names.append(filename_prefix + "_")
@@ -235,68 +236,3 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
         logger.error(message["error"])
 
     return successfully_generated_files, file_generation_failures, result, message
-
-
-def process_csv_file_list_from_json(
-    file_list_json, processed_dir="data-share/protocols/"
-):
-    """
-
-    Args:
-        file_list_json (str):
-        processed_dir (str):
-
-    Returns:
-        str:
-    """
-    # Get file list and validity from json, if ends with .json,
-    # assume it's a file, if not assume it's a json string
-    if file_list_json.endswith(".json"):
-        file_list_data = loadfn(file_list_json)
-    else:
-        file_list_data = json.loads(file_list_json)
-
-    # Setup workflow
-    outputs = WorkflowOutputs()
-
-    file_list = file_list_data["file_list"]
-    all_output_files = []
-    protocol_dir = os.path.join(
-        os.environ.get("BEEP_PROCESSING_DIR", "/"), processed_dir
-    )
-    for filename in file_list:
-        output_files, file_generation_failures, result, message = generate_protocol_files_from_csv(
-            filename, output_directory=protocol_dir
-        )
-        all_output_files.extend(output_files)
-
-    output_data = {
-        "file_list": all_output_files,
-        "failures": file_generation_failures,
-        "result": result,
-        "message": message
-    }
-
-    # Workflow outputs
-    outputs.put_generate_outputs_list(output_data, "complete")
-
-    return json.dumps(output_data)
-
-
-def main():
-    """Main function for the script"""
-    logger.info("starting", extra=s)
-    logger.info("Running version=%s", __version__, extra=s)
-    try:
-        args = docopt(__doc__)
-        input_json = args["INPUT_JSON"]
-        print(process_csv_file_list_from_json(input_json), end="")
-    except Exception as e:
-        logger.error(str(e), extra=s)
-        raise e
-    logger.info("finish", extra=s)
-    return None
-
-
-if __name__ == "__main__":
-    main()

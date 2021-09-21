@@ -15,7 +15,6 @@
 
 import os
 import unittest
-import json
 import numpy as np
 import datetime
 import shutil
@@ -24,10 +23,11 @@ from copy import deepcopy
 import difflib
 import pandas as pd
 from monty.tempfile import ScratchDir
-from monty.serialization import dumpfn, loadfn
+from monty.serialization import dumpfn
 from monty.os import makedirs_p
 
 
+from beep import PROTOCOL_PARAMETERS_DIR
 from beep.protocol import (
     PROCEDURE_TEMPLATE_DIR,
     SCHEDULE_TEMPLATE_DIR,
@@ -42,6 +42,9 @@ from beep.protocol.biologic import Settings
 from beep.protocol.maccor_to_arbin import ProcedureToSchedule
 from beep.utils import os_format, hash_file
 from beep.tests.constants import TEST_FILE_DIR
+
+
+this_dir = os.path.abspath(os.path.dirname(__file__))
 
 
 class ProcedureTest(unittest.TestCase):
@@ -829,6 +832,12 @@ class GenerateProtocolTest(unittest.TestCase):
     def setup(self):
         pass
 
+    def tearDown(self) -> None:
+        for d in ("mwf_files", "names", "procedures", "settings"):
+            p = os.path.join(this_dir, d)
+            if os.path.exists(p):
+                shutil.rmtree(p)
+
     def test_template_detection(self):
         length_1 = template_detection(os.path.join(PROCEDURE_TEMPLATE_DIR, "diagnosticV1.000"))
         self.assertEqual(72, length_1)
@@ -839,95 +848,22 @@ class GenerateProtocolTest(unittest.TestCase):
         length_3 = template_detection(os.path.join(PROCEDURE_TEMPLATE_DIR, "EXP.000"))
         self.assertEqual(23, length_3)
 
-    def test_console_schedule_file(self):
-        csv_file = os.path.join(TEST_FILE_DIR, "unsupported_test.csv")
-        with ScratchDir(".") as _scratch_dir:
-            # Set BEEP_PROCESSING_DIR directory to scratch_dir
-            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
-            schedules_path = os.path.join("data-share", "protocols", "schedules")
-            names_path = os.path.join("data-share", "protocols", "names")
-            makedirs_p(schedules_path)
-            makedirs_p(names_path)
+    def test_multiple_protocol_generation(self):
 
-            # Test the script
-            json_input = json.dumps({"file_list": [csv_file]})
-            os.system("generate_protocol {}".format(os_format(json_input)))
-            self.assertEqual(len(os.listdir(schedules_path)), 0)
+        for csv, res in {
+            "Form_parameters - GP.csv": 16,
+            "Drive_parameters - GP.csv": 36,
+            "RapidC_parameters - GP.csv": 60,
+            # "unsupported_test.csv": 0
+        }.items():
 
-    def test_console_settings_file(self):
-        csv_file = os.path.join(TEST_FILE_DIR, "data-share", "raw", "parameters", "Form_parameters - GP.csv")
-        with ScratchDir(".") as _scratch_dir:
-            # Set BEEP_PROCESSING_DIR directory to scratch_dir
-            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
-            settings_path = os.path.join("data-share", "protocols", "settings")
-            names_path = os.path.join("data-share", "protocols", "names")
-            makedirs_p(settings_path)
-            makedirs_p(names_path)
+            csv_file = os.path.join(PROTOCOL_PARAMETERS_DIR, csv)
+            results = generate_protocol_files_from_csv(csv_file, output_directory=this_dir)
+            output_files, file_generation_failures, result, message = results
 
-            # Test the script
-            json_input = json.dumps({"file_list": [csv_file]})
-            os.system("generate_protocol {}".format(os_format(json_input)))
-            self.assertEqual(len(os.listdir(settings_path)), 16)
-
-    def test_console_script(self):
-        csv_file = os.path.join(TEST_FILE_DIR, "parameter_test.csv")
-
-        # Test script functionality
-        with ScratchDir(".") as _scratch_dir:
-            # Set BEEP_PROCESSING_DIR directory to scratch_dir
-            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
-            procedures_path = os.path.join("data-share", "protocols", "procedures")
-            names_path = os.path.join("data-share", "protocols", "names")
-            makedirs_p(procedures_path)
-            makedirs_p(names_path)
-
-            # Test the script
-            json_input = json.dumps({"file_list": [csv_file]})
-            os.system("generate_protocol {}".format(os_format(json_input)))
-            self.assertEqual(len(os.listdir(procedures_path)), 3)
-
-    def test_console_script_2(self):
-        csv_file = os.path.join(TEST_FILE_DIR,
-                                "data-share",
-                                "raw",
-                                "parameters",
-                                "Drive_parameters - GP.csv")
-
-        # Test script functionality
-        with ScratchDir(".") as scratch_dir:
-            # Set BEEP_PROCESSING_DIR directory to scratch_dir
-            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
-            procedures_path = os.path.join("data-share", "protocols", "procedures")
-            names_path = os.path.join("data-share", "protocols", "names")
-            makedirs_p(procedures_path)
-            makedirs_p(names_path)
-
-            # Test the script
-            json_input = json.dumps({"file_list": [csv_file]})
-            os.system("generate_protocol {}".format(os_format(json_input)))
-            self.assertEqual(len(os.listdir(procedures_path)), 36)
-
-    def test_console_script_3(self):
-        csv_file = os.path.join(TEST_FILE_DIR,
-                                "data-share",
-                                "raw",
-                                "parameters",
-                                "RapidC_parameters - GP.csv")
-
-        # Test script functionality
-        with ScratchDir(".") as scratch_dir:
-            # Set BEEP_PROCESSING_DIR directory to scratch_dir
-            os.environ["BEEP_PROCESSING_DIR"] = os.getcwd()
-            procedures_path = os.path.join("data-share", "protocols", "procedures")
-            names_path = os.path.join("data-share", "protocols", "names")
-            makedirs_p(procedures_path)
-            makedirs_p(names_path)
-
-            # Test the script
-            json_input = json.dumps({"file_list": [csv_file]})
-            os.system("generate_protocol {}".format(os_format(json_input)))
-            self.assertEqual(len(os.listdir(procedures_path)), 60)
-
+            self.assertEqual(len(output_files), res)
+            self.assertEqual(len(file_generation_failures), 0)
+            # print(f"Outputs: {len(output_files)} | Failures: {len(file_generation_failures)}")
 
 class ProcedureToScheduleTest(unittest.TestCase):
     def setUp(self):

@@ -57,7 +57,7 @@ from beep.features.intracell_losses import (
 )
 from beep.model import BEEPLinearModelExperiment
 from beep.utils.s3 import list_s3_objects, download_s3_object
-\\
+
 
 CLICK_FILE = click.Path(file_okay=True, dir_okay=False, writable=False, readable=True)
 CLICK_DIR = click.Path(file_okay=False, dir_okay=True, writable=True, readable=True)
@@ -1273,7 +1273,7 @@ def predict(
 
 
 @cli.command(
-    help="generate protocol"
+    help="Generate protocol for battery cyclers from a csv file. "
 )
 def protocol(
 
