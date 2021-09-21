@@ -28,13 +28,12 @@ from monty.serialization import dumpfn, loadfn
 from monty.os import makedirs_p
 
 
-
 from beep.protocol import (
     PROCEDURE_TEMPLATE_DIR,
     SCHEDULE_TEMPLATE_DIR,
     BIOLOGIC_TEMPLATE_DIR,
 )
-from beep.generate_protocol import generate_protocol_files_from_csv, template_detection
+from beep.protocol.generate_protocol import generate_protocol_files_from_csv, template_detection
 from beep.utils.waveform import convert_velocity_to_power_waveform, RapidChargeWave
 from beep.protocol.maccor import Procedure, \
     generate_maccor_waveform_file, insert_driving_parametersv1, insert_charging_parametersv1
