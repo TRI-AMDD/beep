@@ -14,12 +14,13 @@ from beep.tests.constants import TEST_FILE_DIR, SKIP_MSG, BIG_FILE_TESTS
 
 
 class TestCLIBase(unittest.TestCase):
+    runner = CliRunner()
 
     def setUp(self) -> None:
         self.output_dir = None
         self.status_json_path = None
         self.input_paths = []
-        self.runner = CliRunner()
+        self.runner = None
 
     def tearDown(self) -> None:
         shutil.rmtree(self.outputs_dir)
@@ -140,9 +141,6 @@ class TestCLIFeatures(TestCLIBase):
     def setUp(self) -> None:
         pass
 
-    def tearDown(self) -> None:
-        pass
-
     def test_defaults(self):
         pass
 
@@ -150,12 +148,8 @@ class TestCLIFeatures(TestCLIBase):
         pass
 
 
-
 class TestCLITrain(TestCLIBase):
     def setUp(self) -> None:
-        pass
-
-    def tearDown(self) -> None:
         pass
 
     def test_defaults(self):
@@ -169,7 +163,15 @@ class TestCLIPredict(TestCLIBase):
     def setUp(self) -> None:
         pass
 
-    def tearDown(self) -> None:
+    def test_defaults(self):
+        pass
+
+    def test_advanced(self):
+        pass
+
+
+class TestCLIProtocol(TestCLIBase):
+    def setUp(self) -> None:
         pass
 
     def test_defaults(self):
@@ -179,9 +181,9 @@ class TestCLIPredict(TestCLIBase):
         pass
 
 
-class TestCLIProtocol(TestCLIBase):
-    pass
-
-
 class TestCLIEndtoEnd(TestCLIBase):
-    pass
+    def setUp(self) -> None:
+        pass
+
+    def test_end_to_end(self):
+        pass

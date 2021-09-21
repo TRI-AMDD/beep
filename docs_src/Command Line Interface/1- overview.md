@@ -8,10 +8,10 @@
 The BEEP CLI can be used like:
 
 ```bash
-$: beep <options> <command>
+$: beep <options> <subcommand>
 ```
 
-Options are specified before the command. All beep commands take at least one file as input and return one or more files as output.
+Options for the base `beep` command are specified before the subcommand. All beep subcommands take at least one file as input and return one or more files as output.
 
 
 Beep has five commands:
@@ -73,9 +73,9 @@ Commands:
 
 ## Output streams
 
-The beep base command options are used for specifying if and where to output the status of any CLI operation.
+The beep base command options are used for specifying if and where to output the metadata and status of any CLI operation.
 
-Human-readable output will be logged to stdout regardless, for example:
+Human-readable output will always be logged to stdout, for example:
 
 ```
 2021-09-21 16:14:43 INFO     Structuring 1 files
@@ -117,7 +117,7 @@ Machine-readable json log file to write. If not specified, no log file will be c
 ```
 
 ### `--output-status-json`
-JSON file to write containing comprehensive structured metadata about any operation and all of its sub-operations. If not specified, no status json will be written.
+JSON file to write containing comprehensive structured metadata about any operation and all of its sub-operations. If not specified, no status json will be written. Example:
 
 ```
 {
@@ -178,6 +178,8 @@ JSON file to write containing comprehensive structured metadata about any operat
 
 ```
 
+Any one beep command (e.g., `beep structure *`), regardless of how many files it intakes or generates, will always produce exactly one status json if `--output-status-json` is defined.
+
 
 ## Fault-tolerance
 
@@ -186,13 +188,33 @@ JSON file to write containing comprehensive structured metadata about any operat
 By default, BEEP runs all operations in a fault-tolerant manner. This means that if the CLI command syntax is valid, but internally an operation or sub-operation fails, the process will
 return successful. 
 
-To disable this behavior, which will cause *any* error in any operation or sub-operation to fail, use the `--halt-on-error` flag.
+To disable this behavior, which will cause *any* error in any operation or sub-operation to fail the entire command use the `--halt-on-error` flag.
 
 
-## Metadata and run-tracking
+## Extra metadata and run-tracking with status json
 
-Running many experiments can make it difficult to keep track of which input and output files correspond to which experiment. 
+Running many experiments can make it difficult to keep track of which input and output files correspond to which experiment. Data about input files and output files is kept in 
+the status json, but for further tracking there are two arguments which can be specified:
+
+### `--run-id`
+An integer run_id to associate with this operation. The `run-id` is recorded in the `metadata` field of any operation in its status json.
 
 
-## Examples
+### `--tags`
+A list of string tags to associate with this operation. The `tags` are recorded in the `metadata` field of any operation in its status json.
+
+
+An example of a status json containing a user run id and user tags:
+
+
+```
+# in status json output
+...
+  "metadata": {
+    "beep_verison": "2021.8.2.15",
+    "op_datetime_utc": "2021-09-04 00:40:12",
+    "run_id": 234,
+    "tags": ["my_tag_1", "TRI_experiments_2021", "debugging"]
+  }
+```
 
