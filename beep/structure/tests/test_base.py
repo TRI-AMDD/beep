@@ -47,7 +47,6 @@ class TestBEEPDatapath(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
 
         # Use arbin memloaded inputs as source of non-diagnostic truth
         arbin_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_arbin_memloaded.csv")

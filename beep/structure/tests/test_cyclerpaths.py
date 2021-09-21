@@ -49,8 +49,6 @@ class TestArbinDatapath(unittest.TestCase):
 
         )
 
-        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
-
     # from RCRT.test_serialization
     def test_serialization(self):
         smaller_run = ArbinDatapath.from_file(self.bad_file)
@@ -70,7 +68,7 @@ class TestArbinDatapath(unittest.TestCase):
         ad = ArbinDatapath.from_file(self.good_file)
         self.assertEqual(ad.paths.get("raw"), self.good_file)
         self.assertEqual(ad.paths.get("metadata"), self.good_file.replace(".csv", "_Metadata.csv"))
-        self.assertTupleEqual(ad.raw_data.shape, (251263, 16))
+        self.assertTupleEqual(ad.raw_data.shape, (251263, 15))
 
     # based on PCRT.test_from_arbin_insufficient_interpolation_length
     def test_from_arbin_insufficient_interpolation_length(self):
@@ -102,7 +100,6 @@ class TestMaccorDatapath(unittest.TestCase):
         # Note: this is a legacy file
         self.diagnostic_interpolation_file = os.path.join(TEST_FILE_DIR,
                                                           "PredictionDiagnostics_000132_00004C_structure.json")
-        os.environ["BEEP_PROCESSING_DIR"] = TEST_FILE_DIR
 
     # based on RCRT.test_ingestion_maccor
     # based on RCRT.test_timezone_maccor
