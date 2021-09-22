@@ -214,7 +214,6 @@ def cli(ctx, log_file, run_id, tags, output_status_json, halt_on_error):
     ctx.obj.output_status_json = output_status_json
     ctx.obj.halt_on_error = halt_on_error
 
-
     if log_file:
         hdlr = logging.FileHandler(log_file, "a")
         hdlr.setFormatter(formatter_jsonl)
@@ -756,7 +755,8 @@ def featurize(
 
                 if is_valid:
                     op_subresult["valid"] = True
-                    logger.info(f"{log_prefix}: Featurizer {fclass_name} valid with params {f_hyperparams} for '{file}'")
+                    logger.info(f"{log_prefix}: Featurizer {fclass_name} valid with "
+                                f"params {f_hyperparams} for '{file}'")
                 else:
                     raise BEEPFeaturizationError(reason)
 
@@ -811,7 +811,8 @@ def featurize(
             output_filename = os.path.join(ctx.obj.cwd, default_filename)
 
         dumpfn(feature_matrix, output_filename)
-        logger.info(f"Feature matrix of size {feature_matrix.matrix.shape} successfully created and saved to {output_filename}")
+        logger.info(f"Feature matrix of size {feature_matrix.matrix.shape} s"
+                    f"uccessfully created and saved to {output_filename}")
         feature_matrix_status["created"] = True
         feature_matrix_status["traceback"] = None
         feature_matrix_status["output"] = output_filename

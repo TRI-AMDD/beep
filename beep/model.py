@@ -92,7 +92,7 @@ class BEEPLinearModelExperiment(MSONable):
                 f"Model {model_name} not supported by {self.__class__.__name__}")
 
         if len(targets) < 1:
-            raise ValueError(f"At least one target must be specified")
+            raise ValueError("At least one target must be specified")
 
         self.feature_matrix = feature_matrix
         self.target_matrix = target_matrix
@@ -121,10 +121,10 @@ class BEEPLinearModelExperiment(MSONable):
         self.impute_strategy = impute_strategy
         if X.shape[0] < 2 or X.shape[1] < 1:
             raise BEEPMLExperimentError(
-                f"Cleaned feature matrix has dimensions of less "
-                f"than 1 feature or less than 2 samples. Try adjusting "
-                f"the thresholds for cleaning or examine your feature "
-                f"matrix."
+                "Cleaned feature matrix has dimensions of less "
+                "than 1 feature or less than 2 samples. Try adjusting "
+                "the thresholds for cleaning or examine your feature "
+                "matrix."
             )
 
         # Form the clean target matrix
@@ -333,7 +333,7 @@ class BEEPLinearModelExperiment(MSONable):
         X = self.scaler.transform(X)
         y_pred = self.model.predict(X)
 
-        #y_pred is an array, so we reattach the same indices
+        # y_pred is an array, so we reattach the same indices
         # e.g., if idx contains filenames
         # which is important in case samples were dropped
         y_pred = pd.DataFrame(data=y_pred, columns=self.targets, index=X_indices)
@@ -386,7 +386,7 @@ class BEEPLinearModelExperiment(MSONable):
             return df.apply(lambda x: x.fillna(x.median()), axis=0)
         elif method == "mean":
             return df.apply(lambda x: x.fillna(x.mean()), axis=0)
-        elif method is 'none':
+        elif method == 'none':
             return df
         else:
             raise ValueError(f"impute_strategy {method} unsupported!")

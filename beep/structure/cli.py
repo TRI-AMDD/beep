@@ -115,25 +115,3 @@ def auto_load_processed(path):
             raise TypeError(f"Unknown type for legacy processed json! `{type(processed_obj)}`")
     else:
         return processed_obj
-
-
-def main():
-    """Main function of this module, takes in arguments of an input
-    and output filename and uses the input file to create a
-    structured data output for analysis/ML processing.
-    """
-    logger.info("starting", extra=SERVICE_CONFIG)
-    logger.info("Running version=%s", __version__, extra=SERVICE_CONFIG)
-    try:
-        args = docopt(__doc__)
-        input_json = args["INPUT_JSON"]
-        print(process_file_list_from_json(input_json))
-    except Exception as e:
-        logger.error(str(e), extra=SERVICE_CONFIG)
-        raise e
-    logger.info("finish", extra=SERVICE_CONFIG)
-    return None
-
-
-if __name__ == "__main__":
-    main()

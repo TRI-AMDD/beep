@@ -306,8 +306,8 @@ class DiagnosticSummaryStats(CycleSummaryStats):
             pos=None,
             cycle_types=("rpt_0.2C", "rpt_1C", "rpt_2C"),
             metrics=(
-            "discharge_capacity", "discharge_energy", "charge_capacity",
-            "charge_energy")
+                    "discharge_capacity", "discharge_energy", "charge_capacity",
+                    "charge_energy")
     ):
         """
         Helper function to calculate difference between summary values in the diagnostic cycles
@@ -896,7 +896,9 @@ class DiagnosticProperties(BEEPFeaturizer):
             real_throughput_to_threshold = x_to_threshold[
                                                interpolation_axes.index(
                                                    "normalized_regular_throughput")] * \
-                                           df['initial_regular_throughput'].values[0]
+                                           df[
+                                               'initial_regular_throughput'].values[
+                                               0]
             x_to_threshold.append(real_throughput_to_threshold)
             interpolation_axes.append("real_regular_throughput")
 

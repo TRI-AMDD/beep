@@ -222,7 +222,7 @@ class BEEPFeatureMatrix(MSONable):
                     # on identical files
 
                     # sort params for this featurizer obj by key
-                    params = sorted(list(bf.hyperparameters.items()),key=lambda x: x[0])
+                    params = sorted(list(bf.hyperparameters.items()), key=lambda x: x[0])
 
                     # Prevent identical features from identical input files
                     # create a unique operation string for the application of this featurizer
