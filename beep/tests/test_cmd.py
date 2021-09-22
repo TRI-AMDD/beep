@@ -5,12 +5,34 @@ import os
 import unittest
 import shutil
 
+import click
 from monty.serialization import loadfn, dumpfn
 from click.testing import CliRunner
 
-from beep import PROTOCOL_PARAMETERS_DIR
+from beep import logger, PROTOCOL_PARAMETERS_DIR
 from beep.cmd import cli
 from beep.tests.constants import TEST_FILE_DIR, SKIP_MSG, BIG_FILE_TESTS
+
+
+
+@cli.command(
+    help="Test dummy command"
+)
+@click.option(
+    "--test",
+    type=click.STRING,
+    help="Test dummy option for dummy command"
+)
+@click.pass_context
+def dummy(ctx, test):
+    logger.debug(f"Test msg: {test}")
+    logger.info("Info msg")
+    logger.warning("Warning message")
+    logger.error("Error message")
+    logger.critical("CRITICAL MESSAGE!")
+
+    dumpfn({"example": "status"}, ctx.obj.output_status_json)
+
 
 
 class TestCLIBase(unittest.TestCase):
@@ -31,6 +53,48 @@ class TestCLI(TestCLIBase):
         self.output_dir = os.path.join(TEST_FILE_DIR, "cmd_TestCLIBase")
         if not os.path.exists(self.output_dir):
             os.mkdir(self.output_dir)
+
+        self.log_file = os.path.join(self.output_dir, "test_log.jsonl")
+        self.status_json_path = os.path.join(self.output_dir, "test-log.json")
+
+
+    def test_structured_log_file(self):
+        result = self.runner.invoke(
+            cli,
+            [
+                "--output-status-json",
+                self.status_json_path,
+                "--log-file",
+                self.log_file,
+                "dummy",
+            ]
+        )
+        self.assertEqual(result.exit_code, 0)
+        self.assertIsNotNone(result.output)
+        status = loadfn(self.status_json_path)
+
+        self.assertEqual(status["example"], "status")
+
+        log_msgs = []
+        with open(self.log_file, "r") as f:
+            for l in f.readlines():
+                if l:
+                    log_msgs.append(l)
+
+        self.assertTrue(log_msgs)
+        self.assertEqual(len(log_msgs), 5)
+
+
+class TestCLIUtils(unittest.TestCase):
+
+    def test_add_suffix(self):
+        pass
+
+    def test_add_metadata_to_status_json(self):
+        pass
+
+    def test_md5sum(self):
+        pass
 
 
 class TestCLIStructure(TestCLIBase):
