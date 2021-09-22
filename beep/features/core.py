@@ -504,11 +504,11 @@ class DeltaQFastCharge(BEEPFeaturizer):
         """
 
         if not self.datapath.structured_summary.index.max() > \
-               self.hyperparameters["final_pred_cycle"]:
+            self.hyperparameters["final_pred_cycle"]:
             return False, "Structured summary index max is less than final pred cycle"
         elif not self.datapath.structured_summary.index.min() <= \
-                 self.hyperparameters["init_pred_cycle"]:
-            return False, "Structured symmary index min is more than initial pred cycle"
+            self.hyperparameters["init_pred_cycle"]:
+            return False, "Structured summary index min is more than initial pred cycle"
         elif "cycle_index" not in self.datapath.structured_summary.columns:
             return False, "Structured summary missing critical data: 'cycle_index'"
         elif "cycle_index" not in self.datapath.structured_data.columns:

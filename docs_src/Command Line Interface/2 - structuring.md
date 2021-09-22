@@ -130,4 +130,42 @@ $: beep structure /path/to/some_files/* /other/path/file.csv
 
 
 
-If you pass the `--s3-bucket` argument, you can 
+If you pass the `--s3-bucket` argument, you can select files or globs based on keys in this bucket. Note you
+must have boto3 set up in order to use the S3 files with BEEP. 
+
+
+Example for S3:
+
+```shell
+S: beep structure --s3-bucket XXXXXXXXXXXXX /my/s3/key.071 
+```
+
+
+
+
+## Customize structuring parameters
+
+You can customize the structuring parameters using these individual variables:
+
+- `--v-range`
+- `--resolution`
+- `--nominal-capacity`
+- `--full-fast-charge`
+- `--charge-axis`
+- `--discharge-axis`
+
+Example:
+
+```shell
+$: beep structure * --v-range 0.5 0.9 --resolution 200 --nominal-capacity 1.1 --full-fast-charge 0.9
+```
+
+
+Alternatively, you can use automatic structuring by passing the `--automatic` flag. While this flag will by default
+use a general-purpose set of files for determining structuring parameters, you can specifcy your own parameters for 
+autostructuring by passing both `--automatic` and `--protocol-parameters-dir`. For example
+
+
+```shell
+$: beep structure * --protocol-parameters-dir /path/to/my/params --automatic
+```
