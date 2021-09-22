@@ -1082,7 +1082,7 @@ def train(
     additional_kwargs = {k: v for k, v in additional_kwargs.items() if v is not None}
 
     logger.debug(f"Hashing file '{feature_matrix_file}' to MD5")
-    logger.debug(f"Hasshing file '{target_matrix_file}' to MD5")
+    logger.debug(f"Hashing file '{target_matrix_file}' to MD5")
     status_json = {
         "op_type": "train",
         "files": {
@@ -1225,7 +1225,10 @@ def predict(
             "predict_on_features_md5_chksum": md5sum(feature_matrix_file)
         },
         "walltime": None,
-        "output": None,
+        "predictions": {
+            "created": False,
+            "output": None
+        },
         "traceback": None,
     }
 
@@ -1271,7 +1274,8 @@ def predict(
 
     if predicted is not None:
         predicted.to_json(output_filename)
-        status_json["output"] = output_filename
+        status_json["predictions"]["created"] = True
+        status_json["predictions"]["output"] = output_filename
         logger.info(f"Successfully wrote predicted dataframe to {output_filename}.")
 
     status_json = add_metadata_to_status_json(status_json, ctx.obj.run_id, ctx.obj.tags)

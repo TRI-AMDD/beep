@@ -302,13 +302,38 @@ class TestCLITrain(TestCLIBase):
 
 class TestCLIPredict(TestCLIBase):
     def setUp(self) -> None:
-        self.model_file = os.path.join(TEST_FILE_DIR, "")
+        self.model_file = os.path.join(TEST_FILE_DIR, "modelling_test_files", "model-src.json.gz")
+        self.output_dir = os.path.join(TEST_FILE_DIR, "cmd_TestCLIPredict")
+        self.output_filename = os.path.join(self.output_dir, "predictions.json")
+        self.status_json_path = os.path.join(self.output_dir, "status-predict.json")
 
-    def test_defaults(self):
-        pass
+        # Just predict on the same features as training for the time being
+        self.feature_matrix_file = os.path.join(TEST_FILE_DIR, "modelling_test_files", "features.json.gz")
 
-    def test_advanced(self):
-        pass
+        if not os.path.exists(self.output_dir):
+            os.mkdir(self.output_dir)
+
+    def test_basic(self):
+        result = self.runner.invoke(
+            cli,
+            [
+                "--output-status-json",
+                self.status_json_path,
+                "predict",
+                "--output-filename",
+                self.output_filename,
+                "--feature-matrix-file",
+                self.feature_matrix_file,
+                self.model_file
+            ]
+        )
+
+        self.assertEqual(result.exit_code, 0)
+        self.assertIsNotNone(result.output)
+        status = loadfn(self.status_json_path)
+
+        self.assertTrue(status["predictions"]["created"])
+        self.assertTrue(os.path.exists(status["predictions"]["output"]))
 
 
 class TestCLIProtocol(TestCLIBase):
