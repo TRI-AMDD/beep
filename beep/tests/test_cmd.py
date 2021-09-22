@@ -10,7 +10,7 @@ from monty.serialization import loadfn, dumpfn
 from click.testing import CliRunner
 
 from beep import logger, PROTOCOL_PARAMETERS_DIR
-from beep.cmd import cli
+from beep.cmd import cli, add_suffix, add_metadata_to_status_json, md5sum
 from beep.tests.constants import TEST_FILE_DIR, SKIP_MSG, BIG_FILE_TESTS
 
 
@@ -31,7 +31,12 @@ def dummy(ctx, test):
     logger.error("Error message")
     logger.critical("CRITICAL MESSAGE!")
 
+    if test == "throw_error":
+        raise ValueError("Some error!")
+
     dumpfn({"example": "status"}, ctx.obj.output_status_json)
+
+
 
 
 
@@ -85,16 +90,52 @@ class TestCLI(TestCLIBase):
         self.assertEqual(len(log_msgs), 5)
 
 
+    def test_halt_on_error(self):
+        result = self.runner.invoke(
+            cli,
+            [
+                "--output-status-json",
+                self.status_json_path,
+                "--log-file",
+                self.log_file,
+                "--halt-on-error",
+                "dummy",
+                "--test",
+                "throw_error",
+            ]
+        )
+        self.assertEqual(result.exit_code, 1)
+
+
 class TestCLIUtils(unittest.TestCase):
 
     def test_add_suffix(self):
-        pass
+        full_path = "/path/to/some/file.csv"
+        output_dir = "/path/to/output/dir"
+        suffix = "-ex"
+        modified_ext = ".json"
+
+        new_filename = add_suffix(
+            full_path, output_dir, suffix, modified_ext
+        )
+
+        self.assertEqual(new_filename, "/path/to/output/dir/file-ex.json")
 
     def test_add_metadata_to_status_json(self):
-        pass
+        status_dict = {
+            "a": 10
+        }
+
+        updated_status = add_metadata_to_status_json(status_dict, 1, ["Tag1"])
+        self.assertIn("metadata", updated_status)
+        self.assertEqual(updated_status["metadata"]["run_id"], 1)
+        self.assertEqual(updated_status["metadata"]["tags"][0], "Tag1")
 
     def test_md5sum(self):
-        pass
+        f = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000132_00004C_structure.json")
+        md5 = md5sum(f)
+        self.assertEqual(md5, "65f497614b17de12283ce7ea04e79e39")
+
 
 
 class TestCLIStructure(TestCLIBase):
