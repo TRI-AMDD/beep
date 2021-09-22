@@ -535,7 +535,7 @@ class TestRawToFeatures(unittest.TestCase):
             TEST_FILE_DIR, "PreDiag_000287_000128.092"
         )
 
-    # @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
+    @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_raw_to_features(self):
 
         download_s3_object(bucket=self.maccor_file_w_parameters_s3["bucket"],

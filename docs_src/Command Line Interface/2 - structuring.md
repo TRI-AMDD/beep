@@ -1,7 +1,7 @@
 # Structure
 
 
-The `beep structure` command takes in *N* raw battery cycler files (mostly text or csv) and produces *N* structured data json files. 
+The `beep structure` command takes in *N* raw battery cycler files (mostly text or csv) and produces *N* standardized, structured data json files. 
 
 ![cli_structuring](../static/op_graphic_structuring.png)
 
@@ -68,3 +68,66 @@ Options:
   --help                          Show this message and exit.
 
 ```
+
+
+## Specifying output locations
+
+There are three options for specifying output filenames:
+
+- **Specify all output filenames, one for each input file.** Should be `json`. Use `--output-filenames` (`-o`) to specify files, for example:
+
+```shell
+    
+$: beep structure -o output1.json -o /path/to/output2.json input1.csv input2.csv
+    
+# Outputs output1.json in the CWD and output2.json at /path/to/output.json. 
+```
+
+- **Specify an output directory where auto-named files will be output.** Directory should exist.  Use `--output-dir` to specify.
+
+```shell
+    
+$: beep structure -d /path/to/output_dir input1.csv input2.csv
+    
+# Outputs 
+# - /path/to/output_dir/input1-structured.json
+# - /path/to/output_dir/input2-structured.json
+```
+
+
+- **Automatically named files output in CWD.** No options needed.
+
+```shell
+    
+$: beep structure input1.csv input2.csv
+    
+# Outputs in the CWD:
+# - ./input1-structured.json
+# - ./input2-structured.json
+```
+
+
+## Select files (including from S3)
+
+Input files can be named individually or globbed. Input files should be supported by BEEP; see [Cycler Data Requirements](/data/) for more details. 
+
+
+Example 1:
+
+```shell
+$: beep structure file1.csv file2.070
+```
+
+
+*Input files do not need to belong to the same cycler type to work together in one operation.*
+
+
+Example 2:
+
+```shell
+$: beep structure /path/to/some_files/* /other/path/file.csv
+```
+
+
+
+If you pass the `--s3-bucket` argument, you can 
