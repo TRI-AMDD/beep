@@ -14,7 +14,6 @@ from beep.cmd import cli, add_suffix, add_metadata_to_status_json, md5sum
 from beep.tests.constants import TEST_FILE_DIR, SKIP_MSG, BIG_FILE_TESTS
 
 
-
 @cli.command(
     help="Test dummy command"
 )
@@ -35,9 +34,6 @@ def dummy(ctx, test):
         raise ValueError("Some error!")
 
     dumpfn({"example": "status"}, ctx.obj.output_status_json)
-
-
-
 
 
 class TestCLIBase(unittest.TestCase):
@@ -61,7 +57,6 @@ class TestCLI(TestCLIBase):
 
         self.log_file = os.path.join(self.output_dir, "test_log.jsonl")
         self.status_json_path = os.path.join(self.output_dir, "test-log.json")
-
 
     def test_structured_log_file(self):
         result = self.runner.invoke(
@@ -88,7 +83,6 @@ class TestCLI(TestCLIBase):
 
         self.assertTrue(log_msgs)
         self.assertEqual(len(log_msgs), 5)
-
 
     def test_halt_on_error(self):
         result = self.runner.invoke(
@@ -132,10 +126,10 @@ class TestCLIUtils(unittest.TestCase):
         self.assertEqual(updated_status["metadata"]["tags"][0], "Tag1")
 
     def test_md5sum(self):
-        f = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000132_00004C_structure.json")
+        f = os.path.join(TEST_FILE_DIR,
+                         "PredictionDiagnostics_000132_00004C_structure.json")
         md5 = md5sum(f)
         self.assertEqual(md5, "65f497614b17de12283ce7ea04e79e39")
-
 
 
 class TestCLIStructure(TestCLIBase):
@@ -143,12 +137,15 @@ class TestCLIStructure(TestCLIBase):
     def setUp(self) -> None:
         inputs = [
             "2017-12-04_4_65C-69per_6C_CH29.csv",
-            "2017-05-09_test-TC-contact_CH33.csv",  # Fails for not meeting naming convention
+            "2017-05-09_test-TC-contact_CH33.csv",
+            # Fails for not meeting naming convention
             "2017-08-14_8C-5per_3_47C_CH44.csv",
         ]
-        self.input_paths = [os.path.join(TEST_FILE_DIR, path) for path in inputs]
+        self.input_paths = [os.path.join(TEST_FILE_DIR, path) for path in
+                            inputs]
         self.output_dir = os.path.join(TEST_FILE_DIR, "cmd_TestCLIStructure")
-        self.status_json_path = os.path.join(self.output_dir, "status-structure.json")
+        self.status_json_path = os.path.join(self.output_dir,
+                                             "status-structure.json")
 
         if not os.path.exists(self.output_dir):
             os.mkdir(self.output_dir)
@@ -181,7 +178,8 @@ class TestCLIStructure(TestCLIBase):
         self.assertFalse(status["files"][self.input_paths[1]]["structured"])
         self.assertFalse(status["files"][self.input_paths[2]]["structured"])
 
-        self.assertTrue(os.path.exists(status["files"][self.input_paths[0]]["output"]))
+        self.assertTrue(
+            os.path.exists(status["files"][self.input_paths[0]]["output"]))
 
     def test_advanced(self):
         """Test the structuring CLI with some options specified"""
@@ -206,9 +204,12 @@ class TestCLIStructure(TestCLIBase):
 
         self.assertTrue(status["files"][self.input_paths[0]]["structured"])
         self.assertTrue(status["files"][self.input_paths[0]]["validated"])
-        self.assertEqual(status["files"][self.input_paths[0]]["structuring_parameters"]["diagnostic_resolution"], 500)
+        self.assertEqual(
+            status["files"][self.input_paths[0]]["structuring_parameters"][
+                "diagnostic_resolution"], 500)
 
-        self.assertTrue(os.path.exists(status["files"][self.input_paths[0]]["output"]))
+        self.assertTrue(
+            os.path.exists(status["files"][self.input_paths[0]]["output"]))
 
     # @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_s3(self):
@@ -245,13 +246,15 @@ class TestCLIFeaturize(TestCLIBase):
             "PreDiag_000440_0000FB_structure.json",
             "PredictionDiagnostics_000132_00004C_structure.json"
         ]
-        self.input_paths = [os.path.join(TEST_FILE_DIR, path) for path in inputs]
+        self.input_paths = [os.path.join(TEST_FILE_DIR, path) for path in
+                            inputs]
 
         self.output_dir = os.path.join(TEST_FILE_DIR, "cmd_TestCLIFeaturize")
         if not os.path.exists(self.output_dir):
             os.mkdir(self.output_dir)
 
-        self.status_json_path = os.path.join(self.output_dir, "status-featurize.json")
+        self.status_json_path = os.path.join(self.output_dir,
+                                             "status-featurize.json")
 
     def test_defaults(self):
         """Test a very basic CLI featurization."""
@@ -278,9 +281,11 @@ class TestCLIFeaturize(TestCLIBase):
         self.assertTrue(os.path.exists(status["feature_matrix"]["output"]))
 
         for fname in self.input_paths:
-            self.assertTrue(status["files"][fname]["featurizers"][-1]["featurized"])
+            self.assertTrue(
+                status["files"][fname]["featurizers"][-1]["featurized"])
             self.assertTrue(status["files"][fname]["featurizers"][-1]["valid"])
-            self.assertIsNone(status["files"][fname]["featurizers"][-1]["output"])
+            self.assertIsNone(
+                status["files"][fname]["featurizers"][-1]["output"])
 
     def test_advanced(self):
         result = self.runner.invoke(
@@ -315,7 +320,8 @@ class TestCLIFeaturize(TestCLIBase):
                 self.assertTrue(os.path.exists(fresult["output"]))
 
         self.assertEqual(
-            status["files"][self.input_paths[0]]["featurizers"][-1]["hyperparameters"]["cycle_comp_num"][0],
+            status["files"][self.input_paths[0]]["featurizers"][-1][
+                "hyperparameters"]["cycle_comp_num"][0],
             11
         )
 
@@ -327,7 +333,9 @@ class TestCLITrain(TestCLIBase):
             "features.json.gz",
             "targets.json.gz"
         ]
-        self.input_paths = [os.path.join(TEST_FILE_DIR, "modelling_test_files", p) for p in input_paths]
+        self.input_paths = [
+            os.path.join(TEST_FILE_DIR, "modelling_test_files", p) for p in
+            input_paths]
         self.features_file = self.input_paths[0]
         self.targets_file = self.input_paths[1]
 
@@ -336,7 +344,8 @@ class TestCLITrain(TestCLIBase):
             os.mkdir(self.output_dir)
 
         self.output_filename = os.path.join(self.output_dir, "model.json.gz")
-        self.status_json_path = os.path.join(self.output_dir, "status-train.json")
+        self.status_json_path = os.path.join(self.output_dir,
+                                             "status-train.json")
 
     def test_basic(self):
         # Training only
@@ -407,13 +416,17 @@ class TestCLITrain(TestCLIBase):
 
 class TestCLIPredict(TestCLIBase):
     def setUp(self) -> None:
-        self.model_file = os.path.join(TEST_FILE_DIR, "modelling_test_files", "model-src.json.gz")
+        self.model_file = os.path.join(TEST_FILE_DIR, "modelling_test_files",
+                                       "model-src.json.gz")
         self.output_dir = os.path.join(TEST_FILE_DIR, "cmd_TestCLIPredict")
         self.output_filename = os.path.join(self.output_dir, "predictions.json")
-        self.status_json_path = os.path.join(self.output_dir, "status-predict.json")
+        self.status_json_path = os.path.join(self.output_dir,
+                                             "status-predict.json")
 
         # Just predict on the same features as training for the time being
-        self.feature_matrix_file = os.path.join(TEST_FILE_DIR, "modelling_test_files", "features.json.gz")
+        self.feature_matrix_file = os.path.join(TEST_FILE_DIR,
+                                                "modelling_test_files",
+                                                "features.json.gz")
 
         if not os.path.exists(self.output_dir):
             os.mkdir(self.output_dir)
@@ -444,13 +457,15 @@ class TestCLIPredict(TestCLIBase):
 class TestCLIProtocol(TestCLIBase):
     def setUp(self) -> None:
         self.output_dir = os.path.join(TEST_FILE_DIR, "cmd_TestCLIProtocol")
-        self.status_json_path = os.path.join(self.output_dir, "status-protocol.json")
+        self.status_json_path = os.path.join(self.output_dir,
+                                             "status-protocol.json")
         if not os.path.exists(self.output_dir):
             os.mkdir(self.output_dir)
 
     def test_basic(self):
 
-        csv_file = os.path.join(PROTOCOL_PARAMETERS_DIR, "Drive_parameters - GP.csv")
+        csv_file = os.path.join(PROTOCOL_PARAMETERS_DIR,
+                                "Drive_parameters - GP.csv")
 
         result = self.runner.invoke(
             cli,
