@@ -61,6 +61,8 @@ class BEEPDatapath(abc.ABC, MSONable):
             - raw_data (pd.DataFrame): All raw data from the raw input file.
 
         Less important attributes:
+            - structuring_parameters: A dictionary of the structuring parameters used to structure
+                this object.
             - metadata (BEEPDatapath.CyclerRunMetadata): An object holding all metadata.
             - paths (dict): A mapping of {descriptor: full_path or [paths]} for all files related to this datapath.
                 This can include things like "raw", "metadata", "structured", as well as other paths (e.g., "eis").
@@ -563,6 +565,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         self.diagnostic_data = None
         self.structured_summary = None
         self.diagnostic_summary = None
+        self.structuring_parameters = {}
         logger.debug("Structure has been reset.")
 
     def interpolate_step(
