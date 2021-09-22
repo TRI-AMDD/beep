@@ -216,14 +216,88 @@ class TestCLIFeaturize(TestCLIBase):
 
 
 class TestCLITrain(TestCLIBase):
+
     def setUp(self) -> None:
-        pass
+        input_paths = [
+            "features.json.gz",
+            "targets.json.gz"
+        ]
+        self.input_paths = [os.path.join(TEST_FILE_DIR, "modelling_test_files", p) for p in input_paths]
+        self.features_file = self.input_paths[0]
+        self.targets_file = self.input_paths[1]
 
-    def test_defaults(self):
-        pass
+        self.outputs_dir = os.path.join(TEST_FILE_DIR, "cmd_TestCLITrain")
+        if not os.path.exists(self.outputs_dir):
+            os.mkdir(self.outputs_dir)
 
-    def test_advanced(self):
-        pass
+        self.output_filename = os.path.join(self.outputs_dir, "model.json.gz")
+        self.status_json_path = os.path.join(self.outputs_dir, "status-train.json")
+
+    def test_basic(self):
+        # Training only
+        result = self.runner.invoke(
+            cli,
+            [
+                "--output-status-json",
+                self.status_json_path,
+                "train",
+                "--output-filename",
+                self.output_filename,
+                "--feature-matrix-file",
+                self.features_file,
+                "--target-matrix-file",
+                self.targets_file,
+                "--targets",
+                "capacity_0.92::TrajectoryFastCharge",
+                "--model-name",
+                "elasticnet",
+                "--kfold",
+                2,
+                "--max-iter",
+                200
+            ]
+        )
+
+        self.assertEqual(result.exit_code, 0)
+        self.assertIsNotNone(result.output)
+        status = loadfn(self.status_json_path)
+        self.assertTrue(status["trained_model"]["created"])
+        self.assertTrue(os.path.exists(status["trained_model"]["output"]))
+
+        # Training and model results from validation set
+        result2 = self.runner.invoke(
+            cli,
+            [
+                "--output-status-json",
+                self.status_json_path,
+                "train",
+                "--output-filename",
+                self.output_filename,
+                "--feature-matrix-file",
+                self.features_file,
+                "--target-matrix-file",
+                self.targets_file,
+                "--targets",
+                "capacity_0.92::TrajectoryFastCharge",
+                "--model-name",
+                "elasticnet",
+                "--kfold",
+                2,
+                "--train-on-frac-and-score",
+                0.8,
+                "--max-iter",
+                200
+            ]
+        )
+        self.assertEqual(result2.exit_code, 0)
+        self.assertIsNotNone(result2.output)
+
+        status = loadfn(self.status_json_path)
+
+        self.assertTrue(status["trained_model"]["created"])
+        self.assertTrue(os.path.exists(status["trained_model"]["output"]))
+        self.assertAlmostEqual(status["model_results"]["test_fraction"], 0.8, 2)
+        self.assertIn("test_error", status["model_results"])
 
 
 class TestCLIPredict(TestCLIBase):

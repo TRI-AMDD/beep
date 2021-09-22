@@ -1093,7 +1093,10 @@ def train(
         },
         "model_results": {},
         "walltime": None,
-        "output": None,
+        "trained_model": {
+            "created": False,
+            "output": None,
+        },
         "traceback": None,
     }
 
@@ -1150,7 +1153,8 @@ def train(
             output_filename = os.path.join(ctx.obj.cwd, default_filename)
         dumpfn(blme, output_filename)
         logger.info(f"Wrote model {model} to path: {output_filename}")
-        status_json["output"] = output_filename
+        status_json["trained_model"]["created"] = True
+        status_json["trained_model"]["output"] = output_filename
 
     status_json = add_metadata_to_status_json(status_json, ctx.obj.run_id, ctx.obj.tags)
     osj = ctx.obj.output_status_json
