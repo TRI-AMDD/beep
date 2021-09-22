@@ -1,5 +1,4 @@
 """Classes and functions for handling Maccor battery cycler data.
-
 """
 import os
 from datetime import datetime

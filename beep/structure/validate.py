@@ -12,42 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Module and script for validating battery cycler flat files using dictionary
-key or DataFrame based validation of typing, min/max, and non-allowed values
+Classes for advanced or specialized validation procedures on cycler data.
 
-Usage:
-    validate [INPUT_JSON]
+Validation classes are designed to work with datapaths, meaning
+column names of input dataframes are standardized according to the
+validation schema.
 
-Options:
-    -h --help       Show this screen
-    --version       Show version
-
-The validation script, `validate`, runs the validation procedure contained
-in beep.validate on renamed files according to the output of `collate`.
-It also updates a general json validation record in `/data-share/validation/validation.json`.
-
-The input json must contain the following fields
-
-* `file_list` - the list of filenames to be validated
-
-The output json will have the following fields:
-
-* `validity` - a list of boolean validation results, e. g. `[True, True, False]`
-* `file_list` - a list of full path filenames which have been processed
-
-Example:
-$ validate '{"fid": [0, 1, 2], "strname": ["2017-05-09_test-TC-contact", "2017-08-14_8C-5per_3_47C",
-    "2017-12-04_4_65C-69per_6C"], "file_list": ["/data-share/renamed_cycler_files/FastCharge/FastCharge_0_CH33.csv",
-    "/data-share/renamed_cycler_files/FastCharge/FastCharge_1_CH44.csv",
-    "/data-share/renamed_cycler_files/FastCharge/FastCharge_2_CH29.csv"],
-    "protocol": [null, "8C(5%)-3.47C", "4.65C(69%)-6C"], "date": ["2017-05-09", "2017-08-14", "2017-12-04"],
-    "channel_no": ["CH33", "CH44", "CH29"],
-    "filename": ["/data-share/raw_cycler_files/2017-05-09_test-TC-contact_CH33.csv",
-        "/data-share/raw_cycler_files/2017-08-14_8C-5per_3_47C_CH44.csv",
-        "/data-share/raw_cycler_files/2017-12-04_4_65C-69per_6C_CH29.csv"]}'
-{"validity": [false, false, true], "file_list": ["/data-share/renamed_cycler_files/FastCharge/FastCharge_0_CH33.csv",
-    "/data-share/renamed_cycler_files/FastCharge/FastCharge_1_CH44.csv",
-    "/data-share/renamed_cycler_files/FastCharge/FastCharge_2_CH29.csv"]}
 """
 import os
 
@@ -56,13 +26,7 @@ from monty.serialization import loadfn
 
 from beep import VALIDATION_SCHEMA_DIR
 
-DEFAULT_ARBIN_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-arbin-lfp.yaml")
-DEFAULT_MACCOR_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-maccor-lfp.yaml")
-DEFAULT_EIS_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-maccor-eis.yaml")
-PROJECT_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-projects.yaml")
-DEFAULT_VALIDATION_RECORDS = os.path.join(
-    VALIDATION_SCHEMA_DIR, "validation_records.json"
-)
+DEFAULT_ARBIN_SCHEMA = loadfn(os.path.join(VALIDATION_SCHEMA_DIR, "schema-arbin-lfp.yaml"))
 
 
 class SimpleValidator:
@@ -96,13 +60,12 @@ class SimpleValidator:
     logic which is defined in the check_type method below.
     """
 
-    def __init__(self, schema_filename=DEFAULT_ARBIN_SCHEMA):
+    def __init__(self, schema=DEFAULT_ARBIN_SCHEMA):
         """
         Args:
-            schema_filename (str): filename corresponding to
-                the schema
+            schema (dict): Schema to validate against.
         """
-        self.schema = loadfn(schema_filename)
+        self.schema = loadfn(schema)
         self.validation_records = None
 
     @staticmethod
@@ -248,5 +211,5 @@ class SimpleValidator:
         return True, ""
 
 
-class BeepValidationError(Exception):
+class BEEPValidationError(Exception):
     """Custom error to raise when validation fails"""

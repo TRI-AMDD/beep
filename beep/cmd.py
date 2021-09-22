@@ -38,7 +38,7 @@ from beep import (
     __version__
 )
 from beep.structure.cli import auto_load, auto_load_processed
-from beep.structure.validate import BeepValidationError
+from beep.structure.validate import BEEPValidationError
 from beep.features.base import (
     BEEPFeaturizer,
     BEEPFeaturizationError,
@@ -489,7 +489,7 @@ def structure(
             op_result["validated"] = is_valid
 
             if not is_valid:
-                raise BeepValidationError(validation_reason)
+                raise BEEPValidationError(validation_reason)
 
             logger.info(f"File {i + 1} of {n_files}: Validated: {f}")
 

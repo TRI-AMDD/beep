@@ -18,6 +18,7 @@ featurization, and modeling of cycle life with machine learning.  Currently BEEP
 - [Battery Archive](https://www.batteryarchive.org/) data
 
 With partial and forthcoming support for:
+
 - Indigo cyclers
 - [Neware](https://newarebattery.com/) cyclers
 

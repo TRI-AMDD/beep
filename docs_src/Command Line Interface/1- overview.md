@@ -19,7 +19,7 @@ Options for the base `beep` command are specified before the subcommand. All bee
 
 Beep has five subcommands:
 
-- `beep structure`: Parse, interpolate, clean, and standardize a wide range of battery cycler output files.
+- `beep structure`: Parse, interpolate, clean, and standardize a wide range of battery cycler output files. [More info](/Command%20Line%20Interface/2%20-%20structuring/)
 - `beep featurize`: Generate features for learning from structured files.
 - `beep train`: Train a machine learning model based on features.
 - `beep predict`: Predict battery degradation based on learning features and a previously trained model.

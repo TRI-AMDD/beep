@@ -36,6 +36,8 @@ class ArbinDatapath(BEEPDatapath):
 
         Args:
             path (str, Pathlike): Path to the raw data csv.
+            metadata_path (str, None): Path to metadata file, if it
+                cannot be inferred from the path of the raw file.
 
         Returns:
             (ArbinDatapath)
