@@ -23,14 +23,14 @@ class TestCLIBase(unittest.TestCase):
         self.runner = None
 
     def tearDown(self) -> None:
-        shutil.rmtree(self.outputs_dir)
+        shutil.rmtree(self.output_dir)
 
 
 class TestCLI(TestCLIBase):
     def setUp(self) -> None:
-        self.outputs_dir = os.path.join(TEST_FILE_DIR, "cmd_TestCLIBase")
-        if not os.path.exists(self.outputs_dir):
-            os.mkdir(self.outputs_dir)
+        self.output_dir = os.path.join(TEST_FILE_DIR, "cmd_TestCLIBase")
+        if not os.path.exists(self.output_dir):
+            os.mkdir(self.output_dir)
 
 
 class TestCLIStructure(TestCLIBase):
@@ -42,11 +42,11 @@ class TestCLIStructure(TestCLIBase):
             "2017-08-14_8C-5per_3_47C_CH44.csv",
         ]
         self.input_paths = [os.path.join(TEST_FILE_DIR, path) for path in inputs]
-        self.outputs_dir = os.path.join(TEST_FILE_DIR, "cmd_TestCLIStructure")
-        self.status_json_path = os.path.join(self.outputs_dir, "status-structure.json")
+        self.output_dir = os.path.join(TEST_FILE_DIR, "cmd_TestCLIStructure")
+        self.status_json_path = os.path.join(self.output_dir, "status-structure.json")
 
-        if not os.path.exists(self.outputs_dir):
-            os.mkdir(self.outputs_dir)
+        if not os.path.exists(self.output_dir):
+            os.mkdir(self.output_dir)
 
     def test_defaults(self):
         """Test the default structuring configuration with the CLI.
@@ -59,7 +59,7 @@ class TestCLIStructure(TestCLIBase):
                 self.status_json_path,
                 "structure",
                 "--output-dir",
-                self.outputs_dir,
+                self.output_dir,
                 *self.input_paths
             ]
         )
@@ -87,7 +87,7 @@ class TestCLIStructure(TestCLIBase):
                 self.status_json_path,
                 "structure",
                 "--output-dir",
-                self.outputs_dir,
+                self.output_dir,
                 "--automatic",
                 "--protocol-parameters-dir",
                 PROTOCOL_PARAMETERS_DIR,
@@ -117,7 +117,7 @@ class TestCLIStructure(TestCLIBase):
                 self.status_json_path,
                 "structure",
                 "--output-dir",
-                self.outputs_dir,
+                self.output_dir,
                 "--automatic",
                 "--protocol-parameters-dir",
                 PROTOCOL_PARAMETERS_DIR,
@@ -142,11 +142,11 @@ class TestCLIFeaturize(TestCLIBase):
         ]
         self.input_paths = [os.path.join(TEST_FILE_DIR, path) for path in inputs]
 
-        self.outputs_dir = os.path.join(TEST_FILE_DIR, "cmd_TestCLIFeaturize")
-        if not os.path.exists(self.outputs_dir):
-            os.mkdir(self.outputs_dir)
+        self.output_dir = os.path.join(TEST_FILE_DIR, "cmd_TestCLIFeaturize")
+        if not os.path.exists(self.output_dir):
+            os.mkdir(self.output_dir)
 
-        self.status_json_path = os.path.join(self.outputs_dir, "status-featurize.json")
+        self.status_json_path = os.path.join(self.output_dir, "status-featurize.json")
 
     def test_defaults(self):
         """Test a very basic CLI featurization."""
@@ -157,7 +157,7 @@ class TestCLIFeaturize(TestCLIBase):
                 self.status_json_path,
                 "featurize",
                 "--output-dir",
-                self.outputs_dir,
+                self.output_dir,
                 "--featurize-with",
                 "all_features",
                 *self.input_paths
@@ -185,7 +185,7 @@ class TestCLIFeaturize(TestCLIBase):
                 self.status_json_path,
                 "featurize",
                 "--output-dir",
-                self.outputs_dir,
+                self.output_dir,
                 "--featurize-with",
                 "HPPCResistanceVoltageFeatures",
                 "--featurize-with",
@@ -226,12 +226,12 @@ class TestCLITrain(TestCLIBase):
         self.features_file = self.input_paths[0]
         self.targets_file = self.input_paths[1]
 
-        self.outputs_dir = os.path.join(TEST_FILE_DIR, "cmd_TestCLITrain")
-        if not os.path.exists(self.outputs_dir):
-            os.mkdir(self.outputs_dir)
+        self.output_dir = os.path.join(TEST_FILE_DIR, "cmd_TestCLITrain")
+        if not os.path.exists(self.output_dir):
+            os.mkdir(self.output_dir)
 
-        self.output_filename = os.path.join(self.outputs_dir, "model.json.gz")
-        self.status_json_path = os.path.join(self.outputs_dir, "status-train.json")
+        self.output_filename = os.path.join(self.output_dir, "model.json.gz")
+        self.status_json_path = os.path.join(self.output_dir, "status-train.json")
 
     def test_basic(self):
         # Training only
@@ -302,7 +302,7 @@ class TestCLITrain(TestCLIBase):
 
 class TestCLIPredict(TestCLIBase):
     def setUp(self) -> None:
-        pass
+        self.model_file = os.path.join()
 
     def test_defaults(self):
         pass
