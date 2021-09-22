@@ -308,8 +308,8 @@ class BEEPLinearModelExperiment(MSONable):
         if extra_features:
             logger.warning(
                 f"{len(extra_features)} extra features not in training set present in "
-                f"prediction set due to fitting with nan threshold - these will be "
-                f"dropped: \n{pprint.pformat(extra_features)}"
+                f"prediction set due to fitting with nan threshold ({self.train_feature_drop_thresh}) - "
+                f"these will be dropped: \n{pprint.pformat(extra_features)}"
             )
 
         # Assemble the correct data while retaining all features

@@ -338,15 +338,41 @@ class TestCLIPredict(TestCLIBase):
 
 class TestCLIProtocol(TestCLIBase):
     def setUp(self) -> None:
-        pass
+        self.output_dir = os.path.join(TEST_FILE_DIR, "cmd_TestCLIProtocol")
+        self.status_json_path = os.path.join(self.output_dir, "status-protocol.json")
+        if not os.path.exists(self.output_dir):
+            os.mkdir(self.output_dir)
 
-    def test_defaults(self):
-        pass
+    def test_basic(self):
 
-    def test_advanced(self):
-        pass
+        csv_file = os.path.join(PROTOCOL_PARAMETERS_DIR, "Drive_parameters - GP.csv")
+
+        result = self.runner.invoke(
+            cli,
+            [
+                "--output-status-json",
+                self.status_json_path,
+                "protocol",
+                "--output-dir",
+                self.output_dir,
+                csv_file
+            ]
+        )
+
+        self.assertEqual(result.exit_code, 0)
+        self.assertIsNotNone(result.output)
+        status = loadfn(self.status_json_path)
+
+        n = 0
+        for fname, generated in status["protocol"].items():
+            self.assertTrue(os.path.exists(fname))
+            self.assertTrue(generated["generated"])
+            n += 1
+
+        self.assertEqual(n, 36)
 
 
+# Todo: implement real end-to-end test
 class TestCLIEndtoEnd(TestCLIBase):
     def setUp(self) -> None:
         pass

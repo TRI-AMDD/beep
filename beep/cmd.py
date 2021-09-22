@@ -1326,7 +1326,7 @@ def protocol(
             "csv_md5_chksum": md5sum(csv_file)
         },
         "walltime": None,
-        "output": {},
+        "protocol": {},
         "traceback": None,
     }
 
@@ -1350,10 +1350,10 @@ def protocol(
     t1 = time.time()
 
     for of in output_files:
-        status_json["output"][of] = {"generated": True}
+        status_json["protocol"][of] = {"generated": True}
 
     for f in failures:
-        status_json["output"][f] = {"generated": False}
+        status_json["protocol"][f] = {"generated": False}
 
     status_json["walltime"] = t1 - t0
     status_json = add_metadata_to_status_json(status_json, ctx.obj.run_id, ctx.obj.tags)
