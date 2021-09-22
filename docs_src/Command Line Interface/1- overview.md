@@ -1,5 +1,8 @@
 # Overview
 
+The beep base command specifies options for creating metadata and logging for all subcommands.
+
+
 
 
 ## Basics
@@ -14,7 +17,7 @@ $: beep <options> <subcommand>
 Options for the base `beep` command are specified before the subcommand. All beep subcommands take at least one file as input and return one or more files as output.
 
 
-Beep has five commands:
+Beep has five subcommands:
 
 - `beep structure`: Parse, interpolate, clean, and standardize a wide range of battery cycler output files.
 - `beep featurize`: Generate features for learning from structured files.
