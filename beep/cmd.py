@@ -19,6 +19,7 @@ import os
 import ast
 import sys
 import time
+import copy
 import fnmatch
 import hashlib
 import logging
@@ -694,12 +695,12 @@ def featurize(
             cls = getattr(mod, clsname)
 
             if not issubclass(cls, BEEPFeaturizer):
-                logging.critical(f"Class {cls.__name__} is not a subclass of BeepFeatures.")
+                logging.critical(f"Class {cls.__name__} is not a subclass of BEEPFeaturizer.")
                 click.Context.exit(1)
             fclass = cls
 
         # check parameter arguments and update with full hyperparameter specifications
-        hps = fclass.DEFAULT_HYPERPARAMETERS
+        hps = copy.deepcopy(fclass.DEFAULT_HYPERPARAMETERS)
         if fclass_params is not None:
             hps.update(fclass_params)
         fclass_tuples.append((fclass, hps))
@@ -722,9 +723,8 @@ def featurize(
         logger.debug(f"Hashing file '{file}' to MD5")
         op_result = {
             "walltime": None,
-            "output": None,
             "processed_md5_chksum": md5sum(file),
-            "featurizers": {}
+            "featurizers": []
         }
 
         logger.debug(f"{log_prefix}: Loading processed run '{file}'.")
@@ -732,7 +732,10 @@ def featurize(
         logger.debug(f"{log_prefix}: Loaded processed run '{file}' into memory.")
 
         for fclass, f_hyperparams in fclass_tuples:
+            fclass_name = fclass.__name__
             op_subresult = {
+                "featurizer_name": fclass_name,
+                "hyperparameters": f_hyperparams,
                 "output": None,
                 "valid": False,
                 "featurized": False,
@@ -740,7 +743,6 @@ def featurize(
                 "traceback": None,
                 "subop_md5_chksum": None
             }
-            fclass_name = fclass.__name__
 
             t0 = time.time()
             try:
@@ -789,7 +791,8 @@ def featurize(
 
             t1 = time.time()
             op_subresult["walltime"] = t1 - t0
-            op_result["featurizers"][fclass_name] = op_subresult
+
+            op_result["featurizers"].append(op_subresult)
 
         t1_file = time.time()
         op_result["walltime"] = t1_file - t0_file
@@ -832,7 +835,7 @@ def featurize(
     for file, data in status_json["files"].items():
         feats_succeeded = []
 
-        for fname, fdata in data["featurizers"].items():
+        for fdata in data["featurizers"]:
             feats_succeeded.append(fdata["featurized"])
 
         n_success = sum(feats_succeeded)

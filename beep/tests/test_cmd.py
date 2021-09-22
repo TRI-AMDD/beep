@@ -32,9 +32,6 @@ class TestCLI(TestCLIBase):
         if not os.path.exists(self.outputs_dir):
             os.mkdir(self.outputs_dir)
 
-    def tearDown(self) -> None:
-        pass
-
 
 class TestCLIStructure(TestCLIBase):
 
@@ -136,16 +133,86 @@ class TestCLIStructure(TestCLIBase):
         self.assertIsNotNone(result.output)
 
 
-class TestCLIFeatures(TestCLIBase):
+class TestCLIFeaturize(TestCLIBase):
 
     def setUp(self) -> None:
-        pass
+        inputs = [
+            "PreDiag_000440_0000FB_structure.json",
+            "PredictionDiagnostics_000132_00004C_structure.json"
+        ]
+        self.input_paths = [os.path.join(TEST_FILE_DIR, path) for path in inputs]
+
+        self.outputs_dir = os.path.join(TEST_FILE_DIR, "cmd_TestCLIFeaturize")
+        if not os.path.exists(self.outputs_dir):
+            os.mkdir(self.outputs_dir)
+
+        self.status_json_path = os.path.join(self.outputs_dir, "status-featurize.json")
 
     def test_defaults(self):
-        pass
+        """Test a very basic CLI featurization."""
+        result = self.runner.invoke(
+            cli,
+            [
+                "--output-status-json",
+                self.status_json_path,
+                "featurize",
+                "--output-dir",
+                self.outputs_dir,
+                "--featurize-with",
+                "all_features",
+                *self.input_paths
+            ]
+        )
+
+        self.assertEqual(result.exit_code, 0)
+        self.assertIsNotNone(result.output)
+
+        status = loadfn(self.status_json_path)
+
+        self.assertTrue(status["feature_matrix"]["created"])
+        self.assertTrue(os.path.exists(status["feature_matrix"]["output"]))
+
+        for fname in self.input_paths:
+            self.assertTrue(status["files"][fname]["featurizers"][-1]["featurized"])
+            self.assertTrue(status["files"][fname]["featurizers"][-1]["valid"])
+            self.assertIsNone(status["files"][fname]["featurizers"][-1]["output"])
 
     def test_advanced(self):
-        pass
+        result = self.runner.invoke(
+            cli,
+            [
+                "--output-status-json",
+                self.status_json_path,
+                "featurize",
+                "--output-dir",
+                self.outputs_dir,
+                "--featurize-with",
+                "HPPCResistanceVoltageFeatures",
+                "--featurize-with",
+                "CycleSummaryStats",
+                "--featurize-with-hyperparams",
+                '{"CycleSummaryStats": {"cycle_comp_num": [11, 101]}}',
+                "--save-intermediates",
+                *self.input_paths
+            ]
+        )
+        self.assertEqual(result.exit_code, 0)
+        self.assertIsNotNone(result.output)
+
+        status = loadfn(self.status_json_path)
+
+        self.assertTrue(status["feature_matrix"]["created"])
+        self.assertTrue(os.path.exists(status["feature_matrix"]["output"]))
+
+        for f, data in status["files"].items():
+            for fresult in data["featurizers"]:
+                # check intermediate files output
+                self.assertTrue(os.path.exists(fresult["output"]))
+
+        self.assertEqual(
+            status["files"][self.input_paths[0]]["featurizers"][-1]["hyperparameters"]["cycle_comp_num"][0],
+            11
+        )
 
 
 class TestCLITrain(TestCLIBase):
