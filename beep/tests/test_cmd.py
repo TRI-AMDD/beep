@@ -302,7 +302,7 @@ class TestCLITrain(TestCLIBase):
 
 class TestCLIPredict(TestCLIBase):
     def setUp(self) -> None:
-        self.model_file = os.path.join()
+        self.model_file = os.path.join(TEST_FILE_DIR, "")
 
     def test_defaults(self):
         pass
