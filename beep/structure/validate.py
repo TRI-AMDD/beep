@@ -26,7 +26,7 @@ from monty.serialization import loadfn
 
 from beep import VALIDATION_SCHEMA_DIR
 
-DEFAULT_ARBIN_SCHEMA = loadfn(os.path.join(VALIDATION_SCHEMA_DIR, "schema-arbin-lfp.yaml"))
+DEFAULT_ARBIN_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-arbin-lfp.yaml")
 DEFAULT_EIS_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-maccor-eis.yaml")
 PROJECT_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-projects.yaml")
 
@@ -62,12 +62,12 @@ class SimpleValidator:
     logic which is defined in the check_type method below.
     """
 
-    def __init__(self, schema=DEFAULT_ARBIN_SCHEMA):
+    def __init__(self, schema_filename=DEFAULT_ARBIN_SCHEMA):
         """
         Args:
             schema (dict): Schema to validate against.
         """
-        self.schema = loadfn(schema)
+        self.schema = loadfn(schema_filename)
         self.validation_records = None
 
     @staticmethod

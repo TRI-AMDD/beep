@@ -87,6 +87,13 @@ class BEEPFeaturizer(MSONable, abc.ABC):
 
     @abc.abstractmethod
     def validate(self) -> Tuple[bool, Union[str, None]]:
+        """
+        Validate a featurizer on it's ingested datapath.
+
+        Returns:
+            (bool, str/None): The validation result and it's message.
+
+        """
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -151,7 +158,7 @@ class BEEPFeaturizer(MSONable, abc.ABC):
 
         .json.gz files are supported.
 
-        Loads a BEEPFeatures from json.
+        Loads a BEEPFeaturizer from json.
 
         Can be used in combination with files serialized with BEEPFeatures.to_json_file.
 
@@ -191,8 +198,12 @@ class BEEPFeaturizer(MSONable, abc.ABC):
 
 class BEEPFeatureMatrix(MSONable):
     """
-    Create an (n battery cycler files) x (k features) array
-    composed of m BEEPFeaturizer objects.
+    Create an (n battery cycler files) x (k features) array composed of
+    m BEEPFeaturizer objects.
+
+    Args:
+        beepfeaturizers ([BEEPFeaturizer]): A list of BEEPFeaturizer objects
+
     """
 
     OP_DELIMITER = "::"

@@ -66,6 +66,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             - metadata (BEEPDatapath.CyclerRunMetadata): An object holding all metadata.
             - paths (dict): A mapping of {descriptor: full_path or [paths]} for all files related to this datapath.
                 This can include things like "raw", "metadata", "structured", as well as other paths (e.g., "eis").
+            - schema: Validation schema used to validate the raw ingested data.
 
         Private:
             - _is_legacy (bool): Whether this file is loaded from a legacy ProcessedCyclerRun. Some operations are

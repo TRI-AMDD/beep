@@ -503,11 +503,9 @@ class DeltaQFastCharge(BEEPFeaturizer):
             bool: True/False indication of ability to proceed with feature generation
         """
 
-        if not self.datapath.structured_summary.index.max() > \
-            self.hyperparameters["final_pred_cycle"]:
+        if not self.datapath.structured_summary.index.max() > self.hyperparameters["final_pred_cycle"]:
             return False, "Structured summary index max is less than final pred cycle"
-        elif not self.datapath.structured_summary.index.min() <= \
-            self.hyperparameters["init_pred_cycle"]:
+        elif not self.datapath.structured_summary.index.min() <= self.hyperparameters["init_pred_cycle"]:
             return False, "Structured summary index min is more than initial pred cycle"
         elif "cycle_index" not in self.datapath.structured_summary.columns:
             return False, "Structured summary missing critical data: 'cycle_index'"
@@ -515,8 +513,7 @@ class DeltaQFastCharge(BEEPFeaturizer):
             return False, "Structured data missing critical data: 'cycle_index'"
         elif not self.hyperparameters["mid_pred_cycle"] > 10:
             return False, "Middle pred. cycle less than threshold value of 10"
-        elif not self.hyperparameters["final_pred_cycle"] > \
-                 self.hyperparameters["mid_pred_cycle"]:
+        elif not self.hyperparameters["final_pred_cycle"] > self.hyperparameters["mid_pred_cycle"]:
             return False, "Final pred cycle less than middle pred cycle"
         else:
             return True, None
@@ -652,10 +649,8 @@ class DeltaQFastCharge(BEEPFeaturizer):
         labels.append("internal_resistance_difference_cycles_2:100")
 
         # Nominal capacity
-        X[20] = np.median(
-            summary.discharge_capacity.iloc[
-            0: self.hyperparameters["n_nominal_cycles"]]
-        )
+        end = self.hyperparameters["n_nominal_cycles"]
+        X[20] = np.median(summary.discharge_capacity.iloc[0: end])
         labels.append("nominal_capacity_by_median")
 
         X.columns = labels
@@ -830,8 +825,7 @@ class DiagnosticProperties(BEEPFeaturizer):
         if filter_kinks:
             if np.any(df['fractional_metric'].diff().diff() < filter_kinks):
                 last_good_cycle = df[
-                    df['fractional_metric'].diff().diff() < filter_kinks] \
-                    ['cycle_index'].min()
+                    df['fractional_metric'].diff().diff() < filter_kinks]['cycle_index'].min()
                 df = df[df['cycle_index'] < last_good_cycle]
 
         x_axes = []
@@ -846,8 +840,8 @@ class DiagnosticProperties(BEEPFeaturizer):
                 "DiagnosticProperties data has not crossed threshold "
                 "and extrapolation inaccurate"
             )
-        elif df[
-            'fractional_metric'].min() > threshold and extrapolate_threshold:
+        elif df['fractional_metric'].min() > threshold and \
+                extrapolate_threshold:
             fill_value = "extrapolate"
             bounds_error = False
             x_linspaces = []

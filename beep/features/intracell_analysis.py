@@ -90,7 +90,7 @@ class IntracellAnalysis:
         real_cell_candidate_charge_profile_aligned['Voltage_aligned'] = real_cell_candidate_charge_profile_interper(
             SOC_vec)
 
-       # real_cell_candidate_charge_profile_aligned['Voltage_aligned'].fillna(self.LOWER_VOLTAGE, inplace=True)
+        # real_cell_candidate_charge_profile_aligned['Voltage_aligned'].fillna(self.LOWER_VOLTAGE, inplace=True)
         real_cell_candidate_charge_profile_aligned['SOC_aligned'] = SOC_vec / np.max(
             real_cell_initial_charge_profile_aligned['SOC_aligned'].loc[
                 ~real_cell_initial_charge_profile_aligned['Voltage_aligned'].isna()]) * 100
@@ -1304,6 +1304,3 @@ def plot_voltage_curves_for_cell(processed_cycler_run,
 
     fig.set_size_inches(fig_size_inches)
     return fig
-
-
-

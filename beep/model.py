@@ -40,8 +40,7 @@ class BEEPMLExperimentError(BaseException):
 
 
 class BEEPLinearModelExperiment(MSONable):
-    """
-    A class for training, predicting, managing, and (de)serializing
+    """A class for training, predicting, managing, and (de)serializing
     BEEP-based linear ML battery cycler experiments.
 
 
@@ -49,15 +48,37 @@ class BEEPLinearModelExperiment(MSONable):
         - Can predict on any number of prediction sets
 
     Args:
-
-
+        feature_matrix (BEEPFeatureMatrix): The feature matrix for learning.
+        target_matrix (BEEPFeatureMatrix): A matrix of targets for learning.
+        targets ([str]): List of string target names. Should be found in the
+            target_matrix dataframe.
+        model_name (str): String specifying the linear model to use.
+        alphas (str): Alpha values to try durig hyperparameter optimization.
+        train_feature_drop_nan_thresh (float): Threshold 0-1 fraction of
+            samples that must be present for a feature in order to avoid
+            being dropped. Applies to training set only.
+        train_sample_drop_nan_thresh (float): Threshold 0-1 fraction of
+            features that must be present in order for a sample to avoid
+            being dropped. Applies to training data only.
+        predict_sample_nan_thresh (float): Threshold 0-1 fraction of
+            features that must be present in order for a sample to avoid
+            being dropped. Applies to prediction data only.
+        drop_nan_training_targets (float): Drop nan training targets samples.
+        impute_strategy (str): Define the strategy for imputing unknown
+            or nan values in the feature matrix. Applies to both training
+            and prediction.
+        kfold (int): Number of folds k to use in running hyperparameter
+            optimization with cross validation.
+        max_iter (int): Number of iterations to use in determining
+            optimal hyperparameters during cross validation.
+        tol (float): Tolerance for CV-based hyperparameter optimization.
+        l1_ratio ([float]): Ratios of L1/L2 losses to explore during hyperparameter
+            optimization.
         homogenize_features (bool): Allow features generated with mismatching
             hyperparameters to be coalesced into the same "feature". I.e.,
             features generated with SomeFeaturizer(param=1) to be used as
             features generated with SomeFeaturizer(param=2).
-
     """
-
     ALLOWED_MODELS = ("elasticnet", "ridge", "lasso")
     ERROR_METRICS = {
         "rmse": lambda x: sqrt(mean_squared_error(*x)),
@@ -83,10 +104,9 @@ class BEEPLinearModelExperiment(MSONable):
             tol: float = 1e-4,
             # only relevant for elasticnet
             l1_ratio: Union[Tuple[float], List[float]] = (
-            0.1, 0.5, 0.7, 0.9, 0.95, 1),
+            0.001, 0.1, 0.5, 0.7, 0.9, 0.95, 1),
             homogenize_features: bool = True
     ):
-
         if model_name not in self.ALLOWED_MODELS:
             raise ValueError(
                 f"Model {model_name} not supported by {self.__class__.__name__}")
@@ -188,19 +208,20 @@ class BEEPLinearModelExperiment(MSONable):
         self.homogenize_features = homogenize_features
 
     def train(self, X: pd.DataFrame = None, y: pd.DataFrame = None):
-        """
-        Train on 100% of available data.
+        """Train on 100% of available data.
 
-            Args:
-                X (pd.Dataframe): Clean and homogenized learning features.
-                    If not specified, df defined in __init__ (all training
-                    data) is used.
-                y (pd.DataFrame): Clean and homogenized targets. If not
-                    specified, df defined in __init__ (all training data)
-                    is used.
+        Args:
+            X (pd.Dataframe): Clean and homogenized learning features.
+                If not specified, df defined in __init__ (all training
+                data) is used.
+            y (pd.DataFrame): Clean and homogenized targets. If not
+                specified, df defined in __init__ (all training data)
+                is used.
 
         Returns:
-            None
+            model (BaseEstimator): The sklearn model, fit on training data.
+            training_errors (dict): Training errors based on multiple metrics.
+
         """
         X = X if X is not None else self.X
         y = y if y is not None else self.y
@@ -280,6 +301,23 @@ class BEEPLinearModelExperiment(MSONable):
             feature_matrix: Union[BEEPFeatureMatrix, pd.DataFrame],
             homogenize_features: Union[None, bool] = None,
     ):
+        """Use the trained model to predict new degradation characteristics
+        based on an incoming feature matrix.
+
+
+        Args:
+            feature_matrix (BEEPFeatureMatrix): The feature matrix to use
+                for predicting degradation character.
+            homogenize_features (bool, None): Whether to homogenize the
+                incoming matrix's features. Overrides homogenize_features
+                as set in __init__.
+
+        Returns:
+            y_pred (pd.DataFrame): The predictions, in dataframe format.
+            dropped (list): List of dropped samples, by incoming df
+                index (e.g., filename).
+
+        """
         if not self.model:
             raise BEEPMLExperimentError("No model has been trained.")
 
@@ -344,10 +382,17 @@ class BEEPLinearModelExperiment(MSONable):
         on a test set and obtain scores automatically.
 
         Args:
-            train_and_val_frac (float): None
+            train_and_val_frac (float): The fraction to train and validate
+                on during hyperparameter optimization. 1 minus this fraction
+                is the size of the test data that will be scored and returned.
 
         Returns:
-
+            model (BaseEstimator): The sklearn model, trained on train_and_val_frac
+                of the available data.
+            training_errors (dict): Metrics of training error found during
+                hyperparameter optimization and fitting.
+            test_errors (dict): Metrics of test errors found after training by
+                predicting on the test set of the data.
         """
         X_train, X_test, y_train, y_test = train_test_split(self.X, self.y, train_size=train_and_val_frac)
         model, training_errors = self.train(X=X_train, y=y_train)
@@ -362,6 +407,19 @@ class BEEPLinearModelExperiment(MSONable):
             y: Union[pd.DataFrame, pd.Series],
             y_pred: Union[pd.DataFrame, pd.Series]
     ) -> dict:
+        """Take two numerical arrays of equal size, return various error metrics
+        about them.
+
+        Works with multiple targets across all metrics.
+
+        Args:
+            y (pd.DataFrame, pd.Series): True values
+            y_pred (pd.DataFrame, pd.Series): Predicted values
+
+        Returns:
+
+            errors (dict): Error metrics comparing y and y_pred.
+        """
         errors = {}
         for metric, f in self.ERROR_METRICS.items():
             if self.multi:
@@ -375,6 +433,18 @@ class BEEPLinearModelExperiment(MSONable):
 
     @staticmethod
     def _remove_param_hash_from_features(X):
+        """
+        Remove a parameter hash (identifying cases where the same featurizer
+        is applied with different parameters) from all features in a dataframe.
+
+
+        Args:
+            X (pd.Dataframe): The dataframe to remove parameter hashes from.
+
+        Returns:
+            X (pd.Dataframe): The dataframe with columns stripped of parameter hashes.
+
+        """
         d = BEEPFeatureMatrix.OP_DELIMITER
         cols_stripped = [d.join(c.split(d)[:-1]) for c in X.columns]
         X.columns = cols_stripped
@@ -382,6 +452,17 @@ class BEEPLinearModelExperiment(MSONable):
 
     @staticmethod
     def _impute_df(df, method="median"):
+        """
+        Impute a dataframe using a specified method.
+
+        Args:
+            df (pd.Dataframe): A dataframe, with zero or more nan values.
+            method (str): One of "median", "mean", or "none".
+
+        Returns:
+            df (pd.Dataframe): The imputed dataframe.
+
+        """
         if method == "median":
             return df.apply(lambda x: x.fillna(x.median()), axis=0)
         elif method == "mean":
@@ -478,12 +559,29 @@ class BEEPLinearModelExperiment(MSONable):
         model.coef_ = np.asarray(model_params["coef_"])
         model.intercept_ = np.asarray(model_params["intercept_"])
         o.model = model
+        o.optimal_hyperparameters = model_params["optimal_hyperparameters"]
         return o
 
     @classmethod
     def from_json_file(cls, filename):
+        """Load a BEEPLinearModelExperiment from file.
+
+        Args:
+            filename (str): The filename to load. Should be json.
+
+        Returns:
+            (BEEPLinearModelExperiment)
+        """
         return loadfn(filename)
 
     def to_json_file(self, filename):
+        """Serialize a BEEPLinearModelExperiment to file.
+
+        Args:
+            filename (str): The filename to write. Should be json.
+
+        Returns:
+            None
+        """
         d = self.as_dict()
         dumpfn(d, filename)

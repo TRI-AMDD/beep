@@ -30,6 +30,7 @@ import importlib
 
 import click
 import numpy as np
+import pandas as pd
 from monty.serialization import dumpfn, loadfn
 
 from beep import (
@@ -38,6 +39,7 @@ from beep import (
     formatter_jsonl,
     __version__
 )
+from beep.structure.base import BEEPDatapath
 from beep.structure.cli import auto_load, auto_load_processed
 from beep.structure.validate import BEEPValidationError
 from beep.features.base import (
@@ -1192,16 +1194,16 @@ def train(
         alpha_upper (float): Upper bounds for alpha for the linear model search.
         n_alphas (int): Number of alphas to search in the range [alpha_lower,
             alpha_upper].
-        train_feature_nan_thresh (float): Threshold fraction of nans a feature
-            column in the training set must possess in order to be dropped, 0-1. 0=
+        train_feature_nan_thresh (float): Threshold fraction of non-nan a feature
+            column in the training set must possess in order to be retained, 0-1. 0=
             features are never dropped (may cause errors), 1= any feature containing
             any nan sample is dropped.
-        train_sample_nan_thresh (float): Threshold fraction of features a sample
-            row in the training set must possess in order to be dropped, 0-1. 0=
+        train_sample_nan_thresh (float): Threshold fraction of non-nan features a sample
+            row in the training set must possess in order to be retained, 0-1. 0=
             samples are never dropped (may cause errors), 1= any sample containing
             any nan feature is dropped.
-        predict_sample_nan_thresh (float): Threshold fraction of features a sample
-            row in the prediction set must possess in order to be dropped, 0-1. 0=
+        predict_sample_nan_thresh (float): Threshold fraction of non-nan features a sample
+            row in the prediction set must possess in order to be retained, 0-1. 0=
             samples are never dropped (may cause errors). 1= any sample containing
             any nan feature is dropped.
         drop_nan_training_targets (bool): Drop any samples in the training set
@@ -1599,7 +1601,6 @@ def protocol(
         logger.info(f"Wrote status json file to {osj}")
 
 
-
 @cli.command(
     help="View BEEP files for debugging and analysis."
 )
@@ -1608,33 +1609,142 @@ def protocol(
     nargs=1,
     type=CLICK_FILE
 )
-def debug(file):
+def inspect(file):
+    """
+    Inspect any BEEP object serialized to disk from its filename.
 
+    Args:
+        file (str): Path of the file to inspect. Should be json or json.gz.
 
+    Returns:
+        None
+
+    """
     try:
         o = loadfn(file)
+
+        # To weed out pesky datapaths from old serializations
+        o.as_dict()
     except (AttributeError, ValueError, KeyError):
 
+        # Maybe it is a structured file?
         if file.endswith(".json") or file.endswith(".json.gz"):
             try:
+                o = auto_load_processed(file)
+            except BaseException:
+                raise ValueError(f"File format of json file {file} not "
+                                 f"recognized with beep version {__version__}")
 
+        # Or it could be a raw file?
+        else:
+            try:
+                o = auto_load(file)
+                logger.debug(f"Loaded potential raw file {file} as Datapath.")
+            except BaseException:
+                raise ValueError(f"File format of {file} not loadable with beep.")
 
+    logger.info(f"Loaded {file} as type {type(o)}.")
 
+    if isinstance(o, BEEPDatapath):
+        print(f"\n\nBEEP Datapath: {file}\n\n")
 
+        print(f"\nSemiunique id: '{o.semiunique_id}'")
 
-    # if isinstance(d, BEEPFeatureMatrix):
-    #
-    #
-    #
-    # print(d)
+        print("\nFile paths")
+        pprint.pprint(o.paths)
 
+        print("\nFile metadata:")
+        pprint.pprint(o.metadata.raw)
 
+        print(f"\nValidation schema: {o.schema}")
 
+        print("\nStructuring parameters:")
+        pprint.pprint(o.structuring_parameters)
 
+        print("\nStructured attributes:")
 
+        for attr in [
+            "structured_summary",
+            "structured_data",
+            "diagnostic_data",
+            "diagnostic_summary",
+            "raw_data",
+        ]:
 
+            print(f"\n{attr}:")
+            a = getattr(o, attr)
+            if isinstance(a, pd.DataFrame):
+                print(a)
+                print(a.info())
+            else:
+                print("\tNo object.")
 
+    elif isinstance(o, BEEPFeaturizer):
+        print(f"\n\nBEEP Featurizer: {file}\n\n")
 
+        print(f"\nFile paths:")
+        pprint.pprint(o.paths)
 
+        print(f"\nLinked datapath semiunique id: {o.linked_semiunique_id}")
 
+        print(f"\nHyperparameters:")
+        pprint.pprint(o.hyperparameters)
 
+        print(f"\nMetadata:")
+        pprint.pprint(o.metadata)
+
+        print(f"\nFeatures:")
+        print(o.features)
+
+    elif isinstance(o, BEEPFeatureMatrix):
+        print(f"\n\nBEEP Feature Matrix: {file}\n\n")
+
+        print(f"\nFeaturizers:")
+        for f in o.featurizers:
+            d_display = f.as_dict()
+            d_display.pop("features")
+            print(f"\n\tFeaturizer {f.__class__.__module__} {f.__class__.__name__}")
+            d_formatted = pprint.pformat(d_display)
+            d_formatted = "\t" + d_formatted.replace("\n", "\n\t")
+            print(d_formatted)
+
+        print(f"\nMatrix:")
+        print(o.matrix)
+        print(o.matrix.info())
+
+    elif isinstance(o, BEEPLinearModelExperiment):
+        d = o.as_dict()
+
+        print(f"\n\nBEEP Linear Model Experiment: {file}\n\n")
+
+        print(f"\nTargets: {o.targets}")
+
+        print(f"\nModel name: {o.model_name}")
+
+        print(f"\nImpute strategy: {o.impute_strategy}")
+
+        print(f"\nHomogenize features: {o.homogenize_features}")
+
+        print(f"\nNaN Thresholds:")
+        for k in [
+            "train_feature_drop_nan_thresh",
+            "train_sample_drop_nan_thresh",
+            "predict_sample_nan_thresh"
+        ]:
+            print(f"\t-{k}: {d[k]}")
+
+        print(f"\nModel parameters:")
+        for p, v in d["model_sklearn"].items():
+            print(f"\t- {p}: {v}")
+
+        print(f"\nMatrices:")
+        for attr in ["feature_matrix", "target_matrix"]:
+            a = getattr(o, attr).matrix
+
+            print(f"\n{attr}")
+            print(a)
+            print(a.info())
+
+    else:
+        pprint.pprint(o.as_dict())
+        logger.warning(f"Could not identify object {file}! Dictionary representation printed.")

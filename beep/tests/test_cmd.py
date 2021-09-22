@@ -43,10 +43,10 @@ class TestCLIBase(unittest.TestCase):
         self.output_dir = None
         self.status_json_path = None
         self.input_paths = []
-        self.runner = None
 
     def tearDown(self) -> None:
-        shutil.rmtree(self.output_dir)
+        if self.output_dir and os.path.exists(self.output_dir):
+            shutil.rmtree(self.output_dir)
 
 
 class TestCLI(TestCLIBase):
@@ -99,6 +99,44 @@ class TestCLI(TestCLIBase):
             ]
         )
         self.assertEqual(result.exit_code, 1)
+
+
+class TestCLIInspect(TestCLIBase):
+    def test_inspect(self):
+        files = [
+            # Raw file
+            "PreDiag_000287_000128.092",
+            # Structured legacy files
+            "PreDiag_000400_000084_truncated_structure.json",
+            "PredictionDiagnostics_000132_00004C_structure.json",
+
+            # Structured new Datapath files
+            "2017-12-04_4_65C-69per_6C_CH29_structured_new.json.gz",
+
+            # Model file
+            "modelling_test_files/model-src.json.gz",
+
+            # Feature matrices
+            "modelling_test_files/features.json.gz",
+            "modelling_test_files/targets.json.gz",
+
+            # Featurizer
+            "modelling_test_files/HPPCFeaturizer.json.gz"
+
+        ]
+
+        files = [os.path.join(TEST_FILE_DIR, f) for f in files]
+
+        for f in files:
+            result = self.runner.invoke(
+                cli,
+                [
+                    "inspect",
+                    f
+                ]
+            )
+            self.assertEqual(result.exit_code, 0)
+            self.assertIsNotNone(result.output)
 
 
 class TestCLIUtils(unittest.TestCase):
@@ -490,7 +528,6 @@ class TestCLIProtocol(TestCLIBase):
             n += 1
 
         self.assertEqual(n, 36)
-
 
 # Todo: implement real end-to-end test
 # class TestCLIEndtoEnd(TestCLIBase):
