@@ -1689,26 +1689,26 @@ def inspect(file):
                 print("\tNo object.")
 
     elif isinstance(o, BEEPFeaturizer):
-        print(f"\n\nBEEP Featurizer: {file}\n\n")
+        print("\n\nBEEP Featurizer: {file}\n\n")
 
-        print(f"\nFile paths:")
+        print("\nFile paths:")
         pprint.pprint(o.paths)
 
         print(f"\nLinked datapath semiunique id: {o.linked_semiunique_id}")
 
-        print(f"\nHyperparameters:")
+        print("\nHyperparameters:")
         pprint.pprint(o.hyperparameters)
 
-        print(f"\nMetadata:")
+        print("\nMetadata:")
         pprint.pprint(o.metadata)
 
-        print(f"\nFeatures:")
+        print("\nFeatures:")
         print(o.features)
 
     elif isinstance(o, BEEPFeatureMatrix):
         print(f"\n\nBEEP Feature Matrix: {file}\n\n")
 
-        print(f"\nFeaturizers:")
+        print("\nFeaturizers:")
         for f in o.featurizers:
             d_display = f.as_dict()
             d_display.pop("features")
@@ -1717,7 +1717,7 @@ def inspect(file):
             d_formatted = "\t" + d_formatted.replace("\n", "\n\t")
             print(d_formatted)
 
-        print(f"\nMatrix:")
+        print("\nMatrix:")
         print(o.matrix)
         print(o.matrix.info())
 
@@ -1734,7 +1734,7 @@ def inspect(file):
 
         print(f"\nHomogenize features: {o.homogenize_features}")
 
-        print(f"\nNaN Thresholds:")
+        print("\nNaN Thresholds:")
         for k in [
             "train_feature_drop_nan_thresh",
             "train_sample_drop_nan_thresh",
@@ -1742,11 +1742,11 @@ def inspect(file):
         ]:
             print(f"\t-{k}: {d[k]}")
 
-        print(f"\nModel parameters:")
+        print("\nModel parameters:")
         for p, v in d["model_sklearn"].items():
             print(f"\t- {p}: {v}")
 
-        print(f"\nMatrices:")
+        print("\nMatrices:")
         for attr in ["feature_matrix", "target_matrix"]:
             a = getattr(o, attr).matrix
 

@@ -17,10 +17,8 @@
 
 import re
 
-from docopt import docopt
 from monty.serialization import loadfn
 
-from beep import logger, __version__
 from beep.conversion_schemas import (
     FastCharge_CONFIG,
     xTesladiag_CONFIG,

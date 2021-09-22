@@ -26,7 +26,6 @@ class IntracellCycles(BEEPFeaturizer):
     DEFAULT_HYPERPARAMETERS = {
         "diagnostic_cycle_type": 'rpt_0.2C',
         "step_type": 0,
-        
         # Paths for anode files should be absolute
         # Defaults are for the specified names in the current dir
         "anode_file": os.path.join(
@@ -93,7 +92,6 @@ class IntracellCycles(BEEPFeaturizer):
         Returns:
              (pd.DataFrame) containing the cell material parameters as a function of cycle index
         """
-        
         ia = IntracellAnalysis(
             self.hyperparameters["cathode_file"],
             self.hyperparameters["anode_file"],

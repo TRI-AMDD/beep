@@ -51,7 +51,6 @@ $ generate_protocol '{"file_list": ["/data-share/raw/parameters/procedure_params
 
 import os
 import warnings
-import json
 import datetime
 import csv
 import pandas as pd
