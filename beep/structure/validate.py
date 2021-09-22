@@ -27,6 +27,8 @@ from monty.serialization import loadfn
 from beep import VALIDATION_SCHEMA_DIR
 
 DEFAULT_ARBIN_SCHEMA = loadfn(os.path.join(VALIDATION_SCHEMA_DIR, "schema-arbin-lfp.yaml"))
+DEFAULT_EIS_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-maccor-eis.yaml")
+PROJECT_SCHEMA = os.path.join(VALIDATION_SCHEMA_DIR, "schema-projects.yaml")
 
 
 class SimpleValidator:

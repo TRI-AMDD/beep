@@ -20,6 +20,7 @@ import ast
 import sys
 import time
 import copy
+import pprint
 import fnmatch
 import hashlib
 import logging
@@ -29,7 +30,7 @@ import importlib
 
 import click
 import numpy as np
-from monty.serialization import dumpfn
+from monty.serialization import dumpfn, loadfn
 
 from beep import (
     logger,
@@ -381,6 +382,56 @@ def structure(
         no_raw,
         s3_use_cache
 ):
+    """
+    Structure files using the beep cli.
+
+
+    raw files ---> structured json files.
+
+
+
+    Args:
+        ctx (ContextPersister): A context-persisting object containing
+            metadata and logging specifications for subcommands.
+        files ([str]): Paths or globs for raw input files to structure.
+        output_filenames ([str]): Corresponding output filenames for each
+            input file to write structured output to.
+        output_dir (str): Output directory to write auto-named structured files
+            into. Overrides output_filenames.
+        protocol_parameters_dir (str): Directory containing protocol parameters
+            for automatically determining structuring parameters.
+        v_range ((float, float)): Tuple of voltage floats to determine voltage range
+            for interpolation during structuring. Overridden by automatic, if
+            automatic specified.
+        resolution (int): Number of points to interpolate during structuring. Overridden
+            by automatic, if automatic specified.
+        nominal_capacity (float): Nominal capacity of the cell to use during structuring.
+            Overridden by automatic, if automatic specified.
+        full_fast_charge (float): Fast charge threshold to use during structuring.
+            Overridden by automatic, if automatic specified.
+        charge_axis (str): Standardized name of the charge axis to interpolate with
+            respect to. Overridden by automatic, if automatic specified.
+        discharge_axis (str): Standardized name of the discharge axis to interpolate
+            with respect to. Overridden by automatic, if automatic specified.
+        s3_bucket (str): S3 bucket to check for files. Files matching keys in this
+            bucket will automatically be downloaded to the CWD or S3 cache and then
+            used for structuring.
+        automatic (bool): If true, overrides other structuring parameters and uses
+            the specified protocol_parameters_dir to automatically determine
+            structuring parameters.
+        validation_only (bool): If True, only validates files, does not structure them
+            or produce structured outputs.
+        no_raw (bool): If True, keeps only the structured data, does not retain
+            the raw data in the structured output datapaths. WARNING: files structured
+            with no_raw=True cannot be restructured without the raw file and operations
+            are not reversible without access to the raw file.
+        s3_use_cache (bool): If true, uses the beep S3 cache to store raw files rather
+            than dumping them in the CWD.
+
+    Returns:
+        None
+
+    """
 
     # download from s3 first, if needed
     if s3_bucket:
@@ -653,6 +704,45 @@ def featurize(
         featurize_with_hyperparams,
         save_intermediates,
 ):
+    """
+    Create feature matrices based on structured inputs for use with
+    downstream models.
+
+    Can also be used for creating various targets, such as expected
+    cycles for given capacities, etc.
+
+
+    structured json files ---> feature matrix json file
+
+    AND
+
+    structured json files ---> featurizer json files (optional)
+
+    Args:
+        ctx (ContextPersister): A context-persisting object containing
+            metadata and logging specifications for subcommands.
+        files ([str]): Filenames or globs of structured json/json.gz files to
+            use for generating a new feature matrix.
+        output_filename (str): Filename of the output feature matrix file.
+        output_dir (str): Directory to dump auto-named file into. Will also
+            dump intermediate files here if save_intermediates.
+        featurize_with ([str]): Featurizer class names to use with default
+            featurizer hyperparameters. Can include builtin "core" featurizers
+            such as CycleSummaryStats or custom featurizers inheriting from
+            BEEPFeaturizer by passing the fully qualified importable name
+            of the class, e.g. "my_pkg.my_module.my_class".
+        featurize_with_hyperparams (dict): More advanced hyperparameter specification
+            for featurizers. Pass in one dictionary per featurizer with the
+            featurizer class name as the sole key and a dictionary of parameters
+            as the sole value. E.g., {"SomeFeaturizerClass": {"param1": 12}}.
+            Underspecified hyperparameter dictionaries are merged with defaults.
+        save_intermediates (bool): If True, will save the intermediate json files
+            of BEEPFeaturizer objects used to construct the feature martix.
+
+    Returns:
+        None
+
+    """
     files = [os.path.abspath(f) for f in files]
 
     n_files = len(files)
@@ -1069,6 +1159,76 @@ def train(
         l1_ratios,
         homogenize_features
 ):
+    """
+    Use a feature matrix and a target matrix to train a machine learning model.
+    Automatically performs hyperparameter tuning of linear models and can
+    evaluate test fractions automatically, returning error metrics in the
+    status and logs.
+
+
+    feature matrix json + target matrix json ---> trained model json
+
+
+    Args:
+        ctx (ContextPersister): A context-persisting object containing
+            metadata and logging specifications for subcommands.
+        output_filename (str): The output filename to save the trained model
+            to. Must be json.
+        feature_matrix_file (str): Path of the file to use as the learning
+            features, X. Must be a serialized BEEPFeatureMatrix.
+        target_matrix_file (str): Path of the file containing the target
+            features, y or Y (if multiple). Must be a serialized
+            BEEPFeatureMatrix.
+        targets ([str]): One or more literal target columns in the target matrix to
+            use as learning target or targets. Must be present in the target
+            matrix. If homogenize_features is False, must be the full name
+            of the feature, including the parameter hash.
+        model_name (str): Model name to train. E.g., "elasticnet", OR "lasso",
+            OR "ridge".
+        train_on_frac_and_score (float): If set, this will train on a fraction of
+            data (specified by the float) and then predict on the rest, returning
+            error metrics in the test fraction in the status json and log.
+        alpha_lower (float): Lower bound for alpha for linear model search.
+        alpha_upper (float): Upper bounds for alpha for the linear model search.
+        n_alphas (int): Number of alphas to search in the range [alpha_lower,
+            alpha_upper].
+        train_feature_nan_thresh (float): Threshold fraction of nans a feature
+            column in the training set must possess in order to be dropped, 0-1. 0=
+            features are never dropped (may cause errors), 1= any feature containing
+            any nan sample is dropped.
+        train_sample_nan_thresh (float): Threshold fraction of features a sample
+            row in the training set must possess in order to be dropped, 0-1. 0=
+            samples are never dropped (may cause errors), 1= any sample containing
+            any nan feature is dropped.
+        predict_sample_nan_thresh (float): Threshold fraction of features a sample
+            row in the prediction set must possess in order to be dropped, 0-1. 0=
+            samples are never dropped (may cause errors). 1= any sample containing
+            any nan feature is dropped.
+        drop_nan_training_targets (bool): Drop any samples in the training set
+            which do not have non-nan targets.
+        impute_strategy (str): Select an impute strategy for samples in training
+            and prediction which, even after dropping nan columns and samples
+            according to thresholds, still have nans.
+        kfold (int): Number of folds to perform cross-validation and hyperparameter
+            optimization with.
+        max_iter (int): Number of iterations to use for fitting linear models.
+        tol (float): Tolerance for optimization.
+        l1_ratios (str): Comma-separated l1 ratios to use in hyperparameter
+            optimization for linear models.
+        homogenize_features (bool): If True, shortens feature names to only
+            include the featurizer and feature name. For example,
+            'capacity_0.8::TrajectoryFastCharge'. Can be used for merging disparate
+            features created with different hyperparameters, as long as the feature
+            name and the featurizer name match. If False, keeps the parameter hash
+            of the feature in the feature name. Set to False if using features
+            generated by identical featurizer classes but different hyperparameters.
+            If False, must specify the long feature name in the targets including
+            the parameter hash.
+
+    Returns:
+        None
+
+    """
     feature_matrix_file = os.path.abspath(feature_matrix_file)
     target_matrix_file = os.path.abspath(target_matrix_file)
     targets = list(targets)
@@ -1225,10 +1385,40 @@ def predict(
         predict_sample_nan_thresh,
 
 ):
+    """
+    Predict degradation characteristics using a previously trained model.
+
+
+    trained model json + new feature matrix json ---> predictions json
+
+
+    Args:
+        ctx (ContextPersister): A context-persisting object containing
+            metadata and logging specifications for subcommands.
+        model_file (str): The json or json.gz of a trained model file. Must
+            be a BEEPLinearModelExperiment class serialized to disk.
+        feature_matrix_file (str): Path to a feature matrix file to use
+            as input features for inference. These features will be used to
+            predict the degradation targets the previously trained model
+            was fit on.
+        output_filename (str): Path to output predictions to. Will be saved in
+            dataframe format as a json.
+        predict_sample_nan_thresh (float): Threshold fraction of features a sample
+            row in the prediction set must possess in order to be dropped, 0-1. 0=
+            samples are never dropped (may cause errors). 1= any sample containing
+            any nan feature is dropped. Overrides any predict sample nan threshold
+            set during model training.
+
+    Returns:
+        None
+
+    """
     if output_filename and not output_filename.endswith(".json"):
         raise ValueError("--output-filename must end with '.json'.")
 
-    default_filename = f"PredictedDegradationDF-{datetime.datetime.now().strftime('%Y-%d-%m_%H.%M.%S.%f')}.json"
+    default_filename = f"PredictedDegradationDF-" \
+                       f"{datetime.datetime.now().strftime('%Y-%d-%m_%H.%M.%S.%f')}" \
+                       f".json"
     if output_filename:
         output_filename = os.path.abspath(output_filename)
     else:
@@ -1328,6 +1518,29 @@ def protocol(
         csv_file,
         output_dir
 ):
+    """
+    Generate cycler protocol files using a templating csv and set of template files.
+
+
+    WARNING: This CLI function is still under migration and may not work as intended.
+
+
+
+    protocol generating csv ---> protocol files
+
+
+    Args:
+        ctx (ContextPersister): A context-persisting object containing
+            metadata and logging specifications for subcommands.
+        csv_file (str): Path to the protocol generating csv.
+        output_dir (str): Path to the output directory where protocol files
+            should be kept. Subdirectories are automatically created for
+            various protocol file types.
+
+    Returns:
+        None
+
+    """
     click.secho("Protocol generation has yet to be migrated entirely to the new CLI. May be unstable.", fg="red")
 
     cwd = ctx.obj.cwd
@@ -1384,3 +1597,44 @@ def protocol(
     if osj:
         dumpfn(status_json, osj)
         logger.info(f"Wrote status json file to {osj}")
+
+
+
+@cli.command(
+    help="View BEEP files for debugging and analysis."
+)
+@click.argument(
+    "file",
+    nargs=1,
+    type=CLICK_FILE
+)
+def debug(file):
+
+
+    try:
+        o = loadfn(file)
+    except (AttributeError, ValueError, KeyError):
+
+        if file.endswith(".json") or file.endswith(".json.gz"):
+            try:
+
+
+
+
+
+    # if isinstance(d, BEEPFeatureMatrix):
+    #
+    #
+    #
+    # print(d)
+
+
+
+
+
+
+
+
+
+
+
