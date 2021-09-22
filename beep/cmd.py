@@ -1620,6 +1620,7 @@ def inspect(file):
         None
 
     """
+    file = os.path.abspath(file)
     try:
         o = loadfn(file)
 
