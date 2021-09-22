@@ -34,7 +34,7 @@ from beep.utils import parameters_lookup
 from monty.serialization import dumpfn, loadfn
 from monty.tempfile import ScratchDir
 from beep.utils.s3 import download_s3_object
-from beep.tests.constants import TEST_FILE_DIR
+from beep.tests.constants import TEST_FILE_DIR, BIG_FILE_TESTS, SKIP_MSG
 
 
 class TestFeaturizer(unittest.TestCase):
