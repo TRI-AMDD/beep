@@ -29,16 +29,6 @@ setup(name="beep",
       packages=find_packages(),
       install_requires=reqs,
       extras_require={"tests": reqs_test},
-      # entry_points={
-      # "console_scripts": [
-      #     "collate = beep.collate:main",
-      #     "validate = beep.validate:main",
-      #     "structure = beep.structure.cli:main",
-      #     "featurize = beep.featurize:main",
-      #     "run_model = beep.run_model:main",
-      #     "generate_protocol = beep.generate_protocol:main"
-      # ]
-      # },
       entry_points='''
         [console_scripts]
         beep=beep.cmd:cli
@@ -55,9 +45,10 @@ setup(name="beep",
                                                 "*.yaml"],
           "beep.protocol.protocol_schemas": ["*.yaml", "*.txt"],
           "beep.protocol.schedule_templates": ["*.sdu", "*.csv", "*.json"],
+          "beep.protocol-parameters": ["*.csv"],
           "beep.validation_schemas": ["*.yaml"],
-          "beep.model": ["*.model"],
-          "beep.features": ["*.yaml"]
+          # "beep.model": ["*.model"],
+          # "beep.features": ["*.yaml"]
 
       },
       include_package_data=True,

@@ -1,4 +1,4 @@
-# Unsupported Cyclers - Writing your own `BEEPDatapath`
+# Advanced Structuring: Unsupported cyclers
 
 
 If you are using a cycler not supported by BEEP, you can still use BEEP to structure, featurize, and run models on your data! 

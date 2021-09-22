@@ -1,4 +1,4 @@
-# Python tutorial 2: Next steps
+# 2: Structuring
 
 Here you'll find more info about creating and using beep to do your own custom cycler analysie.
 
@@ -545,15 +545,3 @@ print(processed_datapath_legacy)
 
 # Out:
 <NewareDatapath object>
-```
-
-
-## Featurization
-
-More documentation for featurization coming soon!
-
-
-
-## Running and analyzing models
-
-More documentation for running models coming soon!

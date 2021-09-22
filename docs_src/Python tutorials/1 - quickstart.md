@@ -1,4 +1,4 @@
-# Python tutorial 1: Start here
+# 1: Quickstart
 
 This notebook is meant to demonstrate basic usage of the beep package with data from "Data-driven prediction of battery cycle life before capacity degradation" KA Severson, et al. Nature Energy 4 (5), 383-391
 
