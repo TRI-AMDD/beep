@@ -1,6 +1,12 @@
 # Featurize
 
+Featurize (`beep featurize`) is a way to robustly apply many feature generation routines (featurizers) with
+different hyperparameters to large sets of files (e.g., a thousand structured cycler files).
 
+The input to `beep featurize` is *N* structured/processed json files from `beep structure`.
+
+The output of `beep featurize` is 1 feature matrix file (no matter how many featurizers are applied). Also, optionally *N x M* featurizer 
+intermediate files for *M* featurizers (one for each featurizer applied to each file.)
 
 
 ![cli_featurize](../static/op_graphic_featurize.png)
@@ -15,7 +21,7 @@ $: beep featurize --help
 Usage: beep featurize [OPTIONS] [FILES]...
 
   Featurize one or more files. Argument is a space-separated list of files or
-  globs. The same features are applied to each file. Naming of outputfiles is
+  globs. The same features are applied to each file. Naming of output files is
   done automatically, but the output directory can be specified.
 
 Options:
@@ -28,12 +34,15 @@ Options:
   -f, --featurize-with TEXT       Specify a featurizer to apply by class name,
                                   e.g. HPPCResistanceVoltageFeatures. To apply
                                   more than one featurizer, use multiple -f
-                                  <FEATURIZER> commands. To applyall core BEEP
-                                  featurizers, pass the value 'all'. Note if
-                                  'all_features' or 'all_targets' is passed,
-                                  other -f featurizers will be ignored. All
-                                  feautrizers are attempted to apply with
-                                  default hyperparameters; to specify your own
+                                  <FEATURIZER> commands. To apply sets ofcore
+                                  BEEP featurizers, pass either 'all_features'
+                                  for all features or'all_targets' for all
+                                  targets (features which can be used as
+                                  targets). Note if 'all_features' or
+                                  'all_targets' is passed, other -f
+                                  featurizers will be ignored. All feautrizers
+                                  are attempted to apply with default
+                                  hyperparameters; to specify your own
                                   hyperparameters, use --featurize-with-
                                   hyperparams.Classes from installed modules
                                   not in core BEEP can be specified with the
@@ -60,3 +69,21 @@ Options:
   --help                          Show this message and exit.
 
 ```
+
+
+
+## Specifying outputs
+
+The `beep featurize` command outputs a feature matrix as its required sole output. This file will
+be auto-named if `--output-filename` is not specified. 
+
+To include saving of intermediate featurizer files, use the `--save-intermediates` flag. These files will be auto-named and put into the CWD if `--output-dir` is not set.
+
+Specifying `--output-dir` overrides `--output-filename` and will save *all* files (including intermediates) into this directory with automatic naming.
+
+
+
+## Selecting featurizers to apply
+
+
+`beep featurize` works with "core" features 

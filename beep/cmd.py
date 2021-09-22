@@ -247,7 +247,8 @@ def cli(ctx, log_file, run_id, tags, output_status_json, halt_on_error):
 
 @cli.command(
     help="Structure and/or validate one or more files. Argument "
-         "is a space-separated list of files or globs."
+         "is a space-separated list of files or globs.",
+    short_help="interpolate, validate, and standardize battery files"
 )
 @click.argument(
     'files',
@@ -637,9 +638,10 @@ def structure(
 @cli.command(
     help="Featurize one or more files. Argument "
          "is a space-separated list of files or globs. The same "
-         "features are applied to each file. Naming of output"
+         "features are applied to each file. Naming of output "
          "files is done automatically, but the output directory "
-         "can be specified."
+         "can be specified.",
+    short_help="create feature matrices from structured files"
 )
 @click.argument(
     'files',
@@ -668,8 +670,10 @@ def structure(
     type=click.STRING,
     help="Specify a featurizer to apply by class name, e.g. "
          "HPPCResistanceVoltageFeatures. To apply more than one "
-         "featurizer, use multiple -f <FEATURIZER> commands. To apply"
-         "all core BEEP featurizers, pass the value 'all'. Note if 'all_features' "
+         "featurizer, use multiple -f <FEATURIZER> commands. To apply sets of"
+         "core BEEP featurizers, pass either 'all_features' for all features or"
+         "'all_targets' for all targets (features which can be used as targets). "
+         "Note if 'all_features' "
          "or 'all_targets' is passed, other -f featurizers will be ignored. All "
          "feautrizers are attempted to apply with default hyperparameters; "
          "to specify your own hyperparameters, use --featurize-with-hyperparams."
@@ -988,7 +992,8 @@ def featurize(
 
 @cli.command(
     help="Train a machine learning model using all available data "
-         "and save it to file."
+         "and save it to file.",
+    short_help="train a model with existing features"
 )
 @click.option(
     "--output-filename",
@@ -1351,7 +1356,8 @@ def train(
 @cli.command(
     help="Run a previously trained model to predict degradation targets."
          "The MODEL_FILE passed should be an output of 'beep train' or a"
-         "serialized BEEPLinearModelExperiment object."
+         "serialized BEEPLinearModelExperiment object.",
+    short_help="use a trained model to predict degradation"
 )
 @click.argument(
     "model_file",
@@ -1501,7 +1507,8 @@ def predict(
 
 
 @cli.command(
-    help="Generate protocol for battery cyclers from a csv file input."
+    help="Generate protocol for battery cyclers from a csv file input.",
+    short_help="generate protocol for new cycler experiments"
 )
 @click.argument(
     "csv_file",
@@ -1602,7 +1609,8 @@ def protocol(
 
 
 @cli.command(
-    help="View BEEP files for debugging and analysis."
+    help="View BEEP files for debugging and analysis.",
+    short_help="viewer for beep files, help debug"
 )
 @click.argument(
     "file",
