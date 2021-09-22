@@ -70,8 +70,15 @@ FEATURIZED_SUFFIX = "-featurized"
 
 class ContextPersister:
     """
-    Class to hold persisting objects for downstream
-    BEEP tasks.
+    Class to hold persisting objects for downstream BEEP tasks in the
+    command line interface.
+
+    Args:
+        cwd (str): The current working directory.
+        run_id (int): The current run id, if available, to associate with operation.
+        tags ([str]): A list of tags to associate with an operation.
+        output_status_json (str): Filename of status json to write.
+        halt_on_error (bool): Whether to halt on error during an operation.
     """
     def __init__(
             self,
@@ -90,16 +97,17 @@ class ContextPersister:
 
 
 def add_suffix(full_path, output_dir, suffix, modified_ext=None):
-    """
-    Add structured filename suffixes.
+    """Add structured filename suffixes and format new file paths.
 
     Args:
-        full_path:
-        output_dir:
-        suffix:
-        modified_ext:
+        full_path (str): Full path of the existing file.
+        output_dir (str): Desired output directory of file.
+        suffix (str): Suffix to append to filename before the extension.
+        modified_ext (str): Extension to replace current file extension
+            with. For example, ".json".
 
     Returns:
+        (str): Renamed and reformatted file path.
 
     """
     basename = os.path.basename(full_path)
@@ -205,6 +213,20 @@ def cli(ctx, log_file, run_id, tags, output_status_json, halt_on_error):
     """
     Base command for all BEEP subcommands. Sets CWD and persistent
     context.
+
+
+    Args:
+        log_file (str): The name of the log file to append log
+            output to.
+        run_id (int): Run identifier associated with this operation.
+        tags ([str]): List of string tags to associate with this
+            operation.
+        output_status_json (str): File to write the status json to.
+        halt_on_error (bool): If True, will halt the entire CLI
+            operation if any exception occurs, even in suboperations.
+
+    Returns:
+        None
     """
     ctx.ensure_object(ContextPersister)
     cwd = os.path.abspath(os.getcwd())
