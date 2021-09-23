@@ -100,7 +100,7 @@ class TestCLI(TestCLIBase):
         )
         self.assertEqual(result.exit_code, 1)
 
-
+@unittest.skip()
 class TestCLIInspect(TestCLIBase):
     def test_inspect(self):
         files = [
