@@ -100,7 +100,8 @@ class TestCLI(TestCLIBase):
         )
         self.assertEqual(result.exit_code, 1)
 
-@unittest.skip()
+
+@unittest.skip("Needs debugging on CI")
 class TestCLIInspect(TestCLIBase):
     def test_inspect(self):
         files = [
