@@ -70,10 +70,9 @@ You should now have two files in your data directory:
 ├── Severson-et-al
 │   ├── 2017-05-12_6C-50per_3_6C_CH36.csv
 │   └── 2017-05-12_6C-50per_3_6C_CH36_Metadata.csv
-
 ```
 
-## Step 2: Data pipelining - validation, structuring, featurization
+## Step 2: Structure and analyze data
 
 Now that we have our data, we can start using BEEP!
 
@@ -83,15 +82,31 @@ we need to identify cycler type, load, validate, interpolate, standardize, and a
 
 
 ```python
+import os
 from beep.structure.cli import auto_load
 
-datapath = auto_load("Severson-et-al/2017-05-12_6C-50per_3_6C_CH36.csv")
+
+this_dir = os.path.dirname(os.path.abspath(__file__))
+cycler_file = os.path.join(this_dir, "Severson-et-al/2017-05-12_6C-50per_3_6C_CH36.csv")
+
+datapath = auto_load(cycler_file)
 ```
 
 
+We can check our file is valid with `validate`:
+
+```python
+is_valid, msg = datapath.validate()
+print("File is valid: ", is_valid)
+```
+
+```shell
+# Output
+File is valid: True
+```
 
 
-We can easily structure our file with the `structure` method:
+We can easily interpolate and prepare our file for analysis (known as "structuring") with the `structure` method:
 
 
 ```python
@@ -104,136 +119,50 @@ Now that our file has been structured, we can examine some interesting propertie
 ```python
 from matplotlib import pyplot as plt
 
-reg_charge = datapath.structured_data[struct.structured_data.step_type == 'charge']
+reg_charge = datapath.structured_data[datapath.structured_data.step_type == 'charge']
 print("Mean current for cycle 25: ", reg_charge.current[reg_charge.cycle_index == 25].mean())
 print("Number of cycles: ", reg_charge.cycle_index.max())
 print("Max charge capacity at cycle 25: ", reg_charge.charge_capacity[reg_charge.cycle_index == 25].max())
-print("Max charge capacity at cycle 800:", reg_charge.charge_capacity[reg_charge.cycle_index == 800].max())
 plt.plot(reg_charge.charge_capacity[reg_charge.cycle_index == 600], reg_charge.voltage[reg_charge.cycle_index == 600])
 plt.show()
 ```
 
 ```
 # output
-4.697416
-876
-1.1737735
-1.1737735
+Mean current for cycle 25: 4.697416
+Number of cycles: 876
+Max charge capacity at cycle 25: 1.1737735
 ```
 
-
-
-
-
-find more info on `BEEPDatapath` here
-
-Fist, we can create a list of all of the files in the data directory and then runs the three data pipeline processing steps on each of the files.
-
-#### a. Validation
-This module determine if the data conforms to expected format with the correct column names and with values inside an expected range.
-
-#### b. Structuring
-The structuring module turns the time series data from the cycler machine into a json-like structure with DataFrame objects. The DataFrame objects include a summary DataFrame with per cycle statistics, and a DataFrame with interpolated charge and discharge steps of the regular cycles. For files that have diagnostic cycles that were programmatically inserted, separate DataFrame objects are created with summary statistics and interpolated steps for the diagnostic cycles.
-
-#### c. Featurization
-Featurization uses the structured objects to calculate statistically and physically relevant quantities for the purpose of building predictive machine learning models. The objects can be selected and joined for the purposes of training the model, or used for predicting individual outcomes.
-
-
-```python
-import json
-import glob
-
-# Import beep scripts
-from beep import validate, structure, featurize
-
-
-file_list = glob.glob(os.path.join(data_dir, '*[0-9].csv'))
-
-mode = 'events_off'
-mapped  =  {
-            "mode": 'events_off',  # mode run|test|events_off
-            "file_list": file_list,  # list of file paths ['path/test1.csv', 'path/test2.csv']
-            'run_list': list(range(len(file_list)))  # list of run_ids [0, 1]
-            }
-mapped = json.dumps(mapped)
-# Validation
-validated = validate.validate_file_list_from_json(mapped)
-validated_output = json.loads(validated)
-validated_output['mode'] = mode  # mode run|test|events_off
-validated_output['run_list'] = list(range(len(validated_output['file_list'])))
-validated = json.dumps(validated_output)
-
-print(validated)
-
-# Data structuring
-structured = structure.process_file_list_from_json(validated)
-structured_output = json.loads(structured)
-structured_output['mode'] = mode  # mode run|test|events_off
-structured_output['run_list'] = list(range(len(file_list)))
-structured = json.dumps(structured_output)
-
-print(structured)
-
-# Featurization
-featurized = featurize.process_file_list_from_json(structured)
-featurized_output = json.loads(featurized)
-featurized_output['mode'] = mode  # mode run|test|events_off
-featurized_output['run_list'] = list(range(len(file_list)))
-featurized = json.dumps(featurized_output)
-
-```
-
-```
-100%|██████████| 1/1 [00:01<00:00,  1.74s/it]
-{"file_list": ["./Severson-et-al/2017-05-12_6C-50per_3_6C_CH36.csv"], "run_list": [0], "validity": ["valid"], "message_list": [{"comment": "", "error": ""}], "mode": "events_off"}
-100%|██████████| 877/877 [03:48<00:00,  3.85it/s]
-100%|██████████| 877/877 [02:07<00:00,  6.89it/s]
-{"file_list": ["/path/to/your/beep/processing/data-share/structure/2017-05-12_6C-50per_3_6C_CH36_structure.json"], "run_list": [0], "result_list": ["success"], "message_list": [{"comment": "", "error": ""}], "invalid_file_list": [], "mode": "events_off"}
-```
-
-## Step 3: Examine data in the structure file
-
-
-#### Interpolation data
-
-The code below demonstrates how to access the DataFrame objects in the structure file. Loading the file is substantially faster than analyzing the raw time series data. The interpolated data also provides the ability to calculate differences between cycles.
-
-```python
-from matplotlib import pyplot as plt
-from monty.serialization import loadfn
-
-processing_dir = os.environ.get("BEEP_PROCESSING_DIR", "tutorial")
-struct = loadfn(os.path.join(processing_dir, 'data-share', 'structure', '2017-05-12_6C-50per_3_6C_CH36_structure.json'))
-reg_charge = struct.structured_data[struct.structured_data.step_type == 'charge']
-print(reg_charge.current[reg_charge.cycle_index == 25].mean())
-print(reg_charge.cycle_index.max())
-print(reg_charge.charge_capacity[reg_charge.cycle_index == 25].max())
-print(reg_charge.charge_capacity[reg_charge.cycle_index == 600].max())
-plt.plot(reg_charge.charge_capacity[reg_charge.cycle_index == 600], reg_charge.voltage[reg_charge.cycle_index == 600])
-plt.show()
-```
-
-```
-# output
-4.697416
-876
-1.1737735
-1.1737735
-```
 
 ![chg_cap](../static/chg_cap_vs_voltage.png)
 
 
-#### Summary data
-
-The summary data provides a quick way of determine how the battery cell degrades during the cycling experiment. Quantities such as energy efficiency per cycle and total charge throughput at a given cycle number are calculated.
+We can also view some interesting data about the energy efficiency as the cycles progress:
 
 ```python
-plt.plot(struct.structured_summary.cycle_index, struct.structured_summary.energy_efficiency)
+plt.plot(datapath.structured_summary.cycle_index, datapath.structured_summary.energy_efficiency)
 plt.show()
 ```
 
 ![cycle_index_vs_eeff](../static/cycle_index_vs_energy_efficiency.png)
+
+
+[More info on `BEEPDatapath`](/Python%20tutorials/2%20-%20structuring/)
+
+
+## Step 3: Prepare for machine learning and train a model
+
+Featurization uses the structured objects to calculate statistically and physically relevant quantities for the purpose of building predictive machine learning models. The objects can be selected and joined for the purposes of training the model, or used for predicting individual outcomes.
+
+`beep` provides classes such as `BEEPFeaturizer` and `BEEPFeatureMatrix` for generating and managing sets of features linked to structured files.
+
+`beep` also provides `BEEPLinearModelExperiment`, a class for training linear machine learning models on battery data and predicting new degradation characteristics.
+
+
+
+**Quickstart sections on featurization and machine learning are coming soon!**
+
 
 
 ## Congrats!
