@@ -1,5 +1,18 @@
 # Train
 
+`beep train` is a one line command to perform hyperparameter tuning and model fitting on previously generated
+feature matrices.
+
+As input, `beep train` takes:
+
+- the feature matrix file containing the features for learning
+- the feature matrix file containing the targets (e.g., degradation-related metrics) to fit on
+
+
+As output, `beep train` produces a single json file of the serialized model. 
+
+
+
 ![cli_train](../static/op_graphic_train.png)
 
 ## Train help dialog

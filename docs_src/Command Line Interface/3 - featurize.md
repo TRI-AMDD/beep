@@ -71,6 +71,12 @@ Options:
 ```
 
 
+## Specifying input
+
+The inputs for `beep featurize` are structured json output files from `beep structure`; Alternatively, structured data serialized with `BEEPDatapath` in python will also work.
+
+Files can be glo
+
 
 ## Specifying outputs
 
@@ -99,20 +105,20 @@ For example, to apply the `HPPCResistanceVoltageFeatures` and `CycleSummaryStats
 
 
 ```shell
-$: beep featurize -f HPPCResistanceVoltageFeatures -f CycleSummaryStats
+$: beep featurize -f HPPCResistanceVoltageFeatures -f CycleSummaryStats my_structured_file.json
 ```
 
 
 You can apply the full set of featurizers for generating learning features by passing `--featurize-with all_features`:
 
 ```shell
-$: beep featurize -f all_features
+$: beep featurize -f all_features my_structured_file.json
 ```
 
 Similarly, for features from which degradation targets can be derived, pass `--featurize-with all_targets`
 
 ```shell
-$: beep featurize -f all_targets
+$: beep featurize -f all_targets my_structured_file.json
 ```
 
 *Note passing `all_features` or `all_targets` will override any other `--featurize-with` classes.*
@@ -137,7 +143,7 @@ Each featurizer should be passed in dictionary format with one or more valid hyp
 ```
 
 ```shell
-$: beep featurize -h '{"HPPCResistanceVoltageFeatures":{"diag_pos": 1, "soc_window": 8}}'
+$: beep featurize -h '{"HPPCResistanceVoltageFeatures":{"diag_pos": 1, "soc_window": 8}}' my_structured_file.json
 ```
 
 Hyperparameters not specified will be merged with the default hyperparameter dictionary defined for each featurizer.
@@ -148,7 +154,8 @@ To apply multiple featurizers with custom hyperparameters (even the same featuri
 ```shell
 $: beep featurize -h '{"HPPCResistanceVoltageFeatures":{"diag_pos": 1, "soc_window": 8}}' \
   -h '{"HPPCResistanceVoltageFeatures":{"diag_pos": 47, "soc_window": 10}}' \
-  -h '{"DiagnosticSummaryStats": {"test_time_filter_sec": 1e4}}'
+  -h '{"DiagnosticSummaryStats": {"test_time_filter_sec": 1e4}}' \
+  my_structured_file.json
 ```
 
 
@@ -163,7 +170,7 @@ Instead of using the class name to identify the featurizer, use `--featurize-wit
 For example, if your featurizer inheriting `BEEPFeaturizer` is installed in your environment in a module `my_pkg.my_module.my_submodule.MyClass`, do:
 
 ```shell
-$: beep featurize -f my_pkg.my_module.my_submodule.MyClass
+$: beep featurize -f my_pkg.my_module.my_submodule.MyClass my_structured_file.json
 ```
 
 
@@ -173,12 +180,14 @@ and the value being a dictionary of hyperparameters to override:
 
 
 ```shell
-$: beep featurize -h '{"my_pkg.my_module.my_submodule.MyClass": {"my_hp1": 12}}'
-```
+$: beep featurize -h '{"my_pkg.my_module.my_submodule.MyClass": {"my_hp1": 12}}' \
+  my_structured_file.json
+````
 
 Any number of external featurizers can be used alongside any number of builtin featurizers in the same command by passing multiple `--featurize-with` options:
 
 ```shell
 $: beep featurize -f HPPCResistanceVoltageFeatures \
-  -h '{"my_pkg.my_module.my_submodule.MyClass": {"my_hp1": 12}}'
+  -h '{"my_pkg.my_module.my_submodule.MyClass": {"my_hp1": 12}}' \
+  my_structured_file.json
 ```
