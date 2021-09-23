@@ -86,4 +86,99 @@ Specifying `--output-dir` overrides `--output-filename` and will save *all* file
 ## Selecting featurizers to apply
 
 
-`beep featurize` works with "core" features 
+
+
+#### Featurizers in BEEP
+
+`beep featurize` works with "core" features in BEEP. 
+
+
+To use one with default hyperparameters, use the `--featurize-with` or `-f` option with the class name of the featurizer you'd like to use.
+
+For example, to apply the `HPPCResistanceVoltageFeatures` and `CycleSummaryStats` featurizers, 
+
+
+```shell
+$: beep featurize -f HPPCResistanceVoltageFeatures -f CycleSummaryStats
+```
+
+
+You can apply the full set of featurizers for generating learning features by passing `--featurize-with all_features`:
+
+```shell
+$: beep featurize -f all_features
+```
+
+Similarly, for features from which degradation targets can be derived, pass `--featurize-with all_targets`
+
+```shell
+$: beep featurize -f all_targets
+```
+
+*Note passing `all_features` or `all_targets` will override any other `--featurize-with` classes.*
+
+
+
+#### Featurizers with custom hyperparameters
+
+To use custom hyperparameters in `beep featurize`, pass each featurizer + hyperparameter set with `--featurize-with-hyperparams` or `-h`.
+
+
+Each featurizer should be passed in dictionary format with one or more valid hyperparameters defined, like this:
+
+```shell
+{
+  "HPPCResistanceVoltageFeatures":
+      {
+        "diag_pos": 1,
+        "soc_window": 8,
+      }
+}
+```
+
+```shell
+$: beep featurize -h '{"HPPCResistanceVoltageFeatures":{"diag_pos": 1, "soc_window": 8}}'
+```
+
+Hyperparameters not specified will be merged with the default hyperparameter dictionary defined for each featurizer.
+Consult the source code for full specifications of each hyperparameter dictionary for any featurizer.
+
+To apply multiple featurizers with custom hyperparameters (even the same featurizer class with different hyperparameters), simply use multiple **separate** `--featurize-with-hyperparams` options:
+
+```shell
+$: beep featurize -h '{"HPPCResistanceVoltageFeatures":{"diag_pos": 1, "soc_window": 8}}' \
+  -h '{"HPPCResistanceVoltageFeatures":{"diag_pos": 47, "soc_window": 10}}' \
+  -h '{"DiagnosticSummaryStats": {"test_time_filter_sec": 1e4}}'
+```
+
+
+
+#### Your own featurizers
+
+
+`beep featurize` also works with external featurizers than inherit the `BEEPFeaturizer` class. 
+
+Instead of using the class name to identify the featurizer, use `--featurize-with*` options with the **full module and class name** of your custom featurizer.
+
+For example, if your featurizer inheriting `BEEPFeaturizer` is installed in your environment in a module `my_pkg.my_module.my_submodule.MyClass`, do:
+
+```shell
+$: beep featurize -f my_pkg.my_module.my_submodule.MyClass
+```
+
+
+Similar to the core featurizers, calling external featurizers with `--featurize-with` will call them with the default hyperparameters. Using custom
+hyperparameters should use the same format as `--featurize-with-hyperparams`, a dictionary with the only key being the fully specified class name
+and the value being a dictionary of hyperparameters to override:
+
+
+```shell
+$: beep featurize -h '{"my_pkg.my_module.my_submodule.MyClass": {"my_hp1": 12}}'
+```
+
+Any number of external featurizers can be used alongside any number of builtin featurizers in the same command by passing multiple `--featurize-with` options:
+
+```shell
+$: beep featurize -f HPPCResistanceVoltageFeatures \
+  -h '{"my_pkg.my_module.my_submodule.MyClass": {"my_hp1": 12}}'
+```

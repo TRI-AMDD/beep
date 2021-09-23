@@ -169,3 +169,11 @@ autostructuring by passing both `--automatic` and `--protocol-parameters-dir`. F
 ```shell
 $: beep structure * --protocol-parameters-dir /path/to/my/params --automatic
 ```
+
+
+## Failing or invalid files
+
+If any of your files fail or are invalid, you can inspect the full traceback in the status json if you have `--output-status-json` 
+specified in the [base beep command](/Command%20Line%20Interface/1%20-%20overview/).
+
+If this does not provide enough information, you can use the [inspect command](/Command%20Line%20Interface/7%20-%20inspect/) to examine your file, if it can be loaded.
