@@ -19,6 +19,7 @@ docs_src_dir = os.path.join(
 HAS_DOCS_SRC = os.path.isdir(docs_src_dir)
 
 
+@unittest.skip()
 class DocumentationTutorialTest(unittest.TestCase):
     tutorial_src_path = os.path.join(docs_src_dir, "tutorial1.md")
     png_fname = "tutorial_output.png"
