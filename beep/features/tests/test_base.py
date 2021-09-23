@@ -131,9 +131,15 @@ class TestBEEPFeatureMatrix(unittest.TestCase):
         dcc = bfm.matrix[
             "var_discharging_capacity::DiagnosticSummaryStats::" \
             "a2c34891d9e2e10bcf61769d24bad986dba94153df4f23a8b4e5716a9b159053"
-        ].tolist()
-        self.assertAlmostEqual(dcc[0], -2.674662, 4)
-        self.assertAlmostEqual(dcc[1], -3.324690, 4)
+        ].to_dict()
+
+        for k, v in dcc.items():
+            if "PredictionDiagnostics_000132_00004C_structure.json" in k:
+                self.assertAlmostEqual(v, -2.674662, 4)
+            elif "PreDiag_000440_0000FB_structure.json" in k:
+                self.assertAlmostEqual(v, -3.324690, 4)
+            else:
+                raise ValueError
 
     def test_serialization(self):
         bfm = BEEPFeatureMatrix(self.featurizers)
