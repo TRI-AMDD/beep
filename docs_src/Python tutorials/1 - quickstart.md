@@ -181,7 +181,7 @@ plt.show()
 1.1737735
 ```
 
-![chg_cap](static/chg_cap_vs_voltage.png)
+![chg_cap](../static/chg_cap_vs_voltage.png)
 
 
 #### Summary data
@@ -193,7 +193,7 @@ plt.plot(struct.structured_summary.cycle_index, struct.structured_summary.energy
 plt.show()
 ```
 
-![cycle_index_vs_eeff](static/cycle_index_vs_energy_efficiency.png)
+![cycle_index_vs_eeff](../static/cycle_index_vs_energy_efficiency.png)
 
 
 ## Congrats!

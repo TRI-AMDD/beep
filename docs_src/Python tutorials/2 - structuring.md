@@ -1,6 +1,6 @@
 # 2: Structuring
 
-Here you'll find more info about creating and using beep to do your own custom cycler analysie.
+Here you'll find more info about creating and using beep to do your own custom cycler analyses.
 
 
 - [`BEEPDatapath` - One object for ingestion, structuring, and validation](#structuring-with-beepdatapath)
@@ -14,7 +14,7 @@ Here you'll find more info about creating and using beep to do your own custom c
 ### One class for ingestion, structuring, and validation
 
 
-![beepdatapath_infographic](static/beepdatapath_infographic.png)
+![beepdatapath_infographic](../static/beepdatapath_infographic.png)
 
 `BEEPDatapath` is an abstract base class that can handle ingestion, structuring, and validation for many types of cyclers. A datapath
 object represents a complete processing pipeline for battery cycler data.
@@ -139,6 +139,35 @@ print(datapath.paths)
 # Out:
 {"raw": "/path/to/my_arbin_file.csv", "metadata": "/path/to/my_arbin_file_Metadata.csv"}
 ```
+
+
+
+#### `*Datapath.structuring_parameters`
+
+Parameters used to structure `BEEPDatapaths`:
+
+
+```python
+from beep.structure import ArbinDatapath
+
+datapath = ArbinDatapath.from_file("/path/to/my_arbin_file.csv")
+datapath.autostructure()
+
+print(datapath.structuring_parameters)
+
+# Out:
+{'v_range': None,
+ 'resolution': 1000,
+ 'diagnostic_resolution': 500,
+ 'nominal_capacity': 1.1,
+ 'full_fast_charge': 0.8,
+ 'diagnostic_available': False,
+ 'charge_axis': 'charge_capacity',
+ 'discharge_axis': 'voltage'}
+
+```
+
+
 
 #### `*Datapath.raw_data`
 
@@ -465,38 +494,9 @@ Both legacy and `*Datapath` processed (structured) files saved as json should lo
 See [the `auto_load_processed` documentation](#auto_load_processed) for more info on loading legacy processed `BEEPDatapath`s. 
 
 
-## Batch functions for structuring
+## Top-level functions for structuring
 
-Aside from the CLI (shown in [the command line interface guide](cli.md), BEEP also contains lower-level python functions for helping loading and structuring many cycler output files in batches.
-
-
----
-
-
-#### `process_file_list_from_json`
-
-```python
-from beep.structure import process_file_list_from_json
-
-
-json_spec = {
-            "mode": 'events_off',  # mode run|test|events_off
-            "file_list": file_list,  # list of file paths ['path/test1.csv', 'path/test2.csv']
-            'run_list': list(range(len(file_list)))  # list of run_ids [0, 1]
-            }
-
-# The files will automatically be serialized and saved to disk as 
-# individual .json for each cycler run/datapath
-batch_result = process_file_list_from_json(json_spec)
-
-# Get a report of the structuring
-print(batch_result)
-
-# Out:
-{"file_list": ["/path/to/your/beep/processing/data-share/structure/2017-05-12_6C-50per_3_6C_CH36_structure.json"], "run_list": [0], "result_list": ["success"], "message_list": [{"comment": "", "error": ""}], "invalid_file_list": [], "mode": "events_off"}
-```
-
-See [the first tutorial](tutorial1.md) for a full usage example of structuring with `process_file_list_from_json`.
+Aside from the CLI (shown in [the command line interface guide](cli.md), BEEP also contains lower-level python functions for helping loading and structuring many cycler output files from different cyclers.
 
 
 #### `auto_load`
@@ -545,3 +545,4 @@ print(processed_datapath_legacy)
 
 # Out:
 <NewareDatapath object>
+```

@@ -111,7 +111,7 @@ Specifying `--output-dir` overrides `--output-filename` and will save *all* file
 
 
 
-#### Featurizers in BEEP
+### Featurizers in BEEP
 
 `beep featurize` works with "core" features in BEEP. 
 
@@ -142,7 +142,7 @@ $: beep featurize -f all_targets my_structured_file.json
 
 
 
-#### Featurizers with custom hyperparameters
+### Featurizers with custom hyperparameters
 
 To use custom hyperparameters in `beep featurize`, pass each featurizer + hyperparameter set with `--featurize-with-hyperparams` or `-h`.
 
@@ -177,7 +177,7 @@ $: beep featurize -h '{"HPPCResistanceVoltageFeatures":{"diag_pos": 1, "soc_wind
 
 
 
-#### Your own featurizers
+### Your own featurizers
 
 
 `beep featurize` also works with external featurizers than inherit the `BEEPFeaturizer` class. 
@@ -195,16 +195,17 @@ Similar to the core featurizers, calling external featurizers with `--featurize-
 hyperparameters should use the same format as `--featurize-with-hyperparams`, a dictionary with the only key being the fully specified class name
 and the value being a dictionary of hyperparameters to override:
 
-
 ```shell
 $: beep featurize -h '{"my_pkg.my_module.my_submodule.MyClass": {"my_hp1": 12}}' \
   my_structured_file.json
-````
+```
 
 Any number of external featurizers can be used alongside any number of builtin featurizers in the same command by passing multiple `--featurize-with` options:
+
 
 ```shell
 $: beep featurize -f HPPCResistanceVoltageFeatures \
   -h '{"my_pkg.my_module.my_submodule.MyClass": {"my_hp1": 12}}' \
   my_structured_file.json
 ```
+
