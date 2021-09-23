@@ -17,13 +17,14 @@ $: beep <options> <subcommand>
 Options for the base `beep` command are specified before the subcommand. All beep subcommands take at least one file as input and return one or more files as output.
 
 
-Beep has five subcommands:
+Beep has six subcommands:
 
-- `beep structure`: Parse, interpolate, clean, and standardize a wide range of battery cycler output files. [More info](/Command%20Line%20Interface/2%20-%20structuring/)
-- `beep featurize`: Generate features for learning from structured files.
-- `beep train`: Train a machine learning model based on features.
-- `beep predict`: Predict battery degradation based on learning features and a previously trained model.
-- `beep protocol`: Generate cycler protocol from pre-made templates for a wide range of cyclers.
+- [`beep structure`](/Command%20Line%20Interface/2%20-%20structuring/): Parse, interpolate, clean, and standardize a wide range of battery cycler output files. 
+- [`beep featurize`](/Command%20Line%20Interface/3%20-%20featurize/): Generate features for learning from structured files.
+- [`beep train`](/Command%20Line%20Interface/4%20-%20train/): Train a machine learning model based on features.
+- [`beep predict`](/Command%20Line%20Interface/5%20-%20predict/): Predict battery degradation based on learning features and a previously trained model. 
+- [`beep protocol`](/Command%20Line%20Interface/6%20-%20protocol/): Generate cycler protocol from pre-made templates for a wide range of cyclers.
+- [`beep inspect`](/Command%20Line%20Interface/7%20-%20inspect/): Visually inspect and debug beep files on disk.
 
 For more info on any command or the base command, simply pass `--help` as an option.
 

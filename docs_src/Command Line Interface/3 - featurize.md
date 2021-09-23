@@ -92,7 +92,7 @@ Options:
 
 The inputs for `beep featurize` are structured json output files from `beep structure`; Alternatively, structured data serialized with `BEEPDatapath` in python will also work.
 
-Files can be glo
+Files can be globbed.
 
 
 ## Specifying outputs
