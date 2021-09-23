@@ -5,7 +5,7 @@ The `beep structure` command takes in *N* raw battery cycler files (mostly text 
 
 ![cli_structuring](../static/op_graphic_structuring.png)
 
-The structured json files can be loaded either with the BEEP python `BEEPDatapath` interface (see [Advanced Structuring](/tutorial2/)) or with subsequent CLI commands such as `beep featurize` (see [CLI - Featurize](/Command%20Line%20Interface/3%20-%20featurize/)).
+The structured json files can be loaded either with the BEEP python `BEEPDatapath` interface (see [Advanced Structuring](/Python%20tutorials/2%20-%20structuring/)) or with subsequent CLI commands such as `beep featurize` (see [CLI - Featurize](/Command%20Line%20Interface/3%20-%20featurize/)).
 
 
 
