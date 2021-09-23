@@ -8,8 +8,25 @@ The input to `beep featurize` is *N* structured/processed json files from `beep 
 The output of `beep featurize` is 1 feature matrix file (no matter how many featurizers are applied). Also, optionally *N x M* featurizer 
 intermediate files for *M* featurizers (one for each featurizer applied to each file.)
 
+Each row of the output feature matrix corresponds to a single cycler file:
+
+```shell
+
+target_matrix
+               capacity_0.83::TrajectoryFastCharge             ...          rpt_1Cdischarge_energy0.8_real_regular_throughput::DiagnosticProperties
+filename                                                       ...                                                                                                                                           
+file1                         284                              ...                                                NaN                                                                                        
+file2                          58                              ...                                        1266.108637                                                                                        
+file3                          85                              ...                                                NaN                                                                                        
+file4                         101                              ...                                                NaN                                                                                        
+
+```
+
+
+`beep featurize` is used for both generating learning features (e.g., voltage under some condition) **and** targets such as degradation metrics (e.g., cycles to reach a specific capacity).
 
 ![cli_featurize](../static/op_graphic_featurize.png)
+
 
 
 ## Featurization help dialog
