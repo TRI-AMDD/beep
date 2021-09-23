@@ -110,3 +110,69 @@ Options:
   --help                          Show this message and exit.
 
 ```
+
+
+## Specifying inputs
+
+`beep train` requires two input files:
+
+### `--feature-matrix-file`/`-fm`
+
+The path to a serialized feature matrix file, such as those generated with [`beep featurize`](/Command%20Line%20Interface/3%20-%20featurize/) . These will be the **learning features** for the model.
+
+### `--target-matrix-file`/`-tm`
+
+The path to a serialized feature matrix file, such as those generated with [`beep featurize`](/Command%20Line%20Interface/3%20-%20featurize/). These will be the **learning targets** for the model.
+
+**Note: The feature matrix file and the target matrix file MUST be generated using the same set of structured json files, otherwise they will not correspond to the same cycler runs and errors will be thrown.**
+
+
+### Other required args
+
+You must also specify one or more `--targets`/`-t`, which are column names in the target matrix file. These will be the actual learning targets selected from the input files.
+
+Finally, you must specify a `--model-name`/`-m` for the liner model. See the [Train help dialog](#train-help-dialog) for specifics.
+
+
+
+## Specifying outputs
+
+`beep train` outputs a single file which by default will be automatically named. To specify your own output filename, pass `--output-filename`.
+
+
+
+## Model parameters and options
+
+
+### Model parameters and hyperparameters
+
+You can pass many model parameters and options for hyperparameter tuning (such as defining the alpha parameter space to search) with command line options:
+
+- `--model`: The name of the model to use
+- `--alpha-lower`: The lower bound on alpha during hyperparameter search
+- `--alpha-upper`: The higher bound on alpha during hyperparameter search
+- `--n-alphas`: The number of linearly spaces alphas between alpha lower and alpha upper to include in the grid.
+- `--kfold`: The number of folds *k* to use for cross validation in hyperparameter tuning.
+- `--max-iter`: The max number of iterations to search for optimal hyperparameters during training/tuning.
+- `--tol`: The tolerate for hyperparameter optimization.
+- `--l1-ratios`: A comma-separated list of L1 ratios to search when using ElasticNet.
+
+
+### Data cleaning options
+
+`beep train` automatically cleans and prepares data for input into an ML experiment. Several options for specifying data cleaning procedures are outlined below:
+
+- `--train-feature-nan-thresh`: Threshold for keeping training features with some samples containing NaNs.
+- `--train-sample-nan-thresh`: Threshold for keeping training samples with some features containing NaNs.
+- `--predict-sample-nan-thresh`: Threshold for keeping prediction samples with some features containing NaNs.
+- `--drop-nan-training-targets`: Flag to drop any samples without a valid training target.
+- `--impute-strategy`: The strategy for imputing unknown values such as NaNs which are left over after dropping NaNs according to thresholds.
+
+
+
+## Running a train/test experiment
+
+By default, `beep train` will train the final model on all available data after determining optimal hyperparameters. However, to run a training and test experiment with the CLI, 
+pass the `--train-on-frac-and-score` parameter, which will train and tune on the specified fraction of data and test on the remainder.
+
+The results of training and testing errors will be reported in the status json if `--output-status-json` is passed to the [base `beep` command](/Command%20Line%20Interface/1%20-%20overview/).
