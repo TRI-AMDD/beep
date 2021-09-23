@@ -127,7 +127,11 @@ class TestCLIInspect(TestCLIBase):
 
         files = [os.path.join(TEST_FILE_DIR, f) for f in files]
 
+
+
         for f in files:
+            print(f"ARDHERE, running {f}")
+
             result = self.runner.invoke(
                 cli,
                 [
@@ -135,6 +139,7 @@ class TestCLIInspect(TestCLIBase):
                     f
                 ]
             )
+            print(result.output)
             self.assertEqual(result.exit_code, 0)
             self.assertIsNotNone(result.output)
 
