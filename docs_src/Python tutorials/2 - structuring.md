@@ -496,8 +496,7 @@ See [the `auto_load_processed` documentation](#auto_load_processed) for more inf
 
 ## Top-level functions for structuring
 
-Aside from the CLI (shown in [the command line interface guide](cli.md), BEEP also contains lower-level python functions for helping loading and structuring many cycler output files from different cyclers.
-
+Aside from the CLI (shown in [the command line interface guide](/Command%20Line%20Interface/2%20-%20structuring/), BEEP also contains lower-level python functions for helping loading and structuring many cycler output files from different cyclers.
 
 #### `auto_load`
 

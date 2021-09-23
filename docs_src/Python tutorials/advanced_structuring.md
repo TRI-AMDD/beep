@@ -2,7 +2,7 @@
 
 
 If you are using a cycler not supported by BEEP, you can still use BEEP to structure, featurize, and run models on your data! 
-To do this, you simply inherit from the `BEEPDatapath` base class described [on the Advanced Tutorial](tutorial2.md) to create your own Datapath.
+To do this, you simply inherit from the `BEEPDatapath` base class described in the [Structuring Tutorial](/Command%20Line%20Interface/2%20-%20structuring/) to create your own Datapath.
 
 `BEEPDatapath` handles all structuring of battery cycler files by taking them from raw cycler output files (usually csvs or text) and converting them
 into consistent interfaces for structuring.
@@ -197,7 +197,7 @@ other Datapath/cycler.
 
 For example, structuring your BEEPDatapath requires only calling the parent `BEEPDatapath`'s `.structure` method.
 
-For more info on the capabilities of `BEEPDatapath`, see the [Advanced Tutorial](tutorial2.md).
+For more info on the capabilities of `BEEPDatapath`, see the [Structuring Tutorial](/Command%20Line%20Interface/2%20-%20structuring/).
 
 
 

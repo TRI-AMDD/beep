@@ -1,0 +1,870 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for TRI-AMDD BEEP, for handling battery cycling data and predicting battery lifetines">
+      
+      
+      
+      <link rel="shortcut icon" href="../../static/tri_cropped_favicon.png">
+      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-6.1.0">
+    
+    
+      
+        <title>Train - BEEP - Battery Evaluation and Early Prediction</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.bc7e593a.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab28b872.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#ef5552">
+        
+      
+    
+    
+    
+      
+        
+        <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>body,input{font-family:"Roboto",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"Roboto Mono",SFMono-Regular,Consolas,Menlo,monospace}</style>
+      
+    
+    
+    
+    
+      
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="red" data-md-color-accent="orange">
+      
+  
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#train" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header-nav md-grid" aria-label="Header">
+    <a href="../.." title="BEEP - Battery Evaluation and Early Prediction" class="md-header-nav__button md-logo" aria-label="BEEP - Battery Evaluation and Early Prediction">
+      
+  <img src="../../static/tri_cropped.png" alt="logo">
+
+    </a>
+    <label class="md-header-nav__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header-nav__title" data-md-component="header-title">
+      
+        <div class="md-header-nav__ellipsis">
+          <span class="md-header-nav__topic md-ellipsis">
+            BEEP - Battery Evaluation and Early Prediction
+          </span>
+          <span class="md-header-nav__topic md-ellipsis">
+            
+              Train
+            
+          </span>
+        </div>
+      
+    </div>
+    
+      <label class="md-header-nav__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" data-md-state="active">
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <button type="reset" class="md-search__icon md-icon" aria-label="Clear" data-md-component="search-reset" tabindex="-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header-nav__source">
+        
+<a href="https://github.com/tri-amdd/beep/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="BEEP - Battery Evaluation and Early Prediction" class="md-nav__button md-logo" aria-label="BEEP - Battery Evaluation and Early Prediction">
+      
+  <img src="../../static/tri_cropped.png" alt="logo">
+
+    </a>
+    BEEP - Battery Evaluation and Early Prediction
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/tri-amdd/beep/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../.." class="md-nav__link">
+      Introduction
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../../data/" class="md-nav__link">
+      Cycler data requirements
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    
+      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3" checked>
+    
+    <label class="md-nav__link" for="nav-3">
+      Command Line Interface
+      <span class="md-nav__icon md-icon"></span>
+    </label>
+    <nav class="md-nav" aria-label="Command Line Interface" data-md-level="1">
+      <label class="md-nav__title" for="nav-3">
+        <span class="md-nav__icon md-icon"></span>
+        Command Line Interface
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../1%20-%20overview/" class="md-nav__link">
+      Overview
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../2%20-%20structuring/" class="md-nav__link">
+      Structure
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../3%20-%20featurize/" class="md-nav__link">
+      Featurize
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Train
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+    
+    <a href="./" class="md-nav__link md-nav__link--active">
+      Train
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#train-help-dialog" class="md-nav__link">
+    Train help dialog
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#specifying-inputs" class="md-nav__link">
+    Specifying inputs
+  </a>
+  
+    <nav class="md-nav" aria-label="Specifying inputs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#-feature-matrix-file-fm" class="md-nav__link">
+    --feature-matrix-file/-fm
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#-target-matrix-file-tm" class="md-nav__link">
+    --target-matrix-file/-tm
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#other-required-args" class="md-nav__link">
+    Other required args
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#specifying-outputs" class="md-nav__link">
+    Specifying outputs
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#model-parameters-and-options" class="md-nav__link">
+    Model parameters and options
+  </a>
+  
+    <nav class="md-nav" aria-label="Model parameters and options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#model-parameters-and-hyperparameters" class="md-nav__link">
+    Model parameters and hyperparameters
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-cleaning-options" class="md-nav__link">
+    Data cleaning options
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-a-traintest-experiment" class="md-nav__link">
+    Running a train/test experiment
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../5%20-%20predict/" class="md-nav__link">
+      Predict
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../6%20-%20protocol/" class="md-nav__link">
+      Protocol
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../7%20-%20inspect/" class="md-nav__link">
+      Inspect
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4">
+    
+    <label class="md-nav__link" for="nav-4">
+      Python tutorials
+      <span class="md-nav__icon md-icon"></span>
+    </label>
+    <nav class="md-nav" aria-label="Python tutorials" data-md-level="1">
+      <label class="md-nav__title" for="nav-4">
+        <span class="md-nav__icon md-icon"></span>
+        Python tutorials
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Python%20tutorials/1%20-%20quickstart/" class="md-nav__link">
+      1: Quickstart
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Python%20tutorials/2%20-%20structuring/" class="md-nav__link">
+      2: Structuring
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Python%20tutorials/3%20-%20featurization/" class="md-nav__link">
+      3: Featurization
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Python%20tutorials/4%20-%20models/" class="md-nav__link">
+      4: Machine Learning
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Python%20tutorials/advanced_structuring/" class="md-nav__link">
+      Advanced Structuring: Unsupported cyclers
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#train-help-dialog" class="md-nav__link">
+    Train help dialog
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#specifying-inputs" class="md-nav__link">
+    Specifying inputs
+  </a>
+  
+    <nav class="md-nav" aria-label="Specifying inputs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#-feature-matrix-file-fm" class="md-nav__link">
+    --feature-matrix-file/-fm
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#-target-matrix-file-tm" class="md-nav__link">
+    --target-matrix-file/-tm
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#other-required-args" class="md-nav__link">
+    Other required args
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#specifying-outputs" class="md-nav__link">
+    Specifying outputs
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#model-parameters-and-options" class="md-nav__link">
+    Model parameters and options
+  </a>
+  
+    <nav class="md-nav" aria-label="Model parameters and options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#model-parameters-and-hyperparameters" class="md-nav__link">
+    Model parameters and hyperparameters
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-cleaning-options" class="md-nav__link">
+    Data cleaning options
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-a-traintest-experiment" class="md-nav__link">
+    Running a train/test experiment
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/tri-amdd/beep/edit/master/docs/Command Line Interface/4 - train.md" title="Edit this page" class="md-content__button md-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+                  </a>
+                
+                
+                <h1 id="train">Train<a class="headerlink" href="#train" title="Permanent link">&para;</a></h1>
+<p><code>beep train</code> is a one line command to perform hyperparameter tuning and model fitting on previously generated
+feature matrices.</p>
+<p>As input, <code>beep train</code> takes:</p>
+<ul>
+<li>the feature matrix file containing the features for learning</li>
+<li>the feature matrix file containing the targets (e.g., degradation-related metrics) to fit on</li>
+</ul>
+<p>As output, <code>beep train</code> produces a single json file of the serialized model. </p>
+<p><img alt="cli_train" src="../../static/op_graphic_train.png" /></p>
+<h2 id="train-help-dialog">Train help dialog<a class="headerlink" href="#train-help-dialog" title="Permanent link">&para;</a></h2>
+<div class="codehilite"><pre><span></span><code>$: beep train --help
+
+Usage: beep train <span class="o">[</span>OPTIONS<span class="o">]</span>
+
+  Train a machine learning model using all available data and save it to file.
+
+Options:
+  -o, --output-filename FILE      Filename <span class="o">(</span>json<span class="o">)</span> to write the BEEP linear
+                                  model object to when training is finished.
+  -fm, --feature-matrix-file FILE
+                                  Featurization matrix serialized to file,
+                                  containing features <span class="o">(</span>X<span class="o">)</span> <span class="k">for</span> learning.
+                                  Featurization matrices can be generated by
+                                  the beep featurize command.  <span class="o">[</span>required<span class="o">]</span>
+  -tm, --target-matrix-file FILE  Featurization matrix serialized to file,
+                                  containing targets <span class="o">(</span>one y or more<span class="o">)</span> <span class="k">for</span>
+                                  learning. Featurization matrices can be
+                                  generated by the beep featurize command.
+                                  <span class="o">[</span>required<span class="o">]</span>
+  -t, --targets TEXT              Target columns to as from target matrix
+                                  file. Must all be present in the target
+                                  matrix file. If more than <span class="m">1</span> is specified
+                                  <span class="o">(</span>e.g., -t <span class="s1">&#39;col1&#39;</span> -t <span class="s1">&#39;col2&#39;</span><span class="o">)</span>, multitask
+                                  regression will be performed. Column names
+                                  will be <span class="s1">&#39;&lt;Feature Name&gt;::&lt;Featurizer Class</span>
+<span class="s1">                                  Name&gt;&#39;</span> <span class="k">if</span> --homogenize-features is set. If
+                                  not, column names include long parameter
+                                  hashes which must be included in this
+                                  argument option.  <span class="o">[</span>required<span class="o">]</span>
+  -m, --model-name TEXT           Name of the regularized linear model to use.
+                                  Current selection includes <span class="o">(</span><span class="s1">&#39;elasticnet&#39;</span>,
+                                  <span class="s1">&#39;ridge&#39;</span>, <span class="s1">&#39;lasso&#39;</span><span class="o">)</span>.  <span class="o">[</span>required<span class="o">]</span>
+  -s, --train-on-frac-and-score FLOAT
+                                  Do hyperparameter tuning on part <span class="o">(</span>a training
+                                  fraction<span class="o">)</span> of the dataset and use that fitted
+                                  model to predict on a testing fraction of
+                                  the dataset. Specify the training fraction
+                                  as a float <span class="m">0</span>-1.
+  -al, --alpha-lower FLOAT        Lower bound on the grid <span class="k">for</span> the alpha
+                                  hyperparameter  which will be explored
+                                  during hyperparameter tuning. Must be
+                                  specified with --alpha-upper and --n-alphas.
+  -au, --alpha-upper FLOAT        Upper bound on the grid <span class="k">for</span> the alpha
+                                  hyperparameter  which will be explored
+                                  during hyperparameter tuning. Must be
+                                  specified with --alpha-lower and --n-alphas.
+  -an, --n-alphas FLOAT           Number of linearly spaced alphas to explore
+                                  during hyperparameter tuning. If not
+                                  specified, sklearn defaults are used. Must
+                                  be specified with --alpha-upper and --alpha-
+                                  lower.
+  --train-feature-nan-thresh FLOAT
+                                  Threshold to keep a feature in the training
+                                  dataset, in fraction of samples which must
+                                  not be nan from <span class="m">0</span>-1. <span class="nv">0</span> <span class="o">=</span> any feature having
+                                  any nan is dropped, <span class="nv">1</span> <span class="o">=</span> no features are
+                                  dropped.
+  --train-sample-nan-thresh FLOAT
+                                  Threshold to keep a sample from the training
+                                  data, in fraction of features which must not
+                                  be nan from <span class="m">0</span>-1. <span class="nv">0</span> <span class="o">=</span> any sample having any
+                                  nan feature is dropped, <span class="nv">1</span> <span class="o">=</span> no samples are
+                                  dropped.
+  --predict-sample-nan-thresh FLOAT
+                                  Threshold to keep a sample from any
+                                  prediction set, including those used
+                                  internally, in fraction of features which
+                                  must notbe nan.
+  --drop-nan-training-targets     Drop samples containing any nan targets. If
+                                  False and the targets matrix has nan
+                                  targets, the <span class="nb">command</span> will fail.
+  --impute-strategy TEXT          Type of imputation to use, <span class="s1">&#39;median&#39;</span>, <span class="s1">&#39;mean&#39;</span>,
+                                  or <span class="s1">&#39;none&#39;</span>.
+  --kfold INTEGER                 Number of folds to use in k-fold
+                                  hyperparameter tuning.
+  --max-iter INTEGER              Number of iterations during training to fit
+                                  linear parameters.
+  --tol FLOAT                     Tolerance <span class="k">for</span> optimization.
+  --l1-ratios TEXT                Comma separated l1 ratios to try in
+                                  hyperparameter optimization.For example,
+                                  <span class="s1">&#39;0.1,0.5,0.7,0.9,0.95,1.0&#39;</span>, and all values
+                                  must be between <span class="m">0</span>-1.
+  --homogenize-features BOOLEAN   Shorten feature names to only include the
+                                  featurizer name and <span class="o">(</span>very short<span class="o">)</span> feature
+                                  name. For example,
+                                  <span class="s1">&#39;capacity_0.8::TrajectoryFastCharge&#39;</span>, where
+                                  features normally have names including their
+                                  <span class="o">(</span>long<span class="o">)</span> parameter hashes. To use the literal
+                                  feature names, specify False.
+  --help                          Show this message and exit.
+</code></pre></div>
+
+<h2 id="specifying-inputs">Specifying inputs<a class="headerlink" href="#specifying-inputs" title="Permanent link">&para;</a></h2>
+<p><code>beep train</code> requires two input files:</p>
+<h3 id="-feature-matrix-file-fm"><code>--feature-matrix-file</code>/<code>-fm</code><a class="headerlink" href="#-feature-matrix-file-fm" title="Permanent link">&para;</a></h3>
+<p>The path to a serialized feature matrix file, such as those generated with <a href="/Command%20Line%20Interface/3%20-%20featurize/"><code>beep featurize</code></a> . These will be the <strong>learning features</strong> for the model.</p>
+<h3 id="-target-matrix-file-tm"><code>--target-matrix-file</code>/<code>-tm</code><a class="headerlink" href="#-target-matrix-file-tm" title="Permanent link">&para;</a></h3>
+<p>The path to a serialized feature matrix file, such as those generated with <a href="/Command%20Line%20Interface/3%20-%20featurize/"><code>beep featurize</code></a>. These will be the <strong>learning targets</strong> for the model.</p>
+<p><strong>Note: The feature matrix file and the target matrix file MUST be generated using the same set of structured json files, otherwise they will not correspond to the same cycler runs and errors will be thrown.</strong></p>
+<h3 id="other-required-args">Other required args<a class="headerlink" href="#other-required-args" title="Permanent link">&para;</a></h3>
+<p>You must also specify one or more <code>--targets</code>/<code>-t</code>, which are column names in the target matrix file. These will be the actual learning targets selected from the input files.</p>
+<p>Finally, you must specify a <code>--model-name</code>/<code>-m</code> for the liner model. See the <a href="#train-help-dialog">Train help dialog</a> for specifics.</p>
+<h2 id="specifying-outputs">Specifying outputs<a class="headerlink" href="#specifying-outputs" title="Permanent link">&para;</a></h2>
+<p><code>beep train</code> outputs a single file which by default will be automatically named. To specify your own output filename, pass <code>--output-filename</code>.</p>
+<h2 id="model-parameters-and-options">Model parameters and options<a class="headerlink" href="#model-parameters-and-options" title="Permanent link">&para;</a></h2>
+<h3 id="model-parameters-and-hyperparameters">Model parameters and hyperparameters<a class="headerlink" href="#model-parameters-and-hyperparameters" title="Permanent link">&para;</a></h3>
+<p>You can pass many model parameters and options for hyperparameter tuning (such as defining the alpha parameter space to search) with command line options:</p>
+<ul>
+<li><code>--model</code>: The name of the model to use</li>
+<li><code>--alpha-lower</code>: The lower bound on alpha during hyperparameter search</li>
+<li><code>--alpha-upper</code>: The higher bound on alpha during hyperparameter search</li>
+<li><code>--n-alphas</code>: The number of linearly spaces alphas between alpha lower and alpha upper to include in the grid.</li>
+<li><code>--kfold</code>: The number of folds <em>k</em> to use for cross validation in hyperparameter tuning.</li>
+<li><code>--max-iter</code>: The max number of iterations to search for optimal hyperparameters during training/tuning.</li>
+<li><code>--tol</code>: The tolerate for hyperparameter optimization.</li>
+<li><code>--l1-ratios</code>: A comma-separated list of L1 ratios to search when using ElasticNet.</li>
+</ul>
+<h3 id="data-cleaning-options">Data cleaning options<a class="headerlink" href="#data-cleaning-options" title="Permanent link">&para;</a></h3>
+<p><code>beep train</code> automatically cleans and prepares data for input into an ML experiment. Several options for specifying data cleaning procedures are outlined below:</p>
+<ul>
+<li><code>--train-feature-nan-thresh</code>: Threshold for keeping training features with some samples containing NaNs.</li>
+<li><code>--train-sample-nan-thresh</code>: Threshold for keeping training samples with some features containing NaNs.</li>
+<li><code>--predict-sample-nan-thresh</code>: Threshold for keeping prediction samples with some features containing NaNs.</li>
+<li><code>--drop-nan-training-targets</code>: Flag to drop any samples without a valid training target.</li>
+<li><code>--impute-strategy</code>: The strategy for imputing unknown values such as NaNs which are left over after dropping NaNs according to thresholds.</li>
+</ul>
+<h2 id="running-a-traintest-experiment">Running a train/test experiment<a class="headerlink" href="#running-a-traintest-experiment" title="Permanent link">&para;</a></h2>
+<p>By default, <code>beep train</code> will train the final model on all available data after determining optimal hyperparameters. However, to run a training and test experiment with the CLI, 
+pass the <code>--train-on-frac-and-score</code> parameter, which will train and tune on the specified fraction of data and test on the remainder.</p>
+<p>The results of training and testing errors will be reported in the status json if <code>--output-status-json</code> is passed to the <a href="/Command%20Line%20Interface/1%20-%20overview/">base <code>beep</code> command</a>.</p>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid" aria-label="Footer">
+        
+          <a href="../3%20-%20featurize/" class="md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+            </div>
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                Featurize
+              </div>
+            </div>
+          </a>
+        
+        
+          <a href="../5%20-%20predict/" class="md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                Predict
+              </div>
+            </div>
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    </div>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+          <div class="md-footer-copyright__highlight">
+            Toyota Research Institute
+          </div>
+        
+        Made with
+        <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+          Material for MkDocs
+        </a>
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    
+      <script src="../../assets/javascripts/vendor.6a3d08fc.min.js"></script>
+      <script src="../../assets/javascripts/bundle.71201edf.min.js"></script><script id="__lang" type="application/json">{"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing"}</script>
+      
+      <script>
+        app = initialize({
+          base: "../..",
+          features: [],
+          search: Object.assign({
+            worker: "../../assets/javascripts/worker/search.4ac00218.min.js"
+          }, typeof search !== "undefined" && search)
+        })
+      </script>
+      
+    
+  </body>
+</html>
