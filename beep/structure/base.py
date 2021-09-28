@@ -1426,7 +1426,7 @@ def get_max_paused_over_threshold(group, paused_threshold=3600):
     return max_paused_duration
 
 
-def get_CV_segment_from_charge(charge, dt_tol=1, dVdt_tol=5e-5, dIdt_tol=1e-4):
+def get_CV_segment_from_charge(charge, dt_tol=1, dVdt_tol=1e-5, dIdt_tol=1e-4):
     """
     Extracts the constant voltage segment from charge. Works for both CCCV or
     CC steps followed by a CV step.
