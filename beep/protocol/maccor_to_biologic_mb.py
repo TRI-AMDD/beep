@@ -350,7 +350,7 @@ class MaccorToBiologicMb:
                 goto_seq = -1
                 if goto_step_num == step_num + 1:
                     goto_seq = seq_num + 1
-                elif goto_seq == end_step_num:
+                elif goto_step_num == end_step_num:
                     goto_seq = END_SEQ_NUM
                 else:
                     goto_seq = seq_nums_by_step_num[goto_step_num][0]
@@ -1229,7 +1229,7 @@ class MaccorToBiologicMb:
 
         # remove end step, we don't need it
         assert get(steps[-1], "StepType") == "End"
-        end_step_num = len(steps) - 1
+        end_step_num = len(steps)
         steps = steps[0:-1]
 
         technique_partitions_post_conversion = []
