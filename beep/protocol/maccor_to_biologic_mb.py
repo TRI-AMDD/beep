@@ -348,10 +348,10 @@ class MaccorToBiologicMb:
                     )
 
                 goto_seq = -1
-                if goto_step_num == step_num + 1:
-                    goto_seq = seq_num + 1
-                elif goto_step_num == end_step_num:
+                if goto_step_num == end_step_num:
                     goto_seq = END_SEQ_NUM
+                elif goto_step_num == step_num + 1:
+                    goto_seq = seq_num + 1
                 else:
                     goto_seq = seq_nums_by_step_num[goto_step_num][0]
 
