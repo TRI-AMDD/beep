@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?maccor-application progid="Maccor Procedure File"?>
+<MaccorTestProcedure>
+  <header>
+    <BuildTestVersion>
+      <major>1</major>
+      <minor>5</minor>
+      <release>7006</release>
+      <build>32043</build>
+    </BuildTestVersion>
+    <FileFormatVersion>
+      <BTVersion>11</BTVersion>
+    </FileFormatVersion>
+    <ProcDesc>
+      <desc></desc>
+    </ProcDesc>
+  </header>
+  <ProcSteps>
+    <TestStep>
+      <StepType>  Rest  </StepType>
+      <StepMode>        </StepMode>
+      <StepValue></StepValue>
+      <Limits/>
+      <Ends>
+        <EndEntry>
+          <EndType>StepTime</EndType>
+          <SpecialType> </SpecialType>
+          <Oper> = </Oper>
+          <Step>003</Step>
+          <Value>03:00:00</Value>
+        </EndEntry>
+      </Ends>
+      <Reports>
+        <ReportEntry>
+          <ReportType>StepTime</ReportType>
+          <Value>00:00:30</Value>
+        </ReportEntry>
+      </Reports>
+      <Range>4</Range>
+      <Option1>N</Option1>
+      <Option2>N</Option2>
+      <Option3>N</Option3>
+      <StepNote></StepNote>
+    </TestStep>
+     <TestStep>
+      <StepType> Charge </StepType>
+      <StepMode>Current </StepMode>
+      <StepValue>1.0</StepValue>
+      <Limits/>
+      <Ends>
+        <EndEntry>
+          <EndType>StepTime</EndType>
+          <SpecialType> </SpecialType>
+          <Oper> = </Oper>
+          <Step>003</Step>
+          <Value>00:00:01</Value>
+        </EndEntry>
+        <EndEntry>
+          <EndType>Current </EndType>
+          <SpecialType> </SpecialType>
+          <Oper>&gt;= </Oper>
+          <Step>003</Step>
+          <Value>1.0</Value>
+        </EndEntry>
+        <EndEntry>
+          <EndType>Current </EndType>
+          <SpecialType> </SpecialType>
+          <Oper>&lt;= </Oper>
+          <Step>003</Step>
+          <Value>0.1</Value>
+        </EndEntry>
+      </Ends>
+      <Reports>
+        <ReportEntry>
+          <ReportType>StepTime</ReportType>
+          <Value>::.01</Value>
+        </ReportEntry>
+      </Reports>
+      <Range>A</Range>
+      <Option1>N</Option1>
+      <Option2>N</Option2>
+      <Option3>N</Option3>
+      <StepNote>never runs</StepNote>
+    </TestStep>
+    <TestStep>
+      <StepType>  End   </StepType>
+      <StepMode>        </StepMode>
+      <StepValue></StepValue>
+      <Limits/>
+      <Ends/>
+      <Reports/>
+      <Range></Range>
+      <Option1></Option1>
+      <Option2></Option2>
+      <Option3></Option3>
+      <StepNote></StepNote>
+    </TestStep>
+  </ProcSteps>
+</MaccorTestProcedure>

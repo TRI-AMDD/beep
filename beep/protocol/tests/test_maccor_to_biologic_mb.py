@@ -14,6 +14,7 @@
 """Unit tests for maccor protcol files to biologic modulo bat protcol files"""
 
 import os
+from typing import OrderedDict
 import unittest
 import xmltodict
 import copy
@@ -507,6 +508,25 @@ class ConversionTest(unittest.TestCase):
             cycle_transition_rules.__repr__(),
             parsed_cycle_transition_rules.__repr__(),
         )
+
+    def test_convert_protocol_with_goto_end_step(self):
+        path = os.path.join(TEST_FILE_DIR, "goto_end_example.000")
+        converter = MaccorToBiologicMb()
+        ast = converter.load_maccor_ast(path)
+        test_steps = get(ast, "MaccorTestProcedure.ProcSteps.TestStep")
+        assert isinstance(test_steps, list)
+
+        first_step = test_steps[0]
+        first_step_goto = int(get(first_step, "Ends.EndEntry.Step"))
+        assert first_step_goto == len(test_steps)
+        assert first_step_goto not in [1, 2]
+
+        converted_fp, rule_fps = converter.convert(path, TEST_FILE_DIR, "to_delete")
+        os.remove(converted_fp)
+        for rule_fp in rule_fps:
+            os.remove(rule_fp)
+
+
 
 step_with_bounds_template = (
     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
