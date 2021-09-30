@@ -1,5 +1,10 @@
 
 
+v2021.9.30.15
+-------------
+* failing test for goto end bug - Thanks Will Powelson
+* Fix error in converting formation files
+
 v2021.9.1.10
 ------------
 * Modify test condition to allow 70% threshold to pass for 4.84Ah cells - Thanks Patrick Asinger!
