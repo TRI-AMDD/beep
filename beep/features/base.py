@@ -12,199 +12,352 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Module and scripts for generating feature objects from structured
-battery cycling data, to be used as inputs for machine learning
-early prediction models.
 
-Usage:
-    featurize [INPUT_JSON]
+For creating features and organizing them into datasets.
 
-Options:
-    -h --help        Show this screen
-    --version        Show version
-
-
-The `featurize` script will generate features according to the methods
-contained in beep.featurize.  It places output files corresponding to
-features in `/data-share/features/`.
-
-The input json must contain the following fields
-
-* `file_list` - a list of processed cycler runs for which to generate features
-
-The output json file will contain the following:
-
-* `file_list` - a list of filenames corresponding to the locations of the features
-
-Example:
-```angular2
-$ featurize '{"invalid_file_list": ["/data-share/renamed_cycler_files/FastCharge/FastCharge_0_CH33.csv",
-    "/data-share/renamed_cycler_files/FastCharge/FastCharge_1_CH44.csv"],
-    "file_list": ["/data-share/structure/FastCharge_2_CH29_structure.json"]}'
-{"file_list": ["/data-share/features/FastCharge_2_CH29_full_model_features.json"]}
-```
 """
-
 import os
+import copy
+import abc
+import json
+import hashlib
+from typing import Union, Tuple, List
+
 import pandas as pd
-from abc import ABCMeta, abstractmethod
-from monty.json import MSONable
-from monty.serialization import loadfn
+from monty.io import zopen
+from monty.json import MSONable, MontyDecoder
+from monty.serialization import loadfn, dumpfn
 
-from beep.collate import scrub_underscore_suffix, add_suffix_to_filename
-from beep import MODULE_DIR
-
-FEATURE_HYPERPARAMS = loadfn(
-    os.path.join(MODULE_DIR, "features/feature_hyperparameters.yaml")
-)
-
-s = {"service": "DataAnalyzer"}
+from beep.structure.base import BEEPDatapath
 
 
-class BeepFeatures(MSONable, metaclass=ABCMeta):
+class BEEPFeaturizationError(BaseException):
+    """Raise when a featurization-specific error occurs"""
+    pass
+
+
+class BEEPFeatureMatrixError(BaseException):
+    """ Raise when there is a BEEP-specific problem with a dataset"""
+    pass
+
+
+class BEEPFeaturizer(MSONable, abc.ABC):
     """
-    Class corresponding to feature baseline feature object.
+    Base class for all beep feature generation.
 
-    Attributes:
-        name (str): predictor object name.
-        X (pandas.DataFrame): features in DataFrame format.
-        metadata (dict): information about the conditions, data
-            and code used to produce features
+    From a structured battery file representing many cycles of one cell,
+    (AKA a structured datapath), produce a feature vector.
+
+    Works for generating both
+     - Vectors X to use as training vectors
+     - Vectors or scalars y to use as ML targets
+        (as problems may have multiple metrics to predict)
+
     """
 
-    class_feature_name = "Base"
+    DEFAULT_HYPERPARAMETERS = {}
 
-    def __init__(self, name, X, metadata):
-        """
-        Invokes BeepFeatures object
-
-        Args:
-            name (str): predictor object name.
-            X (pandas.DataFrame): features in DataFrame format.
-            metadata (dict): information about the conditions, data
-                and code used to produce features
-
-        """
-        self.name = name
-        self.X = X
-        self.metadata = metadata
-
-    @classmethod
-    def from_run(
-        cls, input_filename, feature_dir, processed_cycler_run,
-            params_dict=None, parameters_path="data-share/raw/parameters"
-    ):
-        """
-        This method contains the workflow for the creation of the feature class
-        Since the workflow should be the same for all of the feature classed this
-        method should not be overridden in any of the derived classes. If the class
-        can be created (feature generation succeeds, etc.) then the class is returned.
-        Otherwise the return value is False
-        Args:
-            input_filename (str): path to the input data from processed cycler run
-            feature_dir (str): path to the base directory for the feature sets.
-            processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
-            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
-            gets featurized. These could be filters for column or row operations
-            parameters_path (str): Root directory storing project parameter files.
-
-        Returns:
-            (beep.featurize.BeepFeatures): class object for the feature set
-        """
-
-        if cls.validate_data(processed_cycler_run, params_dict):
-            output_filename = cls.get_feature_object_name_and_path(
-                input_filename, feature_dir
-            )
-            feature_object = cls.features_from_processed_cycler_run(
-                processed_cycler_run, params_dict, parameters_path=parameters_path
-            )
-            metadata = cls.metadata_from_processed_cycler_run(
-                processed_cycler_run, params_dict
-            )
-            return cls(output_filename, feature_object, metadata)
+    def __init__(self, structured_datapath: Union[BEEPDatapath, None], hyperparameters: Union[dict, None] = None):
+        # If all required hyperparameters are specified, use those
+        # If some subset of required hyperparameters are specified, throw error
+        # If no hyperparameters are specified, use defaults
+        if hyperparameters:
+            if all(k in hyperparameters for k in self.DEFAULT_HYPERPARAMETERS):
+                self.hyperparameters = hyperparameters
+            else:
+                raise BEEPFeaturizationError(
+                    f"Features cannot be created with incomplete set of "
+                    f"hyperparameters {hyperparameters.keys()} < "
+                    f"{self.DEFAULT_HYPERPARAMETERS.keys()}!")
         else:
-            return False
+            self.hyperparameters = self.DEFAULT_HYPERPARAMETERS
 
-    @classmethod
-    @abstractmethod
-    def validate_data(cls, processed_cycler_run, params_dict=None):
+        if structured_datapath is not None and not structured_datapath.is_structured:
+            raise BEEPFeaturizationError("BEEPDatapath input is not structured!")
+        self.datapath = structured_datapath
+
+        self.features = None
+
+        # In case these features are loaded from file
+        # Allow attrs which can hold relevant metadata without having
+        # to reload the original datapath
+        self.paths = self.datapath.paths if self.datapath else {}
+        self.metadata = self.datapath.metadata.raw if self.datapath else {}
+        self.linked_semiunique_id = self.datapath.semiunique_id if self.datapath else None
+
+    @abc.abstractmethod
+    def validate(self) -> Tuple[bool, Union[str, None]]:
         """
-        Method for validation of input data, e.g. processed_cycler_runs
-
-        Args:
-            processed_cycler_run (ProcessedCyclerRun): processed_cycler_run
-                to validate
-            params_dict (dict): parameter dictionary for validation
+        Validate a featurizer on it's ingested datapath.
 
         Returns:
-            (bool): boolean for whether data is validated
+            (bool, str/None): The validation result and it's message.
 
         """
         raise NotImplementedError
 
-    @classmethod
-    def get_feature_object_name_and_path(cls, input_path, feature_dir):
+    @abc.abstractmethod
+    def create_features(self) -> None:
         """
-        This function determines how to name the object for a specific feature class
-        and creates the full path to save the object. This full path is also used as
-        the feature name attribute
-        Args:
-            input_path (str): path to the input data from processed cycler run
-            feature_dir (str): path to the base directory for the feature sets.
+        Should assign a dataframe to self.features.
+
         Returns:
-            str: the full path (including filename) to use for saving the feature
-                object
+            None
         """
-        new_filename = os.path.basename(input_path)
-        new_filename = scrub_underscore_suffix(new_filename)
-
-        # Append model_name along with "features" to demarcate
-        # different models when saving the feature vectors.
-        new_filename = add_suffix_to_filename(
-            new_filename, "_features" + "_" + cls.class_feature_name
-        )
-        if not os.path.isdir(os.path.join(feature_dir, cls.class_feature_name)):
-            os.makedirs(os.path.join(feature_dir, cls.class_feature_name))
-        feature_path = os.path.join(feature_dir, cls.class_feature_name, new_filename)
-        feature_path = os.path.abspath(feature_path)
-        return feature_path
-
-    @classmethod
-    @abstractmethod
-    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
-                                           parameters_path="data-share/raw/parameters"):
         raise NotImplementedError
-
-    @classmethod
-    def metadata_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None):
-        if params_dict is None:
-            params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
-        metadata = {
-            "barcode": processed_cycler_run.metadata.barcode,
-            "protocol": processed_cycler_run.metadata.protocol,
-            "channel_id": processed_cycler_run.metadata.channel_id,
-            "parameters": params_dict,
-        }
-        return metadata
 
     def as_dict(self):
-        """
-        Method for dictionary serialization
+        """Serialize a BEEPDatapath as a dictionary.
+
+        Must not be loaded from legacy.
+
         Returns:
-            dict: corresponding to dictionary for serialization
+            (dict): corresponding to dictionary for serialization.
+
         """
-        obj = {
+
+        if self.features is None:
+            raise BEEPFeaturizationError("Cannot serialize features which have not been generated.")
+
+        features = self.features.to_dict("list")
+
+        return {
             "@module": self.__class__.__module__,
             "@class": self.__class__.__name__,
-            "name": self.name,
-            "X": self.X.to_dict("list"),
+
+            # Core parts of BEEPFeaturizer
+            "features": features,
+            "hyperparameters": self.hyperparameters,
+            "paths": self.paths,
             "metadata": self.metadata,
+            "linked_datapath_semiunique_id": self.linked_semiunique_id
         }
-        return obj
 
     @classmethod
     def from_dict(cls, d):
-        """MSONable deserialization method"""
-        d["X"] = pd.DataFrame(d["X"])
-        return cls(**d)
+        """Create a BEEPDatapath object from a dictionary.
+
+        Args:
+            d (dict): dictionary represenation.
+
+        Returns:
+            beep.structure.ProcessedCyclerRun: deserialized ProcessedCyclerRun.
+        """
+
+        # no need for original datapath
+        bf = cls(structured_datapath=None, hyperparameters=d["hyperparameters"])
+        bf.features = pd.DataFrame(d["features"])
+        bf.paths = d["paths"]
+        bf.metadata = d["metadata"]
+        bf.linked_semiunique_id = d["linked_datapath_semiunique_id"]
+        return bf
+
+    @classmethod
+    def from_json_file(cls, filename):
+        """Load a structured run previously saved to file.
+
+        .json.gz files are supported.
+
+        Loads a BEEPFeaturizer from json.
+
+        Can be used in combination with files serialized with BEEPFeatures.to_json_file.
+
+        Args:
+            filename (str, Pathlike): a json file from a structured run, serialzed with to_json_file.
+
+        Returns:
+            None
+        """
+        with zopen(filename, "r") as f:
+            d = json.load(f)
+
+        # Add this structured file path to the paths dict
+        paths = d.get("paths", {})
+        paths["features"] = os.path.abspath(filename)
+        d["paths"] = paths
+        return cls.from_dict(d)
+
+    def to_json_file(self, filename):
+        """Save a BEEPFeatures to disk as a json.
+
+        .json.gz files are supported.
+
+        Not named from_json to avoid conflict with MSONable.from_json(*)
+
+        Args:
+            filename (str, Pathlike): The filename to save the file to.
+            omit_raw (bool): If True, saves only structured (NOT RAW) data.
+                More efficient for saving/writing to disk.
+
+        Returns:
+            None
+        """
+        d = self.as_dict()
+        dumpfn(d, filename)
+
+
+class BEEPFeatureMatrix(MSONable):
+    """
+    Create an (n battery cycler files) x (k features) array composed of
+    m BEEPFeaturizer objects.
+
+    Args:
+        beepfeaturizers ([BEEPFeaturizer]): A list of BEEPFeaturizer objects
+
+    """
+
+    OP_DELIMITER = "::"
+
+    def __init__(self, beepfeaturizers: List[BEEPFeaturizer]):
+
+        if beepfeaturizers:
+            dfs_by_file = {bf.paths.get("structured", "no file found"): [] for bf in beepfeaturizers}
+            # big_df_rows = {bf.__class__.__name__: [] for bf in beepfeaturizers}
+            unique_features = {}
+            for i, bf in enumerate(beepfeaturizers):
+                if bf.features is None:
+                    raise BEEPFeatureMatrixError(f"BEEPFeaturizer {bf} has not created features")
+                elif bf.features.shape[0] != 1:
+                    raise BEEPFeatureMatrixError(f"BEEPFeaturizer {bf} features are not 1-dimensional.")
+                else:
+                    bfcn = bf.__class__.__name__
+
+                    fname = bf.paths.get("structured", None)
+                    if not fname:
+                        raise BEEPFeatureMatrixError(
+                            "Cannot join features automatically as no linking can be done "
+                            "based on original structured filename."
+                        )
+
+                    # Check for any possible feature collisions using identical featurizers
+                    # on identical files
+
+                    # sort params for this featurizer obj by key
+                    params = sorted(list(bf.hyperparameters.items()), key=lambda x: x[0])
+
+                    # Prevent identical features from identical input files
+                    # create a unique operation string for the application of this featurizer
+                    # on a specific file, this op string will be the same as long as
+                    # the featurizer class name, hyperparameters, and class are the same
+
+                    param_str = "-".join([f"{k}:{v}" for k, v in params])
+                    param_hash = hashlib.sha256(param_str.encode("utf-8")).hexdigest()
+
+                    # Get an id for this featurizer operation (including hyperparameters)
+                    # regardless of the file it is applied on
+                    feature_op_id = f"{bfcn}{self.OP_DELIMITER}{param_hash}"
+
+                    # Get an id for this featurizer operation (including hyperparameters)
+                    # on THIS SPECIFIC file.
+                    file_feature_op_id = f"{fname}{self.OP_DELIMITER}{bfcn}{self.OP_DELIMITER}{param_hash}"
+
+                    # Get a unique id for every feature generated by a specific
+                    # featurizer on a specific file.
+                    this_file_feature_columns_ids = \
+                        [
+                            f"{file_feature_op_id}{self.OP_DELIMITER}{c}" for c in bf.features.columns
+                        ]
+
+                    # Check to make sure there are no duplicates of the exact same feature for
+                    # the exact same featurizer with the exact same hyperparameters on the exact
+                    # same file.
+                    collisions = {c: f for c, f in unique_features.items() if c in this_file_feature_columns_ids}
+                    if collisions:
+                        raise BEEPFeatureMatrixError(
+                            f"Multiple features generated with identical classes and identical hyperparameters"
+                            f" attempted to be joined into same dataset; \n"
+                            f"{bfcn} features collide with existing: \n{collisions}"
+                        )
+                    for c in this_file_feature_columns_ids:
+                        unique_features[c] = bfcn
+
+                    # Create consistent scheme for naming features regardless of file
+                    df = copy.deepcopy(bf.features)
+                    consistent_column_names = [f"{c}{self.OP_DELIMITER}{feature_op_id}" for c in df.columns]
+                    df.columns = consistent_column_names
+
+                    df.index = [fname] * df.shape[0]
+                    df.index.rename("filename", inplace=True)
+                    dfs_by_file[fname].append(df)
+
+            rows = []
+            for filename, dfs in dfs_by_file.items():
+                row = pd.concat(dfs, axis=1)
+                row = row[sorted(row.columns)]
+                rows.append(row)
+            self.matrix = pd.concat(rows, axis=0)
+
+        else:
+            self.matrix = None
+
+        self.featurizers = beepfeaturizers
+
+    def as_dict(self):
+        """Serialize a BEEPDatapath as a dictionary.
+
+        Must not be loaded from legacy.
+
+        Returns:
+            (dict): corresponding to dictionary for serialization.
+
+        """
+
+        return {
+            "@module": self.__class__.__module__,
+            "@class": self.__class__.__name__,
+
+            # Core parts of BEEPFeaturizer
+            "featurizers": [f.as_dict() for f in self.featurizers],
+            "matrix": self.matrix.to_dict("list"),
+        }
+
+    @classmethod
+    def from_dict(cls, d):
+        """Create a BEEPDatapath object from a dictionary.
+
+        Args:
+            d (dict): dictionary represenation.
+
+        Returns:
+            beep.structure.ProcessedCyclerRun: deserialized ProcessedCyclerRun.
+        """
+        # no need for original datapaths, as their ref paths should
+        # be in the subobjects
+        featurizers = [MontyDecoder().process_decoded(f) for f in d["featurizers"]]
+        return cls(featurizers)
+
+    @classmethod
+    def from_json_file(cls, filename):
+        """Load a structured run previously saved to file.
+
+        .json.gz files are supported.
+
+        Loads a BEEPFeatureMatrix from json.
+
+        Can be used in combination with files serialized with BEEPFeatures.to_json_file.
+
+        Args:
+            filename (str, Pathlike): a json file from a structured run, serialzed with to_json_file.
+
+        Returns:
+            None
+        """
+        return loadfn(filename)
+
+    def to_json_file(self, filename):
+        """Save a BEEPFeatureMatrix to disk as a json.
+
+        .json.gz files are supported.
+
+        Not named from_json to avoid conflict with MSONable.from_json(*)
+
+        Args:
+            filename (str, Pathlike): The filename to save the file to.
+            omit_raw (bool): If True, saves only structured (NOT RAW) data.
+                More efficient for saving/writing to disk.
+
+        Returns:
+            None
+        """
+        d = self.as_dict()
+        dumpfn(d, filename)

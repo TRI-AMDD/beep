@@ -1,0 +1,815 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for TRI-AMDD BEEP, for handling battery cycling data and predicting battery lifetines">
+      
+      
+      
+      <link rel="shortcut icon" href="../../static/tri_cropped_favicon.png">
+      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-6.1.0">
+    
+    
+      
+        <title>Featurize - BEEP - Battery Evaluation and Early Prediction</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.bc7e593a.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab28b872.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#ef5552">
+        
+      
+    
+    
+    
+      
+        
+        <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>body,input{font-family:"Roboto",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"Roboto Mono",SFMono-Regular,Consolas,Menlo,monospace}</style>
+      
+    
+    
+    
+    
+      
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="red" data-md-color-accent="orange">
+      
+  
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#featurize" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header-nav md-grid" aria-label="Header">
+    <a href="../.." title="BEEP - Battery Evaluation and Early Prediction" class="md-header-nav__button md-logo" aria-label="BEEP - Battery Evaluation and Early Prediction">
+      
+  <img src="../../static/tri_cropped.png" alt="logo">
+
+    </a>
+    <label class="md-header-nav__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header-nav__title" data-md-component="header-title">
+      
+        <div class="md-header-nav__ellipsis">
+          <span class="md-header-nav__topic md-ellipsis">
+            BEEP - Battery Evaluation and Early Prediction
+          </span>
+          <span class="md-header-nav__topic md-ellipsis">
+            
+              Featurize
+            
+          </span>
+        </div>
+      
+    </div>
+    
+      <label class="md-header-nav__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" data-md-state="active">
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <button type="reset" class="md-search__icon md-icon" aria-label="Clear" data-md-component="search-reset" tabindex="-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header-nav__source">
+        
+<a href="https://github.com/tri-amdd/beep/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="BEEP - Battery Evaluation and Early Prediction" class="md-nav__button md-logo" aria-label="BEEP - Battery Evaluation and Early Prediction">
+      
+  <img src="../../static/tri_cropped.png" alt="logo">
+
+    </a>
+    BEEP - Battery Evaluation and Early Prediction
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/tri-amdd/beep/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../.." class="md-nav__link">
+      Introduction
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../../data/" class="md-nav__link">
+      Cycler data requirements
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    
+      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3" checked>
+    
+    <label class="md-nav__link" for="nav-3">
+      Command Line Interface
+      <span class="md-nav__icon md-icon"></span>
+    </label>
+    <nav class="md-nav" aria-label="Command Line Interface" data-md-level="1">
+      <label class="md-nav__title" for="nav-3">
+        <span class="md-nav__icon md-icon"></span>
+        Command Line Interface
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../1%20-%20overview/" class="md-nav__link">
+      Overview
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../2%20-%20structuring/" class="md-nav__link">
+      Structure
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Featurize
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+    
+    <a href="./" class="md-nav__link md-nav__link--active">
+      Featurize
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#featurization-help-dialog" class="md-nav__link">
+    Featurization help dialog
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#specifying-input" class="md-nav__link">
+    Specifying input
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#specifying-outputs" class="md-nav__link">
+    Specifying outputs
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#selecting-featurizers-to-apply" class="md-nav__link">
+    Selecting featurizers to apply
+  </a>
+  
+    <nav class="md-nav" aria-label="Selecting featurizers to apply">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#featurizers-in-beep" class="md-nav__link">
+    Featurizers in BEEP
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#featurizers-with-custom-hyperparameters" class="md-nav__link">
+    Featurizers with custom hyperparameters
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#your-own-featurizers" class="md-nav__link">
+    Your own featurizers
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../4%20-%20train/" class="md-nav__link">
+      Train
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../5%20-%20predict/" class="md-nav__link">
+      Predict
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../6%20-%20protocol/" class="md-nav__link">
+      Protocol
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../7%20-%20inspect/" class="md-nav__link">
+      Inspect
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4">
+    
+    <label class="md-nav__link" for="nav-4">
+      Python tutorials
+      <span class="md-nav__icon md-icon"></span>
+    </label>
+    <nav class="md-nav" aria-label="Python tutorials" data-md-level="1">
+      <label class="md-nav__title" for="nav-4">
+        <span class="md-nav__icon md-icon"></span>
+        Python tutorials
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Python%20tutorials/1%20-%20quickstart/" class="md-nav__link">
+      1: Quickstart
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Python%20tutorials/2%20-%20structuring/" class="md-nav__link">
+      2: Structuring
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Python%20tutorials/3%20-%20featurization/" class="md-nav__link">
+      3: Featurization
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Python%20tutorials/4%20-%20models/" class="md-nav__link">
+      4: Machine Learning
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Python%20tutorials/advanced_structuring/" class="md-nav__link">
+      Advanced Structuring: Unsupported cyclers
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#featurization-help-dialog" class="md-nav__link">
+    Featurization help dialog
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#specifying-input" class="md-nav__link">
+    Specifying input
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#specifying-outputs" class="md-nav__link">
+    Specifying outputs
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#selecting-featurizers-to-apply" class="md-nav__link">
+    Selecting featurizers to apply
+  </a>
+  
+    <nav class="md-nav" aria-label="Selecting featurizers to apply">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#featurizers-in-beep" class="md-nav__link">
+    Featurizers in BEEP
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#featurizers-with-custom-hyperparameters" class="md-nav__link">
+    Featurizers with custom hyperparameters
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#your-own-featurizers" class="md-nav__link">
+    Your own featurizers
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/tri-amdd/beep/edit/master/docs/Command Line Interface/3 - featurize.md" title="Edit this page" class="md-content__button md-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+                  </a>
+                
+                
+                <h1 id="featurize">Featurize<a class="headerlink" href="#featurize" title="Permanent link">&para;</a></h1>
+<p>Featurize (<code>beep featurize</code>) is a way to robustly apply many feature generation routines (featurizers) with
+different hyperparameters to large sets of files (e.g., a thousand structured cycler files).</p>
+<p>The input to <code>beep featurize</code> is <em>N</em> structured/processed json files from <code>beep structure</code>.</p>
+<p>The output of <code>beep featurize</code> is 1 feature matrix file (no matter how many featurizers are applied). Also, optionally <em>N x M</em> featurizer 
+intermediate files for <em>M</em> featurizers (one for each featurizer applied to each file.)</p>
+<p>Each row of the output feature matrix corresponds to a single cycler file:</p>
+<div class="codehilite"><pre><span></span><code>target_matrix
+               capacity_0.83::TrajectoryFastCharge             ...          rpt_1Cdischarge_energy0.8_real_regular_throughput::DiagnosticProperties
+filename                                                       ...                                                                                                                                           
+file1                         <span class="m">284</span>                              ...                                                NaN                                                                                        
+file2                          <span class="m">58</span>                              ...                                        <span class="m">1266</span>.108637                                                                                        
+file3                          <span class="m">85</span>                              ...                                                NaN                                                                                        
+file4                         <span class="m">101</span>                              ...                                                NaN                                                                                        
+</code></pre></div>
+
+<p><code>beep featurize</code> is used for both generating learning features (e.g., voltage under some condition) <strong>and</strong> targets such as degradation metrics (e.g., cycles to reach a specific capacity).</p>
+<p><img alt="cli_featurize" src="../../static/op_graphic_featurize.png" /></p>
+<h2 id="featurization-help-dialog">Featurization help dialog<a class="headerlink" href="#featurization-help-dialog" title="Permanent link">&para;</a></h2>
+<div class="codehilite"><pre><span></span><code>$: beep featurize --help
+
+Usage: beep featurize <span class="o">[</span>OPTIONS<span class="o">]</span> <span class="o">[</span>FILES<span class="o">]</span>...
+
+  Featurize one or more files. Argument is a space-separated list of files or
+  globs. The same features are applied to each file. Naming of output files is
+  <span class="k">done</span> automatically, but the output directory can be specified.
+
+Options:
+  -o, --output-filename FILE      Filename to save entre feature matrix to. If
+                                  not specified, output filewill be named with
+                                  FeatureMatrix-<span class="o">[</span>timestamp<span class="o">]</span>.json.gz. If
+                                  specified, overrides the output dir <span class="k">for</span>
+                                  saving the feature matrix to file.
+  -d, --output-dir DIRECTORY      Directory to dump auto-named files to.
+  -f, --featurize-with TEXT       Specify a featurizer to apply by class name,
+                                  e.g. HPPCResistanceVoltageFeatures. To apply
+                                  more than one featurizer, use multiple -f
+                                  &lt;FEATURIZER&gt; commands. To apply sets ofcore
+                                  BEEP featurizers, pass either <span class="s1">&#39;all_features&#39;</span>
+                                  <span class="k">for</span> all features or<span class="s1">&#39;all_targets&#39;</span> <span class="k">for</span> all
+                                  targets <span class="o">(</span>features which can be used as
+                                  targets<span class="o">)</span>. Note <span class="k">if</span> <span class="s1">&#39;all_features&#39;</span> or
+                                  <span class="s1">&#39;all_targets&#39;</span> is passed, other -f
+                                  featurizers will be ignored. All feautrizers
+                                  are attempted to apply with default
+                                  hyperparameters<span class="p">;</span> to specify your own
+                                  hyperparameters, use --featurize-with-
+                                  hyperparams.Classes from installed modules
+                                  not in core BEEP can be specified with the
+                                  class name in absolute import format, e.g.,
+                                  my_package.my_module.MyClass.
+  -h, --featurize-with-hyperparams TEXT
+                                  Specify a featurizer to apply by class name
+                                  with your own hyperparameters.<span class="o">(</span>such as
+                                  parameter directories or specific values <span class="k">for</span>
+                                  hyperparametersfor this featurizer<span class="o">)</span>, pass a
+                                  dictionary in the format:
+                                  <span class="s1">&#39;{&quot;FEATURIZER_NAME&quot;: {&quot;HYPERPARAM1&quot;:</span>
+<span class="s1">                                  &quot;VALUE1&quot;...}}&#39;</span> including the single quotes
+                                  around the outside and double quotes <span class="k">for</span>
+                                  internal strings.Custom hyperparameters will
+                                  be merged with default hyperparameters <span class="k">if</span>
+                                  the hyperparameter dictionary is
+                                  underspecified.
+  --save-intermediates            Save the intermediate BEEPFeaturizers as
+                                  json files. Filenames are autogenerated and
+                                  saved in output-dir <span class="k">if</span> specified<span class="p">;</span> otherwise,
+                                  intermediates are written to current working
+                                  directory.
+  --help                          Show this message and exit.
+</code></pre></div>
+
+<h2 id="specifying-input">Specifying input<a class="headerlink" href="#specifying-input" title="Permanent link">&para;</a></h2>
+<p>The inputs for <code>beep featurize</code> are structured json output files from <code>beep structure</code>; Alternatively, structured data serialized with <code>BEEPDatapath</code> in python will also work.</p>
+<p>Files can be globbed.</p>
+<h2 id="specifying-outputs">Specifying outputs<a class="headerlink" href="#specifying-outputs" title="Permanent link">&para;</a></h2>
+<p>The <code>beep featurize</code> command outputs a feature matrix as its required sole output. This file will
+be auto-named if <code>--output-filename</code> is not specified. </p>
+<p>To include saving of intermediate featurizer files, use the <code>--save-intermediates</code> flag. These files will be auto-named and put into the CWD if <code>--output-dir</code> is not set.</p>
+<p>Specifying <code>--output-dir</code> overrides <code>--output-filename</code> and will save <em>all</em> files (including intermediates) into this directory with automatic naming.</p>
+<h2 id="selecting-featurizers-to-apply">Selecting featurizers to apply<a class="headerlink" href="#selecting-featurizers-to-apply" title="Permanent link">&para;</a></h2>
+<h3 id="featurizers-in-beep">Featurizers in BEEP<a class="headerlink" href="#featurizers-in-beep" title="Permanent link">&para;</a></h3>
+<p><code>beep featurize</code> works with "core" features in BEEP. </p>
+<p>To use one with default hyperparameters, use the <code>--featurize-with</code> or <code>-f</code> option with the class name of the featurizer you'd like to use.</p>
+<p>For example, to apply the <code>HPPCResistanceVoltageFeatures</code> and <code>CycleSummaryStats</code> featurizers, </p>
+<div class="codehilite"><pre><span></span><code>$: beep featurize -f HPPCResistanceVoltageFeatures -f CycleSummaryStats my_structured_file.json
+</code></pre></div>
+
+<p>You can apply the full set of featurizers for generating learning features by passing <code>--featurize-with all_features</code>:</p>
+<div class="codehilite"><pre><span></span><code>$: beep featurize -f all_features my_structured_file.json
+</code></pre></div>
+
+<p>Similarly, for features from which degradation targets can be derived, pass <code>--featurize-with all_targets</code></p>
+<div class="codehilite"><pre><span></span><code>$: beep featurize -f all_targets my_structured_file.json
+</code></pre></div>
+
+<p><em>Note passing <code>all_features</code> or <code>all_targets</code> will override any other <code>--featurize-with</code> classes.</em></p>
+<h3 id="featurizers-with-custom-hyperparameters">Featurizers with custom hyperparameters<a class="headerlink" href="#featurizers-with-custom-hyperparameters" title="Permanent link">&para;</a></h3>
+<p>To use custom hyperparameters in <code>beep featurize</code>, pass each featurizer + hyperparameter set with <code>--featurize-with-hyperparams</code> or <code>-h</code>.</p>
+<p>Each featurizer should be passed in dictionary format with one or more valid hyperparameters defined, like this:</p>
+<div class="codehilite"><pre><span></span><code><span class="o">{</span>
+  <span class="s2">&quot;HPPCResistanceVoltageFeatures&quot;</span>:
+      <span class="o">{</span>
+        <span class="s2">&quot;diag_pos&quot;</span>: <span class="m">1</span>,
+        <span class="s2">&quot;soc_window&quot;</span>: <span class="m">8</span>,
+      <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>$: beep featurize -h <span class="s1">&#39;{&quot;HPPCResistanceVoltageFeatures&quot;:{&quot;diag_pos&quot;: 1, &quot;soc_window&quot;: 8}}&#39;</span> my_structured_file.json
+</code></pre></div>
+
+<p>Hyperparameters not specified will be merged with the default hyperparameter dictionary defined for each featurizer.
+Consult the source code for full specifications of each hyperparameter dictionary for any featurizer.</p>
+<p>To apply multiple featurizers with custom hyperparameters (even the same featurizer class with different hyperparameters), simply use multiple <strong>separate</strong> <code>--featurize-with-hyperparams</code> options:</p>
+<div class="codehilite"><pre><span></span><code>$: beep featurize -h <span class="s1">&#39;{&quot;HPPCResistanceVoltageFeatures&quot;:{&quot;diag_pos&quot;: 1, &quot;soc_window&quot;: 8}}&#39;</span> <span class="se">\</span>
+  -h <span class="s1">&#39;{&quot;HPPCResistanceVoltageFeatures&quot;:{&quot;diag_pos&quot;: 47, &quot;soc_window&quot;: 10}}&#39;</span> <span class="se">\</span>
+  -h <span class="s1">&#39;{&quot;DiagnosticSummaryStats&quot;: {&quot;test_time_filter_sec&quot;: 1e4}}&#39;</span> <span class="se">\</span>
+  my_structured_file.json
+</code></pre></div>
+
+<h3 id="your-own-featurizers">Your own featurizers<a class="headerlink" href="#your-own-featurizers" title="Permanent link">&para;</a></h3>
+<p><code>beep featurize</code> also works with external featurizers than inherit the <code>BEEPFeaturizer</code> class. </p>
+<p>Instead of using the class name to identify the featurizer, use <code>--featurize-with*</code> options with the <strong>full module and class name</strong> of your custom featurizer.</p>
+<p>For example, if your featurizer inheriting <code>BEEPFeaturizer</code> is installed in your environment in a module <code>my_pkg.my_module.my_submodule.MyClass</code>, do:</p>
+<div class="codehilite"><pre><span></span><code>$: beep featurize -f my_pkg.my_module.my_submodule.MyClass my_structured_file.json
+</code></pre></div>
+
+<p>Similar to the core featurizers, calling external featurizers with <code>--featurize-with</code> will call them with the default hyperparameters. Using custom
+hyperparameters should use the same format as <code>--featurize-with-hyperparams</code>, a dictionary with the only key being the fully specified class name
+and the value being a dictionary of hyperparameters to override:</p>
+<div class="codehilite"><pre><span></span><code>$: beep featurize -h <span class="s1">&#39;{&quot;my_pkg.my_module.my_submodule.MyClass&quot;: {&quot;my_hp1&quot;: 12}}&#39;</span> <span class="se">\</span>
+  my_structured_file.json
+</code></pre></div>
+
+<p>Any number of external featurizers can be used alongside any number of builtin featurizers in the same command by passing multiple <code>--featurize-with</code> options:</p>
+<div class="codehilite"><pre><span></span><code>$: beep featurize -f HPPCResistanceVoltageFeatures <span class="se">\</span>
+  -h <span class="s1">&#39;{&quot;my_pkg.my_module.my_submodule.MyClass&quot;: {&quot;my_hp1&quot;: 12}}&#39;</span> <span class="se">\</span>
+  my_structured_file.json
+</code></pre></div>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid" aria-label="Footer">
+        
+          <a href="../2%20-%20structuring/" class="md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+            </div>
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                Structure
+              </div>
+            </div>
+          </a>
+        
+        
+          <a href="../4%20-%20train/" class="md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                Train
+              </div>
+            </div>
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    </div>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+          <div class="md-footer-copyright__highlight">
+            Toyota Research Institute
+          </div>
+        
+        Made with
+        <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+          Material for MkDocs
+        </a>
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    
+      <script src="../../assets/javascripts/vendor.6a3d08fc.min.js"></script>
+      <script src="../../assets/javascripts/bundle.71201edf.min.js"></script><script id="__lang" type="application/json">{"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing"}</script>
+      
+      <script>
+        app = initialize({
+          base: "../..",
+          features: [],
+          search: Object.assign({
+            worker: "../../assets/javascripts/worker/search.4ac00218.min.js"
+          }, typeof search !== "undefined" && search)
+        })
+      </script>
+      
+    
+  </body>
+</html>

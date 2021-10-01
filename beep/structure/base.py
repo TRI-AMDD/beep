@@ -22,10 +22,8 @@ from beep.conversion_schemas import (
 )
 
 from beep.utils import parameters_lookup
-from beep import logger
-from beep.validate import BeepValidationError, ValidatorBeep
-
-SERVICE_CONFIG = {"service": "DataStructurer"}
+from beep import logger, VALIDATION_SCHEMA_DIR, PROTOCOL_PARAMETERS_DIR
+from beep.structure.validate import SimpleValidator
 
 
 class BEEPDatapath(abc.ABC, MSONable):
@@ -63,9 +61,12 @@ class BEEPDatapath(abc.ABC, MSONable):
             - raw_data (pd.DataFrame): All raw data from the raw input file.
 
         Less important attributes:
+            - structuring_parameters: A dictionary of the structuring parameters used to structure
+                this object.
             - metadata (BEEPDatapath.CyclerRunMetadata): An object holding all metadata.
             - paths (dict): A mapping of {descriptor: full_path or [paths]} for all files related to this datapath.
                 This can include things like "raw", "metadata", "structured", as well as other paths (e.g., "eis").
+            - schema: Validation schema used to validate the raw ingested data.
 
         Private:
             - _is_legacy (bool): Whether this file is loaded from a legacy ProcessedCyclerRun. Some operations are
@@ -156,7 +157,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             # Extra metadata will always be in .raw
             self.raw = metadata_dict
 
-    def __init__(self, raw_data, metadata, paths=None, impute_missing=True):
+    def __init__(self, raw_data, metadata, paths=None, schema=None, impute_missing=True):
         """
 
         Args:
@@ -166,6 +167,8 @@ class BEEPDatapath(abc.ABC, MSONable):
                 have to.
             paths ({str: str, Pathlike}): Should contain "raw" and "metadata" keys, even if they are the same
                 filepath.
+            schema (str): the name of the validation schema file to use. Should be located in the
+                VALIDATION_SCHEMA_DIR directory, or can alternatively be an absolute filepath.
             impute_missing (bool): Impute missing columns such as temperature and internal_resistance if they
                 are not included in raw_data.
         """
@@ -186,6 +189,19 @@ class BEEPDatapath(abc.ABC, MSONable):
                 for col in self.IMPUTABLE_COLUMNS:
                     if col not in raw_data:
                         raw_data[col] = np.NaN
+
+        if not schema:
+            self.schema = schema
+        else:
+            if os.path.isabs(schema):
+                abs_schema = schema
+            else:
+                abs_schema = os.path.join(VALIDATION_SCHEMA_DIR, schema)
+
+            if os.path.exists(abs_schema):
+                self.schema = abs_schema
+            else:
+                raise FileNotFoundError(f"The schema file specified for validation could not be found: {schema}.")
 
         self.structured_summary = None     # equivalent of PCR.summary
         self.structured_data = None        # equivalent of PCR.cycles_interpolated
@@ -239,6 +255,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         self._diag_aggregation.pop("internal_resistance")
         self._diag_summary_cols = copy.deepcopy(self._summary_cols)
         self._diag_summary_cols.pop(5)  # internal_resistance
+        self.structuring_parameters = {}
 
     @classmethod
     @abc.abstractmethod
@@ -255,6 +272,23 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         """
         raise NotImplementedError
+
+    @StructuringDecorators.must_not_be_legacy
+    def validate(self):
+        """Validate the raw data.
+
+        Returns:
+            (bool) True if the raw data is valid, false otherwise.
+
+        """
+
+        if self.schema:
+            v = SimpleValidator(schema_filename=self.schema)
+        else:
+            v = SimpleValidator()
+
+        is_valid, reason = v.validate(self.raw_data)
+        return is_valid, reason
 
     @classmethod
     def from_json_file(cls, filename):
@@ -345,7 +379,14 @@ class BEEPDatapath(abc.ABC, MSONable):
             "summary": summary,
             "cycles_interpolated": cycles_interpolated,
             "diagnostic_summary": diagnostic_summary,
-            "diagnostic_interpolated": diagnostic_interpolated
+            "diagnostic_interpolated": diagnostic_interpolated,
+
+            # Structuring parameters (mostly for provenance)
+            "structuring_parameters": self.structuring_parameters,
+
+            # Provence for validation
+            "schema_path": self.schema,
+
         }
 
     @classmethod
@@ -365,6 +406,7 @@ class BEEPDatapath(abc.ABC, MSONable):
                         d[obj][column] = pd.Series(d[obj][column], dtype=dtype)
 
         paths = d.get("paths", None)
+        schema = d.get("schema_path", None)
 
         # support legacy operations
         # support loads when raw_data not available
@@ -377,7 +419,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             metadata = d.get("metadata")
             is_legacy = False
 
-        datapath = cls(raw_data=raw_data, metadata=metadata, paths=paths)
+        datapath = cls(raw_data=raw_data, metadata=metadata, paths=paths, schema=schema)
         datapath._is_legacy = is_legacy
 
         datapath.structured_data = pd.DataFrame(d["cycles_interpolated"])
@@ -388,19 +430,31 @@ class BEEPDatapath(abc.ABC, MSONable):
         datapath.diagnostic_summary = diagnostic_summary if diagnostic_summary is None else pd.DataFrame(
             diagnostic_summary)
         datapath.diagnostic_data = diagnostic_data if diagnostic_data is None else pd.DataFrame(diagnostic_data)
+
+        datapath.structuring_parameters = d.get("structuring_parameters", {})
         return datapath
 
-    def validate(self):
-        """Validate the raw data.
+    @property
+    def semiunique_id(self):
+        """
+        An id that can identify the state of this datapath without complications
+        associated with hashing dataframes.
 
         Returns:
-            (bool) True if the raw data is valid, false otherwise.
+            (str): A semiunique id for this datapath.
 
         """
-        validator = ValidatorBeep()
-        is_valid = validator.validate_arbin_dataframe(self.raw_data)
-        if not is_valid:
-            raise BeepValidationError("Beep validation failed")
+        s = f"barcode:{self.metadata.barcode}-" \
+            f"channel:{self.metadata.channel_id}-" \
+            f"protocol:{self.metadata.protocol}-" \
+            f"schema:{self.schema}-" \
+            f"structured:{self.is_structured}-" \
+            f"legacy:{self._is_legacy}"
+
+        raw = self.paths.get("raw", None)
+        structured = self.paths.get("structured", None)
+        s += f"-raw_path:{raw}-structured_path:{structured}"
+        return s
 
     @StructuringDecorators.must_not_be_legacy
     def structure(self,
@@ -424,9 +478,10 @@ class BEEPDatapath(abc.ABC, MSONable):
             full_fast_charge (float): full fast charge for summary stats.
             diagnostic_available (dict): project metadata for processing
                 diagnostic cycles correctly.
+            charge_axis (str): Column to interpolate charge step
+            discharge_axis (str): Column to interpolate discharge step
         """
-        logger.info(f"Beginning structuring along charge axis '{charge_axis}' and discharge axis '{discharge_axis}'.",
-                    extra=SERVICE_CONFIG)
+        logger.info(f"Beginning structuring along charge axis '{charge_axis}' and discharge axis '{discharge_axis}'.")
 
         if diagnostic_available:
             self.diagnostic_summary = self.summarize_diagnostic(
@@ -450,31 +505,53 @@ class BEEPDatapath(abc.ABC, MSONable):
             diagnostic_available=diagnostic_available
         )
 
-    def autostructure(self):
+        self.structuring_parameters = {
+            "v_range": v_range,
+            "resolution": resolution,
+            "diagnostic_resolution": diagnostic_resolution,
+            "nominal_capacity": nominal_capacity,
+            "full_fast_charge": full_fast_charge,
+            "diagnostic_available": diagnostic_available,
+            "charge_axis": charge_axis,
+            "discharge_axis": discharge_axis
+        }
+
+    def autostructure(
+            self,
+            charge_axis='charge_capacity',
+            discharge_axis='voltage',
+            parameters_path=None,
+    ):
         """
         Automatically run structuring based on automatically determined structuring parameters.
         The parameters are determined from the raw input file, so ensure the raw input file paths
         are in the 'paths' attribute.
 
-        WARNING: The BEEP_PROCESSING_DIR environment variable must have a parameters file within it
-        in order for autostructuring to work correctly.
+        Args:
+            charge_axis (str): Column to interpolate charge step
+            discharge_axis (str): Column to interpolate discharge step
+            parameters_path (str) Path to directory of protocol parameters files.
 
         Returns:
             None
         """
+        parameters_path = parameters_path if parameters_path else PROTOCOL_PARAMETERS_DIR
+        self.paths["protocol_parameters"] = parameters_path
         v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \
-            self.determine_structuring_parameters()
+            self.determine_structuring_parameters(parameters_path=parameters_path)
         logger.info(f"Autostructuring determined parameters of v_range={v_range}, "
                     f"resolution={resolution}, "
                     f"nominal_capacity={nominal_capacity}, "
                     f"full_fast_charge={full_fast_charge}, "
-                    f"diagnostic_available={diagnostic_available}", extra=SERVICE_CONFIG)
+                    f"diagnostic_available={diagnostic_available}")
         return self.structure(
             v_range=v_range,
             resolution=resolution,
             nominal_capacity=nominal_capacity,
             full_fast_charge=full_fast_charge,
-            diagnostic_available=diagnostic_available
+            diagnostic_available=diagnostic_available,
+            charge_axis=charge_axis,
+            discharge_axis=discharge_axis
         )
 
     @StructuringDecorators.must_not_be_legacy
@@ -489,7 +566,8 @@ class BEEPDatapath(abc.ABC, MSONable):
         self.diagnostic_data = None
         self.structured_summary = None
         self.diagnostic_summary = None
-        # todo: print logging statement saying structuring has been reset
+        self.structuring_parameters = {}
+        logger.debug("Structure has been reset.")
 
     def interpolate_step(
             self,
@@ -1042,21 +1120,18 @@ class BEEPDatapath(abc.ABC, MSONable):
         resolution=1000,
         nominal_capacity=1.1,
         full_fast_charge=0.8,
-        parameters_path="data-share/raw/parameters",
+        parameters_path=PROTOCOL_PARAMETERS_DIR,
     ):
         """
         Method for determining what values to use to convert raw run into processed run.
 
-
-        WARNING: The BEEP_PROCESSING_DIR environment variable must have a parameters file within it
-        in order for determine_structuring_parameters to work correctly (see parameters_path).
 
         Args:
             v_range ([float, float]): voltage range for interpolation
             resolution (int): resolution for interpolation
             nominal_capacity (float): nominal capacity for summary stats
             full_fast_charge (float): full fast charge for summary stats
-            parameters_path (str): path to parameters file
+            parameters_path (str): path to parameters files
 
         Returns:
             v_range ([float, float]): voltage range for interpolation
@@ -1067,9 +1142,13 @@ class BEEPDatapath(abc.ABC, MSONable):
                 finding and using the diagnostic cycles
 
         """
+        if not parameters_path or not os.path.exists(parameters_path):
+            raise FileNotFoundError(f"Parameters path {parameters_path} does not exist!")
+
         run_parameter, all_parameters = parameters_lookup.get_protocol_parameters(
             self.paths["raw"], parameters_path
         )
+
         # Logic for interpolation variables and diagnostic cycles
         diagnostic_available = False
         if run_parameter is not None:

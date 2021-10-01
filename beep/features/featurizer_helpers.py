@@ -5,17 +5,18 @@
 Helper functions for generating features in beep.featurize module
 All methods are currently lumped into this script.
 """
-
+import os
+import calendar
 
 import pandas as pd
 import numpy as np
-
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 from scipy.stats import skew, kurtosis
+
+
+from beep import PROTOCOL_PARAMETERS_DIR
 from beep.utils import parameters_lookup
-import os
-import calendar
 
 
 def list_minus(list1, list2):
@@ -47,7 +48,7 @@ def get_hppc_ocv_helper(cycle_hppc_0, step_num):
     return voltage1
 
 
-def get_hppc_ocv(processed_cycler_run, diag_pos):
+def get_hppc_ocv(processed_cycler_run, diag_pos, parameters_path=PROTOCOL_PARAMETERS_DIR):
     """
     This function calculates the variance, min, mean, skew, kurtosis, sum and sum of squares 
     of ocv changes between hppc cycle specified by and the first one.
@@ -72,10 +73,14 @@ def get_hppc_ocv(processed_cycler_run, diag_pos):
 
     first_diagnostic_steps = get_step_index(processed_cycler_run,
                                             cycle_type="hppc",
-                                            diag_pos=0)
+                                            diag_pos=0,
+                                            parameters_path=parameters_path
+                                            )
     later_diagnostic_steps = get_step_index(processed_cycler_run,
                                             cycle_type="hppc",
-                                            diag_pos=diag_pos)
+                                            diag_pos=diag_pos,
+                                            parameters_path=parameters_path
+                                            )
     step_first = first_diagnostic_steps['hppc_long_rest']
     step_later = later_diagnostic_steps['hppc_long_rest']
 
@@ -224,7 +229,7 @@ def get_V_I(df):
     return result
 
 
-def get_v_diff(processed_cycler_run, diag_pos, soc_window):
+def get_v_diff(processed_cycler_run, diag_pos, soc_window, parameters_path=PROTOCOL_PARAMETERS_DIR):
     """
     This method calculates the variance of voltage difference between a specified hppc cycle and the first
     one during a specified state of charge window.
@@ -248,8 +253,8 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window):
     #     in case a final HPPC is appended in the end also with cycle number 2
     hppc_data_1 = hppc_data_1.loc[hppc_data_1.discharge_capacity < 8]
 
-    step_ind_1 = get_step_index(processed_cycler_run, cycle_type="hppc", diag_pos=0)
-    step_ind_2 = get_step_index(processed_cycler_run, cycle_type="hppc", diag_pos=1)
+    step_ind_1 = get_step_index(processed_cycler_run, cycle_type="hppc", diag_pos=0, parameters_path=parameters_path)
+    step_ind_2 = get_step_index(processed_cycler_run, cycle_type="hppc", diag_pos=1, parameters_path=parameters_path)
 
     hppc_data_2_d = hppc_data_2.loc[hppc_data_2.step_index == step_ind_2["hppc_discharge_to_next_soc"]]
     hppc_data_1_d = hppc_data_1.loc[hppc_data_1.step_index == step_ind_1["hppc_discharge_to_next_soc"]]
@@ -326,7 +331,7 @@ def d_curve_fitting(x, y):
     return a
 
 
-def get_diffusion_coeff(processed_cycler_run, diag_pos):
+def get_diffusion_coeff(processed_cycler_run, diag_pos, parameters_path=PROTOCOL_PARAMETERS_DIR):
     """
     This method calculates diffusion coefficients at different soc for a specified hppc cycle.
     (NOTE: The slope is proportional to 1/sqrt(D), and D here is interdiffusivity)
@@ -352,7 +357,9 @@ def get_diffusion_coeff(processed_cycler_run, diag_pos):
 
     step_ind = get_step_index(processed_cycler_run,
                               cycle_type="hppc",
-                              diag_pos=diag_pos)
+                              diag_pos=diag_pos,
+                              parameters_path=parameters_path
+                              )
 
     steps = [step_ind["hppc_long_rest"],
              step_ind["hppc_discharge_pulse"],
@@ -436,7 +443,7 @@ def get_fractional_quantity_remaining_nx(
         processed_cycler_run,
         metric="discharge_energy",
         diagnostic_cycle_type="rpt_0.2C",
-        parameters_path="data-share/raw/parameters"
+        parameters_path=PROTOCOL_PARAMETERS_DIR
 ):
     """
     Similar to get_fractional_quantity_remaining()
@@ -538,7 +545,7 @@ def get_fractional_quantity_remaining_nx(
     return summary_diag_cycle_type
 
 
-def get_step_index(pcycler_run, cycle_type="hppc", diag_pos=0):
+def get_step_index(pcycler_run, cycle_type="hppc", diag_pos=0, parameters_path=PROTOCOL_PARAMETERS_DIR):
     """
         Gets the step indices of the diagnostic cycle which correspond to specific attributes
 
@@ -555,7 +562,6 @@ def get_step_index(pcycler_run, cycle_type="hppc", diag_pos=0):
     pulse_c_rate = 0.5  # c-rate to decide if a current is a discharge pulse
     rest_long_vs_short = 600  # time in seconds to decide if the rest is the long or short rest step
     soc_change_threshold = 0.05
-    parameters_path = os.path.join(os.environ.get("BEEP_PROCESSING_DIR", "/"), "data-share", "raw", "parameters")
 
     if "\\" in pcycler_run.metadata.protocol:
         protocol_name = pcycler_run.metadata.protocol.split("\\")[-1]
@@ -619,3 +625,16 @@ def get_step_index(pcycler_run, cycle_type="hppc", diag_pos=0):
     assert len(cycle.step_index.unique()) == len(step_indices_annotated.values())
 
     return step_indices_annotated
+
+
+def check_diagnostic_validation(datapath):
+    if not hasattr(datapath, "diagnostic_summary") & hasattr(
+            datapath, "diagnostic_data"
+    ):
+        return False, "Datapath does not have diagnostic summary"
+    if datapath.diagnostic_summary is None:
+        return False, "Datapath does not have diagnostic summary"
+    elif datapath.diagnostic_summary.empty:
+        return False, "Datapath has empty diagnostic summary"
+    else:
+        return True, None

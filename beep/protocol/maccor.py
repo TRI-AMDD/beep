@@ -28,8 +28,6 @@ from beep.conversion_schemas import MACCOR_WAVEFORM_CONFIG
 from beep.utils import DashOrderedDict
 from beep.utils.waveform import convert_velocity_to_power_waveform, RapidChargeWave
 
-s = {"service": "ProtocolGenerator"}
-
 
 class Procedure(DashOrderedDict):
     """

@@ -1,0 +1,1139 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for TRI-AMDD BEEP, for handling battery cycling data and predicting battery lifetines">
+      
+      
+      
+      <link rel="shortcut icon" href="../../static/tri_cropped_favicon.png">
+      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-6.1.0">
+    
+    
+      
+        <title>Inspect - BEEP - Battery Evaluation and Early Prediction</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.bc7e593a.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab28b872.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#ef5552">
+        
+      
+    
+    
+    
+      
+        
+        <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>body,input{font-family:"Roboto",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"Roboto Mono",SFMono-Regular,Consolas,Menlo,monospace}</style>
+      
+    
+    
+    
+    
+      
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="red" data-md-color-accent="orange">
+      
+  
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#inspect" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header-nav md-grid" aria-label="Header">
+    <a href="../.." title="BEEP - Battery Evaluation and Early Prediction" class="md-header-nav__button md-logo" aria-label="BEEP - Battery Evaluation and Early Prediction">
+      
+  <img src="../../static/tri_cropped.png" alt="logo">
+
+    </a>
+    <label class="md-header-nav__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header-nav__title" data-md-component="header-title">
+      
+        <div class="md-header-nav__ellipsis">
+          <span class="md-header-nav__topic md-ellipsis">
+            BEEP - Battery Evaluation and Early Prediction
+          </span>
+          <span class="md-header-nav__topic md-ellipsis">
+            
+              Inspect
+            
+          </span>
+        </div>
+      
+    </div>
+    
+      <label class="md-header-nav__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" data-md-state="active">
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <button type="reset" class="md-search__icon md-icon" aria-label="Clear" data-md-component="search-reset" tabindex="-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header-nav__source">
+        
+<a href="https://github.com/tri-amdd/beep/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="BEEP - Battery Evaluation and Early Prediction" class="md-nav__button md-logo" aria-label="BEEP - Battery Evaluation and Early Prediction">
+      
+  <img src="../../static/tri_cropped.png" alt="logo">
+
+    </a>
+    BEEP - Battery Evaluation and Early Prediction
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/tri-amdd/beep/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../.." class="md-nav__link">
+      Introduction
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../../data/" class="md-nav__link">
+      Cycler data requirements
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    
+      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3" checked>
+    
+    <label class="md-nav__link" for="nav-3">
+      Command Line Interface
+      <span class="md-nav__icon md-icon"></span>
+    </label>
+    <nav class="md-nav" aria-label="Command Line Interface" data-md-level="1">
+      <label class="md-nav__title" for="nav-3">
+        <span class="md-nav__icon md-icon"></span>
+        Command Line Interface
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../1%20-%20overview/" class="md-nav__link">
+      Overview
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../2%20-%20structuring/" class="md-nav__link">
+      Structure
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../3%20-%20featurize/" class="md-nav__link">
+      Featurize
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../4%20-%20train/" class="md-nav__link">
+      Train
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../5%20-%20predict/" class="md-nav__link">
+      Predict
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../6%20-%20protocol/" class="md-nav__link">
+      Protocol
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Inspect
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+    
+    <a href="./" class="md-nav__link md-nav__link--active">
+      Inspect
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#inspect-help-dialog" class="md-nav__link">
+    Inspect help dialog
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inspect-raw-files" class="md-nav__link">
+    Inspect Raw Files
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inspect-structured-files" class="md-nav__link">
+    Inspect Structured Files
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inspect-feature-matrices" class="md-nav__link">
+    Inspect Feature Matrices
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inspect-featurizers" class="md-nav__link">
+    Inspect Featurizers
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inspect-models" class="md-nav__link">
+    Inspect Models
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4">
+    
+    <label class="md-nav__link" for="nav-4">
+      Python tutorials
+      <span class="md-nav__icon md-icon"></span>
+    </label>
+    <nav class="md-nav" aria-label="Python tutorials" data-md-level="1">
+      <label class="md-nav__title" for="nav-4">
+        <span class="md-nav__icon md-icon"></span>
+        Python tutorials
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Python%20tutorials/1%20-%20quickstart/" class="md-nav__link">
+      1: Quickstart
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Python%20tutorials/2%20-%20structuring/" class="md-nav__link">
+      2: Structuring
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Python%20tutorials/3%20-%20featurization/" class="md-nav__link">
+      3: Featurization
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Python%20tutorials/4%20-%20models/" class="md-nav__link">
+      4: Machine Learning
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Python%20tutorials/advanced_structuring/" class="md-nav__link">
+      Advanced Structuring: Unsupported cyclers
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#inspect-help-dialog" class="md-nav__link">
+    Inspect help dialog
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inspect-raw-files" class="md-nav__link">
+    Inspect Raw Files
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inspect-structured-files" class="md-nav__link">
+    Inspect Structured Files
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inspect-feature-matrices" class="md-nav__link">
+    Inspect Feature Matrices
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inspect-featurizers" class="md-nav__link">
+    Inspect Featurizers
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inspect-models" class="md-nav__link">
+    Inspect Models
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/tri-amdd/beep/edit/master/docs/Command Line Interface/7 - inspect.md" title="Edit this page" class="md-content__button md-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+                  </a>
+                
+                
+                <h1 id="inspect">Inspect<a class="headerlink" href="#inspect" title="Permanent link">&para;</a></h1>
+<p>BEEP inspect is a debugging and analysis command which can be used to examine any 
+serialized beep object directly from the command line.</p>
+<p>The objects that can be inspected are:</p>
+<ul>
+<li><strong>Raw cycler files</strong> compatible with BEEP, which will be ingested and represented as a <code>BEEPDatapath</code>. <a href="#inspect-raw-files">Example: Inspect Raw Files</a></li>
+<li><strong>Structured cycler files</strong> serialized by BEEP to disk as json, represented as a <code>BEEPDatapath</code>. <a href="#inspect-structured-files">Example: Inspect Structured Files</a></li>
+<li><strong>Feature matrices</strong> serialized to disk as json. <a href="#inspect-feature-matrices">Example: Inspect Feature Matrices</a></li>
+<li><strong>Individual <code>BEEPFeaturizer</code>s</strong> serialized to disk as json. <a href="#inspect-featurizers">Example: Inspect Featurizers</a></li>
+<li><strong>Linear <code>BEEPLinearModelExperiment</code>s</strong> serialized to disk as json. <a href="#inspect-models">Example: Inspect Models</a></li>
+</ul>
+<h2 id="inspect-help-dialog">Inspect help dialog<a class="headerlink" href="#inspect-help-dialog" title="Permanent link">&para;</a></h2>
+<div class="codehilite"><pre><span></span><code>$: beep inspect --help
+
+Usage: beep inspect <span class="o">[</span>OPTIONS<span class="o">]</span> FILE
+
+  View BEEP files <span class="k">for</span> debugging and analysis.
+
+Options:
+  --help  Show this message and exit.
+</code></pre></div>
+
+<h2 id="inspect-raw-files">Inspect Raw Files<a class="headerlink" href="#inspect-raw-files" title="Permanent link">&para;</a></h2>
+<p>Example:</p>
+<div class="codehilite"><pre><span></span><code>S: beep inspect PreDiag_000287_000128.092
+
+<span class="m">2021</span>-09-22 <span class="m">16</span>:01:33 DEBUG    Loaded potential raw file beep/tests/test_files/PreDiag_000287_000128.092 as Datapath.
+<span class="m">2021</span>-09-22 <span class="m">16</span>:01:34 INFO     Loaded beep/tests/test_files/PreDiag_000287_000128.092 as <span class="nb">type</span> &lt;class <span class="s1">&#39;beep.structure.maccor.MaccorDatapath&#39;</span>&gt;.
+
+
+BEEP Datapath: beep/tests/test_files/PreDiag_000287_000128.092
+
+
+
+Semiunique id: <span class="s1">&#39;barcode:000128-channel:92-protocol:PreDiag_000287.000-schema:beep/validation_schemas/schema-maccor-2170.yaml-structured:False-legacy:False-raw_path:beep/tests/test_files/PreDiag_000287_000128.092-structured_path:None&#39;</span>
+
+File paths
+<span class="o">{</span><span class="s1">&#39;metadata&#39;</span>: <span class="s1">&#39;beep/tests/test_files/PreDiag_000287_000128.092&#39;</span>,
+ <span class="s1">&#39;raw&#39;</span>: <span class="s1">&#39;beep/tests/test_files/PreDiag_000287_000128.092&#39;</span><span class="o">}</span>
+
+File metadata:
+<span class="o">{</span><span class="s1">&#39;_today_datetime&#39;</span>: <span class="s1">&#39;12/17/2019&#39;</span>,
+ <span class="s1">&#39;barcode&#39;</span>: <span class="s1">&#39;000128&#39;</span>,
+ <span class="s1">&#39;channel_id&#39;</span>: <span class="m">92</span>,
+ <span class="s1">&#39;filename&#39;</span>: <span class="s1">&#39;C:\\Users\\Maccor Tester User\\Documents\\Backup\\STANFORD &#39;</span>
+             <span class="s1">&#39;LOANER #1\\STANFORD LOANER #1\\PreDiag_000287_000128.092&#39;</span>,
+ <span class="s1">&#39;protocol&#39;</span>: <span class="s1">&#39;PreDiag_000287.000&#39;</span>,
+ <span class="s1">&#39;start_datetime&#39;</span>: <span class="s1">&#39;12/17/2019&#39;</span><span class="o">}</span>
+
+Validation schema: beep/validation_schemas/schema-maccor-2170.yaml
+
+Structuring parameters:
+<span class="o">{}</span>
+
+Structured attributes:
+
+structured_summary:
+        No object.
+
+structured_data:
+        No object.
+
+diagnostic_data:
+        No object.
+
+diagnostic_summary:
+        No object.
+
+raw_data:
+        data_point  cycle_index  step_index   test_time     step_time  _capacity    _energy   current   voltage _state _ending_status            date_time  loop1  loop2  loop3  loop4  ac_impedence  internal_resistance  _wf_chg_cap  _wf_dis_cap  ...  _var2  _var3  _var4  _var5  _var6  _var7  _var8  _var9  _var10  _var11  _var12  _var13  _var14  _var15  charge_capacity  discharge_capacity  charge_energy  discharge_energy              date_time_iso  temperature
+<span class="m">0</span>                <span class="m">1</span>            <span class="m">0</span>           <span class="m">1</span>        <span class="m">0</span>.00      <span class="m">0</span>.000000   <span class="m">0</span>.000000   <span class="m">0</span>.000000  <span class="m">0</span>.000000  <span class="m">3</span>.458076      R              <span class="m">0</span>  <span class="m">12</span>/17/2019 <span class="m">09</span>:51:51      <span class="m">0</span>      <span class="m">0</span>      <span class="m">0</span>      <span class="m">0</span>           <span class="m">0</span>.0                  <span class="m">0</span>.0          NaN          NaN  ...    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0         <span class="m">0</span>.000000            <span class="m">0</span>.000000       <span class="m">0</span>.000000          <span class="m">0</span>.000000  <span class="m">2019</span>-12-17T17:51:51+00:00          NaN
+<span class="m">1</span>                <span class="m">2</span>            <span class="m">0</span>           <span class="m">1</span>       <span class="m">30</span>.00     <span class="m">30</span>.000000   <span class="m">0</span>.000000   <span class="m">0</span>.000000  <span class="m">0</span>.000000  <span class="m">3</span>.457999      R              <span class="m">1</span>  <span class="m">12</span>/17/2019 <span class="m">09</span>:52:20      <span class="m">0</span>      <span class="m">0</span>      <span class="m">0</span>      <span class="m">0</span>           <span class="m">0</span>.0                  <span class="m">0</span>.0          NaN          NaN  ...    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0         <span class="m">0</span>.000000            <span class="m">0</span>.000000       <span class="m">0</span>.000000          <span class="m">0</span>.000000  <span class="m">2019</span>-12-17T17:52:20+00:00          NaN
+<span class="m">2</span>                <span class="m">3</span>            <span class="m">0</span>           <span class="m">1</span>       <span class="m">60</span>.00     <span class="m">60</span>.000000   <span class="m">0</span>.000000   <span class="m">0</span>.000000  <span class="m">0</span>.000000  <span class="m">3</span>.457999      R              <span class="m">1</span>  <span class="m">12</span>/17/2019 <span class="m">09</span>:52:50      <span class="m">0</span>      <span class="m">0</span>      <span class="m">0</span>      <span class="m">0</span>           <span class="m">0</span>.0                  <span class="m">0</span>.0          NaN          NaN  ...    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0         <span class="m">0</span>.000000            <span class="m">0</span>.000000       <span class="m">0</span>.000000          <span class="m">0</span>.000000  <span class="m">2019</span>-12-17T17:52:50+00:00          NaN
+<span class="m">3</span>                <span class="m">4</span>            <span class="m">0</span>           <span class="m">1</span>       <span class="m">89</span>.42     <span class="m">89</span>.419998   <span class="m">0</span>.000000   <span class="m">0</span>.000000  <span class="m">0</span>.000000  <span class="m">3</span>.458152      S            <span class="m">192</span>  <span class="m">12</span>/17/2019 <span class="m">09</span>:53:20      <span class="m">0</span>      <span class="m">0</span>      <span class="m">0</span>      <span class="m">0</span>           <span class="m">0</span>.0                  <span class="m">0</span>.0          NaN          NaN  ...    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0         <span class="m">0</span>.000000            <span class="m">0</span>.000000       <span class="m">0</span>.000000          <span class="m">0</span>.000000  <span class="m">2019</span>-12-17T17:53:20+00:00          NaN
+<span class="m">4</span>                <span class="m">5</span>            <span class="m">0</span>           <span class="m">1</span>       <span class="m">89</span>.42     <span class="m">89</span>.419998   <span class="m">0</span>.000000   <span class="m">0</span>.000000  <span class="m">0</span>.000000  <span class="m">3</span>.458228      R            <span class="m">192</span>  <span class="m">12</span>/17/2019 <span class="m">11</span>:15:57      <span class="m">0</span>      <span class="m">0</span>      <span class="m">0</span>      <span class="m">0</span>           <span class="m">0</span>.0                  <span class="m">0</span>.0          NaN          NaN  ...    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0         <span class="m">0</span>.000000            <span class="m">0</span>.000000       <span class="m">0</span>.000000          <span class="m">0</span>.000000  <span class="m">2019</span>-12-17T19:15:57+00:00          NaN
+...            ...          ...         ...         ...           ...        ...        ...       ...       ...    ...            ...                  ...    ...    ...    ...    ...           ...                  ...          ...          ...  ...    ...    ...    ...    ...    ...    ...    ...    ...     ...     ...     ...     ...     ...     ...              ...                 ...            ...               ...                        ...          ...
+<span class="m">546943</span>      <span class="m">546944</span>          <span class="m">246</span>          <span class="m">39</span>  <span class="m">1958303</span>.97  <span class="m">23211</span>.070312   <span class="m">4</span>.459139  <span class="m">16</span>.402617 -0.691691  <span class="m">2</span>.700771      D              <span class="m">5</span>  <span class="m">01</span>/09/2020 <span class="m">03</span>:18:48  <span class="m">64541</span>     <span class="m">22</span>      <span class="m">0</span>      <span class="m">0</span>           <span class="m">0</span>.0                  <span class="m">0</span>.0          NaN          NaN  ...    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0         <span class="m">2</span>.011044            <span class="m">4</span>.459139       <span class="m">8</span>.126739         <span class="m">16</span>.402617  <span class="m">2020</span>-01-09T11:18:48+00:00          NaN
+<span class="m">546944</span>      <span class="m">546945</span>          <span class="m">246</span>          <span class="m">39</span>  <span class="m">1958305</span>.13  <span class="m">23212</span>.230469   <span class="m">4</span>.459362  <span class="m">16</span>.403219 -0.691691  <span class="m">2</span>.700008      D            <span class="m">133</span>  <span class="m">01</span>/09/2020 <span class="m">03</span>:18:49  <span class="m">64541</span>     <span class="m">22</span>      <span class="m">0</span>      <span class="m">0</span>           <span class="m">0</span>.0                  <span class="m">0</span>.0          NaN          NaN  ...    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0         <span class="m">2</span>.011044            <span class="m">4</span>.459362       <span class="m">8</span>.126739         <span class="m">16</span>.403219  <span class="m">2020</span>-01-09T11:18:49+00:00          NaN
+<span class="m">546945</span>      <span class="m">546946</span>          <span class="m">247</span>          <span class="m">41</span>  <span class="m">1958305</span>.16      <span class="m">0</span>.030000   <span class="m">0</span>.000006   <span class="m">0</span>.000016  <span class="m">1</span>.618448  <span class="m">2</span>.760967      C              <span class="m">0</span>  <span class="m">01</span>/09/2020 <span class="m">03</span>:18:49  <span class="m">64541</span>     <span class="m">22</span>      <span class="m">0</span>      <span class="m">0</span>           <span class="m">0</span>.0                  <span class="m">0</span>.0          NaN          NaN  ...    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0         <span class="m">2</span>.011050            <span class="m">4</span>.459362       <span class="m">8</span>.126755         <span class="m">16</span>.403219  <span class="m">2020</span>-01-09T11:18:49+00:00          NaN
+<span class="m">546946</span>      <span class="m">546947</span>          <span class="m">247</span>          <span class="m">41</span>  <span class="m">1958305</span>.32      <span class="m">0</span>.190000   <span class="m">0</span>.000078   <span class="m">0</span>.000215  <span class="m">1</span>.612268  <span class="m">2</span>.777752      C              <span class="m">5</span>  <span class="m">01</span>/09/2020 <span class="m">03</span>:18:49  <span class="m">64541</span>     <span class="m">22</span>      <span class="m">0</span>      <span class="m">0</span>           <span class="m">0</span>.0                  <span class="m">0</span>.0          NaN          NaN  ...    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0         <span class="m">2</span>.011122            <span class="m">4</span>.459362       <span class="m">8</span>.126954         <span class="m">16</span>.403219  <span class="m">2020</span>-01-09T11:18:49+00:00          NaN
+<span class="m">546947</span>      <span class="m">546948</span>          <span class="m">247</span>          <span class="m">41</span>  <span class="m">1958305</span>.42      <span class="m">0</span>.290000   <span class="m">0</span>.000122   <span class="m">0</span>.000340  <span class="m">1</span>.612039  <span class="m">2</span>.784771      C              <span class="m">5</span>  <span class="m">01</span>/09/2020 <span class="m">03</span>:18:49  <span class="m">64541</span>     <span class="m">22</span>      <span class="m">0</span>      <span class="m">0</span>           <span class="m">0</span>.0                  <span class="m">0</span>.0          NaN          NaN  ...    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0    <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0     <span class="m">0</span>.0         <span class="m">2</span>.011167            <span class="m">4</span>.459362       <span class="m">8</span>.127079         <span class="m">16</span>.403219  <span class="m">2020</span>-01-09T11:18:49+00:00          NaN
+
+<span class="o">[</span><span class="m">546948</span> rows x <span class="m">44</span> columns<span class="o">]</span>
+&lt;class <span class="s1">&#39;pandas.core.frame.DataFrame&#39;</span>&gt;
+RangeIndex: <span class="m">546948</span> entries, <span class="m">0</span> to <span class="m">546947</span>
+Data columns <span class="o">(</span>total <span class="m">44</span> columns<span class="o">)</span>:
+ <span class="c1">#   Column               Non-Null Count   Dtype   </span>
+---  ------               --------------   -----   
+ <span class="m">0</span>   data_point           <span class="m">546948</span> non-null  int32   
+ <span class="m">1</span>   cycle_index          <span class="m">546948</span> non-null  int32   
+ <span class="m">2</span>   step_index           <span class="m">546948</span> non-null  int16   
+ <span class="m">3</span>   test_time            <span class="m">546948</span> non-null  float64 
+ <span class="m">4</span>   step_time            <span class="m">546948</span> non-null  float32 
+ <span class="m">5</span>   _capacity            <span class="m">546948</span> non-null  float64 
+ <span class="m">6</span>   _energy              <span class="m">546948</span> non-null  float64 
+ <span class="m">7</span>   current              <span class="m">546948</span> non-null  float32 
+ <span class="m">8</span>   voltage              <span class="m">546948</span> non-null  float32 
+ <span class="m">9</span>   _state               <span class="m">546948</span> non-null  object  
+ <span class="m">10</span>  _ending_status       <span class="m">546948</span> non-null  category
+ <span class="m">11</span>  date_time            <span class="m">546948</span> non-null  object  
+ <span class="m">12</span>  loop1                <span class="m">546948</span> non-null  int64   
+ <span class="m">13</span>  loop2                <span class="m">546948</span> non-null  int64   
+ <span class="m">14</span>  loop3                <span class="m">546948</span> non-null  int64   
+ <span class="m">15</span>  loop4                <span class="m">546948</span> non-null  int64   
+ <span class="m">16</span>  ac_impedence         <span class="m">546948</span> non-null  float32 
+ <span class="m">17</span>  internal_resistance  <span class="m">546948</span> non-null  float32 
+ <span class="m">18</span>  _wf_chg_cap          <span class="m">0</span> non-null       float32 
+ <span class="m">19</span>  _wf_dis_cap          <span class="m">0</span> non-null       float32 
+ <span class="m">20</span>  _wf_chg_e            <span class="m">0</span> non-null       float32 
+ <span class="m">21</span>  _wf_dis_e            <span class="m">0</span> non-null       float32 
+ <span class="m">22</span>  _range               <span class="m">546948</span> non-null  uint8   
+ <span class="m">23</span>  _var1                <span class="m">546948</span> non-null  float16 
+ <span class="m">24</span>  _var2                <span class="m">546948</span> non-null  float16 
+ <span class="m">25</span>  _var3                <span class="m">546948</span> non-null  float16 
+ <span class="m">26</span>  _var4                <span class="m">546948</span> non-null  float16 
+ <span class="m">27</span>  _var5                <span class="m">546948</span> non-null  float16 
+ <span class="m">28</span>  _var6                <span class="m">546948</span> non-null  float16 
+ <span class="m">29</span>  _var7                <span class="m">546948</span> non-null  float16 
+ <span class="m">30</span>  _var8                <span class="m">546948</span> non-null  float16 
+ <span class="m">31</span>  _var9                <span class="m">546948</span> non-null  float16 
+ <span class="m">32</span>  _var10               <span class="m">546948</span> non-null  float16 
+ <span class="m">33</span>  _var11               <span class="m">546948</span> non-null  float16 
+ <span class="m">34</span>  _var12               <span class="m">546948</span> non-null  float16 
+ <span class="m">35</span>  _var13               <span class="m">546948</span> non-null  float16 
+ <span class="m">36</span>  _var14               <span class="m">546948</span> non-null  float16 
+ <span class="m">37</span>  _var15               <span class="m">546948</span> non-null  float16 
+ <span class="m">38</span>  charge_capacity      <span class="m">546948</span> non-null  float64 
+ <span class="m">39</span>  discharge_capacity   <span class="m">546948</span> non-null  float64 
+ <span class="m">40</span>  charge_energy        <span class="m">546948</span> non-null  float64 
+ <span class="m">41</span>  discharge_energy     <span class="m">546948</span> non-null  float64 
+ <span class="m">42</span>  date_time_iso        <span class="m">546948</span> non-null  object  
+ <span class="m">43</span>  temperature          <span class="m">0</span> non-null       float64 
+dtypes: category<span class="o">(</span><span class="m">1</span><span class="o">)</span>, float16<span class="o">(</span><span class="m">15</span><span class="o">)</span>, float32<span class="o">(</span><span class="m">9</span><span class="o">)</span>, float64<span class="o">(</span><span class="m">8</span><span class="o">)</span>, int16<span class="o">(</span><span class="m">1</span><span class="o">)</span>, int32<span class="o">(</span><span class="m">2</span><span class="o">)</span>, int64<span class="o">(</span><span class="m">4</span><span class="o">)</span>, object<span class="o">(</span><span class="m">3</span><span class="o">)</span>, uint8<span class="o">(</span><span class="m">1</span><span class="o">)</span>
+memory usage: <span class="m">103</span>.3+ MB
+</code></pre></div>
+
+<h2 id="inspect-structured-files">Inspect Structured Files<a class="headerlink" href="#inspect-structured-files" title="Permanent link">&para;</a></h2>
+<p>Example:</p>
+<div class="codehilite"><pre><span></span><code>$: beep inspect <span class="m">2017</span>-12-04_4_65C-69per_6C_CH29_structured_new.json.gz
+
+<span class="m">2021</span>-09-22 <span class="m">16</span>:04:01 INFO     Loaded beep/tests/test_files/2017-12-04_4_65C-69per_6C_CH29_structured_new.json.gz as <span class="nb">type</span> &lt;class <span class="s1">&#39;beep.structure.arbin.ArbinDatapath&#39;</span>&gt;.
+
+
+BEEP Datapath: beep/tests/test_files/2017-12-04_4_65C-69per_6C_CH29_structured_new.json.gz
+
+
+
+Semiunique id: <span class="s1">&#39;barcode:EL151000429559-channel:28-protocol:2017-12-04_tests\20170630-4_65C_69per_6C.sdu-schema:beep/validation_schemas/schema-arbin-lfp.yaml-structured:True-legacy:True-raw_path:beep/tests/test_files/2017-12-04_4_65C-69per_6C_CH29.csv-structured_path:None&#39;</span>
+
+File paths
+<span class="o">{</span><span class="s1">&#39;metadata&#39;</span>: <span class="s1">&#39;beep/tests/test_files/2017-12-04_4_65C-69per_6C_CH29_Metadata.csv&#39;</span>,
+ <span class="s1">&#39;raw&#39;</span>: <span class="s1">&#39;beep/tests/test_files/2017-12-04_4_65C-69per_6C_CH29.csv&#39;</span><span class="o">}</span>
+
+File metadata:
+<span class="o">{</span><span class="s1">&#39;barcode&#39;</span>: <span class="s1">&#39;EL151000429559&#39;</span>,
+ <span class="s1">&#39;channel_id&#39;</span>: <span class="m">28</span>,
+ <span class="s1">&#39;protocol&#39;</span>: <span class="s1">&#39;2017-12-04_tests\\20170630-4_65C_69per_6C.sdu&#39;</span><span class="o">}</span>
+
+Validation schema: beep/validation_schemas/schema-arbin-lfp.yaml
+
+Structuring parameters:
+<span class="o">{</span><span class="s1">&#39;charge_axis&#39;</span>: <span class="s1">&#39;charge_capacity&#39;</span>,
+ <span class="s1">&#39;diagnostic_available&#39;</span>: False,
+ <span class="s1">&#39;diagnostic_resolution&#39;</span>: <span class="m">500</span>,
+ <span class="s1">&#39;discharge_axis&#39;</span>: <span class="s1">&#39;voltage&#39;</span>,
+ <span class="s1">&#39;full_fast_charge&#39;</span>: <span class="m">0</span>.8,
+ <span class="s1">&#39;nominal_capacity&#39;</span>: <span class="m">1</span>.1,
+ <span class="s1">&#39;resolution&#39;</span>: <span class="m">1000</span>,
+ <span class="s1">&#39;v_range&#39;</span>: None<span class="o">}</span>
+
+Structured attributes:
+
+structured_summary:
+     cycle_index  discharge_capacity  charge_capacity  discharge_energy  charge_energy  dc_internal_resistance  temperature_maximum  temperature_average  temperature_minimum              date_time_iso  energy_efficiency  charge_throughput  energy_throughput  charge_duration  time_temperature_integrated  paused       CV_time  CV_current
+<span class="m">0</span>              <span class="m">0</span>            <span class="m">1</span>.940235         <span class="m">1</span>.432850          <span class="m">6</span>.142979       <span class="m">4</span>.725729                <span class="m">0</span>.029954            <span class="m">34</span>.222515            <span class="m">32</span>.666893            <span class="m">20</span>.699526  <span class="m">2017</span>-12-05T03:37:36+00:00           <span class="m">1</span>.299901           <span class="m">1</span>.432850           <span class="m">4</span>.725729          <span class="m">32768</span>.0                 <span class="m">48977</span>.078333   <span class="m">13312</span>  <span class="m">50158</span>.164062    <span class="m">0</span>.000029
+<span class="m">1</span>              <span class="m">1</span>            <span class="m">1</span>.060343         <span class="m">1</span>.061786          <span class="m">3</span>.219735       <span class="m">3</span>.703581                <span class="m">0</span>.017906            <span class="m">35</span>.375809            <span class="m">32</span>.387295            <span class="m">30</span>.235437  <span class="m">2017</span>-12-06T04:33:04+00:00           <span class="m">0</span>.869357           <span class="m">2</span>.494636           <span class="m">8</span>.429310            <span class="m">640</span>.0                  <span class="m">1927</span>.509119       <span class="m">0</span>   <span class="m">1577</span>.987427    <span class="m">0</span>.062837
+<span class="m">2</span>              <span class="m">2</span>            <span class="m">1</span>.065412         <span class="m">1</span>.065450          <span class="m">3</span>.235807       <span class="m">3</span>.708392                <span class="m">0</span>.017649            <span class="m">35</span>.384602            <span class="m">32</span>.472481            <span class="m">30</span>.254265  <span class="m">2017</span>-12-06T05:32:48+00:00           <span class="m">0</span>.872563           <span class="m">3</span>.560086          <span class="m">12</span>.137702            <span class="m">640</span>.0                  <span class="m">1931</span>.514632       <span class="m">0</span>   <span class="m">1570</span>.970459    <span class="m">0</span>.046215
+<span class="m">3</span>              <span class="m">3</span>            <span class="m">1</span>.066605         <span class="m">1</span>.066726          <span class="m">3</span>.238866       <span class="m">3</span>.711425                <span class="m">0</span>.017506            <span class="m">35</span>.265358            <span class="m">32</span>.420013            <span class="m">30</span>.159765  <span class="m">2017</span>-12-06T06:32:32+00:00           <span class="m">0</span>.872675           <span class="m">4</span>.626812          <span class="m">15</span>.849127            <span class="m">640</span>.0                  <span class="m">1995</span>.445402       <span class="m">0</span>   <span class="m">1552</span>.032471    <span class="m">0</span>.045087
+<span class="m">4</span>              <span class="m">4</span>            <span class="m">1</span>.066988         <span class="m">1</span>.067148          <span class="m">3</span>.239955       <span class="m">3</span>.712645                <span class="m">0</span>.017409            <span class="m">35</span>.280449            <span class="m">32</span>.407478            <span class="m">30</span>.157305  <span class="m">2017</span>-12-06T07:34:24+00:00           <span class="m">0</span>.872681           <span class="m">5</span>.693960          <span class="m">19</span>.561773            <span class="m">512</span>.0                  <span class="m">1926</span>.752726       <span class="m">0</span>   <span class="m">1548</span>.414551    <span class="m">0</span>.052290
+..           ...                 ...              ...               ...            ...                     ...                  ...                  ...                  ...                        ...                ...                ...                ...              ...                          ...     ...           ...         ...
+<span class="m">183</span>          <span class="m">183</span>            <span class="m">1</span>.033595         <span class="m">1</span>.033812          <span class="m">3</span>.046869       <span class="m">3</span>.615792                <span class="m">0</span>.016889            <span class="m">37</span>.566158            <span class="m">32</span>.988796            <span class="m">30</span>.226278  <span class="m">2017</span>-12-13T19:12:00+00:00           <span class="m">0</span>.842656         <span class="m">194</span>.065491         <span class="m">676</span>.183533            <span class="m">640</span>.0                  <span class="m">2026</span>.858687       <span class="m">0</span>   <span class="m">1590</span>.061523    <span class="m">0</span>.034429
+<span class="m">184</span>          <span class="m">184</span>            <span class="m">1</span>.033454         <span class="m">1</span>.033584          <span class="m">3</span>.042845       <span class="m">3</span>.613951                <span class="m">0</span>.016827            <span class="m">37</span>.129795            <span class="m">32</span>.981796            <span class="m">30</span>.181578  <span class="m">2017</span>-12-13T20:13:52+00:00           <span class="m">0</span>.841972         <span class="m">195</span>.099075         <span class="m">679</span>.797485            <span class="m">640</span>.0                  <span class="m">1955</span>.320325       <span class="m">0</span>   <span class="m">1589</span>.661377    <span class="m">0</span>.031118
+<span class="m">185</span>          <span class="m">185</span>            <span class="m">1</span>.032677         <span class="m">1</span>.032898          <span class="m">3</span>.040163       <span class="m">3</span>.612450                <span class="m">0</span>.016875            <span class="m">37</span>.126766            <span class="m">32</span>.851368            <span class="m">30</span>.145836  <span class="m">2017</span>-12-13T21:13:36+00:00           <span class="m">0</span>.841579         <span class="m">196</span>.131973         <span class="m">683</span>.409912            <span class="m">640</span>.0                  <span class="m">1950</span>.674312       <span class="m">0</span>   <span class="m">1530</span>.225342    <span class="m">0</span>.021825
+<span class="m">186</span>          <span class="m">186</span>            <span class="m">1</span>.032823         <span class="m">1</span>.033198          <span class="m">3</span>.041561       <span class="m">3</span>.613732                <span class="m">0</span>.016875            <span class="m">37</span>.236954            <span class="m">32</span>.925690            <span class="m">30</span>.300278  <span class="m">2017</span>-12-13T22:13:20+00:00           <span class="m">0</span>.841668         <span class="m">197</span>.165176         <span class="m">687</span>.023682            <span class="m">640</span>.0                  <span class="m">1954</span>.338322       <span class="m">0</span>   <span class="m">1590</span>.264771    <span class="m">0</span>.026628
+<span class="m">187</span>          <span class="m">187</span>            <span class="m">1</span>.032616         <span class="m">1</span>.032862          <span class="m">3</span>.039321       <span class="m">3</span>.612212                <span class="m">0</span>.016840            <span class="m">37</span>.159687            <span class="m">32</span>.952461            <span class="m">30</span>.114653  <span class="m">2017</span>-12-13T23:13:04+00:00           <span class="m">0</span>.841402         <span class="m">198</span>.198029         <span class="m">690</span>.635864            <span class="m">640</span>.0                  <span class="m">1955</span>.141357       <span class="m">0</span>   <span class="m">1590</span>.173706    <span class="m">0</span>.025024
+
+<span class="o">[</span><span class="m">188</span> rows x <span class="m">18</span> columns<span class="o">]</span>
+&lt;class <span class="s1">&#39;pandas.core.frame.DataFrame&#39;</span>&gt;
+RangeIndex: <span class="m">188</span> entries, <span class="m">0</span> to <span class="m">187</span>
+Data columns <span class="o">(</span>total <span class="m">18</span> columns<span class="o">)</span>:
+ <span class="c1">#   Column                       Non-Null Count  Dtype  </span>
+---  ------                       --------------  -----  
+ <span class="m">0</span>   cycle_index                  <span class="m">188</span> non-null    int32  
+ <span class="m">1</span>   discharge_capacity           <span class="m">188</span> non-null    float64
+ <span class="m">2</span>   charge_capacity              <span class="m">188</span> non-null    float64
+ <span class="m">3</span>   discharge_energy             <span class="m">188</span> non-null    float64
+ <span class="m">4</span>   charge_energy                <span class="m">188</span> non-null    float64
+ <span class="m">5</span>   dc_internal_resistance       <span class="m">188</span> non-null    float32
+ <span class="m">6</span>   temperature_maximum          <span class="m">188</span> non-null    float32
+ <span class="m">7</span>   temperature_average          <span class="m">188</span> non-null    float32
+ <span class="m">8</span>   temperature_minimum          <span class="m">188</span> non-null    float32
+ <span class="m">9</span>   date_time_iso                <span class="m">188</span> non-null    object 
+ <span class="m">10</span>  energy_efficiency            <span class="m">188</span> non-null    float32
+ <span class="m">11</span>  charge_throughput            <span class="m">188</span> non-null    float32
+ <span class="m">12</span>  energy_throughput            <span class="m">188</span> non-null    float32
+ <span class="m">13</span>  charge_duration              <span class="m">188</span> non-null    float32
+ <span class="m">14</span>  time_temperature_integrated  <span class="m">188</span> non-null    float64
+ <span class="m">15</span>  paused                       <span class="m">188</span> non-null    int32  
+ <span class="m">16</span>  CV_time                      <span class="m">188</span> non-null    float32
+ <span class="m">17</span>  CV_current                   <span class="m">188</span> non-null    float32
+dtypes: float32<span class="o">(</span><span class="m">10</span><span class="o">)</span>, float64<span class="o">(</span><span class="m">5</span><span class="o">)</span>, int32<span class="o">(</span><span class="m">2</span><span class="o">)</span>, object<span class="o">(</span><span class="m">1</span><span class="o">)</span>
+memory usage: <span class="m">17</span>.8+ KB
+None
+
+structured_data:
+         voltage     test_time   current  charge_capacity  discharge_capacity  charge_energy  discharge_energy  internal_resistance  temperature  cycle_index  step_type
+<span class="m">0</span>       <span class="m">2</span>.800000  <span class="m">88438</span>.740972 -3.070090         <span class="m">1</span>.319212            <span class="m">1</span>.788713       <span class="m">4</span>.354456          <span class="m">5</span>.709161             <span class="m">0</span>.028598    <span class="m">31</span>.529890            <span class="m">0</span>  discharge
+<span class="m">1</span>       <span class="m">2</span>.800701  <span class="m">85441</span>.894275 -4.256237         <span class="m">1</span>.370451            <span class="m">1</span>.831461       <span class="m">4</span>.519928          <span class="m">5</span>.826991             <span class="m">0</span>.029763    <span class="m">32</span>.309685            <span class="m">0</span>  discharge
+<span class="m">2</span>       <span class="m">2</span>.801401  <span class="m">58527</span>.144191 -3.221379         <span class="m">0</span>.921136            <span class="m">1</span>.386086       <span class="m">3</span>.038029          <span class="m">4</span>.406347             <span class="m">0</span>.028391    <span class="m">32</span>.847729            <span class="m">0</span>  discharge
+<span class="m">3</span>       <span class="m">2</span>.802102  <span class="m">31612</span>.394108 -2.186522         <span class="m">0</span>.471821            <span class="m">0</span>.940710       <span class="m">1</span>.556129          <span class="m">2</span>.985704             <span class="m">0</span>.027020    <span class="m">33</span>.385773            <span class="m">0</span>  discharge
+<span class="m">4</span>       <span class="m">2</span>.802803   <span class="m">4697</span>.644024 -1.151665         <span class="m">0</span>.022506            <span class="m">0</span>.495335       <span class="m">0</span>.074230          <span class="m">1</span>.565060             <span class="m">0</span>.025648    <span class="m">33</span>.923817            <span class="m">0</span>  discharge
+...          ...           ...       ...              ...                 ...            ...               ...                  ...          ...          ...        ...
+<span class="m">375995</span>       NaN           NaN       NaN         <span class="m">1</span>.427113                 NaN            NaN               NaN                  NaN          NaN          <span class="m">187</span>     charge
+<span class="m">375996</span>       NaN           NaN       NaN         <span class="m">1</span>.428547                 NaN            NaN               NaN                  NaN          NaN          <span class="m">187</span>     charge
+<span class="m">375997</span>       NaN           NaN       NaN         <span class="m">1</span>.429981                 NaN            NaN               NaN                  NaN          NaN          <span class="m">187</span>     charge
+<span class="m">375998</span>       NaN           NaN       NaN         <span class="m">1</span>.431416                 NaN            NaN               NaN                  NaN          NaN          <span class="m">187</span>     charge
+<span class="m">375999</span>       NaN           NaN       NaN         <span class="m">1</span>.432850                 NaN            NaN               NaN                  NaN          NaN          <span class="m">187</span>     charge
+
+<span class="o">[</span><span class="m">376000</span> rows x <span class="m">11</span> columns<span class="o">]</span>
+&lt;class <span class="s1">&#39;pandas.core.frame.DataFrame&#39;</span>&gt;
+RangeIndex: <span class="m">376000</span> entries, <span class="m">0</span> to <span class="m">375999</span>
+Data columns <span class="o">(</span>total <span class="m">11</span> columns<span class="o">)</span>:
+ <span class="c1">#   Column               Non-Null Count   Dtype   </span>
+---  ------               --------------   -----   
+ <span class="m">0</span>   voltage              <span class="m">325974</span> non-null  float32 
+ <span class="m">1</span>   test_time            <span class="m">325974</span> non-null  float64 
+ <span class="m">2</span>   current              <span class="m">325974</span> non-null  float32 
+ <span class="m">3</span>   charge_capacity      <span class="m">376000</span> non-null  float32 
+ <span class="m">4</span>   discharge_capacity   <span class="m">325974</span> non-null  float32 
+ <span class="m">5</span>   charge_energy        <span class="m">325974</span> non-null  float32 
+ <span class="m">6</span>   discharge_energy     <span class="m">325974</span> non-null  float32 
+ <span class="m">7</span>   internal_resistance  <span class="m">325974</span> non-null  float32 
+ <span class="m">8</span>   temperature          <span class="m">325974</span> non-null  float32 
+ <span class="m">9</span>   cycle_index          <span class="m">376000</span> non-null  int32   
+ <span class="m">10</span>  step_type            <span class="m">376000</span> non-null  category
+dtypes: category<span class="o">(</span><span class="m">1</span><span class="o">)</span>, float32<span class="o">(</span><span class="m">8</span><span class="o">)</span>, float64<span class="o">(</span><span class="m">1</span><span class="o">)</span>, int32<span class="o">(</span><span class="m">1</span><span class="o">)</span>
+memory usage: <span class="m">16</span>.1 MB
+None
+
+diagnostic_data:
+        No object.
+
+diagnostic_summary:
+        No object.
+
+raw_data:
+        No object.
+</code></pre></div>
+
+<h2 id="inspect-feature-matrices">Inspect Feature Matrices<a class="headerlink" href="#inspect-feature-matrices" title="Permanent link">&para;</a></h2>
+<p>Example:</p>
+<div class="codehilite"><pre><span></span><code>S: beep inspect FeatureMatrix-2021-21-09_20.50.32.550211.json.gz 
+
+<span class="m">2021</span>-09-22 <span class="m">15</span>:54:23 INFO     Loaded FeatureMatrix-2021-21-09_20.50.32.550211.json.gz as <span class="nb">type</span> &lt;class <span class="s1">&#39;beep.features.base.BEEPFeatureMatrix&#39;</span>&gt;.
+
+
+BEEP Feature Matrix: FeatureMatrix-2021-21-09_20.50.32.550211.json.gz
+
+
+
+Featurizers:
+
+        Featurizer beep.features.core HPPCResistanceVoltageFeatures
+        <span class="o">{</span><span class="s1">&#39;@class&#39;</span>: <span class="s1">&#39;HPPCResistanceVoltageFeatures&#39;</span>,
+         <span class="s1">&#39;@module&#39;</span>: <span class="s1">&#39;beep.features.core&#39;</span>,
+         <span class="s1">&#39;hyperparameters&#39;</span>: <span class="o">{</span><span class="s1">&#39;cycle_index_filter&#39;</span>: <span class="m">6</span>,
+                             <span class="s1">&#39;diag_pos&#39;</span>: <span class="m">1</span>,
+                             <span class="s1">&#39;parameters_path&#39;</span>: <span class="s1">&#39;beep/protocol_parameters&#39;</span>,
+                             <span class="s1">&#39;soc_window&#39;</span>: <span class="m">8</span>,
+                             <span class="s1">&#39;test_time_filter_sec&#39;</span>: <span class="m">1000000</span><span class="o">}</span>,
+         <span class="s1">&#39;linked_datapath_semiunique_id&#39;</span>: <span class="s1">&#39;barcode:0000FB-channel:50-protocol:PreDiag_000440.000-schema:None-structured:True-legacy:True-raw_path:None-structured_path:beep/tests/test_files/PreDiag_000440_0000FB_structure.json&#39;</span>,
+         <span class="s1">&#39;metadata&#39;</span>: <span class="o">{</span><span class="s1">&#39;barcode&#39;</span>: <span class="s1">&#39;0000FB&#39;</span>,
+                      <span class="s1">&#39;channel_id&#39;</span>: <span class="m">50</span>,
+                      <span class="s1">&#39;protocol&#39;</span>: <span class="s1">&#39;PreDiag_000440.000&#39;</span><span class="o">}</span>,
+         <span class="s1">&#39;paths&#39;</span>: <span class="o">{</span><span class="s1">&#39;structured&#39;</span>: <span class="s1">&#39;beep/tests/test_files/PreDiag_000440_0000FB_structure.json&#39;</span><span class="o">}}</span>
+
+        Featurizer beep.features.core CycleSummaryStats
+        <span class="o">{</span><span class="s1">&#39;@class&#39;</span>: <span class="s1">&#39;CycleSummaryStats&#39;</span>,
+         <span class="s1">&#39;@module&#39;</span>: <span class="s1">&#39;beep.features.core&#39;</span>,
+         <span class="s1">&#39;hyperparameters&#39;</span>: <span class="o">{</span><span class="s1">&#39;cycle_comp_num&#39;</span>: <span class="o">[</span><span class="m">10</span>, <span class="m">100</span><span class="o">]</span>,
+                             <span class="s1">&#39;statistics&#39;</span>: <span class="o">[</span><span class="s1">&#39;var&#39;</span>,
+                                            <span class="s1">&#39;min&#39;</span>,
+                                            <span class="s1">&#39;mean&#39;</span>,
+                                            <span class="s1">&#39;skew&#39;</span>,
+                                            <span class="s1">&#39;kurtosis&#39;</span>,
+                                            <span class="s1">&#39;abs&#39;</span>,
+                                            <span class="s1">&#39;square&#39;</span><span class="o">]}</span>,
+         <span class="s1">&#39;linked_datapath_semiunique_id&#39;</span>: <span class="s1">&#39;barcode:0000FB-channel:50-protocol:PreDiag_000440.000-schema:None-structured:True-legacy:True-raw_path:None-structured_path:beep/tests/test_files/PreDiag_000440_0000FB_structure.json&#39;</span>,
+         <span class="s1">&#39;metadata&#39;</span>: <span class="o">{</span><span class="s1">&#39;barcode&#39;</span>: <span class="s1">&#39;0000FB&#39;</span>,
+                      <span class="s1">&#39;channel_id&#39;</span>: <span class="m">50</span>,
+                      <span class="s1">&#39;protocol&#39;</span>: <span class="s1">&#39;PreDiag_000440.000&#39;</span><span class="o">}</span>,
+         <span class="s1">&#39;paths&#39;</span>: <span class="o">{</span><span class="s1">&#39;structured&#39;</span>: <span class="s1">&#39;beep/tests/test_files/PreDiag_000440_0000FB_structure.json&#39;</span><span class="o">}}</span>
+
+        Featurizer beep.features.core CycleSummaryStats
+        <span class="o">{</span><span class="s1">&#39;@class&#39;</span>: <span class="s1">&#39;CycleSummaryStats&#39;</span>,
+         <span class="s1">&#39;@module&#39;</span>: <span class="s1">&#39;beep.features.core&#39;</span>,
+         <span class="s1">&#39;hyperparameters&#39;</span>: <span class="o">{</span><span class="s1">&#39;cycle_comp_num&#39;</span>: <span class="o">[</span><span class="m">11</span>, <span class="m">101</span><span class="o">]</span>,
+                             <span class="s1">&#39;statistics&#39;</span>: <span class="o">[</span><span class="s1">&#39;var&#39;</span>,
+                                            <span class="s1">&#39;min&#39;</span>,
+                                            <span class="s1">&#39;mean&#39;</span>,
+                                            <span class="s1">&#39;skew&#39;</span>,
+                                            <span class="s1">&#39;kurtosis&#39;</span>,
+                                            <span class="s1">&#39;abs&#39;</span>,
+                                            <span class="s1">&#39;square&#39;</span><span class="o">]}</span>,
+         <span class="s1">&#39;linked_datapath_semiunique_id&#39;</span>: <span class="s1">&#39;barcode:0000FB-channel:50-protocol:PreDiag_000440.000-schema:None-structured:True-legacy:True-raw_path:None-structured_path:beep/tests/test_files/PreDiag_000440_0000FB_structure.json&#39;</span>,
+         <span class="s1">&#39;metadata&#39;</span>: <span class="o">{</span><span class="s1">&#39;barcode&#39;</span>: <span class="s1">&#39;0000FB&#39;</span>,
+                      <span class="s1">&#39;channel_id&#39;</span>: <span class="m">50</span>,
+                      <span class="s1">&#39;protocol&#39;</span>: <span class="s1">&#39;PreDiag_000440.000&#39;</span><span class="o">}</span>,
+         <span class="s1">&#39;paths&#39;</span>: <span class="o">{</span><span class="s1">&#39;structured&#39;</span>: <span class="s1">&#39;beep/tests/test_files/PreDiag_000440_0000FB_structure.json&#39;</span><span class="o">}}</span>
+
+        Featurizer beep.features.core HPPCResistanceVoltageFeatures
+        <span class="o">{</span><span class="s1">&#39;@class&#39;</span>: <span class="s1">&#39;HPPCResistanceVoltageFeatures&#39;</span>,
+         <span class="s1">&#39;@module&#39;</span>: <span class="s1">&#39;beep.features.core&#39;</span>,
+         <span class="s1">&#39;hyperparameters&#39;</span>: <span class="o">{</span><span class="s1">&#39;cycle_index_filter&#39;</span>: <span class="m">6</span>,
+                             <span class="s1">&#39;diag_pos&#39;</span>: <span class="m">1</span>,
+                             <span class="s1">&#39;parameters_path&#39;</span>: <span class="s1">&#39;beep/protocol_parameters&#39;</span>,
+                             <span class="s1">&#39;soc_window&#39;</span>: <span class="m">8</span>,
+                             <span class="s1">&#39;test_time_filter_sec&#39;</span>: <span class="m">1000000</span><span class="o">}</span>,
+         <span class="s1">&#39;linked_datapath_semiunique_id&#39;</span>: <span class="s1">&#39;barcode:00004C-channel:33-protocol:PredictionDiagnostics_000132.000-schema:None-structured:True-legacy:True-raw_path:None-structured_path:beep/tests/test_files/PredictionDiagnostics_000132_00004C_structure.json&#39;</span>,
+         <span class="s1">&#39;metadata&#39;</span>: <span class="o">{</span><span class="s1">&#39;barcode&#39;</span>: <span class="s1">&#39;00004C&#39;</span>,
+                      <span class="s1">&#39;channel_id&#39;</span>: <span class="m">33</span>,
+                      <span class="s1">&#39;protocol&#39;</span>: <span class="s1">&#39;PredictionDiagnostics_000132.000&#39;</span><span class="o">}</span>,
+         <span class="s1">&#39;paths&#39;</span>: <span class="o">{</span><span class="s1">&#39;structured&#39;</span>: <span class="s1">&#39;beep/tests/test_files/PredictionDiagnostics_000132_00004C_structure.json&#39;</span><span class="o">}}</span>
+
+        Featurizer beep.features.core CycleSummaryStats
+        <span class="o">{</span><span class="s1">&#39;@class&#39;</span>: <span class="s1">&#39;CycleSummaryStats&#39;</span>,
+         <span class="s1">&#39;@module&#39;</span>: <span class="s1">&#39;beep.features.core&#39;</span>,
+         <span class="s1">&#39;hyperparameters&#39;</span>: <span class="o">{</span><span class="s1">&#39;cycle_comp_num&#39;</span>: <span class="o">[</span><span class="m">10</span>, <span class="m">100</span><span class="o">]</span>,
+                             <span class="s1">&#39;statistics&#39;</span>: <span class="o">[</span><span class="s1">&#39;var&#39;</span>,
+                                            <span class="s1">&#39;min&#39;</span>,
+                                            <span class="s1">&#39;mean&#39;</span>,
+                                            <span class="s1">&#39;skew&#39;</span>,
+                                            <span class="s1">&#39;kurtosis&#39;</span>,
+                                            <span class="s1">&#39;abs&#39;</span>,
+                                            <span class="s1">&#39;square&#39;</span><span class="o">]}</span>,
+         <span class="s1">&#39;linked_datapath_semiunique_id&#39;</span>: <span class="s1">&#39;barcode:00004C-channel:33-protocol:PredictionDiagnostics_000132.000-schema:None-structured:True-legacy:True-raw_path:None-structured_path:beep/tests/test_files/PredictionDiagnostics_000132_00004C_structure.json&#39;</span>,
+         <span class="s1">&#39;metadata&#39;</span>: <span class="o">{</span><span class="s1">&#39;barcode&#39;</span>: <span class="s1">&#39;00004C&#39;</span>,
+                      <span class="s1">&#39;channel_id&#39;</span>: <span class="m">33</span>,
+                      <span class="s1">&#39;protocol&#39;</span>: <span class="s1">&#39;PredictionDiagnostics_000132.000&#39;</span><span class="o">}</span>,
+         <span class="s1">&#39;paths&#39;</span>: <span class="o">{</span><span class="s1">&#39;structured&#39;</span>: <span class="s1">&#39;beep/tests/test_files/PredictionDiagnostics_000132_00004C_structure.json&#39;</span><span class="o">}}</span>
+
+        Featurizer beep.features.core CycleSummaryStats
+        <span class="o">{</span><span class="s1">&#39;@class&#39;</span>: <span class="s1">&#39;CycleSummaryStats&#39;</span>,
+         <span class="s1">&#39;@module&#39;</span>: <span class="s1">&#39;beep.features.core&#39;</span>,
+         <span class="s1">&#39;hyperparameters&#39;</span>: <span class="o">{</span><span class="s1">&#39;cycle_comp_num&#39;</span>: <span class="o">[</span><span class="m">11</span>, <span class="m">101</span><span class="o">]</span>,
+                             <span class="s1">&#39;statistics&#39;</span>: <span class="o">[</span><span class="s1">&#39;var&#39;</span>,
+                                            <span class="s1">&#39;min&#39;</span>,
+                                            <span class="s1">&#39;mean&#39;</span>,
+                                            <span class="s1">&#39;skew&#39;</span>,
+                                            <span class="s1">&#39;kurtosis&#39;</span>,
+                                            <span class="s1">&#39;abs&#39;</span>,
+                                            <span class="s1">&#39;square&#39;</span><span class="o">]}</span>,
+         <span class="s1">&#39;linked_datapath_semiunique_id&#39;</span>: <span class="s1">&#39;barcode:00004C-channel:33-protocol:PredictionDiagnostics_000132.000-schema:None-structured:True-legacy:True-raw_path:None-structured_path:beep/tests/test_files/PredictionDiagnostics_000132_00004C_structure.json&#39;</span>,
+         <span class="s1">&#39;metadata&#39;</span>: <span class="o">{</span><span class="s1">&#39;barcode&#39;</span>: <span class="s1">&#39;00004C&#39;</span>,
+                      <span class="s1">&#39;channel_id&#39;</span>: <span class="m">33</span>,
+                      <span class="s1">&#39;protocol&#39;</span>: <span class="s1">&#39;PredictionDiagnostics_000132.000&#39;</span><span class="o">}</span>,
+         <span class="s1">&#39;paths&#39;</span>: <span class="o">{</span><span class="s1">&#39;structured&#39;</span>: <span class="s1">&#39;beep/tests/test_files/PredictionDiagnostics_000132_00004C_structure.json&#39;</span><span class="o">}}</span>
+
+Matrix:
+                                                    D_1::HPPCResistanceVoltageFeatures::6262aa8b2c9ce9530d53f73943e5b465a1946f39be2ad2a3ede05f49e6f9f2d2  ...  var_v_diff::HPPCResistanceVoltageFeatures::6262aa8b2c9ce9530d53f73943e5b465a1946f39be2ad2a3ede05f49e6f9f2d2
+filename                                                                                                                                                  ...                                                                                                             
+beep/tests/tes...                                          -0.075467                                                     ...                                           <span class="m">0</span>.000186                                                          
+beep/tests/tes...                                          -0.090097                                                     ...                                           <span class="m">0</span>.002462                                                          
+
+<span class="o">[</span><span class="m">2</span> rows x <span class="m">132</span> columns<span class="o">]</span>
+&lt;class <span class="s1">&#39;pandas.core.frame.DataFrame&#39;</span>&gt;
+Index: <span class="m">2</span> entries, beep/tests/test_files/PreDiag_000440_0000FB_structure.json to beep/tests/test_files/PredictionDiagnostics_000132_00004C_structure.json
+Columns: <span class="m">132</span> entries, D_1::HPPCResistanceVoltageFeatures::6262aa8b2c9ce9530d53f73943e5b465a1946f39be2ad2a3ede05f49e6f9f2d2 to var_v_diff::HPPCResistanceVoltageFeatures::6262aa8b2c9ce9530d53f73943e5b465a1946f39be2ad2a3ede05f49e6f9f2d2
+dtypes: float64<span class="o">(</span><span class="m">132</span><span class="o">)</span>
+memory usage: <span class="m">2</span>.1+ KB
+</code></pre></div>
+
+<h2 id="inspect-featurizers">Inspect Featurizers<a class="headerlink" href="#inspect-featurizers" title="Permanent link">&para;</a></h2>
+<p>Example:</p>
+<div class="codehilite"><pre><span></span><code>$: beep inspect HPPCFeaturizer.json.gz 
+<span class="m">2021</span>-09-22 <span class="m">16</span>:06:42 INFO     Loaded beep/tests/test_files/modelling_test_files/HPPCFeaturizer.json.gz as <span class="nb">type</span> &lt;class <span class="s1">&#39;beep.features.core.HPPCResistanceVoltageFeatures&#39;</span>&gt;.
+
+
+BEEP Featurizer: beep/tests/test_files/modelling_test_files/HPPCFeaturizer.json.gz
+
+
+
+File paths:
+<span class="o">{</span><span class="s1">&#39;structured&#39;</span>: <span class="s1">&#39;beep/CLI_TEST_FILES_FEATURIZATION/PreDiag_000440_0000FB_structure.json&#39;</span><span class="o">}</span>
+
+Linked datapath semiunique id: barcode:0000FB-channel:50-protocol:PreDiag_000440.000-schema:None-structured:True-legacy:True-raw_path:None-structured_path:beep/CLI_TEST_FILES_FEATURIZATION/PreDiag_000440_0000FB_structure.json
+
+Hyperparameters:
+<span class="o">{</span><span class="s1">&#39;cycle_index_filter&#39;</span>: <span class="m">6</span>,
+ <span class="s1">&#39;diag_pos&#39;</span>: <span class="m">1</span>,
+ <span class="s1">&#39;parameters_path&#39;</span>: <span class="s1">&#39;beep/protocol_parameters&#39;</span>,
+ <span class="s1">&#39;soc_window&#39;</span>: <span class="m">8</span>,
+ <span class="s1">&#39;test_time_filter_sec&#39;</span>: <span class="m">1000000</span><span class="o">}</span>
+
+Metadata:
+<span class="o">{</span><span class="s1">&#39;barcode&#39;</span>: <span class="s1">&#39;0000FB&#39;</span>, <span class="s1">&#39;channel_id&#39;</span>: <span class="m">50</span>, <span class="s1">&#39;protocol&#39;</span>: <span class="s1">&#39;PreDiag_000440.000&#39;</span><span class="o">}</span>
+
+Features:
+   r_c_0s_00  r_c_0s_10  r_c_0s_20  r_c_0s_30  r_c_0s_40  r_c_0s_50  r_c_0s_60  r_c_0s_70  r_c_0s_80  r_c_3s_00  r_c_3s_10  r_c_3s_20  r_c_3s_30  r_c_3s_40  r_c_3s_50  r_c_3s_60  r_c_3s_70  r_c_3s_80  r_c_end_00  ...  skew_ocv  kurtosis_ocv   sum_ocv  sum_square_ocv  var_v_diff  min_v_diff  mean_v_diff  skew_v_diff  kurtosis_v_diff  sum_v_diff  sum_square_v_diff       D_1       D_2       D_3       D_4       D_5       D_6       D_7       D_8
+<span class="m">0</span>  -0.056034  -0.063766   -0.07963  -0.105001  -0.091609  -0.095464  -0.073553   -0.06692  -0.064657  -0.037199  -0.071951  -0.077876  -0.128588  -0.103652  -0.106871  -0.096638  -0.066802  -0.074038   -0.053153  ...  <span class="m">1</span>.674431      <span class="m">7</span>.472183  <span class="m">0</span>.045535        <span class="m">0</span>.000641    <span class="m">0</span>.000186    -0.00181     <span class="m">0</span>.012954     <span class="m">0</span>.887649         <span class="m">2</span>.940287    <span class="m">14</span>.16811           <span class="m">0</span>.373482 -0.075467 -0.097516 -0.230871 -0.163967 -0.158305 -0.137443  <span class="m">0</span>.070989  <span class="m">0</span>.098653
+
+<span class="o">[</span><span class="m">1</span> rows x <span class="m">76</span> columns<span class="o">]</span>
+</code></pre></div>
+
+<h2 id="inspect-models">Inspect Models<a class="headerlink" href="#inspect-models" title="Permanent link">&para;</a></h2>
+<p>Example:</p>
+<div class="codehilite"><pre><span></span><code>$: beep inspect model-src.json.gz 
+
+<span class="m">2021</span>-09-22 <span class="m">16</span>:06:04 WARNING  Number of samples <span class="o">(</span><span class="m">4</span><span class="o">)</span> less than number of features <span class="o">(</span><span class="m">179</span><span class="o">)</span><span class="p">;</span> may cause overfitting.
+<span class="m">2021</span>-09-22 <span class="m">16</span>:06:04 INFO     Loaded beep/tests/test_files/modelling_test_files/model-src.json.gz as <span class="nb">type</span> &lt;class <span class="s1">&#39;beep.model.BEEPLinearModelExperiment&#39;</span>&gt;.
+
+
+BEEP Linear Model Experiment: beep/tests/test_files/modelling_test_files/model-src.json.gz
+
+
+
+Targets: <span class="o">[</span><span class="s1">&#39;capacity_0.92::TrajectoryFastCharge&#39;</span><span class="o">]</span>
+
+Model name: lasso
+
+Impute strategy: median
+
+Homogenize features: True
+
+NaN Thresholds:
+        -train_feature_drop_nan_thresh: <span class="m">0</span>.95
+        -train_sample_drop_nan_thresh: <span class="m">0</span>.5
+        -predict_sample_nan_thresh: <span class="m">0</span>.75
+
+Model parameters:
+        - coef_: <span class="o">[</span><span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, -0.0, -0.0, <span class="m">0</span>.0, -0.0, -0.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, -0.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, <span class="m">0</span>.0, -0.0, -0.0, -0.0, -0.0, <span class="m">0</span>.0, -0.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, -0.0, -0.0, <span class="m">0</span>.0, -0.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, -0.0, -0.0, <span class="m">0</span>.0, -0.0, -0.0, -0.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, -0.0, -0.0, <span class="m">0</span>.0, <span class="m">0</span>.0, -0.0, <span class="m">0</span>.0, -0.0, -0.0, -0.0, -0.0, -0.0, <span class="m">0</span>.0, -0.0, <span class="m">0</span>.0, <span class="m">0</span>.0, -0.0, -0.0, -0.0, -0.0, -0.0, <span class="m">0</span>.0, <span class="m">0</span>.0, -0.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, <span class="m">0</span>.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, -0.0, <span class="m">0</span>.0, -0.0, -0.0, -0.0<span class="o">]</span>
+        - intercept_: <span class="m">113</span>.25
+        - optimal_hyperparameters: <span class="o">{</span><span class="s1">&#39;alpha&#39;</span>: <span class="m">98</span>.35818271439722<span class="o">}</span>
+
+Matrices:
+
+feature_matrix
+                                                    D_1::HPPCResistanceVoltageFeatures::6262aa8b2c9ce9530d53f73943e5b465a1946f39be2ad2a3ede05f49e6f9f2d2  ...  var_v_diff::HPPCResistanceVoltageFeatures::6262aa8b2c9ce9530d53f73943e5b465a1946f39be2ad2a3ede05f49e6f9f2d2
+filename                                                                                                                                                  ...                                                                                                             
+beep/CLI_TEST_...                                          -0.075467                                                     ...                                           <span class="m">0</span>.000186                                                          
+beep/CLI_TEST_...                                          -0.090097                                                     ...                                           <span class="m">0</span>.002462                                                          
+beep/CLI_TEST_...                                          -0.145030                                                     ...                                           <span class="m">0</span>.002416                                                          
+beep/CLI_TEST_...                                          -0.052108                                                     ...                                           <span class="m">0</span>.000848                                                          
+
+<span class="o">[</span><span class="m">4</span> rows x <span class="m">179</span> columns<span class="o">]</span>
+&lt;class <span class="s1">&#39;pandas.core.frame.DataFrame&#39;</span>&gt;
+Index: <span class="m">4</span> entries, beep/CLI_TEST_FILES_FEATURIZATION/PreDiag_000440_0000FB_structure.json to beep/CLI_TEST_FILES_FEATURIZATION/PredictionDiagnostics_000136_00002D_structure.json
+Columns: <span class="m">179</span> entries, D_1::HPPCResistanceVoltageFeatures::6262aa8b2c9ce9530d53f73943e5b465a1946f39be2ad2a3ede05f49e6f9f2d2 to var_v_diff::HPPCResistanceVoltageFeatures::6262aa8b2c9ce9530d53f73943e5b465a1946f39be2ad2a3ede05f49e6f9f2d2
+dtypes: float64<span class="o">(</span><span class="m">179</span><span class="o">)</span>
+memory usage: <span class="m">5</span>.6+ KB
+None
+
+target_matrix
+                                                    capacity_0.83::TrajectoryFastCharge::319cec55cc030c1911b2530cae3fc2df8d3c24912ae01ee4172ea4ca4caddec8  ...  rpt_1Cdischarge_energy0.8_real_regular_throughput::DiagnosticProperties::9fb32356773f0c4f8c27fc9528ca4a986dc928fbadbd859b67a8892e7daac72e
+filename                                                                                                                                                   ...                                                                                                                                           
+beep/CLI_TEST_...                                                <span class="m">284</span>                                                      ...                                                NaN                                                                                        
+beep/CLI_TEST_...                                                 <span class="m">58</span>                                                      ...                                        <span class="m">1266</span>.108637                                                                                        
+beep/CLI_TEST_...                                                 <span class="m">85</span>                                                      ...                                                NaN                                                                                        
+beep/CLI_TEST_...                                                <span class="m">101</span>                                                      ...                                                NaN                                                                                        
+
+<span class="o">[</span><span class="m">4</span> rows x <span class="m">11</span> columns<span class="o">]</span>
+&lt;class <span class="s1">&#39;pandas.core.frame.DataFrame&#39;</span>&gt;
+Index: <span class="m">4</span> entries, beep/CLI_TEST_FILES_FEATURIZATION/PreDiag_000440_0000FB_structure.json to beep/CLI_TEST_FILES_FEATURIZATION/PredictionDiagnostics_000136_00002D_structure.json
+Data columns <span class="o">(</span>total <span class="m">11</span> columns<span class="o">)</span>:
+ <span class="c1">#   Column                                                                                                                                           Non-Null Count  Dtype  </span>
+---  ------                                                                                                                                           --------------  -----  
+ <span class="m">0</span>   capacity_0.83::TrajectoryFastCharge::319cec55cc030c1911b2530cae3fc2df8d3c24912ae01ee4172ea4ca4caddec8                                            <span class="m">4</span> non-null      int64  
+ <span class="m">1</span>   capacity_0.86::TrajectoryFastCharge::319cec55cc030c1911b2530cae3fc2df8d3c24912ae01ee4172ea4ca4caddec8                                            <span class="m">4</span> non-null      int64  
+ <span class="m">2</span>   capacity_0.89::TrajectoryFastCharge::319cec55cc030c1911b2530cae3fc2df8d3c24912ae01ee4172ea4ca4caddec8                                            <span class="m">4</span> non-null      int64  
+ <span class="m">3</span>   capacity_0.8::TrajectoryFastCharge::319cec55cc030c1911b2530cae3fc2df8d3c24912ae01ee4172ea4ca4caddec8                                             <span class="m">4</span> non-null      int64  
+ <span class="m">4</span>   capacity_0.92::TrajectoryFastCharge::319cec55cc030c1911b2530cae3fc2df8d3c24912ae01ee4172ea4ca4caddec8                                            <span class="m">4</span> non-null      int64  
+ <span class="m">5</span>   capacity_0.95::TrajectoryFastCharge::319cec55cc030c1911b2530cae3fc2df8d3c24912ae01ee4172ea4ca4caddec8                                            <span class="m">4</span> non-null      int64  
+ <span class="m">6</span>   capacity_0.98::TrajectoryFastCharge::319cec55cc030c1911b2530cae3fc2df8d3c24912ae01ee4172ea4ca4caddec8                                            <span class="m">4</span> non-null      int64  
+ <span class="m">7</span>   initial_regular_throughput::DiagnosticProperties::9fb32356773f0c4f8c27fc9528ca4a986dc928fbadbd859b67a8892e7daac72e                               <span class="m">1</span> non-null      float64
+ <span class="m">8</span>   rpt_1Cdischarge_energy0.8_cycle_index::DiagnosticProperties::9fb32356773f0c4f8c27fc9528ca4a986dc928fbadbd859b67a8892e7daac72e                    <span class="m">1</span> non-null      float64
+ <span class="m">9</span>   rpt_1Cdischarge_energy0.8_normalized_regular_throughput::DiagnosticProperties::9fb32356773f0c4f8c27fc9528ca4a986dc928fbadbd859b67a8892e7daac72e  <span class="m">1</span> non-null      float64
+ <span class="m">10</span>  rpt_1Cdischarge_energy0.8_real_regular_throughput::DiagnosticProperties::9fb32356773f0c4f8c27fc9528ca4a986dc928fbadbd859b67a8892e7daac72e        <span class="m">1</span> non-null      float64
+dtypes: float64<span class="o">(</span><span class="m">4</span><span class="o">)</span>, int64<span class="o">(</span><span class="m">7</span><span class="o">)</span>
+memory usage: <span class="m">556</span>.0+ bytes
+</code></pre></div>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid" aria-label="Footer">
+        
+          <a href="../6%20-%20protocol/" class="md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+            </div>
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                Protocol
+              </div>
+            </div>
+          </a>
+        
+        
+          <a href="../../Python%20tutorials/1%20-%20quickstart/" class="md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                1: Quickstart
+              </div>
+            </div>
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    </div>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+          <div class="md-footer-copyright__highlight">
+            Toyota Research Institute
+          </div>
+        
+        Made with
+        <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+          Material for MkDocs
+        </a>
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    
+      <script src="../../assets/javascripts/vendor.6a3d08fc.min.js"></script>
+      <script src="../../assets/javascripts/bundle.71201edf.min.js"></script><script id="__lang" type="application/json">{"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing"}</script>
+      
+      <script>
+        app = initialize({
+          base: "../..",
+          features: [],
+          search: Object.assign({
+            worker: "../../assets/javascripts/worker/search.4ac00218.min.js"
+          }, typeof search !== "undefined" && search)
+        })
+      </script>
+      
+    
+  </body>
+</html>

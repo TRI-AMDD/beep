@@ -1,0 +1,748 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for TRI-AMDD BEEP, for handling battery cycling data and predicting battery lifetines">
+      
+      
+      
+      <link rel="shortcut icon" href="../../static/tri_cropped_favicon.png">
+      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-6.1.0">
+    
+    
+      
+        <title>1: Quickstart - BEEP - Battery Evaluation and Early Prediction</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.bc7e593a.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab28b872.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#ef5552">
+        
+      
+    
+    
+    
+      
+        
+        <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>body,input{font-family:"Roboto",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"Roboto Mono",SFMono-Regular,Consolas,Menlo,monospace}</style>
+      
+    
+    
+    
+    
+      
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="red" data-md-color-accent="orange">
+      
+  
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#1-quickstart" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header-nav md-grid" aria-label="Header">
+    <a href="../.." title="BEEP - Battery Evaluation and Early Prediction" class="md-header-nav__button md-logo" aria-label="BEEP - Battery Evaluation and Early Prediction">
+      
+  <img src="../../static/tri_cropped.png" alt="logo">
+
+    </a>
+    <label class="md-header-nav__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header-nav__title" data-md-component="header-title">
+      
+        <div class="md-header-nav__ellipsis">
+          <span class="md-header-nav__topic md-ellipsis">
+            BEEP - Battery Evaluation and Early Prediction
+          </span>
+          <span class="md-header-nav__topic md-ellipsis">
+            
+              1: Quickstart
+            
+          </span>
+        </div>
+      
+    </div>
+    
+      <label class="md-header-nav__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" data-md-state="active">
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <button type="reset" class="md-search__icon md-icon" aria-label="Clear" data-md-component="search-reset" tabindex="-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header-nav__source">
+        
+<a href="https://github.com/tri-amdd/beep/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="BEEP - Battery Evaluation and Early Prediction" class="md-nav__button md-logo" aria-label="BEEP - Battery Evaluation and Early Prediction">
+      
+  <img src="../../static/tri_cropped.png" alt="logo">
+
+    </a>
+    BEEP - Battery Evaluation and Early Prediction
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/tri-amdd/beep/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../.." class="md-nav__link">
+      Introduction
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../../data/" class="md-nav__link">
+      Cycler data requirements
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3">
+    
+    <label class="md-nav__link" for="nav-3">
+      Command Line Interface
+      <span class="md-nav__icon md-icon"></span>
+    </label>
+    <nav class="md-nav" aria-label="Command Line Interface" data-md-level="1">
+      <label class="md-nav__title" for="nav-3">
+        <span class="md-nav__icon md-icon"></span>
+        Command Line Interface
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Command%20Line%20Interface/1%20-%20overview/" class="md-nav__link">
+      Overview
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Command%20Line%20Interface/2%20-%20structuring/" class="md-nav__link">
+      Structure
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Command%20Line%20Interface/3%20-%20featurize/" class="md-nav__link">
+      Featurize
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Command%20Line%20Interface/4%20-%20train/" class="md-nav__link">
+      Train
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Command%20Line%20Interface/5%20-%20predict/" class="md-nav__link">
+      Predict
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Command%20Line%20Interface/6%20-%20protocol/" class="md-nav__link">
+      Protocol
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Command%20Line%20Interface/7%20-%20inspect/" class="md-nav__link">
+      Inspect
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+      
+      
+      
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    
+      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4" checked>
+    
+    <label class="md-nav__link" for="nav-4">
+      Python tutorials
+      <span class="md-nav__icon md-icon"></span>
+    </label>
+    <nav class="md-nav" aria-label="Python tutorials" data-md-level="1">
+      <label class="md-nav__title" for="nav-4">
+        <span class="md-nav__icon md-icon"></span>
+        Python tutorials
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        1: Quickstart
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+    
+    <a href="./" class="md-nav__link md-nav__link--active">
+      1: Quickstart
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#step-0-install-beep-and-set-environment" class="md-nav__link">
+    Step 0: Install beep and set environment
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-download-example-battery-cycler-data" class="md-nav__link">
+    Step 1: Download example battery cycler data
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-structure-and-analyze-data" class="md-nav__link">
+    Step 2: Structure and analyze data
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-prepare-for-machine-learning-and-train-a-model" class="md-nav__link">
+    Step 3: Prepare for machine learning and train a model
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#congrats" class="md-nav__link">
+    Congrats!
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../2%20-%20structuring/" class="md-nav__link">
+      2: Structuring
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../3%20-%20featurization/" class="md-nav__link">
+      3: Featurization
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../4%20-%20models/" class="md-nav__link">
+      4: Machine Learning
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../advanced_structuring/" class="md-nav__link">
+      Advanced Structuring: Unsupported cyclers
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#step-0-install-beep-and-set-environment" class="md-nav__link">
+    Step 0: Install beep and set environment
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-download-example-battery-cycler-data" class="md-nav__link">
+    Step 1: Download example battery cycler data
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-structure-and-analyze-data" class="md-nav__link">
+    Step 2: Structure and analyze data
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-prepare-for-machine-learning-and-train-a-model" class="md-nav__link">
+    Step 3: Prepare for machine learning and train a model
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#congrats" class="md-nav__link">
+    Congrats!
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/tri-amdd/beep/edit/master/docs/Python tutorials/1 - quickstart.md" title="Edit this page" class="md-content__button md-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+                  </a>
+                
+                
+                <h1 id="1-quickstart">1: Quickstart<a class="headerlink" href="#1-quickstart" title="Permanent link">&para;</a></h1>
+<p>This notebook is meant to demonstrate basic usage of the beep package with data from "Data-driven prediction of battery cycle life before capacity degradation" KA Severson, et al. Nature Energy 4 (5), 383-391</p>
+<p>This data is available for download from https://data.matr.io/1/ . For brevity, only one test is included in this notebook but the example can easily be extended to a larger number of files.</p>
+<h2 id="step-0-install-beep-and-set-environment">Step 0: Install beep and set environment<a class="headerlink" href="#step-0-install-beep-and-set-environment" title="Permanent link">&para;</a></h2>
+<p>If you have not already installed beep, run:</p>
+<div class="codehilite"><pre><span></span><code>pip install beep
+</code></pre></div>
+
+<h2 id="step-1-download-example-battery-cycler-data">Step 1: Download example battery cycler data<a class="headerlink" href="#step-1-download-example-battery-cycler-data" title="Permanent link">&para;</a></h2>
+<p>The example data set we are using here comes from a set of A123 LFP cells cycled under fast charge conditions. While this tutorial is configured for downloading a single cell, its also possible to download the entire data set and run all of the processing steps on all of the data.</p>
+<p>Note that for Arbin files, we recommend having the metadata file in addition to the data file in order to perform the data structuring correctly (though it is not required).</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Beginning file download with requests&#39;</span><span class="p">)</span>
+<span class="n">this_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+<span class="n">data_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">this_dir</span><span class="p">,</span> <span class="s1">&#39;Severson-et-al&#39;</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">data_dir</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">FileExistsError</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+<span class="n">url</span> <span class="o">=</span> <span class="s1">&#39;https://data.matr.io/1/api/v1/file/5c86c0bafa2ede00015ddf70/download&#39;</span>
+<span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_dir</span><span class="p">,</span> <span class="s1">&#39;2017-05-12_6C-50per_3_6C_CH36.csv&#39;</span><span class="p">),</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+
+<span class="n">url</span> <span class="o">=</span> <span class="s1">&#39;https://data.matr.io/1/api/v1/file/5c86c0b5fa2ede00015ddf6d/download&#39;</span>
+<span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_dir</span><span class="p">,</span> <span class="s1">&#39;2017-05-12_6C-50per_3_6C_CH36_Metadata.csv&#39;</span><span class="p">),</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+
+<span class="c1"># Retrieve HTTP meta-data</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Status code&quot;</span><span class="p">,</span> <span class="n">r</span><span class="o">.</span><span class="n">status_code</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;File type recieved&quot;</span><span class="p">,</span> <span class="n">r</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s1">&#39;content-type&#39;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;File encoding&quot;</span><span class="p">,</span> <span class="n">r</span><span class="o">.</span><span class="n">encoding</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># output</span>
+<span class="n">Beginning</span> <span class="n">file</span> <span class="n">download</span> <span class="n">with</span> <span class="n">requests</span>
+<span class="n">Status</span> <span class="n">code</span> <span class="mi">200</span>
+<span class="n">File</span> <span class="n">type</span> <span class="n">recieved</span> <span class="n">text</span><span class="o">/</span><span class="n">csv</span>
+<span class="n">File</span> <span class="n">encoding</span> <span class="n">ISO</span><span class="o">-</span><span class="mi">8859</span><span class="o">-</span><span class="mi">1</span>
+</code></pre></div>
+
+<p>You should now have two files in your data directory: </p>
+<div class="codehilite"><pre><span></span><code><span class="err">├── Severson-et-al</span>
+<span class="err">│   ├── 2017-05-12_6C-50per_3_6C_CH36.csv</span>
+<span class="err">│   └── 2017-05-12_6C-50per_3_6C_CH36_Metadata.csv</span>
+</code></pre></div>
+
+<h2 id="step-2-structure-and-analyze-data">Step 2: Structure and analyze data<a class="headerlink" href="#step-2-structure-and-analyze-data" title="Permanent link">&para;</a></h2>
+<p>Now that we have our data, we can start using BEEP!</p>
+<p>To structure a file in <code>beep</code> using python, we use the <code>auto_load</code> function to get a <code>BEEPDatapath</code> object; <code>BEEPDatapath</code> holds everything
+we need to identify cycler type, load, validate, interpolate, standardize, and analyze our file. </p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">beep.structure.cli</span> <span class="kn">import</span> <span class="n">auto_load</span>
+
+
+<span class="n">this_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+<span class="n">cycler_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">this_dir</span><span class="p">,</span> <span class="s2">&quot;Severson-et-al/2017-05-12_6C-50per_3_6C_CH36.csv&quot;</span><span class="p">)</span>
+
+<span class="n">datapath</span> <span class="o">=</span> <span class="n">auto_load</span><span class="p">(</span><span class="n">cycler_file</span><span class="p">)</span>
+</code></pre></div>
+
+<p>We can check our file is valid with <code>validate</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">is_valid</span><span class="p">,</span> <span class="n">msg</span> <span class="o">=</span> <span class="n">datapath</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;File is valid: &quot;</span><span class="p">,</span> <span class="n">is_valid</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># Output</span>
+File is valid: True
+</code></pre></div>
+
+<p>We can easily interpolate and prepare our file for analysis (known as "structuring") with the <code>structure</code> method:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">datapath</span><span class="o">.</span><span class="n">structure</span><span class="p">()</span>
+</code></pre></div>
+
+<p>Now that our file has been structured, we can examine some interesting properties, such as the charge capacity vs. the voltage.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+
+<span class="n">reg_charge</span> <span class="o">=</span> <span class="n">datapath</span><span class="o">.</span><span class="n">structured_data</span><span class="p">[</span><span class="n">datapath</span><span class="o">.</span><span class="n">structured_data</span><span class="o">.</span><span class="n">step_type</span> <span class="o">==</span> <span class="s1">&#39;charge&#39;</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Mean current for cycle 25: &quot;</span><span class="p">,</span> <span class="n">reg_charge</span><span class="o">.</span><span class="n">current</span><span class="p">[</span><span class="n">reg_charge</span><span class="o">.</span><span class="n">cycle_index</span> <span class="o">==</span> <span class="mi">25</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Number of cycles: &quot;</span><span class="p">,</span> <span class="n">reg_charge</span><span class="o">.</span><span class="n">cycle_index</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Max charge capacity at cycle 25: &quot;</span><span class="p">,</span> <span class="n">reg_charge</span><span class="o">.</span><span class="n">charge_capacity</span><span class="p">[</span><span class="n">reg_charge</span><span class="o">.</span><span class="n">cycle_index</span> <span class="o">==</span> <span class="mi">25</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">reg_charge</span><span class="o">.</span><span class="n">charge_capacity</span><span class="p">[</span><span class="n">reg_charge</span><span class="o">.</span><span class="n">cycle_index</span> <span class="o">==</span> <span class="mi">600</span><span class="p">],</span> <span class="n">reg_charge</span><span class="o">.</span><span class="n">voltage</span><span class="p">[</span><span class="n">reg_charge</span><span class="o">.</span><span class="n">cycle_index</span> <span class="o">==</span> <span class="mi">600</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="err"># output</span>
+<span class="err">Mean current for cycle 25: 4.697416</span>
+<span class="err">Number of cycles: 876</span>
+<span class="err">Max charge capacity at cycle 25: 1.1737735</span>
+</code></pre></div>
+
+<p><img alt="chg_cap" src="../../static/chg_cap_vs_voltage.png" /></p>
+<p>We can also view some interesting data about the energy efficiency as the cycles progress:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">datapath</span><span class="o">.</span><span class="n">structured_summary</span><span class="o">.</span><span class="n">cycle_index</span><span class="p">,</span> <span class="n">datapath</span><span class="o">.</span><span class="n">structured_summary</span><span class="o">.</span><span class="n">energy_efficiency</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</code></pre></div>
+
+<p><img alt="cycle_index_vs_eeff" src="../../static/cycle_index_vs_energy_efficiency.png" /></p>
+<p><a href="/Python%20tutorials/2%20-%20structuring/">More info on <code>BEEPDatapath</code></a></p>
+<h2 id="step-3-prepare-for-machine-learning-and-train-a-model">Step 3: Prepare for machine learning and train a model<a class="headerlink" href="#step-3-prepare-for-machine-learning-and-train-a-model" title="Permanent link">&para;</a></h2>
+<p>Featurization uses the structured objects to calculate statistically and physically relevant quantities for the purpose of building predictive machine learning models. The objects can be selected and joined for the purposes of training the model, or used for predicting individual outcomes.</p>
+<p><code>beep</code> provides classes such as <code>BEEPFeaturizer</code> and <code>BEEPFeatureMatrix</code> for generating and managing sets of features linked to structured files.</p>
+<p><code>beep</code> also provides <code>BEEPLinearModelExperiment</code>, a class for training linear machine learning models on battery data and predicting new degradation characteristics.</p>
+<p><strong>Quickstart sections on featurization and machine learning are coming soon!</strong></p>
+<h2 id="congrats">Congrats!<a class="headerlink" href="#congrats" title="Permanent link">&para;</a></h2>
+<p>You've made it to the end of the tutorial. </p>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid" aria-label="Footer">
+        
+          <a href="../../Command%20Line%20Interface/7%20-%20inspect/" class="md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+            </div>
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                Inspect
+              </div>
+            </div>
+          </a>
+        
+        
+          <a href="../2%20-%20structuring/" class="md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                2: Structuring
+              </div>
+            </div>
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    </div>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+          <div class="md-footer-copyright__highlight">
+            Toyota Research Institute
+          </div>
+        
+        Made with
+        <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+          Material for MkDocs
+        </a>
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    
+      <script src="../../assets/javascripts/vendor.6a3d08fc.min.js"></script>
+      <script src="../../assets/javascripts/bundle.71201edf.min.js"></script><script id="__lang" type="application/json">{"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing"}</script>
+      
+      <script>
+        app = initialize({
+          base: "../..",
+          features: [],
+          search: Object.assign({
+            worker: "../../assets/javascripts/worker/search.4ac00218.min.js"
+          }, typeof search !== "undefined" && search)
+        })
+      </script>
+      
+    
+  </body>
+</html>

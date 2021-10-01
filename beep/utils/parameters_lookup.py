@@ -6,8 +6,6 @@ from glob import glob
 import os
 from beep import logger
 
-s = {"service": "DataStructurer"}
-
 
 def get_project_sequence(path):
     """
@@ -26,7 +24,7 @@ def get_project_sequence(path):
     return file_parts
 
 
-def get_protocol_parameters(filepath, parameters_path="data-share/raw/parameters"):
+def get_protocol_parameters(filepath, parameters_path):
     """
     Helper function to get the project parameters for a file given the filename
 
@@ -41,7 +39,7 @@ def get_protocol_parameters(filepath, parameters_path="data-share/raw/parameters
     """
     project_name_list = get_project_sequence(filepath)
     project_name = project_name_list[0]
-    path = os.path.join(os.environ.get("BEEP_PROCESSING_DIR", "/"), parameters_path)
+    path = os.path.abspath(parameters_path)
     project_parameter_files = glob(os.path.join(path, project_name + "*"))
     assert len(project_parameter_files) <= 1, (
         "Found too many parameter files for: " + project_name
@@ -51,7 +49,7 @@ def get_protocol_parameters(filepath, parameters_path="data-share/raw/parameters
         df = pd.read_csv(project_parameter_files[0])
         parameter_row = df[df.seq_num == int(project_name_list[1])]
         if parameter_row.empty:
-            logger.error("Unable to get project parameters for: %s", filepath, extra=s)
+            logger.error("Unable to get project parameters for: %s", filepath)
             parameter_row = None
             df = None
     else:

@@ -1,5 +1,4 @@
 """Classes and functions for handling Maccor battery cycler data.
-
 """
 import os
 from datetime import datetime
@@ -8,10 +7,12 @@ from glob import glob
 import pandas as pd
 import numpy as np
 import pytz
+from monty.serialization import loadfn
 
-from beep import tqdm, StringIO
+from beep import tqdm, StringIO, VALIDATION_SCHEMA_DIR
 from beep.conversion_schemas import MACCOR_CONFIG
 from beep.structure.base_eis import BEEPDatapathWithEIS, EIS
+from beep.structure.validate import PROJECT_SCHEMA
 
 
 class MaccorDatapath(BEEPDatapathWithEIS):
@@ -85,6 +86,10 @@ class MaccorDatapath(BEEPDatapathWithEIS):
         data.rename(str.lower, axis="columns", inplace=True)
         data = data.astype(MACCOR_CONFIG["data_types"])
         data.rename(MACCOR_CONFIG["data_columns"], axis="columns", inplace=True)
+
+        # Needed for validating correctly
+        data["_state"] = data["_state"].astype(str)
+
         data["charge_capacity"] = cls.quantity_sum(
             data, "capacity", "charge"
         )
@@ -114,7 +119,17 @@ class MaccorDatapath(BEEPDatapathWithEIS):
             "metadata": path
         }
 
-        return cls(data, metadata, paths=paths)
+        # Set schema from filename, if possible; otherwise, use default maccor
+        project_schema = loadfn(PROJECT_SCHEMA)
+        name = os.path.basename(path)
+        special_schema_filename = project_schema.get(name.split("_")[0], {}).get("maccor")
+
+        if special_schema_filename:
+            schema = os.path.join(VALIDATION_SCHEMA_DIR, special_schema_filename)
+        else:
+            schema = os.path.join(VALIDATION_SCHEMA_DIR, "schema-maccor-2170.yaml")
+
+        return cls(data, metadata, paths=paths, schema=schema)
 
     def load_eis(self, paths=None):
         """Load eis from specified paths to EIS files, or automatically detect them from

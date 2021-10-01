@@ -1,0 +1,1479 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for TRI-AMDD BEEP, for handling battery cycling data and predicting battery lifetines">
+      
+      
+      
+      <link rel="shortcut icon" href="../../static/tri_cropped_favicon.png">
+      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-6.1.0">
+    
+    
+      
+        <title>2: Structuring - BEEP - Battery Evaluation and Early Prediction</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.bc7e593a.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab28b872.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#ef5552">
+        
+      
+    
+    
+    
+      
+        
+        <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>body,input{font-family:"Roboto",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"Roboto Mono",SFMono-Regular,Consolas,Menlo,monospace}</style>
+      
+    
+    
+    
+    
+      
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="red" data-md-color-accent="orange">
+      
+  
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#2-structuring" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header-nav md-grid" aria-label="Header">
+    <a href="../.." title="BEEP - Battery Evaluation and Early Prediction" class="md-header-nav__button md-logo" aria-label="BEEP - Battery Evaluation and Early Prediction">
+      
+  <img src="../../static/tri_cropped.png" alt="logo">
+
+    </a>
+    <label class="md-header-nav__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header-nav__title" data-md-component="header-title">
+      
+        <div class="md-header-nav__ellipsis">
+          <span class="md-header-nav__topic md-ellipsis">
+            BEEP - Battery Evaluation and Early Prediction
+          </span>
+          <span class="md-header-nav__topic md-ellipsis">
+            
+              2: Structuring
+            
+          </span>
+        </div>
+      
+    </div>
+    
+      <label class="md-header-nav__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" data-md-state="active">
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <button type="reset" class="md-search__icon md-icon" aria-label="Clear" data-md-component="search-reset" tabindex="-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header-nav__source">
+        
+<a href="https://github.com/tri-amdd/beep/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="BEEP - Battery Evaluation and Early Prediction" class="md-nav__button md-logo" aria-label="BEEP - Battery Evaluation and Early Prediction">
+      
+  <img src="../../static/tri_cropped.png" alt="logo">
+
+    </a>
+    BEEP - Battery Evaluation and Early Prediction
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/tri-amdd/beep/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../.." class="md-nav__link">
+      Introduction
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../../data/" class="md-nav__link">
+      Cycler data requirements
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3">
+    
+    <label class="md-nav__link" for="nav-3">
+      Command Line Interface
+      <span class="md-nav__icon md-icon"></span>
+    </label>
+    <nav class="md-nav" aria-label="Command Line Interface" data-md-level="1">
+      <label class="md-nav__title" for="nav-3">
+        <span class="md-nav__icon md-icon"></span>
+        Command Line Interface
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Command%20Line%20Interface/1%20-%20overview/" class="md-nav__link">
+      Overview
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Command%20Line%20Interface/2%20-%20structuring/" class="md-nav__link">
+      Structure
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Command%20Line%20Interface/3%20-%20featurize/" class="md-nav__link">
+      Featurize
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Command%20Line%20Interface/4%20-%20train/" class="md-nav__link">
+      Train
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Command%20Line%20Interface/5%20-%20predict/" class="md-nav__link">
+      Predict
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Command%20Line%20Interface/6%20-%20protocol/" class="md-nav__link">
+      Protocol
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../Command%20Line%20Interface/7%20-%20inspect/" class="md-nav__link">
+      Inspect
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+      
+      
+      
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    
+      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4" checked>
+    
+    <label class="md-nav__link" for="nav-4">
+      Python tutorials
+      <span class="md-nav__icon md-icon"></span>
+    </label>
+    <nav class="md-nav" aria-label="Python tutorials" data-md-level="1">
+      <label class="md-nav__title" for="nav-4">
+        <span class="md-nav__icon md-icon"></span>
+        Python tutorials
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../1%20-%20quickstart/" class="md-nav__link">
+      1: Quickstart
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        2: Structuring
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+    
+    <a href="./" class="md-nav__link md-nav__link--active">
+      2: Structuring
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#structuring-with-beepdatapath" class="md-nav__link">
+    Structuring with BEEPDatapath
+  </a>
+  
+    <nav class="md-nav" aria-label="Structuring with BEEPDatapath">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#one-class-for-ingestion-structuring-and-validation" class="md-nav__link">
+    One class for ingestion, structuring, and validation
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#methods-for-loading-and-serializing-battery-cycler-data" class="md-nav__link">
+    Methods for loading and serializing battery cycler data
+  </a>
+  
+    <nav class="md-nav" aria-label="Methods for loading and serializing battery cycler data">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#datapathfrom_filefilename" class="md-nav__link">
+    *Datapath.from_file(filename)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathto_json_filefilename" class="md-nav__link">
+    *Datapath.to_json_file(filename)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathfrom_json_filefilename" class="md-nav__link">
+    *Datapath.from_json_file(filename)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathdata-metadata-pathsnone-kwargs" class="md-nav__link">
+    *Datapath(data, metadata, paths=None, **kwargs)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#validation-and-structuring-with-beepdatapaths" class="md-nav__link">
+    Validation and structuring with BEEPDatapaths
+  </a>
+  
+    <nav class="md-nav" aria-label="Validation and structuring with BEEPDatapaths">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#datapathvalidate" class="md-nav__link">
+    *Datapath.validate()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathstructureargs" class="md-nav__link">
+    *Datapath.structure(*args)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathautostructure" class="md-nav__link">
+    *Datapath.autostructure()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#analysis-and-core-attributes-of-beepdatapath" class="md-nav__link">
+    Analysis and core attributes of BEEPDatapath
+  </a>
+  
+    <nav class="md-nav" aria-label="Analysis and core attributes of BEEPDatapath">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#datapathpaths" class="md-nav__link">
+    *Datapath.paths
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathstructuring_parameters" class="md-nav__link">
+    *Datapath.structuring_parameters
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathraw_data" class="md-nav__link">
+    *Datapath.raw_data
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathmetadata" class="md-nav__link">
+    *Datapath.metadata
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathstructured_data" class="md-nav__link">
+    *Datapath.structured_data
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathstructured_summary" class="md-nav__link">
+    *Datapath.structured_summary
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathdiagnostic_data" class="md-nav__link">
+    *Datapath.diagnostic_data
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathdiagnostic_summary" class="md-nav__link">
+    *Datapath.diagnostic_summary
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathget_cycle_lifen_cycles-threshold" class="md-nav__link">
+    *Datapath.get_cycle_life(n_cycles, threshold)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathcycles_to_capacitiescycle_min-cycle_max-cycle_interval" class="md-nav__link">
+    *Datapath.cycles_to_capacities(cycle_min, cycle_max, cycle_interval)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathcapacities_to_cyclesthresh_max_cap-thresh_min_cap-interval_cap" class="md-nav__link">
+    *Datapath.capacities_to_cycles(thresh_max_cap, thresh_min_cap, interval_cap)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathis_structured" class="md-nav__link">
+    *Datapath.is_structured
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#making-your-own-beepdatapath" class="md-nav__link">
+    Making your own BEEPDatapath
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#electrochemical-impedance-spectra" class="md-nav__link">
+    Electrochemical Impedance Spectra
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#structuring-compatibility-with-processed-legacy-beep-files" class="md-nav__link">
+    Structuring compatibility with processed legacy BEEP files
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#top-level-functions-for-structuring" class="md-nav__link">
+    Top-level functions for structuring
+  </a>
+  
+    <nav class="md-nav" aria-label="Top-level functions for structuring">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#auto_load" class="md-nav__link">
+    auto_load
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#auto_load_processed" class="md-nav__link">
+    auto_load_processed
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../3%20-%20featurization/" class="md-nav__link">
+      3: Featurization
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../4%20-%20models/" class="md-nav__link">
+      4: Machine Learning
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../advanced_structuring/" class="md-nav__link">
+      Advanced Structuring: Unsupported cyclers
+    </a>
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#structuring-with-beepdatapath" class="md-nav__link">
+    Structuring with BEEPDatapath
+  </a>
+  
+    <nav class="md-nav" aria-label="Structuring with BEEPDatapath">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#one-class-for-ingestion-structuring-and-validation" class="md-nav__link">
+    One class for ingestion, structuring, and validation
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#methods-for-loading-and-serializing-battery-cycler-data" class="md-nav__link">
+    Methods for loading and serializing battery cycler data
+  </a>
+  
+    <nav class="md-nav" aria-label="Methods for loading and serializing battery cycler data">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#datapathfrom_filefilename" class="md-nav__link">
+    *Datapath.from_file(filename)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathto_json_filefilename" class="md-nav__link">
+    *Datapath.to_json_file(filename)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathfrom_json_filefilename" class="md-nav__link">
+    *Datapath.from_json_file(filename)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathdata-metadata-pathsnone-kwargs" class="md-nav__link">
+    *Datapath(data, metadata, paths=None, **kwargs)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#validation-and-structuring-with-beepdatapaths" class="md-nav__link">
+    Validation and structuring with BEEPDatapaths
+  </a>
+  
+    <nav class="md-nav" aria-label="Validation and structuring with BEEPDatapaths">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#datapathvalidate" class="md-nav__link">
+    *Datapath.validate()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathstructureargs" class="md-nav__link">
+    *Datapath.structure(*args)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathautostructure" class="md-nav__link">
+    *Datapath.autostructure()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#analysis-and-core-attributes-of-beepdatapath" class="md-nav__link">
+    Analysis and core attributes of BEEPDatapath
+  </a>
+  
+    <nav class="md-nav" aria-label="Analysis and core attributes of BEEPDatapath">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#datapathpaths" class="md-nav__link">
+    *Datapath.paths
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathstructuring_parameters" class="md-nav__link">
+    *Datapath.structuring_parameters
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathraw_data" class="md-nav__link">
+    *Datapath.raw_data
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathmetadata" class="md-nav__link">
+    *Datapath.metadata
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathstructured_data" class="md-nav__link">
+    *Datapath.structured_data
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathstructured_summary" class="md-nav__link">
+    *Datapath.structured_summary
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathdiagnostic_data" class="md-nav__link">
+    *Datapath.diagnostic_data
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathdiagnostic_summary" class="md-nav__link">
+    *Datapath.diagnostic_summary
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathget_cycle_lifen_cycles-threshold" class="md-nav__link">
+    *Datapath.get_cycle_life(n_cycles, threshold)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathcycles_to_capacitiescycle_min-cycle_max-cycle_interval" class="md-nav__link">
+    *Datapath.cycles_to_capacities(cycle_min, cycle_max, cycle_interval)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathcapacities_to_cyclesthresh_max_cap-thresh_min_cap-interval_cap" class="md-nav__link">
+    *Datapath.capacities_to_cycles(thresh_max_cap, thresh_min_cap, interval_cap)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datapathis_structured" class="md-nav__link">
+    *Datapath.is_structured
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#making-your-own-beepdatapath" class="md-nav__link">
+    Making your own BEEPDatapath
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#electrochemical-impedance-spectra" class="md-nav__link">
+    Electrochemical Impedance Spectra
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#structuring-compatibility-with-processed-legacy-beep-files" class="md-nav__link">
+    Structuring compatibility with processed legacy BEEP files
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#top-level-functions-for-structuring" class="md-nav__link">
+    Top-level functions for structuring
+  </a>
+  
+    <nav class="md-nav" aria-label="Top-level functions for structuring">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#auto_load" class="md-nav__link">
+    auto_load
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#auto_load_processed" class="md-nav__link">
+    auto_load_processed
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/tri-amdd/beep/edit/master/docs/Python tutorials/2 - structuring.md" title="Edit this page" class="md-content__button md-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+                  </a>
+                
+                
+                <h1 id="2-structuring">2: Structuring<a class="headerlink" href="#2-structuring" title="Permanent link">&para;</a></h1>
+<p>Here you'll find more info about creating and using beep to do your own custom cycler analyses.</p>
+<ul>
+<li><a href="#structuring-with-beepdatapath"><code>BEEPDatapath</code> - One object for ingestion, structuring, and validation</a></li>
+<li><a href="#batch-functions-for-structuring">Batch functions for structuring</a></li>
+<li><a href="#featurization">Featurization</a></li>
+<li><a href="#running-and-analyzing-models">Running and analyzing models</a></li>
+</ul>
+<h2 id="structuring-with-beepdatapath">Structuring with <code>BEEPDatapath</code><a class="headerlink" href="#structuring-with-beepdatapath" title="Permanent link">&para;</a></h2>
+<h3 id="one-class-for-ingestion-structuring-and-validation">One class for ingestion, structuring, and validation<a class="headerlink" href="#one-class-for-ingestion-structuring-and-validation" title="Permanent link">&para;</a></h3>
+<p><img alt="beepdatapath_infographic" src="../../static/beepdatapath_infographic.png" /></p>
+<p><code>BEEPDatapath</code> is an abstract base class that can handle ingestion, structuring, and validation for many types of cyclers. A datapath
+object represents a complete processing pipeline for battery cycler data.</p>
+<p>Each cycler has it's own <code>BEEPDatapath</code> class:</p>
+<ul>
+<li><code>ArbinDatapath</code></li>
+<li><code>MaccorDatapath</code></li>
+<li><code>NewareDatapath</code></li>
+<li><code>IndigoDatapath</code></li>
+<li><code>BiologicDatapath</code></li>
+</ul>
+<p><strong>All these datapaths implement the same core methods, properties, and attributes, listed below:</strong></p>
+<h3 id="methods-for-loading-and-serializing-battery-cycler-data">Methods for loading and serializing battery cycler data<a class="headerlink" href="#methods-for-loading-and-serializing-battery-cycler-data" title="Permanent link">&para;</a></h3>
+<h4 id="datapathfrom_filefilename"><code>*Datapath.from_file(filename)</code><a class="headerlink" href="#datapathfrom_filefilename" title="Permanent link">&para;</a></h4>
+<p>Classmethod to load a raw cycler output file (e.g., a csv) into a datapath object. Once loaded, you can validate or structure the file.</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Here we use ArbinDatapath as an example</span>
+<span class="kn">from</span> <span class="nn">beep.structure</span> <span class="kn">import</span> <span class="n">ArbinDatapath</span>
+
+<span class="n">datapath</span> <span class="o">=</span> <span class="n">ArbinDatapath</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;my_arbin_file.csv&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h4 id="datapathto_json_filefilename"><code>*Datapath.to_json_file(filename)</code><a class="headerlink" href="#datapathto_json_filefilename" title="Permanent link">&para;</a></h4>
+<p>Dump the current state of a datapath to a file. Can be later loaded with <code>from_json_file</code>.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">beep.structure</span> <span class="kn">import</span> <span class="n">NewareDatapath</span>
+
+<span class="n">datapath</span> <span class="o">=</span> <span class="n">NewareDatapath</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;/path/to/my_raw_neware_file&quot;</span><span class="p">)</span>
+
+<span class="c1"># do some operations</span>
+<span class="o">...</span>
+
+<span class="c1"># Write the processed file to disk, which can then be loaded.</span>
+<span class="n">datapath</span><span class="o">.</span><span class="n">to_json_file</span><span class="p">(</span><span class="s2">&quot;my_processed_neware_data.json&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h4 id="datapathfrom_json_filefilename"><code>*Datapath.from_json_file(filename)</code><a class="headerlink" href="#datapathfrom_json_filefilename" title="Permanent link">&para;</a></h4>
+<p>Classmethod to load a processed cycler file (e.g., a previously structured Datapath) into a datapath object.  </p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">beep.structure</span> <span class="kn">import</span> <span class="n">MaccorDatapath</span>
+
+<span class="n">datapath</span> <span class="o">=</span> <span class="n">MaccorDatapath</span><span class="o">.</span><span class="n">from_json_file</span><span class="p">(</span><span class="s2">&quot;my_previously_serialized_datapath.json&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h4 id="datapathdata-metadata-pathsnone-kwargs"><code>*Datapath(data, metadata, paths=None, **kwargs)</code><a class="headerlink" href="#datapathdata-metadata-pathsnone-kwargs" title="Permanent link">&para;</a></h4>
+<p>Initialize any cycler from the raw data (given as a pandas dataframe) and metadata (given as a dictionary). Paths can be included to keep track of where various cycler files are located. <strong>Note: This is not the recommended way to create a <code>BEEPDatapath</code>, as <code>data</code> and <code>metadata</code> must have specific formats to load and structure correctly.</strong></p>
+<h3 id="validation-and-structuring-with-beepdatapaths">Validation and structuring with <code>BEEPDatapath</code>s<a class="headerlink" href="#validation-and-structuring-with-beepdatapaths" title="Permanent link">&para;</a></h3>
+<h4 id="datapathvalidate"><code>*Datapath.validate()</code><a class="headerlink" href="#datapathvalidate" title="Permanent link">&para;</a></h4>
+<p>Validate your raw data. Will return true if the raw data is valid for your cycler (i.e., can be structured successfully).</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">beep.structure</span> <span class="kn">import</span> <span class="n">IndigoDatapath</span>
+
+
+<span class="n">datapath</span> <span class="o">=</span> <span class="n">IndigoDatapath</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;/path/to/my_indigo_file&quot;</span><span class="p">)</span>
+
+<span class="n">is_valid</span> <span class="o">=</span> <span class="n">datapath</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">is_valid</span><span class="p">)</span>
+
+<span class="c1"># Out:</span>
+<span class="c1"># True or False</span>
+</code></pre></div>
+
+<h4 id="datapathstructureargs"><code>*Datapath.structure(*args)</code><a class="headerlink" href="#datapathstructureargs" title="Permanent link">&para;</a></h4>
+<p>Interpolate and structure your data using specified arguments. Once structured, your <code>BEEPDatapath</code> is able to access things like the diagnostic summary, interpolated cycles, cycle summary, diagnostic summary, cycle life, and more (see <a href="#analysis-and-core-attributes-of-beepdatapath">Analysis and attributes of core attributes of <code>BEEPDatapath</code></a>)</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">beep.structure</span> <span class="kn">import</span> <span class="n">ArbinDatapath</span>
+
+<span class="n">datapath</span> <span class="o">=</span> <span class="n">ArbinDatapath</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;my_arbin_file.csv&quot;</span><span class="p">)</span>
+
+<span class="c1"># Structure your data by manually specifying parameters.</span>
+<span class="n">datapath</span><span class="o">.</span><span class="n">structure</span><span class="p">(</span><span class="n">v_range</span><span class="o">=</span><span class="p">[</span><span class="mf">1.2</span><span class="p">,</span> <span class="mf">3.5</span><span class="p">],</span> <span class="n">nominal_capacity</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span> <span class="n">full_fast_charge</span><span class="o">=</span><span class="mf">0.85</span><span class="p">)</span>
+</code></pre></div>
+
+<h4 id="datapathautostructure"><code>*Datapath.autostructure()</code><a class="headerlink" href="#datapathautostructure" title="Permanent link">&para;</a></h4>
+<p>Run structuring using automatically determined parameters. BEEP can automatically detect the structuring parameters based on your raw data.</p>
+<p><strong>Note: The BEEP environment variable <code>BEEP_PROCESSING_DIR</code> must be set before autostructuring, and this directory must contain a parameters file which can be used for <code>determine_structuring_parameters</code>.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">beep.structure</span> <span class="kn">import</span> <span class="n">BiologicDatapath</span>
+
+
+<span class="n">datapath</span> <span class="o">=</span> <span class="n">BiologicDatapath</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;path/to/my/biologic_data_file&quot;</span><span class="p">)</span>
+
+<span class="c1"># Automatically determines structuring parameters and structures data</span>
+<span class="n">datapath</span><span class="o">.</span><span class="n">autostructure</span><span class="p">()</span>
+</code></pre></div>
+
+<h3 id="analysis-and-core-attributes-of-beepdatapath">Analysis and core attributes of <code>BEEPDatapath</code><a class="headerlink" href="#analysis-and-core-attributes-of-beepdatapath" title="Permanent link">&para;</a></h3>
+<h4 id="datapathpaths"><code>*Datapath.paths</code><a class="headerlink" href="#datapathpaths" title="Permanent link">&para;</a></h4>
+<p>Access all paths of files related to this datapath. <code>paths</code> is a simple mapping of <code>{file_description: file_path}</code> which holds the paths of <strong>all</strong> files related to this datapath, including raw data, metadata, EIS files, and structured outputs.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">beep.structure</span> <span class="kn">import</span> <span class="n">ArbinDatapath</span>
+
+<span class="n">datapath</span> <span class="o">=</span> <span class="n">ArbinDatapath</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;/path/to/my_arbin_file.csv&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">datapath</span><span class="o">.</span><span class="n">paths</span><span class="p">)</span>
+
+<span class="c1"># Out:</span>
+<span class="p">{</span><span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="s2">&quot;/path/to/my_arbin_file.csv&quot;</span><span class="p">,</span> <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="s2">&quot;/path/to/my_arbin_file_Metadata.csv&quot;</span><span class="p">}</span>
+</code></pre></div>
+
+<h4 id="datapathstructuring_parameters"><code>*Datapath.structuring_parameters</code><a class="headerlink" href="#datapathstructuring_parameters" title="Permanent link">&para;</a></h4>
+<p>Parameters used to structure <code>BEEPDatapaths</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">beep.structure</span> <span class="kn">import</span> <span class="n">ArbinDatapath</span>
+
+<span class="n">datapath</span> <span class="o">=</span> <span class="n">ArbinDatapath</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;/path/to/my_arbin_file.csv&quot;</span><span class="p">)</span>
+<span class="n">datapath</span><span class="o">.</span><span class="n">autostructure</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">datapath</span><span class="o">.</span><span class="n">structuring_parameters</span><span class="p">)</span>
+
+<span class="c1"># Out:</span>
+<span class="p">{</span><span class="s1">&#39;v_range&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+ <span class="s1">&#39;resolution&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
+ <span class="s1">&#39;diagnostic_resolution&#39;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span>
+ <span class="s1">&#39;nominal_capacity&#39;</span><span class="p">:</span> <span class="mf">1.1</span><span class="p">,</span>
+ <span class="s1">&#39;full_fast_charge&#39;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span>
+ <span class="s1">&#39;diagnostic_available&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+ <span class="s1">&#39;charge_axis&#39;</span><span class="p">:</span> <span class="s1">&#39;charge_capacity&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;discharge_axis&#39;</span><span class="p">:</span> <span class="s1">&#39;voltage&#39;</span><span class="p">}</span>
+</code></pre></div>
+
+<h4 id="datapathraw_data"><code>*Datapath.raw_data</code><a class="headerlink" href="#datapathraw_data" title="Permanent link">&para;</a></h4>
+<p>The raw data, loaded into a standardized dataframe format, of this datapath's battery cycler data.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">beep.structure</span> <span class="kn">import</span> <span class="n">ArbinDatapath</span>
+
+<span class="n">datapath</span> <span class="o">=</span> <span class="n">ArbinDatapath</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;/path/to/my_arbin_file.csv&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">datapath</span><span class="o">.</span><span class="n">raw_data</span><span class="p">)</span>
+
+
+<span class="c1"># Out:</span>
+        <span class="n">data_point</span>   <span class="n">test_time</span>  <span class="o">...</span>  <span class="n">temperature</span>              <span class="n">date_time_iso</span>
+<span class="mi">0</span>                <span class="mi">0</span>      <span class="mf">0.0021</span>  <span class="o">...</span>    <span class="mf">20.750711</span>  <span class="mi">2017</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">05</span><span class="n">T03</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">36</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>
+<span class="mi">1</span>                <span class="mi">1</span>      <span class="mf">1.0014</span>  <span class="o">...</span>    <span class="mf">20.750711</span>  <span class="mi">2017</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">05</span><span class="n">T03</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">36</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>
+<span class="mi">2</span>                <span class="mi">2</span>      <span class="mf">1.1165</span>  <span class="o">...</span>    <span class="mf">20.750711</span>  <span class="mi">2017</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">05</span><span class="n">T03</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">36</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>
+<span class="mi">3</span>                <span class="mi">3</span>      <span class="mf">2.1174</span>  <span class="o">...</span>    <span class="mf">20.750711</span>  <span class="mi">2017</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">05</span><span class="n">T03</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">36</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>
+<span class="mi">4</span>                <span class="mi">4</span>     <span class="mf">12.1782</span>  <span class="o">...</span>    <span class="mf">20.750711</span>  <span class="mi">2017</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">05</span><span class="n">T03</span><span class="p">:</span><span class="mi">37</span><span class="p">:</span><span class="mi">36</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>
+<span class="o">...</span>            <span class="o">...</span>         <span class="o">...</span>  <span class="o">...</span>          <span class="o">...</span>                        <span class="o">...</span>
+<span class="mi">251258</span>      <span class="mi">251258</span>  <span class="mf">30545.2000</span>  <span class="o">...</span>    <span class="mf">32.595604</span>  <span class="mi">2017</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">14</span><span class="n">T00</span><span class="p">:</span><span class="mi">10</span><span class="p">:</span><span class="mi">40</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>
+<span class="mi">251259</span>      <span class="mi">251259</span>  <span class="mf">30545.2000</span>  <span class="o">...</span>    <span class="mf">32.555054</span>  <span class="mi">2017</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">14</span><span class="n">T00</span><span class="p">:</span><span class="mi">10</span><span class="p">:</span><span class="mi">40</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>
+<span class="mi">251260</span>      <span class="mi">251260</span>  <span class="mf">30550.1970</span>  <span class="o">...</span>    <span class="mf">32.555054</span>  <span class="mi">2017</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">14</span><span class="n">T00</span><span class="p">:</span><span class="mi">12</span><span class="p">:</span><span class="mi">48</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>
+<span class="mi">251261</span>      <span class="mi">251261</span>  <span class="mf">30550.1970</span>  <span class="o">...</span>    <span class="mf">32.545870</span>  <span class="mi">2017</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">14</span><span class="n">T00</span><span class="p">:</span><span class="mi">12</span><span class="p">:</span><span class="mi">48</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>
+<span class="mi">251262</span>      <span class="mi">251262</span>  <span class="mf">30555.1970</span>  <span class="o">...</span>    <span class="mf">32.445827</span>  <span class="mi">2017</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">14</span><span class="n">T00</span><span class="p">:</span><span class="mi">12</span><span class="p">:</span><span class="mi">48</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>
+</code></pre></div>
+
+<h4 id="datapathmetadata"><code>*Datapath.metadata</code><a class="headerlink" href="#datapathmetadata" title="Permanent link">&para;</a></h4>
+<p>An object holding all metadata for this datapath's cycler run.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">beep.structure</span> <span class="kn">import</span> <span class="n">ArbinDatapath</span>
+
+<span class="n">datapath</span> <span class="o">=</span> <span class="n">ArbinDatapath</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;/path/to/my_arbin_file.csv&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">datapath</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">barcode</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">datapath</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">channel_id</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">datapath</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">protocol</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">datapath</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">raw</span><span class="p">)</span>
+
+
+<span class="c1"># Out:</span>
+<span class="s2">&quot;EL151000429559&quot;</span>
+<span class="mi">28</span>
+<span class="s1">&#39;2017-12-04_tests</span><span class="se">\\</span><span class="s1">20170630-4_65C_69per_6C.sdu&#39;</span>
+<span class="p">{</span><span class="s1">&#39;test_id&#39;</span><span class="p">:</span> <span class="mi">296</span><span class="p">,</span> <span class="s1">&#39;device_id&#39;</span><span class="p">:</span> <span class="mi">60369369</span><span class="p">,</span> <span class="s1">&#39;channel_id&#39;</span><span class="p">:</span> <span class="mi">28</span><span class="p">,</span> <span class="s1">&#39;start_datetime&#39;</span><span class="p">:</span> <span class="mi">1512445026</span><span class="p">,</span> <span class="s1">&#39;_resumed_times&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;last_resume_datetime&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;_last_end_datetime&#39;</span><span class="p">:</span> <span class="mi">1512514129</span><span class="p">,</span> <span class="s1">&#39;protocol&#39;</span><span class="p">:</span> <span class="s1">&#39;2017-12-04_tests</span><span class="se">\\</span><span class="s1">20170630-4_65C_69per_6C.sdu&#39;</span><span class="p">,</span> <span class="s1">&#39;_databases&#39;</span><span class="p">:</span> <span class="s1">&#39;ArbinResult_43,ArbinResult_44,ArbinResult_45,&#39;</span><span class="p">,</span> <span class="s1">&#39;barcode&#39;</span><span class="p">:</span> <span class="s1">&#39;EL151000429559&#39;</span><span class="p">,</span> <span class="s1">&#39;_grade_id&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;_has_aux&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;_has_special&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;_schedule_version&#39;</span><span class="p">:</span> <span class="s1">&#39;Schedule Version 7.00.08&#39;</span><span class="p">,</span> <span class="s1">&#39;_log_aux_data_flag&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;_log_special_data_flag&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;_rowstate&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;_canconfig_filename&#39;</span><span class="p">:</span> <span class="n">nan</span><span class="p">,</span> <span class="s1">&#39;_m_ncanconfigmd5&#39;</span><span class="p">:</span> <span class="n">nan</span><span class="p">,</span> <span class="s1">&#39;_value&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s1">&#39;_value2&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">}</span>
+</code></pre></div>
+
+<h4 id="datapathstructured_data"><code>*Datapath.structured_data</code><a class="headerlink" href="#datapathstructured_data" title="Permanent link">&para;</a></h4>
+<p>The structured (interpolated) data, as a dataframe. The format is similar to that of <code>.raw_data</code>. The datapath must be structured before this attribute is available.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">beep.structure</span> <span class="kn">import</span> <span class="n">ArbinDatapath</span>
+
+<span class="n">datapath</span> <span class="o">=</span> <span class="n">ArbinDatapath</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;/path/to/my_arbin_file.csv&quot;</span><span class="p">)</span>
+<span class="n">datapath</span><span class="o">.</span><span class="n">autostructure</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">datapath</span><span class="o">.</span><span class="n">structured_data</span><span class="p">)</span>
+
+
+<span class="c1"># Out:</span>
+         <span class="n">voltage</span>  <span class="n">test_time</span>  <span class="n">current</span>  <span class="o">...</span>  <span class="n">temperature</span>  <span class="n">cycle_index</span>  <span class="n">step_type</span>
+<span class="mi">0</span>       <span class="mf">2.500000</span>        <span class="n">NaN</span>      <span class="n">NaN</span>  <span class="o">...</span>          <span class="n">NaN</span>            <span class="mi">0</span>  <span class="n">discharge</span>
+<span class="mi">1</span>       <span class="mf">2.501702</span>        <span class="n">NaN</span>      <span class="n">NaN</span>  <span class="o">...</span>          <span class="n">NaN</span>            <span class="mi">0</span>  <span class="n">discharge</span>
+<span class="mi">2</span>       <span class="mf">2.503403</span>        <span class="n">NaN</span>      <span class="n">NaN</span>  <span class="o">...</span>          <span class="n">NaN</span>            <span class="mi">0</span>  <span class="n">discharge</span>
+<span class="mi">3</span>       <span class="mf">2.505105</span>        <span class="n">NaN</span>      <span class="n">NaN</span>  <span class="o">...</span>          <span class="n">NaN</span>            <span class="mi">0</span>  <span class="n">discharge</span>
+<span class="mi">4</span>       <span class="mf">2.506807</span>        <span class="n">NaN</span>      <span class="n">NaN</span>  <span class="o">...</span>          <span class="n">NaN</span>            <span class="mi">0</span>  <span class="n">discharge</span>
+          <span class="o">...</span>        <span class="o">...</span>      <span class="o">...</span>  <span class="o">...</span>          <span class="o">...</span>          <span class="o">...</span>        <span class="o">...</span>
+<span class="mi">461995</span>       <span class="n">NaN</span>        <span class="n">NaN</span>      <span class="n">NaN</span>  <span class="o">...</span>          <span class="n">NaN</span>          <span class="mi">245</span>     <span class="n">charge</span>
+<span class="mi">461996</span>       <span class="n">NaN</span>        <span class="n">NaN</span>      <span class="n">NaN</span>  <span class="o">...</span>          <span class="n">NaN</span>          <span class="mi">245</span>     <span class="n">charge</span>
+<span class="mi">461997</span>       <span class="n">NaN</span>        <span class="n">NaN</span>      <span class="n">NaN</span>  <span class="o">...</span>          <span class="n">NaN</span>          <span class="mi">245</span>     <span class="n">charge</span>
+<span class="mi">461998</span>       <span class="n">NaN</span>        <span class="n">NaN</span>      <span class="n">NaN</span>  <span class="o">...</span>          <span class="n">NaN</span>          <span class="mi">245</span>     <span class="n">charge</span>
+<span class="mi">461999</span>       <span class="n">NaN</span>        <span class="n">NaN</span>      <span class="n">NaN</span>  <span class="o">...</span>          <span class="n">NaN</span>          <span class="mi">245</span>     <span class="n">charge</span>
+</code></pre></div>
+
+<h4 id="datapathstructured_summary"><code>*Datapath.structured_summary</code><a class="headerlink" href="#datapathstructured_summary" title="Permanent link">&para;</a></h4>
+<p>A summary of the structured cycler data, as a dataframe. The datapath must be structured before this attribute is available.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">beep.structure</span> <span class="kn">import</span> <span class="n">MaccorDatapath</span>
+
+<span class="n">datapath</span> <span class="o">=</span> <span class="n">MaccorDatapath</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;/path/to/my_maccor_file.071&quot;</span><span class="p">)</span>
+<span class="n">datapath</span><span class="o">.</span><span class="n">autostructure</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">datapath</span><span class="o">.</span><span class="n">structured_summary</span><span class="p">)</span>
+
+
+<span class="c1"># Out:</span>
+             <span class="n">cycle_index</span>  <span class="n">discharge_capacity</span>  <span class="n">charge_capacity</span>  <span class="n">discharge_energy</span>  <span class="n">charge_energy</span>  <span class="n">dc_internal_resistance</span>  <span class="n">temperature_maximum</span>  <span class="n">temperature_average</span>  <span class="n">temperature_minimum</span>              <span class="n">date_time_iso</span>  <span class="n">energy_efficiency</span>  <span class="n">charge_throughput</span>  <span class="n">energy_throughput</span>  <span class="n">charge_duration</span>  <span class="n">time_temperature_integrated</span>  <span class="n">paused</span>
+<span class="n">cycle_index</span>                                                                                                                                                                                                                                                                                                                    
+<span class="mi">0</span>                      <span class="mi">0</span>            <span class="mf">4.719281</span>         <span class="mf">3.827053</span>         <span class="mf">17.273731</span>      <span class="mf">14.901985</span>                     <span class="mf">0.0</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">17</span><span class="n">T17</span><span class="p">:</span><span class="mi">51</span><span class="p">:</span><span class="mi">51</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>           <span class="mf">1.159156</span>           <span class="mf">3.827053</span>          <span class="mf">14.901985</span>              <span class="n">NaN</span>                          <span class="n">NaN</span>    <span class="mi">4957</span>
+<span class="mi">6</span>                      <span class="mi">6</span>            <span class="mf">2.074518</span>         <span class="mf">4.406801</span>          <span class="mf">7.677041</span>      <span class="mf">16.997186</span>                     <span class="mf">0.0</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">20</span><span class="n">T13</span><span class="p">:</span><span class="mi">14</span><span class="p">:</span><span class="mi">40</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>           <span class="mf">0.451665</span>           <span class="mf">8.233854</span>          <span class="mf">31.899172</span>           <span class="mf">5791.0</span>                          <span class="n">NaN</span>       <span class="mi">0</span>
+<span class="mi">7</span>                      <span class="mi">7</span>            <span class="mf">2.097911</span>         <span class="mf">2.108322</span>          <span class="mf">7.775166</span>       <span class="mf">8.597635</span>                     <span class="mf">0.0</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">20</span><span class="n">T15</span><span class="p">:</span><span class="mi">51</span><span class="p">:</span><span class="mi">34</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>           <span class="mf">0.904338</span>          <span class="mf">10.342176</span>          <span class="mf">40.496807</span>              <span class="n">NaN</span>                          <span class="n">NaN</span>       <span class="mi">0</span>
+<span class="mi">8</span>                      <span class="mi">8</span>            <span class="mf">2.074545</span>         <span class="mf">2.098428</span>          <span class="mf">7.684986</span>       <span class="mf">8.557546</span>                     <span class="mf">0.0</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">20</span><span class="n">T17</span><span class="p">:</span><span class="mi">32</span><span class="p">:</span><span class="mi">21</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>           <span class="mf">0.898036</span>          <span class="mf">12.440605</span>          <span class="mf">49.054352</span>              <span class="n">NaN</span>                          <span class="n">NaN</span>       <span class="mi">0</span>
+<span class="mi">9</span>                      <span class="mi">9</span>            <span class="mf">2.074061</span>         <span class="mf">2.082069</span>          <span class="mf">7.685348</span>       <span class="mf">8.494265</span>                     <span class="mf">0.0</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">20</span><span class="n">T19</span><span class="p">:</span><span class="mi">12</span><span class="p">:</span><span class="mi">46</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>           <span class="mf">0.904769</span>          <span class="mf">14.522674</span>          <span class="mf">57.548618</span>              <span class="n">NaN</span>                          <span class="n">NaN</span>       <span class="mi">0</span>
+<span class="mi">10</span>                    <span class="mi">10</span>            <span class="mf">2.065671</span>         <span class="mf">2.069061</span>          <span class="mf">7.655246</span>       <span class="mf">8.441246</span>                     <span class="mf">0.0</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">20</span><span class="n">T20</span><span class="p">:</span><span class="mi">52</span><span class="p">:</span><span class="mi">53</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>           <span class="mf">0.906886</span>          <span class="mf">16.591734</span>          <span class="mf">65.989861</span>              <span class="n">NaN</span>                          <span class="n">NaN</span>       <span class="mi">0</span>
+<span class="mi">11</span>                    <span class="mi">11</span>            <span class="mf">2.064542</span>         <span class="mf">2.068921</span>          <span class="mf">7.651949</span>       <span class="mf">8.439011</span>                     <span class="mf">0.0</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">20</span><span class="n">T22</span><span class="p">:</span><span class="mi">32</span><span class="p">:</span><span class="mi">38</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>           <span class="mf">0.906735</span>          <span class="mf">18.660656</span>          <span class="mf">74.428871</span>              <span class="n">NaN</span>                          <span class="n">NaN</span>       <span class="mi">0</span>
+<span class="mi">12</span>                    <span class="mi">12</span>            <span class="mf">2.068333</span>         <span class="mf">2.061454</span>          <span class="mf">7.666199</span>       <span class="mf">8.409441</span>                     <span class="mf">0.0</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">21</span><span class="n">T00</span><span class="p">:</span><span class="mi">12</span><span class="p">:</span><span class="mi">35</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>           <span class="mf">0.911618</span>          <span class="mf">20.722109</span>          <span class="mf">82.838318</span>              <span class="n">NaN</span>                          <span class="n">NaN</span>       <span class="mi">0</span>
+<span class="mi">13</span>                    <span class="mi">13</span>            <span class="mf">2.054566</span>         <span class="mf">2.067370</span>          <span class="mf">7.616584</span>       <span class="mf">8.431127</span>                     <span class="mf">0.0</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">21</span><span class="n">T01</span><span class="p">:</span><span class="mi">52</span><span class="p">:</span><span class="mi">14</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>           <span class="mf">0.903389</span>          <span class="mf">22.789478</span>          <span class="mf">91.269440</span>              <span class="n">NaN</span>                          <span class="n">NaN</span>       <span class="mi">0</span>
+<span class="mi">14</span>                    <span class="mi">14</span>            <span class="mf">2.061369</span>         <span class="mf">2.057715</span>          <span class="mf">7.647454</span>       <span class="mf">8.394535</span>                     <span class="mf">0.0</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">21</span><span class="n">T03</span><span class="p">:</span><span class="mi">31</span><span class="p">:</span><span class="mi">54</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>           <span class="mf">0.911004</span>          <span class="mf">24.847195</span>          <span class="mf">99.663979</span>              <span class="n">NaN</span>                          <span class="n">NaN</span>       <span class="mi">0</span>
+<span class="mi">15</span>                    <span class="mi">15</span>            <span class="mf">2.050721</span>         <span class="mf">2.059819</span>          <span class="mf">7.602874</span>       <span class="mf">8.401562</span>                     <span class="mf">0.0</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">21</span><span class="n">T05</span><span class="p">:</span><span class="mi">11</span><span class="p">:</span><span class="mi">24</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>           <span class="mf">0.904936</span>          <span class="mf">26.907013</span>         <span class="mf">108.065536</span>              <span class="n">NaN</span>                          <span class="n">NaN</span>       <span class="mi">0</span>
+<span class="mi">16</span>                    <span class="mi">16</span>            <span class="mf">2.055427</span>         <span class="mf">2.057405</span>          <span class="mf">7.622452</span>       <span class="mf">8.393292</span>                     <span class="mf">0.0</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">21</span><span class="n">T06</span><span class="p">:</span><span class="mi">50</span><span class="p">:</span><span class="mi">57</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>           <span class="mf">0.908160</span>          <span class="mf">28.964418</span>         <span class="mf">116.458832</span>              <span class="n">NaN</span>                          <span class="n">NaN</span>       <span class="mi">0</span>
+<span class="mi">17</span>                    <span class="mi">17</span>            <span class="mf">2.045344</span>         <span class="mf">2.049606</span>          <span class="mf">7.583858</span>       <span class="mf">8.360918</span>                     <span class="mf">0.0</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">21</span><span class="n">T08</span><span class="p">:</span><span class="mi">30</span><span class="p">:</span><span class="mi">36</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>           <span class="mf">0.907060</span>          <span class="mf">31.014025</span>         <span class="mf">124.819748</span>              <span class="n">NaN</span>                          <span class="n">NaN</span>       <span class="mi">0</span>
+<span class="mi">18</span>                    <span class="mi">18</span>            <span class="mf">2.047280</span>         <span class="mf">2.046608</span>          <span class="mf">7.591624</span>       <span class="mf">8.347446</span>                     <span class="mf">0.0</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">21</span><span class="n">T10</span><span class="p">:</span><span class="mi">09</span><span class="p">:</span><span class="mi">56</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>           <span class="mf">0.909455</span>          <span class="mf">33.060631</span>         <span class="mf">133.167191</span>              <span class="n">NaN</span>                          <span class="n">NaN</span>       <span class="mi">0</span>
+<span class="mi">19</span>                    <span class="mi">19</span>            <span class="mf">2.055454</span>         <span class="mf">2.046478</span>          <span class="mf">7.623849</span>       <span class="mf">8.347916</span>                     <span class="mf">0.0</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">21</span><span class="n">T11</span><span class="p">:</span><span class="mi">49</span><span class="p">:</span><span class="mi">18</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>           <span class="mf">0.913264</span>          <span class="mf">35.107109</span>         <span class="mf">141.515106</span>              <span class="n">NaN</span>                          <span class="n">NaN</span>       <span class="mi">0</span>
+<span class="mi">20</span>                    <span class="mi">20</span>            <span class="mf">2.043676</span>         <span class="mf">2.055780</span>          <span class="mf">7.579766</span>       <span class="mf">8.383341</span>                     <span class="mf">0.0</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">21</span><span class="n">T13</span><span class="p">:</span><span class="mi">28</span><span class="p">:</span><span class="mi">39</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>           <span class="mf">0.904146</span>          <span class="mf">37.162891</span>         <span class="mf">149.898453</span>              <span class="n">NaN</span>                          <span class="n">NaN</span>       <span class="mi">0</span>
+<span class="mi">21</span>                    <span class="mi">21</span>            <span class="mf">2.049323</span>         <span class="mf">2.046085</span>          <span class="mf">7.605977</span>       <span class="mf">8.346517</span>                     <span class="mf">0.0</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">21</span><span class="n">T15</span><span class="p">:</span><span class="mi">08</span><span class="p">:</span><span class="mi">10</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>           <span class="mf">0.911276</span>          <span class="mf">39.208977</span>         <span class="mf">158.244965</span>              <span class="n">NaN</span>                          <span class="n">NaN</span>       <span class="mi">0</span>
+<span class="mi">22</span>                    <span class="mi">22</span>            <span class="mf">2.038514</span>         <span class="mf">2.047097</span>          <span class="mf">7.560916</span>       <span class="mf">8.349430</span>                     <span class="mf">0.0</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">21</span><span class="n">T16</span><span class="p">:</span><span class="mi">47</span><span class="p">:</span><span class="mi">22</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>           <span class="mf">0.905561</span>          <span class="mf">41.256073</span>         <span class="mf">166.594406</span>              <span class="n">NaN</span>                          <span class="n">NaN</span>       <span class="mi">0</span>
+<span class="mi">23</span>                    <span class="mi">23</span>            <span class="mf">2.044779</span>         <span class="mf">2.045038</span>          <span class="mf">7.585164</span>       <span class="mf">8.342201</span>                     <span class="mf">0.0</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">21</span><span class="n">T18</span><span class="p">:</span><span class="mi">26</span><span class="p">:</span><span class="mi">38</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>           <span class="mf">0.909252</span>          <span class="mf">43.301109</span>         <span class="mf">174.936600</span>              <span class="n">NaN</span>                          <span class="n">NaN</span>       <span class="mi">0</span>
+<span class="mi">24</span>                    <span class="mi">24</span>            <span class="mf">2.039805</span>         <span class="mf">2.039563</span>          <span class="mf">7.567169</span>       <span class="mf">8.319416</span>                     <span class="mf">0.0</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">21</span><span class="n">T20</span><span class="p">:</span><span class="mi">06</span><span class="p">:</span><span class="mi">10</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>           <span class="mf">0.909579</span>          <span class="mf">45.340672</span>         <span class="mf">183.256012</span>              <span class="n">NaN</span>                          <span class="n">NaN</span>       <span class="mi">0</span>
+<span class="mi">25</span>                    <span class="mi">25</span>            <span class="mf">2.039563</span>         <span class="mf">2.040318</span>          <span class="mf">7.566332</span>       <span class="mf">8.320876</span>                     <span class="mf">0.0</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">21</span><span class="n">T21</span><span class="p">:</span><span class="mi">45</span><span class="p">:</span><span class="mi">20</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>           <span class="mf">0.909319</span>          <span class="mf">47.380993</span>         <span class="mf">191.576889</span>              <span class="n">NaN</span>                          <span class="n">NaN</span>       <span class="mi">0</span>
+<span class="mi">26</span>                    <span class="mi">26</span>            <span class="mf">2.052362</span>         <span class="mf">2.038989</span>          <span class="mf">7.616830</span>       <span class="mf">8.316606</span>                     <span class="mf">0.0</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">21</span><span class="n">T23</span><span class="p">:</span><span class="mi">24</span><span class="p">:</span><span class="mi">33</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>           <span class="mf">0.915858</span>          <span class="mf">49.419979</span>         <span class="mf">199.893494</span>              <span class="n">NaN</span>                          <span class="n">NaN</span>       <span class="mi">0</span>
+<span class="mi">27</span>                    <span class="mi">27</span>            <span class="mf">2.035744</span>         <span class="mf">2.051446</span>          <span class="mf">7.552814</span>       <span class="mf">8.364671</span>                     <span class="mf">0.0</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">22</span><span class="n">T01</span><span class="p">:</span><span class="mi">03</span><span class="p">:</span><span class="mi">48</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>           <span class="mf">0.902942</span>          <span class="mf">51.471428</span>         <span class="mf">208.258163</span>              <span class="n">NaN</span>                          <span class="n">NaN</span>       <span class="mi">0</span>
+<span class="mi">28</span>                    <span class="mi">28</span>            <span class="mf">2.039347</span>         <span class="mf">2.041048</span>          <span class="mf">7.568011</span>       <span class="mf">8.325755</span>                     <span class="mf">0.0</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>                  <span class="n">NaN</span>  <span class="mi">2019</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">22</span><span class="n">T02</span><span class="p">:</span><span class="mi">43</span><span class="p">:</span><span class="mi">14</span><span class="o">+</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span>           <span class="mf">0.908988</span>          <span class="mf">53.512474</span>         <span class="mf">216.583923</span>              <span class="n">NaN</span>                          <span class="n">NaN</span>       <span class="mi">0</span>
+</code></pre></div>
+
+<h4 id="datapathdiagnostic_data"><code>*Datapath.diagnostic_data</code><a class="headerlink" href="#datapathdiagnostic_data" title="Permanent link">&para;</a></h4>
+<p>The structured (interpolated) data for diagnostic cycles, as a dataframe. The format is similar to that of <code>.structured_data</code>. The datapath must be structured before this attribute is available.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">beep.structure</span> <span class="kn">import</span> <span class="n">MaccorDatapath</span>
+
+<span class="n">datapath</span> <span class="o">=</span> <span class="n">MaccorDatapath</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;/path/to/my_maccor_file_with_diagnostic.071&quot;</span><span class="p">)</span>
+<span class="n">datapath</span><span class="o">.</span><span class="n">autostructure</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">datapath</span><span class="o">.</span><span class="n">diagnostic_data</span><span class="p">)</span>
+
+
+<span class="c1"># Out:</span>
+        <span class="n">voltage</span>    <span class="n">test_time</span>   <span class="n">current</span>  <span class="o">...</span>  <span class="n">step_type</span>  <span class="n">discharge_dQdV</span>  <span class="n">charge_dQdV</span>
+<span class="mi">0</span>      <span class="mf">2.700000</span>          <span class="n">NaN</span>       <span class="n">NaN</span>  <span class="o">...</span>          <span class="mi">0</span>             <span class="n">NaN</span>          <span class="n">NaN</span>
+<span class="mi">1</span>      <span class="mf">2.703006</span>          <span class="n">NaN</span>       <span class="n">NaN</span>  <span class="o">...</span>          <span class="mi">0</span>             <span class="n">NaN</span>          <span class="n">NaN</span>
+<span class="mi">2</span>      <span class="mf">2.706012</span>          <span class="n">NaN</span>       <span class="n">NaN</span>  <span class="o">...</span>          <span class="mi">0</span>             <span class="n">NaN</span>          <span class="n">NaN</span>
+<span class="mi">3</span>      <span class="mf">2.709018</span>          <span class="n">NaN</span>       <span class="n">NaN</span>  <span class="o">...</span>          <span class="mi">0</span>             <span class="n">NaN</span>          <span class="n">NaN</span>
+<span class="mi">4</span>      <span class="mf">2.712024</span>          <span class="n">NaN</span>       <span class="n">NaN</span>  <span class="o">...</span>          <span class="mi">0</span>             <span class="n">NaN</span>          <span class="n">NaN</span>
+         <span class="o">...</span>          <span class="o">...</span>       <span class="o">...</span>  <span class="o">...</span>        <span class="o">...</span>             <span class="o">...</span>          <span class="o">...</span>
+<span class="mi">44434</span>  <span class="mf">2.782701</span>  <span class="mf">1958305.375</span>  <span class="mf">1.612107</span>  <span class="o">...</span>          <span class="mi">0</span>             <span class="mf">0.0</span>     <span class="mf">0.006379</span>
+<span class="mi">44435</span>  <span class="mf">2.783219</span>  <span class="mf">1958305.375</span>  <span class="mf">1.612090</span>  <span class="o">...</span>          <span class="mi">0</span>             <span class="mf">0.0</span>     <span class="mf">0.006379</span>
+<span class="mi">44436</span>  <span class="mf">2.783736</span>  <span class="mf">1958305.375</span>  <span class="mf">1.612073</span>  <span class="o">...</span>          <span class="mi">0</span>             <span class="mf">0.0</span>     <span class="mf">0.006379</span>
+<span class="mi">44437</span>  <span class="mf">2.784254</span>  <span class="mf">1958305.375</span>  <span class="mf">1.612056</span>  <span class="o">...</span>          <span class="mi">0</span>             <span class="mf">0.0</span>     <span class="mf">0.006379</span>
+<span class="mi">44438</span>  <span class="mf">2.784771</span>  <span class="mf">1958305.375</span>  <span class="mf">1.612039</span>  <span class="o">...</span>          <span class="mi">0</span>             <span class="mf">0.0</span>     <span class="mf">0.006379</span>
+<span class="p">[</span><span class="mi">44439</span> <span class="n">rows</span> <span class="n">x</span> <span class="mi">16</span> <span class="n">columns</span><span class="p">]</span>
+</code></pre></div>
+
+<h4 id="datapathdiagnostic_summary"><code>*Datapath.diagnostic_summary</code><a class="headerlink" href="#datapathdiagnostic_summary" title="Permanent link">&para;</a></h4>
+<p>A summary of the structured diagnostic cycle data, as a dataframe. The datapath must be structured before this attribute is available.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">beep.structure</span> <span class="kn">import</span> <span class="n">MaccorDatapath</span>
+
+<span class="n">datapath</span> <span class="o">=</span> <span class="n">MaccorDatapath</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;/path/to/my_maccor_file_with_diagnostic.071&quot;</span><span class="p">)</span>
+<span class="n">datapath</span><span class="o">.</span><span class="n">autostructure</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">datapath</span><span class="o">.</span><span class="n">diagnostic_summary</span><span class="p">)</span>
+
+
+<span class="c1"># Out:</span>
+    <span class="n">cycle_index</span>  <span class="n">discharge_capacity</span>  <span class="o">...</span>  <span class="n">paused</span>  <span class="n">cycle_type</span>
+<span class="mi">0</span>             <span class="mi">1</span>            <span class="mf">4.711819</span>  <span class="o">...</span>       <span class="mi">0</span>       <span class="n">reset</span>
+<span class="mi">1</span>             <span class="mi">2</span>            <span class="mf">4.807243</span>  <span class="o">...</span>       <span class="mi">0</span>        <span class="n">hppc</span>
+<span class="mi">2</span>             <span class="mi">3</span>            <span class="mf">4.648884</span>  <span class="o">...</span>       <span class="mi">0</span>    <span class="n">rpt_0</span><span class="o">.</span><span class="mi">2</span><span class="n">C</span>
+<span class="mi">3</span>             <span class="mi">4</span>            <span class="mf">4.525516</span>  <span class="o">...</span>       <span class="mi">0</span>      <span class="n">rpt_1C</span>
+<span class="mi">4</span>             <span class="mi">5</span>            <span class="mf">4.482939</span>  <span class="o">...</span>       <span class="mi">0</span>      <span class="n">rpt_2C</span>
+<span class="mi">5</span>            <span class="mi">36</span>            <span class="mf">4.624467</span>  <span class="o">...</span>       <span class="mi">0</span>       <span class="n">reset</span>
+<span class="mi">6</span>            <span class="mi">37</span>            <span class="mf">4.722887</span>  <span class="o">...</span>       <span class="mi">0</span>        <span class="n">hppc</span>
+<span class="mi">7</span>            <span class="mi">38</span>            <span class="mf">4.584861</span>  <span class="o">...</span>       <span class="mi">0</span>    <span class="n">rpt_0</span><span class="o">.</span><span class="mi">2</span><span class="n">C</span>
+<span class="mi">8</span>            <span class="mi">39</span>            <span class="mf">4.476485</span>  <span class="o">...</span>       <span class="mi">0</span>      <span class="n">rpt_1C</span>
+<span class="mi">9</span>            <span class="mi">40</span>            <span class="mf">4.426849</span>  <span class="o">...</span>       <span class="mi">0</span>      <span class="n">rpt_2C</span>
+<span class="mi">10</span>          <span class="mi">141</span>            <span class="mf">4.529535</span>  <span class="o">...</span>       <span class="mi">0</span>       <span class="n">reset</span>
+<span class="mi">11</span>          <span class="mi">142</span>            <span class="mf">4.621750</span>  <span class="o">...</span>       <span class="mi">0</span>        <span class="n">hppc</span>
+<span class="mi">12</span>          <span class="mi">143</span>            <span class="mf">4.486644</span>  <span class="o">...</span>       <span class="mi">0</span>    <span class="n">rpt_0</span><span class="o">.</span><span class="mi">2</span><span class="n">C</span>
+<span class="mi">13</span>          <span class="mi">144</span>            <span class="mf">4.391235</span>  <span class="o">...</span>       <span class="mi">0</span>      <span class="n">rpt_1C</span>
+<span class="mi">14</span>          <span class="mi">145</span>            <span class="mf">4.336987</span>  <span class="o">...</span>       <span class="mi">0</span>      <span class="n">rpt_2C</span>
+<span class="mi">15</span>          <span class="mi">246</span>            <span class="mf">4.459362</span>  <span class="o">...</span>       <span class="mi">0</span>       <span class="n">reset</span>
+<span class="mi">16</span>          <span class="mi">247</span>            <span class="mf">4.459362</span>  <span class="o">...</span>       <span class="mi">0</span>        <span class="n">hppc</span>
+</code></pre></div>
+
+<h4 id="datapathget_cycle_lifen_cycles-threshold"><code>*Datapath.get_cycle_life(n_cycles, threshold)</code><a class="headerlink" href="#datapathget_cycle_lifen_cycles-threshold" title="Permanent link">&para;</a></h4>
+<p>Calculate the cycle life for capacity loss below a certain threshold.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">beep.structure</span> <span class="kn">import</span> <span class="n">MaccorDatapath</span>
+
+<span class="n">datapath</span> <span class="o">=</span> <span class="n">MaccorDatapath</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;/path/to/my_maccor_file.071&quot;</span><span class="p">)</span>
+<span class="n">datapath</span><span class="o">.</span><span class="n">autostructure</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">datapath</span><span class="o">.</span><span class="n">get_cycle_life</span><span class="p">())</span>
+
+
+<span class="c1"># Out:</span>
+<span class="mi">231</span>
+</code></pre></div>
+
+<h4 id="datapathcycles_to_capacitiescycle_min-cycle_max-cycle_interval"><code>*Datapath.cycles_to_capacities(cycle_min, cycle_max, cycle_interval)</code><a class="headerlink" href="#datapathcycles_to_capacitiescycle_min-cycle_max-cycle_interval" title="Permanent link">&para;</a></h4>
+<p>Get the capacities for an array of cycles in an interval.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">beep.structure</span> <span class="kn">import</span> <span class="n">MaccorDatapath</span>
+
+<span class="n">datapath</span> <span class="o">=</span> <span class="n">MaccorDatapath</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;/path/to/my_maccor_file.071&quot;</span><span class="p">)</span>
+<span class="n">datapath</span><span class="o">.</span><span class="n">autostructure</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">datapath</span><span class="o">.</span><span class="n">cycles_to_capacities</span><span class="p">(</span><span class="n">cycle_min</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">cycle_max</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">cycle_interval</span><span class="o">=</span><span class="mi">50</span><span class="p">))</span>
+
+
+<span class="c1"># Out:</span>
+   <span class="n">cycle_50</span>  <span class="n">cycle_100</span>  <span class="n">cycle_150</span>
+<span class="mi">0</span>  <span class="mf">2.020498</span>   <span class="mf">1.981053</span>   <span class="mf">1.965753</span>
+</code></pre></div>
+
+<h4 id="datapathcapacities_to_cyclesthresh_max_cap-thresh_min_cap-interval_cap"><code>*Datapath.capacities_to_cycles(thresh_max_cap, thresh_min_cap, interval_cap)</code><a class="headerlink" href="#datapathcapacities_to_cyclesthresh_max_cap-thresh_min_cap-interval_cap" title="Permanent link">&para;</a></h4>
+<p>Get the number of cycles to reach an array of threshold capacities in an interval.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">beep.structure</span> <span class="kn">import</span> <span class="n">MaccorDatapath</span>
+
+<span class="n">datapath</span> <span class="o">=</span> <span class="n">MaccorDatapath</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;/path/to/my_maccor_file.071&quot;</span><span class="p">)</span>
+<span class="n">datapath</span><span class="o">.</span><span class="n">autostructure</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">datapath</span><span class="o">.</span><span class="n">capacities_to_cycles</span><span class="p">())</span>
+
+
+<span class="c1"># Out:</span>
+   <span class="n">capacity_0</span><span class="o">.</span><span class="mi">98</span>  <span class="n">capacity_0</span><span class="o">.</span><span class="mi">95</span>  <span class="n">capacity_0</span><span class="o">.</span><span class="mi">92</span>  <span class="n">capacity_0</span><span class="o">.</span><span class="mi">89</span>  <span class="n">capacity_0</span><span class="o">.</span><span class="mi">86</span>  <span class="n">capacity_0</span><span class="o">.</span><span class="mi">83</span>  <span class="n">capacity_0</span><span class="o">.</span><span class="mi">8</span>
+<span class="mi">0</span>             <span class="mi">76</span>            <span class="mi">185</span>            <span class="mi">231</span>            <span class="mi">231</span>            <span class="mi">231</span>            <span class="mi">231</span>           <span class="mi">231</span>
+</code></pre></div>
+
+<h4 id="datapathis_structured"><code>*Datapath.is_structured</code><a class="headerlink" href="#datapathis_structured" title="Permanent link">&para;</a></h4>
+<p>Tells whether the datapath has been structured or not.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">beep.structure</span> <span class="kn">import</span> <span class="n">MaccorDatapath</span>
+
+<span class="n">datapath</span> <span class="o">=</span> <span class="n">MaccorDatapath</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="s2">&quot;/path/to/my_maccor_file.071&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">datapath</span><span class="o">.</span><span class="n">is_structured</span><span class="p">)</span>
+
+<span class="c1"># Out:</span>
+<span class="kc">False</span>
+
+<span class="n">datapath</span><span class="o">.</span><span class="n">structure</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">datapath</span><span class="o">.</span><span class="n">is_structured</span><span class="p">)</span>
+
+<span class="c1"># Out:</span>
+<span class="kc">True</span>
+</code></pre></div>
+
+<hr />
+<h3 id="making-your-own-beepdatapath">Making your own <code>BEEPDatapath</code><a class="headerlink" href="#making-your-own-beepdatapath" title="Permanent link">&para;</a></h3>
+<p>If your cycler is not already supported by BEEP, you can write a class for structuring its data with BEEP by inheriting <code>BEEPDatapath</code> and implementing one method: <code>from_file</code>.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">beep.structure</span> <span class="kn">import</span> <span class="n">BEEPDatapath</span>
+
+
+<span class="k">class</span> <span class="nc">MyCustomCyclerDatapath</span><span class="p">(</span><span class="n">BEEPDatapath</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;An example of implementing a custom BEEPDatapath for your own cycler.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="c1"># Load your file from the raw file filename</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="c1"># Parse the raw data</span>
+        <span class="c1"># The raw data must adhere to BEEP standards. See the beep/conversion_schemas for the list of canonical data columns the raw data dataframe must posess.</span>
+
+        <span class="c1"># Your own code for converting the raw data to contain BEEP columns</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">convert_my_custom_cycler_data_to_BEEP_dataframe</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="c1"># Parse the metadata using your own code</span>
+        <span class="c1"># Metadata must return a dictionary</span>
+        <span class="c1"># Should preferably contain &quot;barcode&quot;, &quot;protocol&quot;, and &quot;channel_id&quot; keys at a minimum.</span>
+        <span class="n">metadata_filename</span> <span class="o">=</span> <span class="n">filename</span> <span class="o">+</span> <span class="s2">&quot;_metadata&quot;</span>
+        <span class="n">metadata</span> <span class="o">=</span> <span class="n">my_metadata_parsing_function</span><span class="p">(</span><span class="n">metadata_filename</span><span class="p">)</span>
+
+        <span class="c1"># Store the paths in a dictionary</span>
+        <span class="n">paths</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="n">filename</span><span class="p">,</span>
+            <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="n">filename</span> <span class="o">+</span> <span class="s2">&quot;_Metadata&quot;</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="n">paths</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Your custom datapath class can create new methods or override existing <code>BEEPDatapath</code> methods if needed.</p>
+<p>Once you have written your custom class's <code>from_file</code> method, all the existing behavior of <code>BEEPDatapath</code> should be available, including </p>
+<ul>
+<li><code>structure()</code></li>
+<li><code>validate()</code></li>
+<li><code>autostructure()</code></li>
+<li><code>paths</code></li>
+<li><code>raw_data</code></li>
+<li><code>structured_summary</code></li>
+<li><code>structured_data</code></li>
+<li><code>diagnostic_data</code></li>
+<li>etc.</li>
+</ul>
+<h3 id="electrochemical-impedance-spectra">Electrochemical Impedance Spectra<a class="headerlink" href="#electrochemical-impedance-spectra" title="Permanent link">&para;</a></h3>
+<p>More documentation for EIS coming soon!</p>
+<h2 id="structuring-compatibility-with-processed-legacy-beep-files">Structuring compatibility with processed legacy BEEP files<a class="headerlink" href="#structuring-compatibility-with-processed-legacy-beep-files" title="Permanent link">&para;</a></h2>
+<p>Both legacy and <code>*Datapath</code> processed (structured) files saved as json should load with <code>*Datapath.from_json_file</code>, but the capabilities between files serialized with legacy and files serialized with newer <code>BEEPDatapath</code> files will differ. 
+<strong>The main discrepancy is that legacy files cannot be restructured once loaded.</strong> All of <code>BEEPDatapath</code>'s other structured attributes and properties should function for legacy files identically to those serialized with newer <code>BEEPDatapath</code>.</p>
+<p>See <a href="#auto_load_processed">the <code>auto_load_processed</code> documentation</a> for more info on loading legacy processed <code>BEEPDatapath</code>s. </p>
+<h2 id="top-level-functions-for-structuring">Top-level functions for structuring<a class="headerlink" href="#top-level-functions-for-structuring" title="Permanent link">&para;</a></h2>
+<p>Aside from the CLI (shown in <a href="/Command%20Line%20Interface/2%20-%20structuring/">the command line interface guide</a>, BEEP also contains lower-level python functions for helping loading and structuring many cycler output files from different cyclers.</p>
+<h4 id="auto_load"><code>auto_load</code><a class="headerlink" href="#auto_load" title="Permanent link">&para;</a></h4>
+<p>Auto load will look at the file signature of a raw cycler run output file and automatically load the correct datapath (provided the cycler is supported by BEEP).</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">beep.structure</span> <span class="kn">import</span> <span class="n">auto_load</span>
+
+
+<span class="n">arbin_datapath</span> <span class="o">=</span> <span class="n">auto_load</span><span class="p">(</span><span class="s2">&quot;/path/to/my_arbin_file.csv&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">arbin_datapath</span><span class="p">)</span>
+
+<span class="c1"># Out:</span>
+<span class="o">&lt;</span><span class="n">ArbinDatapath</span> <span class="nb">object</span><span class="o">&gt;</span>
+
+<span class="n">maccor_datapath</span> <span class="o">=</span> <span class="n">auto_load</span><span class="p">(</span><span class="s2">&quot;/path/to/my_maccor_file&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">maccor_datapath</span><span class="p">)</span>
+
+<span class="c1"># Out:</span>
+<span class="o">&lt;</span><span class="n">MaccorDatapath</span> <span class="nb">object</span><span class="o">&gt;</span>
+</code></pre></div>
+
+<h4 id="auto_load_processed"><code>auto_load_processed</code><a class="headerlink" href="#auto_load_processed" title="Permanent link">&para;</a></h4>
+<p>Automatically loads the correct datapath for any previously serialized processed (structured) BEEP file.</p>
+<p>While processed run .json files serialized with <code>*Datapath</code> classes can be loaded with <code>monty.serialization.loadfn</code>, processed files serialized with older BEEP versions may not work with <code>loadfn</code>.
+<code>auto_load_processed</code> will automatically load the correct datapath, even for legacy BEEP processed .json files, though the functionality of these datapaths is restricted. For example, legacy datapaths
+cannot be restructured.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span> <span class="nn">beep.structure</span> <span class="kn">import</span> <span class="n">auto_load_processed</span>
+
+<span class="n">arbin_datapath_processed</span> <span class="o">=</span> <span class="n">auto_load_processed</span><span class="p">(</span><span class="s2">&quot;/path/to/my_processed_arbin_file.json&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">arbin_datapath_processed</span><span class="p">)</span>
+
+<span class="c1"># Out:</span>
+<span class="o">&lt;</span><span class="n">ArbinDatapath</span> <span class="nb">object</span><span class="o">&gt;</span>
+
+<span class="n">processed_datapath_legacy</span> <span class="o">=</span> <span class="n">auto_load_processed</span><span class="p">(</span><span class="s2">&quot;/path/to/my_legacy_neware_file&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">processed_datapath_legacy</span><span class="p">)</span>
+
+<span class="c1"># Out:</span>
+<span class="o">&lt;</span><span class="n">NewareDatapath</span> <span class="nb">object</span><span class="o">&gt;</span>
+</code></pre></div>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid" aria-label="Footer">
+        
+          <a href="../1%20-%20quickstart/" class="md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+            </div>
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                1: Quickstart
+              </div>
+            </div>
+          </a>
+        
+        
+          <a href="../3%20-%20featurization/" class="md-footer-nav__link md-footer-nav__link--next" rel="next">
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Next
+                </span>
+                3: Featurization
+              </div>
+            </div>
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    </div>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+          <div class="md-footer-copyright__highlight">
+            Toyota Research Institute
+          </div>
+        
+        Made with
+        <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+          Material for MkDocs
+        </a>
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    
+      <script src="../../assets/javascripts/vendor.6a3d08fc.min.js"></script>
+      <script src="../../assets/javascripts/bundle.71201edf.min.js"></script><script id="__lang" type="application/json">{"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing"}</script>
+      
+      <script>
+        app = initialize({
+          base: "../..",
+          features: [],
+          search: Object.assign({
+            worker: "../../assets/javascripts/worker/search.4ac00218.min.js"
+          }, typeof search !== "undefined" && search)
+        })
+      </script>
+      
+    
+  </body>
+</html>

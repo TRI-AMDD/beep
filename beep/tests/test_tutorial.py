@@ -20,7 +20,7 @@ HAS_DOCS_SRC = os.path.isdir(docs_src_dir)
 
 
 class DocumentationTutorialTest(unittest.TestCase):
-    tutorial_src_path = os.path.join(docs_src_dir, "tutorial1.md")
+    tutorial_src_path = os.path.join(docs_src_dir, "Python tutorials", "1 - quickstart.md")
     png_fname = "tutorial_output.png"
 
     @unittest.skipIf(not HAS_DOCS_SRC,
@@ -41,7 +41,6 @@ class DocumentationTutorialTest(unittest.TestCase):
                      "Docs directory not found, cannot test tutorial")
     def test_tutorial_code(self):
         blocks = read_code_blocks_from_md(self.tutorial_src_path)
-        os.environ["BEEP_PROCESSING_DIR"] = os.path.join(this_dir, "./tutorial")
         for b in blocks:
             if "plt.show()" in b:
                 block_safe = b.replace(

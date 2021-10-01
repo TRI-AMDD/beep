@@ -22,8 +22,6 @@ from copy import deepcopy
 
 from beep.utils import DashOrderedDict
 
-s = {"service": "ProtocolGenerator"}
-
 
 class Settings(DashOrderedDict):
     """

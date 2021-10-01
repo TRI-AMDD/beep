@@ -1,150 +1,10 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import os
 from matplotlib import cm
 from scipy.interpolate import interp1d
 from scipy.spatial import distance
 from scipy.optimize import differential_evolution
-
-CELL_INFO_DIR = os.path.join('data-share', 'raw', 'cell_info')
-
-
-def blend_electrodes(electrode_1, electrode_2_pos, electrode_2_neg, x_2):
-    """
-    Inputs:
-    electrode_1: Primary material in electrode, typically Gr. DataFrame supplied with SOC evenly spaced and voltage.
-    electrode_2: Secondary material in electrode, typically Si. DataFrame supplied with SOC evenly spaced and
-        voltage as an additional column.
-    x_2: Fraction of electrode_2 material. Supplied as scalar value.
-    """
-    if electrode_2_pos.empty:
-        df_blended = electrode_1
-        return df_blended
-
-    if electrode_2_neg.empty:
-        electrode_2 = electrode_2_pos
-        x_2 = np.abs(x_2)
-    elif x_2 > 0:
-        electrode_2 = electrode_2_pos
-    else:
-        electrode_2 = electrode_2_neg
-        x_2 = np.abs(x_2)
-
-    electrode_1_interper = interp1d(electrode_1['Voltage_aligned'], electrode_1['SOC_aligned'], bounds_error=False,
-                                    fill_value='extrapolate')
-    electrode_2_interper = interp1d(electrode_2['Voltage_aligned'], electrode_2['SOC_aligned'], bounds_error=False,
-                                    fill_value='extrapolate')
-
-    voltage_vec = np.linspace(np.min((np.min(electrode_1['Voltage_aligned']),
-                                      np.min(electrode_2['Voltage_aligned']))),
-                              np.max((np.max(electrode_1['Voltage_aligned']),
-                                      np.max(electrode_2['Voltage_aligned']))),
-                              1001)
-    electrode_1_voltage_aligned = pd.DataFrame(electrode_1_interper(voltage_vec), columns=['SOC'])
-    electrode_2_voltage_aligned = pd.DataFrame(electrode_2_interper(voltage_vec), columns=['SOC'])
-    electrode_1_voltage_aligned['Voltage'] = voltage_vec
-    electrode_2_voltage_aligned['Voltage'] = voltage_vec
-
-    df_blend_voltage_aligned = pd.DataFrame(
-        (1 - x_2) * electrode_1_voltage_aligned['SOC'] + x_2 * electrode_2_voltage_aligned['SOC'], columns=['SOC'])
-    df_blend_voltage_aligned['Voltage'] = electrode_1_voltage_aligned.merge(electrode_2_voltage_aligned,
-                                                                            on='Voltage')['Voltage']
-
-    df_blended_interper = interp1d(df_blend_voltage_aligned['SOC'], df_blend_voltage_aligned['Voltage'],
-                                   bounds_error=False)
-    soc_vec = np.linspace(0, 100, 1001)
-
-    df_blended = pd.DataFrame(df_blended_interper(soc_vec), columns=['Voltage_aligned'])
-    df_blended['SOC_aligned'] = soc_vec
-
-    # Modify NE to fully span 100% SOC within its valid voltage window
-    df_blended_soc_mod_interper = interp1d(df_blended['SOC_aligned'].loc[~df_blended['Voltage_aligned'].isna()],
-                                           df_blended['Voltage_aligned'].loc[~df_blended['Voltage_aligned'].isna()],
-                                           bounds_error=False)
-    soc_vec = np.linspace(np.min(df_blended['SOC_aligned'].loc[~df_blended['Voltage_aligned'].isna()]),
-                          np.max(df_blended['SOC_aligned'].loc[~df_blended['Voltage_aligned'].isna()]),
-                          1001)
-    df_blended_soc_mod = pd.DataFrame(df_blended_soc_mod_interper(soc_vec), columns=['Voltage_aligned'])
-    df_blended_soc_mod['SOC_aligned'] = soc_vec / np.max(soc_vec) * 100
-    return df_blended_soc_mod
-
-
-def get_halfcell_voltages(pe_out_centered, ne_out_centered):
-    pe_minus_ne_centered = pd.DataFrame(pe_out_centered['Voltage_aligned'] - ne_out_centered['Voltage_aligned'],
-                                        columns=['Voltage_aligned'])
-    pe_minus_ne_centered['SOC_aligned'] = pe_out_centered['SOC_aligned']
-
-    soc_upper = pe_minus_ne_centered.iloc[
-        np.argmin(np.abs(pe_minus_ne_centered.Voltage_aligned - 4.20))].SOC_aligned
-    soc_lower = pe_minus_ne_centered.iloc[
-        np.argmin(np.abs(pe_minus_ne_centered.Voltage_aligned - 2.70))].SOC_aligned
-
-    pe_upper_voltage = pe_out_centered.loc[pe_out_centered.SOC_aligned == soc_upper].Voltage_aligned.values[0]
-    pe_lower_voltage = pe_out_centered.loc[pe_out_centered.SOC_aligned == soc_lower].Voltage_aligned.values[0]
-
-    pe_upper_soc = ((pe_out_centered.loc[pe_out_centered.Voltage_aligned == pe_upper_voltage]['SOC_aligned'] -
-                     np.min(pe_out_centered['SOC_aligned'].loc[~pe_out_centered['Voltage_aligned'].isna()])) / (
-                            np.max(pe_out_centered['SOC_aligned'].loc[~pe_out_centered['Voltage_aligned'].isna()]) -
-                            np.min(pe_out_centered['SOC_aligned'].loc[~pe_out_centered['Voltage_aligned'].isna()]))
-                    ).values[0] * 100
-    pe_lower_soc = ((pe_out_centered.loc[pe_out_centered.Voltage_aligned == pe_lower_voltage]['SOC_aligned'] -
-                     np.min(pe_out_centered['SOC_aligned'].loc[~pe_out_centered['Voltage_aligned'].isna()])) / (
-                            np.max(pe_out_centered['SOC_aligned'].loc[~pe_out_centered['Voltage_aligned'].isna()]) -
-                            np.min(pe_out_centered['SOC_aligned'].loc[~pe_out_centered['Voltage_aligned'].isna()]))
-                    ).values[0] * 100
-    pe_mass = np.max(pe_out_centered['SOC_aligned'].loc[~pe_out_centered['Voltage_aligned'].isna()]) - np.min(
-        pe_out_centered['SOC_aligned'].loc[~pe_out_centered['Voltage_aligned'].isna()])
-
-    ne_upper_voltage = ne_out_centered.loc[ne_out_centered.SOC_aligned == soc_upper].Voltage_aligned.values[0]
-    ne_lower_voltage = ne_out_centered.loc[ne_out_centered.SOC_aligned == soc_lower].Voltage_aligned.values[0]
-    ne_upper_soc = ((ne_out_centered.loc[ne_out_centered.Voltage_aligned == ne_upper_voltage]['SOC_aligned'] -
-                     np.min(ne_out_centered['SOC_aligned'].loc[~ne_out_centered['Voltage_aligned'].isna()])) / (
-                            np.max(ne_out_centered['SOC_aligned'].loc[~ne_out_centered['Voltage_aligned'].isna()]) -
-                            np.min(ne_out_centered['SOC_aligned'].loc[~ne_out_centered['Voltage_aligned'].isna()]))
-                    ).values[0] * 100
-    ne_lower_soc = ((ne_out_centered.loc[ne_out_centered.Voltage_aligned == ne_lower_voltage]['SOC_aligned'] -
-                     np.min(ne_out_centered['SOC_aligned'].loc[~ne_out_centered['Voltage_aligned'].isna()])) / (
-                            np.max(ne_out_centered['SOC_aligned'].loc[~ne_out_centered['Voltage_aligned'].isna()]) -
-                            np.min(ne_out_centered['SOC_aligned'].loc[~ne_out_centered['Voltage_aligned'].isna()]))
-                    ).values[0] * 100
-    ne_mass = np.max(ne_out_centered['SOC_aligned'].loc[~ne_out_centered['Voltage_aligned'].isna()]) - np.min(
-        ne_out_centered['SOC_aligned'].loc[~ne_out_centered['Voltage_aligned'].isna()])
-
-    li_mass = np.max(pe_minus_ne_centered['SOC_aligned'].loc[~pe_minus_ne_centered.Voltage_aligned.isna()]) - np.min(
-        pe_minus_ne_centered['SOC_aligned'].loc[~pe_minus_ne_centered.Voltage_aligned.isna()])
-
-    return (pe_upper_voltage, pe_lower_voltage, pe_upper_soc, pe_lower_soc, pe_mass,
-            ne_upper_voltage, ne_lower_voltage, ne_upper_soc, ne_lower_soc, ne_mass,
-            soc_upper, soc_lower, li_mass)
-
-
-def plot_voltage_curves_for_cell(processed_cycler_run,
-                                 cycle_type='rpt_0.2C',
-                                 x_var='capacity',
-                                 step_type=0,
-                                 fig_size_inches=(6, 4)):
-    # Plot a series of voltage profiles over cycles for this cell
-    fig = plt.figure()
-    # Filter down to only cycles of cycle_type
-    diag_type_cycles = processed_cycler_run.diagnostic_interpolated.loc[
-        processed_cycler_run.diagnostic_interpolated['cycle_type'] == cycle_type]
-
-    # Loop across cycles
-    cycle_indexes = diag_type_cycles['cycle_index'].unique()
-    step_type_list = ['charge', 'discharge']
-    for i in cycle_indexes:
-        diag_type_cycle_i = diag_type_cycles.loc[diag_type_cycles.cycle_index == i]
-        x_charge = diag_type_cycle_i[step_type_list[step_type] + '_' + x_var].loc[
-            diag_type_cycles['step_type'] == step_type]
-        y_charge = diag_type_cycle_i.voltage.loc[diag_type_cycles['step_type'] == step_type]
-        plt.plot(x_charge, y_charge,
-                 label='cycle ' + str(i) + ' ' + step_type_list[step_type],
-                 c=cm.winter((i - np.min(cycle_indexes)) / (np.max(cycle_indexes) - np.min(cycle_indexes))),
-                 figure=fig)
-
-    fig.set_size_inches(fig_size_inches)
-    return fig
 
 
 class IntracellAnalysis:
@@ -159,7 +19,8 @@ class IntracellAnalysis:
                  cycle_type='rpt_0.2C',
                  step_type=0,
                  ne_2pos_file=None,
-                 ne_2neg_file=None):
+                 ne_2neg_file=None
+                 ):
         """
         Invokes the cell electrode analysis class. This is a class designed to fit the cell and electrode
         parameters in order to determine changes of electrodes within the full cell from only full cell cycling data.
@@ -173,36 +34,12 @@ class IntracellAnalysis:
             ne_2neg_file (str): file name of the data for the negative component of the anode
             ne_2pos_file (str): file name of the data for the positive component of the anode
         """
-
-        if not os.path.split(pe_pristine_file)[0]:
-            self.pe_pristine = pd.read_csv(os.path.join(os.environ.get("BEEP_PROCESSING_DIR", "/"),
-                                                        CELL_INFO_DIR,
-                                                        pe_pristine_file),
-                                           usecols=['SOC_aligned', 'Voltage_aligned'])
-        else:
-            self.pe_pristine = pd.read_csv(os.path.join(pe_pristine_file),
-                                           usecols=['SOC_aligned', 'Voltage_aligned'])
-
-        if not os.path.split(ne_pristine_file)[0]:
-            self.ne_1_pristine = pd.read_csv(os.path.join(os.environ.get("BEEP_PROCESSING_DIR", "/"),
-                                                          CELL_INFO_DIR,
-                                                          ne_pristine_file),
-                                             usecols=['SOC_aligned', 'Voltage_aligned'])
-        else:
-            self.ne_1_pristine = pd.read_csv(os.path.join(ne_pristine_file),
-                                             usecols=['SOC_aligned', 'Voltage_aligned'])
+        self.pe_pristine = pd.read_csv(pe_pristine_file, usecols=['SOC_aligned', 'Voltage_aligned'])
+        self.ne_1_pristine = pd.read_csv(ne_pristine_file, usecols=['SOC_aligned', 'Voltage_aligned'])
 
         if ne_2neg_file and ne_2pos_file:
-            if not os.path.split(ne_2neg_file)[0] and not os.path.split(ne_2pos_file)[0]:
-                self.ne_2_pristine_pos = pd.read_csv(os.path.join(os.environ.get("BEEP_PROCESSING_DIR", "/"),
-                                                                  CELL_INFO_DIR,
-                                                                  ne_2pos_file))
-                self.ne_2_pristine_neg = pd.read_csv(os.path.join(os.environ.get("BEEP_PROCESSING_DIR", "/"),
-                                                                  CELL_INFO_DIR,
-                                                                  ne_2neg_file))
-            else:
-                self.ne_2_pristine_pos = pd.read_csv(ne_2pos_file)
-                self.ne_2_pristine_neg = pd.read_csv(ne_2neg_file)
+            self.ne_2_pristine_pos = pd.read_csv(ne_2pos_file)
+            self.ne_2_pristine_neg = pd.read_csv(ne_2neg_file)
         else:
             self.ne_2_pristine_pos = pd.DataFrame()
             self.ne_2_pristine_neg = pd.DataFrame()
@@ -222,7 +59,7 @@ class IntracellAnalysis:
         real_cell_initial_charge_profile: dataframe containing SOC and voltage columns
         cycle_index: cycle number to evaluate at
         Outputs
-        real_cell_candidate_charge_profile_aligned: a dataframe containing columns SOC_aligned (evenly spaced) and 
+        real_cell_candidate_charge_profile_aligned: a dataframe containing columns SOC_aligned (evenly spaced) and
         Voltage_aligned
         """
 
@@ -252,7 +89,8 @@ class IntracellAnalysis:
                                                                fill_value=(self.LOWER_VOLTAGE, self.UPPER_VOLTAGE))
         real_cell_candidate_charge_profile_aligned['Voltage_aligned'] = real_cell_candidate_charge_profile_interper(
             SOC_vec)
-#         real_cell_candidate_charge_profile_aligned['Voltage_aligned'].fillna(self.LOWER_VOLTAGE, inplace=True)
+
+        # real_cell_candidate_charge_profile_aligned['Voltage_aligned'].fillna(self.LOWER_VOLTAGE, inplace=True)
         real_cell_candidate_charge_profile_aligned['SOC_aligned'] = SOC_vec / np.max(
             real_cell_initial_charge_profile_aligned['SOC_aligned'].loc[
                 ~real_cell_initial_charge_profile_aligned['Voltage_aligned'].isna()]) * 100
@@ -1329,3 +1167,140 @@ class IntracellAnalysis:
         profiles_dict = {cycle_index: real_cell_candidate_charge_profile_aligned}
 
         return loss_dict, profiles_dict
+
+
+def blend_electrodes(electrode_1, electrode_2_pos, electrode_2_neg, x_2):
+    """
+    Inputs:
+    electrode_1: Primary material in electrode, typically Gr. DataFrame supplied with SOC evenly spaced and voltage.
+    electrode_2: Secondary material in electrode, typically Si. DataFrame supplied with SOC evenly spaced and
+        voltage as an additional column.
+    x_2: Fraction of electrode_2 material. Supplied as scalar value.
+    """
+    if electrode_2_pos.empty:
+        df_blended = electrode_1
+        return df_blended
+
+    if electrode_2_neg.empty:
+        electrode_2 = electrode_2_pos
+        x_2 = np.abs(x_2)
+    elif x_2 > 0:
+        electrode_2 = electrode_2_pos
+    else:
+        electrode_2 = electrode_2_neg
+        x_2 = np.abs(x_2)
+
+    electrode_1_interper = interp1d(electrode_1['Voltage_aligned'], electrode_1['SOC_aligned'], bounds_error=False,
+                                    fill_value='extrapolate')
+    electrode_2_interper = interp1d(electrode_2['Voltage_aligned'], electrode_2['SOC_aligned'], bounds_error=False,
+                                    fill_value='extrapolate')
+
+    voltage_vec = np.linspace(np.min((np.min(electrode_1['Voltage_aligned']),
+                                      np.min(electrode_2['Voltage_aligned']))),
+                              np.max((np.max(electrode_1['Voltage_aligned']),
+                                      np.max(electrode_2['Voltage_aligned']))),
+                              1001)
+    electrode_1_voltage_aligned = pd.DataFrame(electrode_1_interper(voltage_vec), columns=['SOC'])
+    electrode_2_voltage_aligned = pd.DataFrame(electrode_2_interper(voltage_vec), columns=['SOC'])
+    electrode_1_voltage_aligned['Voltage'] = voltage_vec
+    electrode_2_voltage_aligned['Voltage'] = voltage_vec
+
+    df_blend_voltage_aligned = pd.DataFrame(
+        (1 - x_2) * electrode_1_voltage_aligned['SOC'] + x_2 * electrode_2_voltage_aligned['SOC'], columns=['SOC'])
+    df_blend_voltage_aligned['Voltage'] = electrode_1_voltage_aligned.merge(electrode_2_voltage_aligned,
+                                                                            on='Voltage')['Voltage']
+
+    df_blended_interper = interp1d(df_blend_voltage_aligned['SOC'], df_blend_voltage_aligned['Voltage'],
+                                   bounds_error=False)
+    soc_vec = np.linspace(0, 100, 1001)
+
+    df_blended = pd.DataFrame(df_blended_interper(soc_vec), columns=['Voltage_aligned'])
+    df_blended['SOC_aligned'] = soc_vec
+
+    # Modify NE to fully span 100% SOC within its valid voltage window
+    df_blended_soc_mod_interper = interp1d(df_blended['SOC_aligned'].loc[~df_blended['Voltage_aligned'].isna()],
+                                           df_blended['Voltage_aligned'].loc[~df_blended['Voltage_aligned'].isna()],
+                                           bounds_error=False)
+    soc_vec = np.linspace(np.min(df_blended['SOC_aligned'].loc[~df_blended['Voltage_aligned'].isna()]),
+                          np.max(df_blended['SOC_aligned'].loc[~df_blended['Voltage_aligned'].isna()]),
+                          1001)
+    df_blended_soc_mod = pd.DataFrame(df_blended_soc_mod_interper(soc_vec), columns=['Voltage_aligned'])
+    df_blended_soc_mod['SOC_aligned'] = soc_vec / np.max(soc_vec) * 100
+    return df_blended_soc_mod
+
+
+def get_halfcell_voltages(pe_out_centered, ne_out_centered):
+    pe_minus_ne_centered = pd.DataFrame(pe_out_centered['Voltage_aligned'] - ne_out_centered['Voltage_aligned'],
+                                        columns=['Voltage_aligned'])
+    pe_minus_ne_centered['SOC_aligned'] = pe_out_centered['SOC_aligned']
+
+    soc_upper = pe_minus_ne_centered.iloc[
+        np.argmin(np.abs(pe_minus_ne_centered.Voltage_aligned - 4.20))].SOC_aligned
+    soc_lower = pe_minus_ne_centered.iloc[
+        np.argmin(np.abs(pe_minus_ne_centered.Voltage_aligned - 2.70))].SOC_aligned
+
+    pe_upper_voltage = pe_out_centered.loc[pe_out_centered.SOC_aligned == soc_upper].Voltage_aligned.values[0]
+    pe_lower_voltage = pe_out_centered.loc[pe_out_centered.SOC_aligned == soc_lower].Voltage_aligned.values[0]
+
+    pe_upper_soc = ((pe_out_centered.loc[pe_out_centered.Voltage_aligned == pe_upper_voltage]['SOC_aligned'] -
+                     np.min(pe_out_centered['SOC_aligned'].loc[~pe_out_centered['Voltage_aligned'].isna()])) / (
+                            np.max(pe_out_centered['SOC_aligned'].loc[~pe_out_centered['Voltage_aligned'].isna()]) -
+                            np.min(pe_out_centered['SOC_aligned'].loc[~pe_out_centered['Voltage_aligned'].isna()]))
+                    ).values[0] * 100
+    pe_lower_soc = ((pe_out_centered.loc[pe_out_centered.Voltage_aligned == pe_lower_voltage]['SOC_aligned'] -
+                     np.min(pe_out_centered['SOC_aligned'].loc[~pe_out_centered['Voltage_aligned'].isna()])) / (
+                            np.max(pe_out_centered['SOC_aligned'].loc[~pe_out_centered['Voltage_aligned'].isna()]) -
+                            np.min(pe_out_centered['SOC_aligned'].loc[~pe_out_centered['Voltage_aligned'].isna()]))
+                    ).values[0] * 100
+    pe_mass = np.max(pe_out_centered['SOC_aligned'].loc[~pe_out_centered['Voltage_aligned'].isna()]) - np.min(
+        pe_out_centered['SOC_aligned'].loc[~pe_out_centered['Voltage_aligned'].isna()])
+
+    ne_upper_voltage = ne_out_centered.loc[ne_out_centered.SOC_aligned == soc_upper].Voltage_aligned.values[0]
+    ne_lower_voltage = ne_out_centered.loc[ne_out_centered.SOC_aligned == soc_lower].Voltage_aligned.values[0]
+    ne_upper_soc = ((ne_out_centered.loc[ne_out_centered.Voltage_aligned == ne_upper_voltage]['SOC_aligned'] -
+                     np.min(ne_out_centered['SOC_aligned'].loc[~ne_out_centered['Voltage_aligned'].isna()])) / (
+                            np.max(ne_out_centered['SOC_aligned'].loc[~ne_out_centered['Voltage_aligned'].isna()]) -
+                            np.min(ne_out_centered['SOC_aligned'].loc[~ne_out_centered['Voltage_aligned'].isna()]))
+                    ).values[0] * 100
+    ne_lower_soc = ((ne_out_centered.loc[ne_out_centered.Voltage_aligned == ne_lower_voltage]['SOC_aligned'] -
+                     np.min(ne_out_centered['SOC_aligned'].loc[~ne_out_centered['Voltage_aligned'].isna()])) / (
+                            np.max(ne_out_centered['SOC_aligned'].loc[~ne_out_centered['Voltage_aligned'].isna()]) -
+                            np.min(ne_out_centered['SOC_aligned'].loc[~ne_out_centered['Voltage_aligned'].isna()]))
+                    ).values[0] * 100
+    ne_mass = np.max(ne_out_centered['SOC_aligned'].loc[~ne_out_centered['Voltage_aligned'].isna()]) - np.min(
+        ne_out_centered['SOC_aligned'].loc[~ne_out_centered['Voltage_aligned'].isna()])
+
+    li_mass = np.max(pe_minus_ne_centered['SOC_aligned'].loc[~pe_minus_ne_centered.Voltage_aligned.isna()]) - np.min(
+        pe_minus_ne_centered['SOC_aligned'].loc[~pe_minus_ne_centered.Voltage_aligned.isna()])
+
+    return (pe_upper_voltage, pe_lower_voltage, pe_upper_soc, pe_lower_soc, pe_mass,
+            ne_upper_voltage, ne_lower_voltage, ne_upper_soc, ne_lower_soc, ne_mass,
+            soc_upper, soc_lower, li_mass)
+
+
+def plot_voltage_curves_for_cell(processed_cycler_run,
+                                 cycle_type='rpt_0.2C',
+                                 x_var='capacity',
+                                 step_type=0,
+                                 fig_size_inches=(6, 4)):
+    # Plot a series of voltage profiles over cycles for this cell
+    fig = plt.figure()
+    # Filter down to only cycles of cycle_type
+    diag_type_cycles = processed_cycler_run.diagnostic_interpolated.loc[
+        processed_cycler_run.diagnostic_interpolated['cycle_type'] == cycle_type]
+
+    # Loop across cycles
+    cycle_indexes = diag_type_cycles['cycle_index'].unique()
+    step_type_list = ['charge', 'discharge']
+    for i in cycle_indexes:
+        diag_type_cycle_i = diag_type_cycles.loc[diag_type_cycles.cycle_index == i]
+        x_charge = diag_type_cycle_i[step_type_list[step_type] + '_' + x_var].loc[
+            diag_type_cycles['step_type'] == step_type]
+        y_charge = diag_type_cycle_i.voltage.loc[diag_type_cycles['step_type'] == step_type]
+        plt.plot(x_charge, y_charge,
+                 label='cycle ' + str(i) + ' ' + step_type_list[step_type],
+                 c=cm.winter((i - np.min(cycle_indexes)) / (np.max(cycle_indexes) - np.min(cycle_indexes))),
+                 figure=fig)
+
+    fig.set_size_inches(fig_size_inches)
+    return fig

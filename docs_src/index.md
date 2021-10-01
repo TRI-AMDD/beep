@@ -8,10 +8,25 @@
 BEEP is a set of tools designed to support Battery Evaluation and Early Prediction of cycle life corresponding to the research of the [d3batt program](https://d3batt.mit.edu/) and the [Toyota Research Institute](http://www.tri.global/accelerated-materials-design-and-discovery/).
 
 
-BEEP enables parsing and handing of electrochemical battery cycling data
+BEEP enables parsing and handling of electrochemical battery cycling data
 via data objects reflecting cycling run data, experimental protocols,
-featurization, and modeling of cycle life.  Currently beep supports 
-arbin, maccor and biologic cyclers.
+featurization, and modeling of cycle life with machine learning.  Currently BEEP supports:
+
+- [Arbin Instruments](https://www.arbin.com/) cyclers
+- [MACCOR](http://www.maccor.com/) cyclers
+- [BioLogic](https://www.biologic.net/product_category/battery-cyclers/) cyclers
+- [Battery Archive](https://www.batteryarchive.org/) data
+
+With partial and forthcoming support for:
+
+- Indigo cyclers
+- [Neware](https://newarebattery.com/) cyclers
+
+
+BEEP provides a standardized interface for working with cycler data ranging in scale
+from a single file on a local laptop to running thousands of cycler files with massive
+throughput on large computing systems.
+
 
 We are currently looking for experienced python developers to help us improve this package and implement new features.
 Please contact any of the maintainers for more information.
@@ -34,22 +49,8 @@ pip install -e .[tests]
 ```
 
 
-## Environment
-To configure the use of AWS resources its necessary to set the environment variable `BEEP_ENV`. For most users `'dev'`
-is the appropriate choice since it assumes that no AWS resources are available. 
-```.env
-export BEEP_ENV='dev'
-```
-For processing file locally its necessary to configure the folder structure 
-```.env
-export BEEP_PROCESSING_DIR='/path/to/beep/data/'
-```
-
 ## Testing
 Make sure you have installed the required testing packages (see installation).
-
-You can use pytest for running unittests. In order to run tests the environment variable
-needs to be set (i.e. `export BEEP_ENV='dev'`)
 
 ```bash
 pytest beep

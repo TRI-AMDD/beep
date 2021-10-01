@@ -1,20 +1,17 @@
 import os
+
 import pandas as pd
-from monty.serialization import loadfn
 
-from beep.features.base import BeepFeatures
+from beep import PROTOCOL_PARAMETERS_DIR
+from beep.features import featurizer_helpers
+from beep.features.base import BEEPFeaturizer
 from beep.features.intracell_analysis import IntracellAnalysis
-from beep import MODULE_DIR
 
 
-FEATURE_HYPERPARAMS = loadfn(
-    os.path.join(MODULE_DIR, "features/feature_hyperparameters.yaml")
-)
-
-s = {"service": "DataAnalyzer"}
+DEFAULT_CELL_INFO_DIR = os.path.join(PROTOCOL_PARAMETERS_DIR, "intracell_info")
 
 
-class IntracellCycles(BeepFeatures):
+class IntracellCycles(BEEPFeaturizer):
     """
     Object corresponding to the fitted material parameters of the cell. Material parameters
     are determined by using high resolution half cell data to fit full cell dQdV curves. Rows
@@ -26,23 +23,22 @@ class IntracellCycles(BeepFeatures):
             and code used to produce features
     """
 
-    # Class name for the feature object
-    class_feature_name = "IntracellCycles"
+    DEFAULT_HYPERPARAMETERS = {
+        "diagnostic_cycle_type": 'rpt_0.2C',
+        "step_type": 0,
+        # Paths for anode files should be absolute
+        # Defaults are for the specified names in the current dir
+        "anode_file": os.path.join(
+            DEFAULT_CELL_INFO_DIR,
+            'anode_test.csv'
+        ),
+        "cathode_file": os.path.join(
+            DEFAULT_CELL_INFO_DIR,
+            'cathode_test.csv'
+        ),
+    }
 
-    def __init__(self, name, X, metadata):
-        """
-        Args:
-            name (str): predictor object name
-            X (pandas.DataFrame): features in DataFrame format.
-            metadata (dict): information about the data and code used to produce features
-        """
-        super().__init__(name, X, metadata)
-        self.name = name
-        self.X = X
-        self.metadata = metadata
-
-    @classmethod
-    def validate_data(cls, processed_cycler_run, params_dict=None):
+    def validate(self):
         """
         This function determines if the input data has the necessary attributes for
         creation of this feature class. It should test for all of the possible reasons
@@ -56,44 +52,39 @@ class IntracellCycles(BeepFeatures):
         Returns:
             bool: True/False indication of ability to proceed with feature generation
         """
-        conditions = []
+        val, msg = featurizer_helpers.check_diagnostic_validation(self.datapath)
+        if val:
+            conditions = []
 
-        if not hasattr(processed_cycler_run, "diagnostic_summary") & hasattr(
-            processed_cycler_run, "diagnostic_data"
-        ):
-            return False
-        if processed_cycler_run.diagnostic_summary is None:
-            return False
-        elif processed_cycler_run.diagnostic_summary.empty:
-            return False
-        else:
             # Ensure overlap of cycle indices above threshold and matching cycle type
-            eol_cycle_index_list = processed_cycler_run.diagnostic_summary[
-                (processed_cycler_run.diagnostic_summary.cycle_type == params_dict["diagnostic_cycle_type"]) &
-                (processed_cycler_run.diagnostic_summary.discharge_capacity > IntracellAnalysis.THRESHOLD)
+            eol_cycle_index_list = self.datapath.diagnostic_summary[
+                (self.datapath.diagnostic_summary.cycle_type == self.hyperparameters["diagnostic_cycle_type"]) &
+                (self.datapath.diagnostic_summary.discharge_capacity > IntracellAnalysis.THRESHOLD)
                 ].cycle_index.to_list()
             if not eol_cycle_index_list:
-                return False
+                return False, "Overlap of cycle indices not above threshold for matching cycle type"
 
             conditions.append(
                 any(
                     [
                         "rpt" in x
-                        for x in processed_cycler_run.diagnostic_summary.cycle_type.unique()
+                        for x in self.datapath.diagnostic_summary.cycle_type.unique()
                     ]
                 )
             )
 
-        return all(conditions)
+            if all(conditions):
+                return True, None
+            else:
+                return False, "Insufficient RPT cycles in diagnostic"
+        else:
+            return val, msg
 
-    @classmethod
-    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
-                                           parameters_path="data-share/raw/parameters",
-                                           cell_info_path="data-share/raw/cell_info"):
+    def create_features(self):
         """
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun)
-            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
+            self.hyperparameters (dict): dictionary of parameters governing how the ProcessedCyclerRun object
                 gets featurized. These could be filters for column or row operations
             parameters_path (str): Root directory storing project parameter files.
             cell_info_path (str): Root directory for cell half cell data
@@ -101,25 +92,20 @@ class IntracellCycles(BeepFeatures):
         Returns:
              (pd.DataFrame) containing the cell material parameters as a function of cycle index
         """
-        if params_dict is None:
-            params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
-
-        cell_dir = os.path.join(
-            os.environ.get("BEEP_PROCESSING_DIR", "/"), cell_info_path
+        ia = IntracellAnalysis(
+            self.hyperparameters["cathode_file"],
+            self.hyperparameters["anode_file"],
+            cycle_type=self.hyperparameters["diagnostic_cycle_type"],
+            step_type=self.hyperparameters["step_type"]
         )
-        ia = IntracellAnalysis(os.path.join(cell_dir, params_dict["cathode_file"]),
-                               os.path.join(cell_dir, params_dict["anode_file"]),
-                               cycle_type=params_dict["diagnostic_cycle_type"],
-                               step_type=params_dict["step_type"]
-                               )
 
         (cell_init_aligned, cell_init_profile, PE_matched, NE_matched) = ia.intracell_wrapper_init(
-            processed_cycler_run,
+            self.datapath,
         )
 
-        eol_cycle_index_list = processed_cycler_run.diagnostic_summary[
-            (processed_cycler_run.diagnostic_summary.cycle_type == ia.cycle_type) &
-            (processed_cycler_run.diagnostic_summary.discharge_capacity > ia.THRESHOLD)
+        eol_cycle_index_list = self.datapath.diagnostic_summary[
+            (self.datapath.diagnostic_summary.cycle_type == ia.cycle_type) &
+            (self.datapath.diagnostic_summary.discharge_capacity > ia.THRESHOLD)
             ].cycle_index.to_list()
 
         # initialize dicts before for loop
@@ -127,7 +113,7 @@ class IntracellCycles(BeepFeatures):
         real_cell_dict_of_profiles = dict()
         for i, cycle_index in enumerate(eol_cycle_index_list):
             loss_dict, profiles_dict = ia.intracell_values_wrapper(cycle_index,
-                                                                   processed_cycler_run,
+                                                                   self.datapath,
                                                                    cell_init_aligned,
                                                                    cell_init_profile,
                                                                    PE_matched,
@@ -142,7 +128,7 @@ class IntracellCycles(BeepFeatures):
                                              'PE_mass', 'NE_upper_voltage', 'NE_lower_voltage', 'NE_upper_SOC',
                                              'NE_lower_SOC', 'NE_mass', 'Li_mass'
                                              ]).T
-        return degradation_df
+        self.features = degradation_df
 
 
 class IntracellFeatures(IntracellCycles):
@@ -156,13 +142,7 @@ class IntracellFeatures(IntracellCycles):
             and code used to produce features
     """
 
-    # Class name for the feature object
-    class_feature_name = "IntracellFeatures"
-
-    @classmethod
-    def features_from_processed_cycler_run(cls, processed_cycler_run, params_dict=None,
-                                           parameters_path="data-share/raw/parameters",
-                                           cell_info_path="data-share/raw/cell_info"):
+    def create_features(self):
         """
         Args:
             processed_cycler_run (beep.structure.ProcessedCyclerRun)
@@ -176,25 +156,21 @@ class IntracellFeatures(IntracellCycles):
              (pd.DataFrame) containing the cell material parameters for the first and second diagnotics
                 as a single row dataframe
         """
-        if params_dict is None:
-            params_dict = FEATURE_HYPERPARAMS[cls.class_feature_name]
 
-        cell_dir = os.path.join(
-            os.environ.get("BEEP_PROCESSING_DIR", "/"), cell_info_path
+        ia = IntracellAnalysis(
+            self.hyperparameters["cathode_file"],
+            self.hyperparameters["anode_file"],
+            cycle_type=self.hyperparameters["diagnostic_cycle_type"],
+            step_type=self.hyperparameters["step_type"]
         )
-        ia = IntracellAnalysis(os.path.join(cell_dir, params_dict["cathode_file"]),
-                               os.path.join(cell_dir, params_dict["anode_file"]),
-                               cycle_type=params_dict["diagnostic_cycle_type"],
-                               step_type=params_dict["step_type"]
-                               )
 
         (cell_init_aligned, cell_init_profile, PE_matched, NE_matched) = ia.intracell_wrapper_init(
-            processed_cycler_run,
+            self.datapath,
         )
 
-        eol_cycle_index_list = processed_cycler_run.diagnostic_summary[
-            (processed_cycler_run.diagnostic_summary.cycle_type == ia.cycle_type) &
-            (processed_cycler_run.diagnostic_summary.discharge_capacity > ia.THRESHOLD)
+        eol_cycle_index_list = self.datapath.diagnostic_summary[
+            (self.datapath.diagnostic_summary.cycle_type == ia.cycle_type) &
+            (self.datapath.diagnostic_summary.discharge_capacity > ia.THRESHOLD)
             ].cycle_index.to_list()
 
         # # initializations before for loop
@@ -202,7 +178,7 @@ class IntracellFeatures(IntracellCycles):
         real_cell_dict_of_profiles = dict()
         for i, cycle_index in enumerate(eol_cycle_index_list[0:2]):
             loss_dict, profiles_dict = ia.intracell_values_wrapper(cycle_index,
-                                                                   processed_cycler_run,
+                                                                   self.datapath,
                                                                    cell_init_aligned,
                                                                    cell_init_profile,
                                                                    PE_matched,
@@ -221,4 +197,4 @@ class IntracellFeatures(IntracellCycles):
         diag_1_names = ["diag_1_" + name for name in degradation_df.columns]
         values = {0: degradation_df.iloc[0].tolist() + degradation_df.iloc[1].tolist()}
         features_df = pd.DataFrame(values, index=diag_0_names+diag_1_names).T
-        return features_df
+        self.features = features_df
