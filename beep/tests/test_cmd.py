@@ -37,7 +37,10 @@ def dummy(ctx, test):
 
 
 class TestCLIBase(unittest.TestCase):
-    runner = CliRunner()
+    runner = CliRunner(
+        echo_stdin=True,
+        mix_stderr=False
+    )
 
     def setUp(self) -> None:
         self.output_dir = None
@@ -67,7 +70,8 @@ class TestCLI(TestCLIBase):
                 "--log-file",
                 self.log_file,
                 "dummy",
-            ]
+            ],
+            catch_exceptions=False
         )
         self.assertEqual(result.exit_code, 0)
         self.assertIsNotNone(result.output)
@@ -96,7 +100,8 @@ class TestCLI(TestCLIBase):
                 "dummy",
                 "--test",
                 "throw_error",
-            ]
+            ],
+            catch_exceptions=True
         )
         self.assertEqual(result.exit_code, 1)
 
@@ -129,14 +134,13 @@ class TestCLIInspect(TestCLIBase):
         files = [os.path.join(TEST_FILE_DIR, f) for f in files]
 
         for f in files:
-            print(f"ARDHERE, running {f}")
-
             result = self.runner.invoke(
                 cli,
                 [
                     "inspect",
                     f
-                ]
+                ],
+                catch_exceptions=False
             )
             self.assertEqual(result.exit_code, 0)
             self.assertIsNotNone(result.output)
@@ -204,7 +208,8 @@ class TestCLIStructure(TestCLIBase):
                 "--output-dir",
                 self.output_dir,
                 *self.input_paths
-            ]
+            ],
+            catch_exceptions=False,
         )
 
         self.assertEqual(result.exit_code, 0)
@@ -237,7 +242,8 @@ class TestCLIStructure(TestCLIBase):
                 PROTOCOL_PARAMETERS_DIR,
                 "--no-raw",
                 *self.input_paths
-            ]
+            ],
+            catch_exceptions=False
         )
         self.assertEqual(result.exit_code, 0)
         self.assertIsNotNone(result.output)
@@ -273,9 +279,9 @@ class TestCLIStructure(TestCLIBase):
                 "beep-sync-test-stage",
                 "--s3-use-cache",
                 s3_key,
-            ]
+            ],
+            catch_exceptions=False
         )
-        print(result.output)
         self.assertEqual(result.exit_code, 0)
         self.assertIsNotNone(result.output)
 
@@ -310,9 +316,9 @@ class TestCLIFeaturize(TestCLIBase):
                 "--featurize-with",
                 "all_features",
                 *self.input_paths
-            ]
+            ],
+            catch_exceptions=False
         )
-
         self.assertEqual(result.exit_code, 0)
         self.assertIsNotNone(result.output)
 
@@ -345,7 +351,8 @@ class TestCLIFeaturize(TestCLIBase):
                 '{"CycleSummaryStats": {"cycle_comp_num": [11, 101]}}',
                 "--save-intermediates",
                 *self.input_paths
-            ]
+            ],
+            catch_exceptions=False
         )
         self.assertEqual(result.exit_code, 0)
         self.assertIsNotNone(result.output)
@@ -410,7 +417,8 @@ class TestCLITrain(TestCLIBase):
                 2,
                 "--max-iter",
                 200
-            ]
+            ],
+            catch_exceptions=False,
         )
 
         self.assertEqual(result.exit_code, 0)
@@ -442,7 +450,8 @@ class TestCLITrain(TestCLIBase):
                 0.8,
                 "--max-iter",
                 200
-            ]
+            ],
+            catch_exceptions=False
         )
         self.assertEqual(result2.exit_code, 0)
         self.assertIsNotNone(result2.output)
@@ -484,7 +493,8 @@ class TestCLIPredict(TestCLIBase):
                 "--feature-matrix-file",
                 self.feature_matrix_file,
                 self.model_file
-            ]
+            ],
+            catch_exceptions=False
         )
 
         self.assertEqual(result.exit_code, 0)
@@ -517,7 +527,8 @@ class TestCLIProtocol(TestCLIBase):
                 "--output-dir",
                 self.output_dir,
                 csv_file
-            ]
+            ],
+            catch_exceptions=False
         )
 
         self.assertEqual(result.exit_code, 0)
