@@ -469,6 +469,9 @@ def structure(
         for s3k in s3_keys_matched:
             s3k_basename = os.path.basename(s3k)
             pardir = S3_CACHE if s3_use_cache else ctx.obj.cwd
+            pardir = os.path.abspath(pardir)
+            if not os.path.exists(pardir):
+                os.makedirs(pardir)
             s3k_local_fullname = os.path.join(pardir, s3k_basename)
             logger.info(f"Fetching {s3k} from {s3_bucket}")
             download_s3_object(s3_bucket, s3k, s3k_local_fullname)

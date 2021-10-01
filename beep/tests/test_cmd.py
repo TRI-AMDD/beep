@@ -258,7 +258,7 @@ class TestCLIStructure(TestCLIBase):
         self.assertTrue(
             os.path.exists(status["files"][self.input_paths[0]]["output"]))
 
-    @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
+    # @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_s3(self):
         """Test the structuring using files from S3"""
         s3_key = "big_file_tests/PreDiag_000287_000128.092"
