@@ -1,5 +1,10 @@
 
 
+v2021.10.11.13
+--------------
+* New CLI with refactored feature generation classes and training - Thanks Alex Dunn!
+* Disabled windows testing temporarily due to some issues with changes to the cli
+
 v2021.9.30.15
 -------------
 * failing test for goto end bug - Thanks Will Powelson
