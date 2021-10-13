@@ -894,7 +894,7 @@ class DiagnosticProperties(BEEPFeaturizer):
                                                'initial_regular_throughput'].values[
                                                0]
             x_to_threshold.append(real_throughput_to_threshold)
-            interpolation_axes.append("real_regular_throughput")
+            interpolation_axes = interpolation_axes + ["real_regular_throughput"]
 
         threshold_dict = {
             'initial_regular_throughput':
