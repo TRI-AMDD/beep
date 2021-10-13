@@ -41,7 +41,8 @@ class TestFeaturizer(unittest.TestCase):
     def setUp(self):
         self.structured_cycler_file_path = os.path.join(TEST_FILE_DIR, "2017-06-30_2C-10per_6C_CH10_structure.json")
         self.structured_cycler_file_path_insuf = os.path.join(TEST_FILE_DIR, "structure_insufficient.json")
-        self.structured_cycler_file_path_trunc = os.path.join(TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json")
+        self.structured_cycler_file_path_trunc = os.path.join(TEST_FILE_DIR,
+                                                              "PreDiag_000240_000227_truncated_structure.json")
 
     def test_featurization_basic_DeltaQFastCharge(self):
         structured_datapath = auto_load_processed(self.structured_cycler_file_path)
@@ -243,13 +244,19 @@ class TestFeaturizer(unittest.TestCase):
 
         f = DiagnosticProperties(structured_datapath)
         self.assertTrue(f.validate()[0])
-
+        self.assertListEqual(f.hyperparameters["interpolation_axes"],
+                             ['normalized_regular_throughput', 'cycle_index'])
         f.create_features()
 
         self.assertEqual(f.features.shape, (1, 4))
         # print(list(f.features.iloc[2, :]))
+
         self.assertAlmostEqual(f.features.iloc[0]["initial_regular_throughput"], 497.587658, 5)
 
+        # Test if rerunning feature works since dictionaries are being updated in place
+        f = DiagnosticProperties(structured_datapath)
+        f.create_features()
+        self.assertEqual(f.features.shape, (1, 4))
 
 class TestFeaturizerHelpers(unittest.TestCase):
     def setUp(self):
@@ -552,7 +559,6 @@ class TestRawToFeatures(unittest.TestCase):
         dumpfn(dp, processed_run_path)
 
         dp = loadfn(processed_run_path)
-
 
         for fclass in (
                 DeltaQFastCharge,
