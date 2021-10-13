@@ -775,7 +775,7 @@ class DiagnosticProperties(BEEPFeaturizer):
         Args:
             self.datapath (beep.structure.ProcessedCyclerRun): data from cycler run
             params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
-            gets featurized. These could be filters for column or row operations
+                gets featurized. These could be filters for column or row operations
             parameters_path (str): Root directory storing project parameter files.
 
         Returns:
