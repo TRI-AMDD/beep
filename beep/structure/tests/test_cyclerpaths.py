@@ -319,10 +319,37 @@ class TestIndigoDatapath(unittest.TestCase):
 
 class TestBioLogicDatapath(unittest.TestCase):
     # based on RCRT.test_ingestion_biologic
-    def test_from_file(self):
+    def test_from_csv(self):
 
         biologic_file = os.path.join(
             TEST_FILE_DIR, "raw", "test_loopsnewoutput_MB_CE1_short10k.csv"
+        )
+        dp = BiologicDatapath.from_file(biologic_file)
+
+        self.assertTrue(
+            {
+                "cycle_index",
+                "step_index",
+                "voltage",
+                "current",
+                "discharge_capacity",
+                "charge_capacity",
+                "data_point",
+                "charge_energy",
+                "discharge_energy",
+            }
+            < set(dp.raw_data.columns),
+        )
+
+        self.assertEqual(
+            {"_today_datetime", "filename", "barcode", "protocol", "channel_id"},
+            set(dp.metadata.raw.keys()),
+        )
+
+    def test_from_txt(self):
+
+        biologic_file = os.path.join(
+            TEST_FILE_DIR, "raw", "test_loopsnewoutput_MB_CE1_short10k.txt"
         )
         dp = BiologicDatapath.from_file(biologic_file)
 
