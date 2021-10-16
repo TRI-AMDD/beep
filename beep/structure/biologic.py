@@ -2,6 +2,7 @@
 """
 
 import hashlib
+import os.path
 from datetime import datetime
 
 import pandas as pd
@@ -14,6 +15,44 @@ class BiologicDatapath(BEEPDatapath):
     """Datapath for ingesting and structuring BioLogic cycler data.
     """
 
+    @staticmethod
+    def _get_file_type(path):
+        """
+        Checks on the file and gets the right separators and header length.
+        Should enable seemless processing of either manual exported file (.txt) or
+        automatically exported file (.csv)
+
+        Args:
+            path (str): file path to data file
+
+        Returns:
+            sep (str): separation character between fields
+            encoding (str): file encoding to expect based on extension
+            header_starts_line (int): line number of the header line
+            data_starts_line (int): line number where data values start
+        """
+        if os.path.splitext(path)[1] == ".csv":
+            sep = ";"
+            encoding = "utf-8"
+        elif os.path.splitext(path)[1] == ".txt":
+            sep = "\t"
+            encoding = "iso-8859-1"
+        else:
+            raise TypeError("Unable to determine separator character from file extension")
+
+        with open(path, "rb") as f:
+            i = 1
+            header_starts_line = None
+            while header_starts_line is None and i < 200:
+                line = f.readline()
+                if b'Ecell' in line:
+                    header_starts_line = i
+                    data_starts_line = i + 1
+                i += 1
+
+        return sep, encoding, header_starts_line, data_starts_line
+
+
     @classmethod
     def from_file(cls, path):
         """Creates a BEEPDatapath from a raw BioLogic battery cycler output file.
@@ -25,8 +64,7 @@ class BiologicDatapath(BEEPDatapath):
             BiologicDatapath
         """
 
-        header_line = 1  # specific to file layout
-        data_starts_line = 2  # specific to file layout
+        sep, encoding, header_line, data_starts_line = cls._get_file_type(path)
         column_map = BIOLOGIC_CONFIG["data_columns"]
 
         raw = dict()
@@ -37,19 +75,19 @@ class BiologicDatapath(BEEPDatapath):
             while empty_lines < 2:  # finding 2 empty lines in a row => EOF
                 line = f.readline()
                 i += 1
-
+                print(sep, header_line)
                 if i == header_line:
                     header = str(line.strip())[2:-1]
-                    columns = header.split(";")
+                    columns = header.split(sep)
                     for c in columns:
                         raw[c] = list()
 
                 if i >= data_starts_line:
-                    line = line.strip().decode()
+                    line = line.strip().decode(encoding=encoding)
                     if len(line) == 0:
                         empty_lines += 1
                         continue
-                    items = line.split(";")
+                    items = line.split(sep)
                     for ci in range(len(items)):
                         column_name = columns[ci]
                         data_type = column_map.get(column_name, dict()).get(
