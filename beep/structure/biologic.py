@@ -109,7 +109,6 @@ class BiologicDatapath(BEEPDatapath):
             raw["cycle_index"] = raw["cycle number"]
             print("Missing cycle index")
 
-
         data = dict()
         for column_name in column_map.keys():
             data[column_map[column_name]["beep_name"]] = raw[column_name]
