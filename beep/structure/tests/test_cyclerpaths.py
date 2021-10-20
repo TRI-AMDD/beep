@@ -375,7 +375,7 @@ class TestBioLogicDatapath(unittest.TestCase):
         dp.structure(v_range=[3.0, 4.4])
         print(dp.structured_summary.head())
 
-        self.assertAlmostEqual(dp.structured_summary["charge_capacity"].tolist()[0], 2.324598, 6)
+        self.assertAlmostEqual(dp.structured_summary["charge_capacity"].tolist()[0], 1.4618487, 6)
         self.assertAlmostEqual(dp.structured_summary["discharge_capacity"].tolist()[0], 2.324598, 6)
         self.assertAlmostEqual(dp.raw_data["test_time"].min(), 0, 3)
         self.assertAlmostEqual(dp.raw_data["test_time"].max(), 102240.281, 3)
