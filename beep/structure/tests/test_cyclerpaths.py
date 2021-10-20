@@ -346,6 +346,17 @@ class TestBioLogicDatapath(unittest.TestCase):
             set(dp.metadata.raw.keys()),
         )
 
+        dp.structure(v_range=[3.0, 4.4])
+
+        self.assertAlmostEqual(dp.structured_summary["charge_capacity"].tolist()[0], 1.4618750, 6)
+        self.assertAlmostEqual(dp.structured_summary["discharge_capacity"].tolist()[0], 2.324598, 6)
+        self.assertEqual(dp.structured_summary["date_time_iso"].iloc[0], "2021-05-05T22:36:22.757000+00:00")
+        self.assertEqual(dp.structured_summary["date_time_iso"].iloc[1], "2021-05-06T09:44:45.604000+00:00")
+        self.assertAlmostEqual(dp.raw_data["test_time"].min(), 0, 3)
+        self.assertAlmostEqual(dp.raw_data["test_time"].max(), 102040.77, 3)
+        self.assertAlmostEqual(dp.structured_data["test_time"].min(), 13062.720560, 3)
+        self.assertAlmostEqual(dp.structured_data["test_time"].max(), 101972.885, 3)
+
     def test_from_txt(self):
 
         biologic_file = os.path.join(
@@ -373,10 +384,11 @@ class TestBioLogicDatapath(unittest.TestCase):
             set(dp.metadata.raw.keys()),
         )
         dp.structure(v_range=[3.0, 4.4])
-        print(dp.structured_summary.head())
 
         self.assertAlmostEqual(dp.structured_summary["charge_capacity"].tolist()[0], 1.4618487, 6)
         self.assertAlmostEqual(dp.structured_summary["discharge_capacity"].tolist()[0], 2.324598, 6)
+        self.assertEqual(dp.structured_summary["date_time_iso"].iloc[0], "2021-05-05T22:36:00+00:00")
+        self.assertEqual(dp.structured_summary["date_time_iso"].iloc[1], "2021-05-06T09:44:22.848000+00:00")
         self.assertAlmostEqual(dp.raw_data["test_time"].min(), 0, 3)
         self.assertAlmostEqual(dp.raw_data["test_time"].max(), 102240.281, 3)
         self.assertAlmostEqual(dp.structured_data["test_time"].min(), 13062.997, 3)

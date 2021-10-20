@@ -69,7 +69,6 @@ class BiologicDatapath(BEEPDatapath):
 
         sep, encoding, header_line, data_starts_line = cls._get_file_type(path)
         column_map = BIOLOGIC_CONFIG["data_columns"]
-        print(sep, encoding, header_line, data_starts_line)
 
         raw = dict()
         i = 0
@@ -106,8 +105,8 @@ class BiologicDatapath(BEEPDatapath):
         if "cycle_index" not in columns and not mapping_file:
             raw["cycle_index"] = [int(float(i)) for i in raw["cycle number"]]
         elif "cycle_index" not in columns and mapping_file:
-
-            print("Missing cycle index")
+            raise NotImplementedError
+            print("Missing cycle index and step mapping file")
 
         data = dict()
         for column_name in column_map.keys():
