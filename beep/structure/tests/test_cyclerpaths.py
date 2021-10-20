@@ -372,6 +372,15 @@ class TestBioLogicDatapath(unittest.TestCase):
             {"_today_datetime", "filename", "barcode", "protocol", "channel_id"},
             set(dp.metadata.raw.keys()),
         )
+        dp.structure(v_range=[3.0, 4.4])
+        print(dp.structured_summary.head())
+
+        self.assertAlmostEqual(dp.structured_summary["charge_capacity"].tolist()[0], 2.324598, 6)
+        self.assertAlmostEqual(dp.structured_summary["discharge_capacity"].tolist()[0], 2.324598, 6)
+        self.assertAlmostEqual(dp.raw_data["test_time"].min(), 0, 3)
+        self.assertAlmostEqual(dp.raw_data["test_time"].max(), 102240.281, 3)
+        self.assertAlmostEqual(dp.structured_data["test_time"].min(), 13062.997, 3)
+        self.assertAlmostEqual(dp.structured_data["test_time"].max(), 101972.886, 3)
 
 
 class TestNewareDatapath(unittest.TestCase):

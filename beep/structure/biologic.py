@@ -5,6 +5,7 @@ import hashlib
 import os.path
 import json
 from datetime import datetime
+import pytz
 
 import pandas as pd
 
@@ -54,11 +55,13 @@ class BiologicDatapath(BEEPDatapath):
         return sep, encoding, header_starts_line, data_starts_line
 
     @classmethod
-    def from_file(cls, path):
+    def from_file(cls, path, mapping_file=None):
         """Creates a BEEPDatapath from a raw BioLogic battery cycler output file.
 
         Args:
             path (str): file path to data file
+            mapping_file (str): file path to mapping file containing step transitions where cycle_index should
+                increment
 
         Returns:
             BiologicDatapath
@@ -79,9 +82,6 @@ class BiologicDatapath(BEEPDatapath):
                 if i == header_line:
                     header = str(line.decode(encoding=encoding))
                     columns = header.split(sep)
-                    # if columns[0] == "":
-                    #     columns = columns[1:]
-                    print(columns)
                     for c in columns:
                         raw[c] = list()
                 if i >= data_starts_line:
@@ -90,7 +90,6 @@ class BiologicDatapath(BEEPDatapath):
                         empty_lines += 1
                         continue
                     items = line.split(sep)
-                    print(len(items), len(columns))
                     for ci in range(len(items)):
                         column_name = columns[ci]
                         data_type = column_map.get(column_name, dict()).get(
@@ -104,9 +103,10 @@ class BiologicDatapath(BEEPDatapath):
                             item = float(item) * scale
                         raw[column_name].append(item)
 
-        if "cycle_index" not in columns:
-            print(raw.keys())
-            raw["cycle_index"] = raw["cycle number"]
+        if "cycle_index" not in columns and not mapping_file:
+            raw["cycle_index"] = [int(float(i)) for i in raw["cycle number"]]
+        elif "cycle_index" not in columns and mapping_file:
+
             print("Missing cycle index")
 
         data = dict()
@@ -129,6 +129,17 @@ class BiologicDatapath(BEEPDatapath):
         metadata["filename"] = path
         metadata["_today_datetime"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+        # standardizing time format
+        pacific = pytz.timezone("US/Pacific")
+        utc = pytz.timezone("UTC")
+        data["date_time_iso"] = data["date_time"].apply(
+            lambda x: pacific.localize(datetime.strptime(x, "%m/%d/%Y %H:%M:%S.%f"),
+                                       is_dst=True).astimezone(utc).isoformat()
+        )
+        data["test_time"] = data["date_time"].apply(
+            lambda x: (datetime.strptime(x, "%m/%d/%Y %H:%M:%S.%f") -
+                       datetime.strptime(data["date_time"].iloc[0], "%m/%d/%Y %H:%M:%S.%f")).total_seconds()
+        )
         paths = {
             "raw": path,
             "metadata": metadata_path
