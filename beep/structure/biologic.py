@@ -45,12 +45,14 @@ class BiologicDatapath(BEEPDatapath):
         with open(path, "rb") as f:
             i = 1
             header_starts_line = None
-            while header_starts_line is None and i < 200:
+            while header_starts_line is None:
                 line = f.readline()
                 if b'Ecell/V' in line and b'Variables' not in line:
                     header_starts_line = i
                     data_starts_line = i + 1
                 i += 1
+                if i > 200:
+                    raise ProcessLookupError("Unable to find the header line in first 200 lines of file")
 
         return sep, encoding, header_starts_line, data_starts_line
 
@@ -105,8 +107,7 @@ class BiologicDatapath(BEEPDatapath):
         if "cycle_index" not in columns and not mapping_file:
             raw["cycle_index"] = [int(float(i)) for i in raw["cycle number"]]
         elif "cycle_index" not in columns and mapping_file:
-            raise NotImplementedError
-            print("Missing cycle index and step mapping file")
+            raise NotImplementedError("Missing cycle index and step mapping file")
 
         data = dict()
         for column_name in column_map.keys():

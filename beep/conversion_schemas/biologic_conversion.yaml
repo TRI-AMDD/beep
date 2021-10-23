@@ -1,4 +1,4 @@
-file_pattern: ".*\\.mpt"
+file_pattern: ".*\\.txt"
 metadata_fields:
   filename: filename
   _today_datetime: _today_datetime
