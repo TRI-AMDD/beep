@@ -18,7 +18,7 @@ class BiologicDatapath(BEEPDatapath):
     """
 
     @staticmethod
-    def _get_file_type(path):
+    def _get_file_type(path, search_lines=200):
         """
         Checks on the file and gets the right separators and header length.
         Should enable seemless processing of either manual exported file (.txt) or
@@ -26,6 +26,7 @@ class BiologicDatapath(BEEPDatapath):
 
         Args:
             path (str): file path to data file
+            search_lines (int): number of lines to read when looking for header line
 
         Returns:
             sep (str): separation character between fields
@@ -51,8 +52,8 @@ class BiologicDatapath(BEEPDatapath):
                     header_starts_line = i
                     data_starts_line = i + 1
                 i += 1
-                if i > 200:
-                    raise ProcessLookupError("Unable to find the header line in first 200 lines of file")
+                if i > search_lines:
+                    raise LookupError("Unable to find the header line in first {} lines of file".format(search_lines))
 
         return sep, encoding, header_starts_line, data_starts_line
 

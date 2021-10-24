@@ -1,4 +1,4 @@
-file_pattern: ".*\\.txt"
+file_pattern: "^(?!.*(_CH)).*_C.*\\.(txt|csv)"
 metadata_fields:
   filename: filename
   _today_datetime: _today_datetime
