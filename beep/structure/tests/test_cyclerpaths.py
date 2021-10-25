@@ -319,7 +319,7 @@ class TestIndigoDatapath(unittest.TestCase):
 
 class TestBioLogicDatapath(unittest.TestCase):
     # based on RCRT.test_ingestion_biologic
-    def test_from_file(self):
+    def test_from_csv(self):
 
         biologic_file = os.path.join(
             TEST_FILE_DIR, "raw", "test_loopsnewoutput_MB_CE1_short10k.csv"
@@ -345,6 +345,54 @@ class TestBioLogicDatapath(unittest.TestCase):
             {"_today_datetime", "filename", "barcode", "protocol", "channel_id"},
             set(dp.metadata.raw.keys()),
         )
+
+        dp.structure(v_range=[3.0, 4.4])
+
+        self.assertAlmostEqual(dp.structured_summary["charge_capacity"].tolist()[0], 1.4618750, 6)
+        self.assertAlmostEqual(dp.structured_summary["discharge_capacity"].tolist()[0], 2.324598, 6)
+        self.assertEqual(dp.structured_summary["date_time_iso"].iloc[0], "2021-05-05T22:36:22.757000+00:00")
+        self.assertEqual(dp.structured_summary["date_time_iso"].iloc[1], "2021-05-06T09:44:45.604000+00:00")
+        self.assertAlmostEqual(dp.raw_data["test_time"].min(), 0, 3)
+        self.assertAlmostEqual(dp.raw_data["test_time"].max(), 102040.77, 3)
+        self.assertAlmostEqual(dp.structured_data["test_time"].min(), 13062.720560, 3)
+        self.assertAlmostEqual(dp.structured_data["test_time"].max(), 101972.885, 3)
+
+    def test_from_txt(self):
+
+        biologic_file = os.path.join(
+            TEST_FILE_DIR, "raw", "test_loopsnewoutput_MB_CE1_short10k.txt"
+        )
+        dp = BiologicDatapath.from_file(biologic_file)
+
+        self.assertTrue(
+            {
+                "cycle_index",
+                "step_index",
+                "voltage",
+                "current",
+                "discharge_capacity",
+                "charge_capacity",
+                "data_point",
+                "charge_energy",
+                "discharge_energy",
+            }
+            < set(dp.raw_data.columns),
+        )
+
+        self.assertEqual(
+            {"_today_datetime", "filename", "barcode", "protocol", "channel_id"},
+            set(dp.metadata.raw.keys()),
+        )
+        dp.structure(v_range=[3.0, 4.4])
+
+        self.assertAlmostEqual(dp.structured_summary["charge_capacity"].tolist()[0], 1.4618487, 6)
+        self.assertAlmostEqual(dp.structured_summary["discharge_capacity"].tolist()[0], 2.324598, 6)
+        self.assertEqual(dp.structured_summary["date_time_iso"].iloc[0], "2021-05-05T22:36:00+00:00")
+        self.assertEqual(dp.structured_summary["date_time_iso"].iloc[1], "2021-05-06T09:44:22.848000+00:00")
+        self.assertAlmostEqual(dp.raw_data["test_time"].min(), 0, 3)
+        self.assertAlmostEqual(dp.raw_data["test_time"].max(), 102240.281, 3)
+        self.assertAlmostEqual(dp.structured_data["test_time"].min(), 13062.997, 3)
+        self.assertAlmostEqual(dp.structured_data["test_time"].max(), 101972.886, 3)
 
 
 class TestNewareDatapath(unittest.TestCase):
