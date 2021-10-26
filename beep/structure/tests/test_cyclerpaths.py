@@ -26,7 +26,7 @@ from beep.structure.arbin import ArbinDatapath
 from beep.structure.maccor import MaccorDatapath
 from beep.structure.neware import NewareDatapath
 from beep.structure.indigo import IndigoDatapath
-from beep.structure.biologic import BiologicDatapath
+from beep.structure.biologic import BiologicDatapath, get_cycle_index
 from beep.structure.battery_archive import BatteryArchiveDatapath
 from beep.tests.constants import TEST_FILE_DIR
 
@@ -394,6 +394,29 @@ class TestBioLogicDatapath(unittest.TestCase):
         self.assertAlmostEqual(dp.structured_data["test_time"].min(), 13062.997, 3)
         self.assertAlmostEqual(dp.structured_data["test_time"].max(), 101972.886, 3)
 
+    def test_add_cycle_index(self):
+
+        biologic_file = os.path.join(
+            TEST_FILE_DIR, "raw", "test_loopsnewoutput_MB_CE1_short10k.csv"
+        )
+        df = pd.read_csv(biologic_file, sep=";")
+        ns_list = df["Ns"].tolist()
+        loop_list = df["Loop"].tolist()
+        biotest_file = os.path.join(TEST_FILE_DIR, "BioTest_000001.000.technique_1_cycle_rules.json")
+        cycle_index = get_cycle_index(ns_list, biotest_file, loop_list=loop_list)
+        print(len(cycle_index))
+        c_i = pd.Series(cycle_index)
+        self.assertListEqual([1, 2, 3], c_i.unique().tolist())
+
+    def test_mapping_file(self):
+
+        biologic_file = os.path.join(
+            TEST_FILE_DIR, "raw", "test_loopsnewoutput_MB_CE1_short10k.txt"
+        )
+        biotest_file = os.path.join(TEST_FILE_DIR, "BioTest_000001.000.technique_1_cycle_rules.json")
+        dp = BiologicDatapath.from_file(biologic_file, mapping_file=biotest_file)
+        self.assertIn("cycle_index", dp.raw_data.columns)
+        self.assertListEqual([1, 2, 3], dp.raw_data["cycle_index"].unique().tolist())
 
 class TestNewareDatapath(unittest.TestCase):
     # based on RCRT.test_ingestion_neware

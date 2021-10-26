@@ -108,7 +108,10 @@ class BiologicDatapath(BEEPDatapath):
         if "cycle_index" not in columns and not mapping_file:
             raw["cycle_index"] = [int(float(i)) for i in raw["cycle number"]]
         elif "cycle_index" not in columns and mapping_file:
-            raise NotImplementedError("Missing cycle index and step mapping file")
+            if "Loop" in raw.keys():
+                raw["cycle_index"] = get_cycle_index(raw["Ns"], mapping_file, loop_list=raw["Loop"])
+            else:
+                raw["cycle_index"] = get_cycle_index(raw["Ns"], mapping_file)
 
         data = dict()
         for column_name in column_map.keys():
@@ -220,95 +223,67 @@ class BiologicDatapath(BEEPDatapath):
         return metadata
 
 
-def add_cycle_nums_to_file(
-    technique_csv_file_paths,
-    technique_serialized_transition_rules_file_paths,
-    technique_csv_out_file_paths,
-):
+def get_cycle_index(ns_list, serialized_transition_fp, loop_list=None):
     """
     Processes CSV files generated from several biologic techniques
     and creates a new set of CSVs with an additional "cycle_index" column.
 
-    accepts
-      - technique_csv_file_paths: list of file paths to Biologic CSVs
-      - technique_serialized_transition_rules_file_paths: list of file paths to serialized CycleTransitionRules
-      - technique_csv_out_file_paths: list of filepaths to write new data to
+    Args:
+        df (pandas.DataFrame): data frame of biologic file
+        serialized_transition_fp (path): path to mapping file containing step transitions where
+            cycle index should increment
 
-    side-effects
-       - writes a new CSV file for every entry in csv_and_transition_rules_file_paths
+    Returns:
+        df (pandas.DataFrame): data frame of biologic file with cycle_index and Tech Num added
 
-    invariants
-        - all arguments must be of the same length
-        - the i-th entry form a logical tuple
-        - technique files appear in the order in which they were created
-          e.g. technique 1, then technique 2 etc.
-
-    example call:
-    add_cycle_nums_to_csvs(
-        [
-            os.path.join(MY_DIR, "protocol1_2a_technique_1.csv"),
-            os.path.join(MY_DIR, "protocol1_2a_technique_2.csv"),
-        ],
-        [
-            os.path.join(MY_DIR, "protocol1_technique_1_transition_rules.json"),
-            os.path.join(MY_DIR, "protocol1_technique_2_transition_rules.json"),
-        ],
-        [
-            os.path.join(MY_DIR, "protocol1_2a_technique_1_processed.csv"),
-            os.path.join(MY_DIR, "protocol1_2a_technique_2_processed.csv"),
-        ]
-    )
     """
-    assert len(technique_csv_file_paths) == len(technique_csv_out_file_paths)
-    assert len(technique_csv_file_paths) == len(
-        technique_serialized_transition_rules_file_paths
-    )
-
-    technique_conversion_filepaths = zip(
-        technique_csv_file_paths,
-        technique_serialized_transition_rules_file_paths,
-        technique_csv_out_file_paths,
-    )
 
     serializer = CycleTransitionRulesSerializer()
     cycle_num = 1
-    for csv_fp, serialized_transition_fp, csv_out_fp in technique_conversion_filepaths:
-        with open(serialized_transition_fp, "r") as f:
-            data = f.read()
-            cycle_transition_rules = serializer.parse_json(data)
 
-        df = pd.read_csv(csv_fp, sep=";")
+    with open(serialized_transition_fp, "r") as f:
+        data = f.read()
+        cycle_transition_rules = serializer.parse_json(data)
 
-        cycle_num += cycle_transition_rules.adv_cycle_on_start
+    cycle_num += cycle_transition_rules.adv_cycle_on_start
 
-        prev_seq_num = int(df.iloc[0]["Ns"])
-        prev_loop_num = int(df.iloc[0]["Loop"])
-        cycle_nums = []
-        tech_nums = []
-        for _, row in df.iterrows():
-            seq_num = int(row["Ns"])
-            loop_num = int(row["Loop"])
+    prev_seq_num = int(ns_list[0])
+    if loop_list:
+        prev_loop_num = int(loop_list[0])
+    cycle_nums = []
+    tech_nums = []
+    # TODO speed up by reducing logic and use list comprehension
 
+    if loop_list:
+        for indx, ns in enumerate(ns_list):
+            seq_num = int(ns)
+            loop_num = int(loop_list[indx])
             # a transition may occur because of a loop technique or a loop seq,
             # it is possible to double count cycle advances if we don't handle them separately
             if loop_num != prev_loop_num:
                 cycle_num += cycle_transition_rules.adv_cycle_on_tech_loop
-
             elif seq_num != prev_seq_num:
                 transition = (prev_seq_num, seq_num)
                 cycle_num += cycle_transition_rules.adv_cycle_seq_transitions.get(
                     transition, 0
                 )
-
             prev_loop_num = loop_num
             prev_seq_num = seq_num
-
+            cycle_nums.append(cycle_num)
+            tech_nums.append(cycle_transition_rules.tech_num)
+    else:
+        for indx, ns in enumerate(ns_list):
+            seq_num = int(ns)
+            if seq_num != prev_seq_num:
+                transition = (prev_seq_num, seq_num)
+                cycle_num += cycle_transition_rules.adv_cycle_seq_transitions.get(
+                    transition, 0
+                )
+            prev_seq_num = seq_num
             cycle_nums.append(cycle_num)
             tech_nums.append(cycle_transition_rules.tech_num)
 
-        df["cycle_index"] = cycle_nums
-        df["Tech Num"] = tech_nums
-        df.to_csv(csv_out_fp, sep=";")
+    return cycle_nums
 
 
 class CycleTransitionRules:
