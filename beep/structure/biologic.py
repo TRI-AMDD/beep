@@ -253,7 +253,6 @@ def get_cycle_index(ns_list, serialized_transition_fp, loop_list=None):
     cycle_nums = []
     tech_nums = []
     # TODO speed up by reducing logic and use list comprehension
-
     if loop_list:
         for indx, ns in enumerate(ns_list):
             seq_num = int(ns)

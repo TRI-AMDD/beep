@@ -404,12 +404,10 @@ class TestBioLogicDatapath(unittest.TestCase):
         loop_list = df["Loop"].tolist()
         biotest_file = os.path.join(TEST_FILE_DIR, "BioTest_000001.000.technique_1_cycle_rules.json")
         cycle_index = get_cycle_index(ns_list, biotest_file, loop_list=loop_list)
-        print(len(cycle_index))
         c_i = pd.Series(cycle_index)
         self.assertListEqual([1, 2, 3], c_i.unique().tolist())
 
     def test_mapping_file(self):
-
         biologic_file = os.path.join(
             TEST_FILE_DIR, "raw", "test_loopsnewoutput_MB_CE1_short10k.txt"
         )
