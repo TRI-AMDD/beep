@@ -1,7 +1,7 @@
 # Base requirements
 numpy==1.21.3
 monty[yaml]==2021.8.17
-scipy==1.5.4
+scipy==1.6.1
 scikit-learn==1.0.1
 pandas==1.3.4
 tqdm==4.62.3
