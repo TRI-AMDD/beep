@@ -159,7 +159,7 @@ class TestCLIUtils(unittest.TestCase):
             full_path, output_dir, suffix, modified_ext
         )
 
-        self.assertEqual(new_filename, Path("/path/to/output/dir/file-ex.json"))
+        self.assertEqual(new_filename, "/path/to/output/dir/file-ex.json")
 
     def test_add_metadata_to_status_json(self):
         status_dict = {
