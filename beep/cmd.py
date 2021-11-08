@@ -357,7 +357,7 @@ def cli(ctx, log_file, run_id, tags, output_status_json, halt_on_error):
     is_flag=True,
     default=False,
     help="Does not save raw cycler data to disk. Saves disk space, but "
-         "prevents files from being partially restructued."
+         "prevents files from being partially restructured."
 )
 @click.option(
     '--s3-use-cache',
