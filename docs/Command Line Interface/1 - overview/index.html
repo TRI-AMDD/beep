@@ -348,6 +348,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#controlling-compression-and-output-file-formats" class="md-nav__link">
+    Controlling compression and output file formats
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -622,6 +629,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#controlling-compression-and-output-file-formats" class="md-nav__link">
+    Controlling compression and output file formats
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -641,6 +655,8 @@
                 
                 <h1 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h1>
 <p>The beep base command specifies options for creating metadata and logging for all subcommands.</p>
+<p>This page is a general overview of options that are common among <em>any</em> beep subcommand. You can expect 
+options on this page to pertain to basically any beep CLI operation's inputs, outputs, and file formats.</p>
 <h2 id="basics">Basics<a class="headerlink" href="#basics" title="Permanent link">&para;</a></h2>
 <p>The BEEP CLI can be used like:</p>
 <div class="codehilite"><pre><span></span><code>$: beep &lt;options&gt; &lt;subcommand&gt;
@@ -814,6 +830,19 @@ the status json, but for further tracking there are two arguments which can be s
 <span class="err">    &quot;tags&quot;: [&quot;my_tag_1&quot;, &quot;TRI_experiments_2021&quot;, &quot;debugging&quot;]</span>
 <span class="err">  }</span>
 </code></pre></div>
+
+<h2 id="controlling-compression-and-output-file-formats">Controlling compression and output file formats<a class="headerlink" href="#controlling-compression-and-output-file-formats" title="Permanent link">&para;</a></h2>
+<p>Serialization in <code>beep</code> is done by the <a href="https://guide.materialsvirtuallab.org/monty/"><code>monty</code> library</a>; to use compression on any output
+files, status files, or intermediate files in any beep subcommand, append <code>.gz</code> to the end of the output filename(s).</p>
+<p>For example:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># For example, write our status json to a regular (uncompressed) json file</span>
+<span class="c1"># And write our feature matrix output artifact to a gzipped json file</span>
+
+$: beep -s status.json featurize * outputFeatureMatrix.json.gz
+</code></pre></div>
+
+<p>Although they are not officially supported, other compression methods (such as <code>.bz2</code>) and file formats (<code>.yaml</code>) may be serialized to/from <code>beep</code> if they are supported
+by the current version of <code>monty</code>. </p>
                 
               
               

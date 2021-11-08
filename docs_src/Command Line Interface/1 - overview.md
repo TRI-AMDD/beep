@@ -2,6 +2,9 @@
 
 The beep base command specifies options for creating metadata and logging for all subcommands.
 
+This page is a general overview of options that are common among *any* beep subcommand. You can expect 
+options on this page to pertain to basically any beep CLI operation's inputs, outputs, and file formats.
+
 
 
 
@@ -222,3 +225,21 @@ An example of a status json containing a user run id and user tags:
   }
 ```
 
+
+## Controlling compression and output file formats
+
+Serialization in `beep` is done by the [`monty` library](https://guide.materialsvirtuallab.org/monty/); to use compression on any output
+files, status files, or intermediate files in any beep subcommand, append `.gz` to the end of the output filename(s).
+
+For example:
+
+
+```shell
+# For example, write our status json to a regular (uncompressed) json file
+# And write our feature matrix output artifact to a gzipped json file
+
+$: beep -s status.json featurize * outputFeatureMatrix.json.gz
+```
+
+Although they are not officially supported, other compression methods (such as `.bz2`) and file formats (`.yaml`) may be serialized to/from `beep` if they are supported
+by the current version of `monty`. 
