@@ -31,6 +31,10 @@ class TestCLI(unittest.TestCase):
             TEST_FILE_DIR, "2017-06-30_2C-10per_6C_CH10_structure.json"
         )
 
+        self.processed_maccor_file = os.path.join(
+            TEST_FILE_DIR, "PredictionDiagnostics_000132_00004C_structure.json"
+        )
+
     # todo: could be more comprehensive
     # based on PCRT.test_auto_load
     def test_auto_load(self):
@@ -41,6 +45,11 @@ class TestCLI(unittest.TestCase):
         dp = auto_load_processed(self.processed_file)
         self.assertIsInstance(dp, ArbinDatapath)
         self.assertIsNotNone(dp.structured_summary)
+
+    def test_auto_load_maccor(self):
+        dp = auto_load_processed(self.processed_maccor_file)
+        self.assertEqual(dp.paths["structured"], self.processed_maccor_file)
+
 
 
 if __name__ == "__main__":
