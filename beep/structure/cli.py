@@ -112,4 +112,8 @@ def auto_load_processed(path):
         else:
             raise TypeError(f"Unknown type for legacy processed json! `{type(processed_obj)}`")
     else:
+
+        # Processed object must have path manually appended
+        # as loadfn cannot trigger .from_json_file directly
+        processed_obj.paths["structured"] = path
         return processed_obj
