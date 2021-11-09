@@ -7,6 +7,7 @@ from beep import PROTOCOL_PARAMETERS_DIR
 from beep.features import featurizer_helpers
 from beep.features.base import BEEPFeaturizer, BEEPFeaturizationError
 
+DEFAULT_CYCLING_CONDITIONS_FILE = os.path.join(PROTOCOL_PARAMETERS_DIR, "PreDiag_parameters - GP.csv")
 
 class HPPCResistanceVoltageFeatures(BEEPFeaturizer):
     DEFAULT_HYPERPARAMETERS = {
@@ -907,3 +908,79 @@ class DiagnosticProperties(BEEPFeaturizer):
                 x_to_threshold[indx]]
 
         return pd.DataFrame(threshold_dict)
+
+class CyclingConditions(BEEPFeaturizer):
+        DEFAULT_HYPERPARAMETERS = {
+            "conditions_dir" = DEFAULT_CYCLING_CONDITIONS_FILE,
+            "conditions": ['charge_constant_current_1','charge_percent_limit_1',
+                           'charge_constant_current_2','charge_cutoff_voltage',
+                           'charge_constant_voltage_time','charge_rest_time',
+                           'discharge_constant_current','discharge_cutoff_voltage',
+                           'discharge_rest_time','cell_temperature_nominal',
+                           'diagnostic_start_cycle','diagnostic_interval']
+    }
+    """
+    This class stores cycling conditions for each cell.
+
+        name (str): predictor object name.
+        X (pandas.DataFrame): features in DataFrame format.
+        metadata (dict): information about the conditions, data
+            and code used to produce features
+
+    Hyperparameters:
+        conditions_dir (str): Full path to directory of file for cycling
+            conditions
+        conditions ([str]): Conditions to extract from the cycling condition file
+    """
+
+    def validate(self):
+        """
+        This function determines if the input data has the necessary attributes for
+        creation of this feature class. It should test for all of the possible reasons
+        that feature generation would fail for this particular input data.
+
+        Args:
+            processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
+            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
+            gets featurized. These could be filters for column or row operations
+        Returns:
+            bool: True/False indication of ability to proceed with feature generation
+        """
+        filename = self.datapath # edit here to get file name
+        max_cap = self.hyperparameters["thresh_max_cap"]
+        if not cap_ratio < max_cap:
+            return False, f"thresh_max_cap hyperparameter exceeded: {cap_ratio} !< {max_cap}"
+        else:
+            return True, None
+
+    def create_features(self):
+        """
+        Generates diagnostic-property features from processed cycler run, including values for n*x method
+        Args:
+            self.datapath (beep.structure.ProcessedCyclerRun): data from cycler run
+            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
+                gets featurized. These could be filters for column or row operations
+            parameters_path (str): Root directory storing project parameter files.
+
+        Returns:
+            pd.DataFrame: with "cycle_index", "fractional_metric", "x", "n", "cycle_type" and "metric" columns, rows
+            for each diagnostic cycle of the cell
+        """
+
+        parameters_path = self.hyperparameters["parameters_dir"]
+
+        cycle_types = self.datapath.diagnostic_summary.cycle_type.unique()
+        X = pd.DataFrame()
+        for quantity in self.hyperparameters["quantities"]:
+            for cycle_type in cycle_types:
+                summary_diag_cycle_type = featurizer_helpers.get_fractional_quantity_remaining_nx(
+                    self.datapath, quantity, cycle_type,
+                    parameters_path=parameters_path
+                )
+
+                summary_diag_cycle_type.loc[:, "cycle_type"] = cycle_type
+                summary_diag_cycle_type.loc[:, "metric"] = quantity
+                X = X.append(summary_diag_cycle_type)
+
+        X_condensed = self.get_threshold_targets(X)
+        self.features = X_condensed
