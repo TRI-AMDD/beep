@@ -4,7 +4,6 @@ Tests for the beep CLI.
 import os
 import unittest
 import shutil
-from pathlib import Path
 
 import click
 from monty.serialization import loadfn, dumpfn
@@ -125,14 +124,14 @@ class TestCLIInspect(TestCLIBase):
             "2017-12-04_4_65C-69per_6C_CH29_structured_new.json.gz",
 
             # Model file
-            Path("modelling_test_files/model-src.json.gz"),
+            "modelling_test_files/model-src.json.gz",
 
             # Feature matrices
-            Path("modelling_test_files/features.json.gz"),
+            "modelling_test_files/features.json.gz",
             "modelling_test_files/targets.json.gz",
 
             # Featurizer
-            Path("modelling_test_files/HPPCFeaturizer.json.gz")
+            "modelling_test_files/HPPCFeaturizer.json.gz"
 
         ]
 
@@ -154,8 +153,8 @@ class TestCLIInspect(TestCLIBase):
 class TestCLIUtils(unittest.TestCase):
 
     def test_add_suffix(self):
-        full_path = Path("/path/to/some/file.csv")
-        output_dir = Path("/path/to/output/dir")
+        full_path = "/path/to/some/file.csv"
+        output_dir = "/path/to/output/dir"
         suffix = "-ex"
         modified_ext = ".json"
 
@@ -267,7 +266,7 @@ class TestCLIStructure(TestCLIBase):
     @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_s3(self):
         """Test the structuring using files from S3"""
-        s3_key = Path("big_file_tests/PreDiag_000287_000128.092")
+        s3_key = "big_file_tests/PreDiag_000287_000128.092"
 
         result = self.runner.invoke(
             cli,
