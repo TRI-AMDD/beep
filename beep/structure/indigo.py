@@ -27,11 +27,8 @@ class IndigoDatapath(BEEPDatapath):
         Returns:
             (IndigoDatapath)
         """
-
-
 #        if using python 3.7 or 3.8
 #        data = pd.read_hdf(path, "time_series_data")
-
 #        if using python 3.7, 3.8 or 3.9
         hdf = h5py.File(path, "r")
         d0 = hdf.get('time_series_data')
@@ -43,16 +40,14 @@ class IndigoDatapath(BEEPDatapath):
         d6 = np.array(d0.get('block1_values'))
         d7 = np.array(d0.get('block2_items'))
         d8 = np.array(d0.get('block2_values'))
-        d9 = np.concatenate((d4,d6,d8), axis=1)
+        d9 = np.concatenate((d4, d6, d8), axis = 1)
         d10 = pd.DataFrame(d9)
-        d11 = d10.set_axis(d2, axis="index")
+        d11 = d10.set_axis(d2, axis = "index")
         d1_string = []
         for i in d1:
             j = i.decode("utf-8")
             d1_string.append(j)
-        data = d11.set_axis(d1_string, axis="columns")
-
-
+        data = d11.set_axis(d1_string, axis = "columns")
         metadata = dict()
 
         if len(list(data["cell_id"].unique())) > 1:
