@@ -1,5 +1,12 @@
 
 
+v2021.10.28.12
+--------------
+* Add ability to use mapping file for generating cycle_index
+* Add ability to stucture both manual and automatically exported files from BioLogic
+* Fixed a bug where the featurization hyperparameter dict was altered in place, causing an error on multiple consecutive featurization calls
+
+
 v2021.10.11.13
 --------------
 * New CLI with refactored feature generation classes and training - Thanks Alex Dunn!
