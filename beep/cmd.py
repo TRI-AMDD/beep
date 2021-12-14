@@ -67,8 +67,8 @@ from beep.protocol.generate_protocol import ProtocolException
 
 CLICK_FILE = click.Path(file_okay=True, dir_okay=False, writable=False, readable=True)
 CLICK_DIR = click.Path(file_okay=False, dir_okay=True, writable=True, readable=True)
-STRUCTURED_SUFFIX = "-structured"
-FEATURIZED_SUFFIX = "-featurized"
+STRUCTURED_SUFFIX = "_structured"
+FEATURIZED_SUFFIX = "_featurized"
 
 
 class ContextPersister:
