@@ -1,5 +1,15 @@
 
 
+v2021.12.15.7
+-------------
+* Change suffix separator to better align with previous usage
+* Add python 3.9 for integration tests (#465)
+* update requirements
+* Add back the windows testing for integration tests (#440)
+* add in a test for maccor files in auto_load_processed
+* append structured path when using auto_load_processed
+* Make changes to reflect current testing parameters for formation degradation
+
 v2021.10.28.12
 --------------
 * Add ability to use mapping file for generating cycle_index
