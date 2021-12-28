@@ -1,5 +1,9 @@
 
 
+v2021.12.28.16
+--------------
+* Update the diagnostic parameters
+
 v2021.12.15.7
 -------------
 * Change suffix separator to better align with previous usage
