@@ -200,6 +200,8 @@ class BEEPDatapath(abc.ABC, MSONable):
 
             if os.path.exists(abs_schema):
                 self.schema = abs_schema
+            elif os.path.exists(os.path.join(VALIDATION_SCHEMA_DIR, os.path.split(schema)[-1])):
+                self.schema = os.path.join(VALIDATION_SCHEMA_DIR, os.path.split(schema)[-1])
             else:
                 raise FileNotFoundError(f"The schema file specified for validation could not be found: {schema}.")
 
