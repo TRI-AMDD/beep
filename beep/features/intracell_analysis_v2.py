@@ -1027,7 +1027,7 @@ def get_electrode_info_ah(pe_out_zeroed, ne_out_zeroed):
         ...
         ne_soc_FC2p7V: state of charge of the anode electrode corresponding
             to the full cell at 2.7V
-        
+
         Q_fc: capacity of the full cecll within the full cell voltage limits
         Q_pe: capacity of the cathode
         Q_ne: capacity of the anode [Ahr]
