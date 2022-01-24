@@ -380,7 +380,6 @@ class IntracellAnalysisV2:
             emulated_full_cell_interped (Dataframe): capacity and voltage interpolated evenly
                     across capacity for the emulated cell data
         """
-        
         pe_out_zeroed, ne_out_zeroed, df_real_interped, emulated_full_cell_interped = \
             self.halfcell_degradation_matching_ah(x, *params)
 
@@ -405,7 +404,7 @@ class IntracellAnalysisV2:
                 dv_dq_emulated,
                 df_real_interped,
                 emulated_full_cell_interped)
-    
+
     def get_v_over_q_from_degradation_matching_ah(self, x, *params):
         """
         This function imposes degradation scaling ,then outputs the V-Q representation of the emulated cell data.
@@ -499,7 +498,7 @@ class IntracellAnalysisV2:
         emulated_full_cell_interped['Voltage_aligned'] = emulated_full_cell_interper(q_vec_full_cell)
 
         return pe_out_zeroed, ne_out_zeroed, emulated_full_cell_interped
-    
+
     def halfcell_degradation_matching_ah_no_real(self, x, *params):
         """
         Calls underlying functions to impose degradation through electrode 
@@ -614,7 +613,7 @@ class IntracellAnalysisV2:
             return self._get_error_from_degradation_matching_dqdv(x, *params)[0]
         else:
             return self._get_error_from_degradation_matching_v_q(x, *params)[0]
-        
+
     def _get_error_from_degradation_matching_v_q(self, x, *params):
         """
         Error function returning the mean standardized Euclidean distance of each point of the real curve to
@@ -637,11 +636,9 @@ class IntracellAnalysisV2:
             xa (Dataframe): real full cell data used for error analysis
             xb (Dataframe): emulated full cell  data used for error analysis
         """
-
         try:
             (pe_out_zeroed, ne_out_zeroed, real_aligned, emulated_aligned
              ) = self.get_v_over_q_from_degradation_matching_ah(x, *params)
-            
             xa = real_aligned.dropna()
             xb = emulated_aligned.dropna()
             error_matrix = distance.cdist(xa, xb, 'seuclidean')
@@ -675,7 +672,6 @@ class IntracellAnalysisV2:
             xa (Dataframe): real full cell data used for error analysis
             xb (Dataframe): emulated full cell  data used for error analysis
         """
-        
         try:
             # Call dQdV generating function
             (pe_out_zeroed,
@@ -690,12 +686,12 @@ class IntracellAnalysisV2:
             error_matrix = distance.cdist(xa, xb, 'seuclidean')
             error_vector = error_matrix.min(axis=1)
             error = error_vector.mean()
-            
+
         except ValueError:
             error = 100
             return error, None, None, None
         return error, error_vector, xa, xb
-    
+
     def _get_error_from_degradation_matching_dvdq(self, x, *params):
         """
         Error function returning the mean standardized Euclidean distance of each point of the real curve to
