@@ -1,5 +1,10 @@
 
 
+v2022.1.24.16
+-------------
+* Fix bug with loading processed file from a different environment
+* Allow biologic txt files to structure (#518)
+
 v2021.12.28.16
 --------------
 * Update the diagnostic parameters
