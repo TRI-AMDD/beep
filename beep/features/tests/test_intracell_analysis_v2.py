@@ -66,7 +66,7 @@ class IntracellAnalysisV2Test(unittest.TestCase):
             5)
 
     def test_intracell_halfcell_matching_v2_mock(self):
-        ia = IntracellAnalysis(
+        ia = IntracellAnalysisV2(
             self.cathode_file,
             self.anode_file,
             cycle_type='rpt_0.2C',
@@ -99,7 +99,7 @@ class IntracellAnalysisV2Test(unittest.TestCase):
                                4.299219386998656, 5)
 
     def test_intracell_get_dq_dv_mock(self):
-        ia = IntracellAnalysis(
+        ia = IntracellAnalysisV2(
             self.cathode_file,
             self.anode_file,
             cycle_type='rpt_0.2C',
@@ -178,7 +178,7 @@ class IntracellAnalysisV2Test(unittest.TestCase):
 
     @unittest.skip
     def test_process_beep_cycle_data_for_initial_halfcell_analysis(self):
-        ia = IntracellAnalysis(os.path.join(TEST_FILE_DIR,
+        ia = IntracellAnalysisV2(os.path.join(TEST_FILE_DIR,
                                             'cathode_clean_cc_charge_exptl_aligned.csv'),
                                os.path.join(TEST_FILE_DIR,
                                             'anode_secondMeasure_clean_cc_charge_exptl_aligned.csv'),
@@ -206,7 +206,7 @@ class IntracellAnalysisV2Test(unittest.TestCase):
 
     @unittest.skip
     def test_intracell(self):
-        ia = IntracellAnalysis(os.path.join(TEST_FILE_DIR,
+        ia = IntracellAnalysisV2(os.path.join(TEST_FILE_DIR,
                                             'cathode_clean_cc_charge_exptl_aligned.csv'),
                                os.path.join(TEST_FILE_DIR,
                                             'anode_secondMeasure_clean_cc_charge_exptl_aligned.csv'),
@@ -384,17 +384,15 @@ class IntracellAnalysisV2Test(unittest.TestCase):
         self.assertAlmostEqual(degradation_df['Li_mass'].iloc[0], 104.680978, 5)
 
     def test_intracell_wrappers(self):
-        ia = IntracellAnalysis(
-            os.path.join(TEST_FILE_DIR, 'data-share', 'raw', 'cell_info',
-                         'cathode_test.csv'),
-            os.path.join(TEST_FILE_DIR, 'data-share', 'raw', 'cell_info',
-                         'anode_test.csv'),
+        ia = IntracellAnalysisV2(
+            os.path.join(TEST_FILE_DIR, 'cathode_clean_cc_charge_exptl_aligned.csv'),
+            os.path.join(TEST_FILE_DIR, 'anode_secondMeasure_clean_cc_charge_exptl_aligned.csv'),
             cycle_type='rpt_0.2C',
             step_type=0
         )
 
-        (cell_init_aligned, cell_init_profile, PE_matched,
-         NE_matched) = ia.intracell_wrapper_init(self.cell_struct)
+        (cell_init_aligned, cell_init_profile, pe_matched,
+         ne_matched) = ia.intracell_values_wrapper_ah(self.cell_struct)
 
         eol_cycle_index_list = self.cell_struct.diagnostic_summary[
             (self.cell_struct.diagnostic_summary.cycle_type == ia.cycle_type) &
@@ -410,8 +408,8 @@ class IntracellAnalysisV2Test(unittest.TestCase):
                                                                    self.cell_struct,
                                                                    cell_init_aligned,
                                                                    cell_init_profile,
-                                                                   PE_matched,
-                                                                   NE_matched,
+                                                                   pe_matched,
+                                                                   ne_matched,
                                                                    )
             dataset_dict_of_cell_degradation_path.update(loss_dict)
             real_cell_dict_of_profiles.update(profiles_dict)
@@ -431,21 +429,21 @@ class IntracellAnalysisV2Test(unittest.TestCase):
         print(degradation_df['LLI'])
         print(degradation_df['LAM_PE'])
         print(degradation_df['Li_mass'])
-        self.assertAlmostEqual(degradation_df['LLI'].iloc[0], -9.999983, 5)
-        self.assertAlmostEqual(degradation_df['LLI'].iloc[1], -9.999556, 5)
-        self.assertAlmostEqual(degradation_df['LAM_PE'].iloc[0], 49.984768, 5)
-        self.assertAlmostEqual(degradation_df['LAM_PE'].iloc[1], 49.984877, 5)
-        self.assertAlmostEqual(degradation_df["Li_mass"].iloc[1], 12.312480, 3)
+        # self.assertAlmostEqual(degradation_df['LLI'].iloc[0], -9.999983, 5)
+        # self.assertAlmostEqual(degradation_df['LLI'].iloc[1], -9.999556, 5)
+        # self.assertAlmostEqual(degradation_df['LAM_PE'].iloc[0], 49.984768, 5)
+        # self.assertAlmostEqual(degradation_df['LAM_PE'].iloc[1], 49.984877, 5)
+        # self.assertAlmostEqual(degradation_df["Li_mass"].iloc[1], 12.312480, 3)
 
         # Values for real anode and cathode measurements
-        # self.assertAlmostEqual(degradation_df['LLI'].iloc[0], -0.027076, 5)
-        # self.assertAlmostEqual(degradation_df['LLI'].iloc[1], 2.712016, 5)
-        # self.assertAlmostEqual(degradation_df['LAM_PE'].iloc[0], 0.06750165, 5)
-        # self.assertAlmostEqual(degradation_df['LAM_PE'].iloc[1], 2.745720, 5)
-        # self.assertAlmostEqual(degradation_df["Li_mass"].iloc[1], 101.82022, 3)
+        self.assertAlmostEqual(degradation_df['LLI'].iloc[0], -0.027076, 5)
+        self.assertAlmostEqual(degradation_df['LLI'].iloc[1], 2.712016, 5)
+        self.assertAlmostEqual(degradation_df['LAM_PE'].iloc[0], 0.06750165, 5)
+        self.assertAlmostEqual(degradation_df['LAM_PE'].iloc[1], 2.745720, 5)
+        self.assertAlmostEqual(degradation_df["Li_mass"].iloc[1], 101.82022, 3)
 
 
-class IntracellFeaturesTest(unittest.TestCase):
+class IntracellFeaturesTestV2(unittest.TestCase):
     def setUp(self):
         run_path = os.path.join(TEST_FILE_DIR,
                                 'PreDiag_000220_00005E_structure_omit.json')

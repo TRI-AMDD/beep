@@ -1036,7 +1036,7 @@ def get_electrode_info_ah(pe_out_zeroed, ne_out_zeroed):
     pe_minus_ne_zeroed = pd.DataFrame(pe_out_zeroed['Voltage_aligned'] - ne_out_zeroed['Voltage_aligned'],
                                       columns=['Voltage_aligned'])
     pe_minus_ne_zeroed['Q_aligned'] = pe_out_zeroed['Q_aligned']
-    
+
     electrode_info_df = pd.DataFrame(index=[0])
 
     electrode_info_df['pe_voltage_FC4p2V'] = pe_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned
@@ -1184,7 +1184,7 @@ def get_electrode_info_ah(pe_out_zeroed, ne_out_zeroed):
                             np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])
                             )
     )  # 2.7V
-    
+
     electrode_info_df['ne_voltage_FC4p2V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned
                                                                                 - 4.2))].Voltage_aligned
     electrode_info_df['ne_voltage_FC4p1V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned
@@ -1217,7 +1217,7 @@ def get_electrode_info_ah(pe_out_zeroed, ne_out_zeroed):
                                                                                 - 2.8))].Voltage_aligned
     electrode_info_df['ne_voltage_FC2p7V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned
                                                                                 - 2.7))].Voltage_aligned
-    
+
     electrode_info_df['ne_soc_FC4p2V'] = (
             (ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 4.2))].Q_aligned -
              np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
@@ -1330,13 +1330,13 @@ def get_electrode_info_ah(pe_out_zeroed, ne_out_zeroed):
                             np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])
                             )
     )  # 2.7V
-    
+
     electrode_info_df['Q_fc'] = pe_minus_ne_zeroed.loc[
         np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 4.20))].Q_aligned
-    
+
     electrode_info_df['Q_pe'] = np.max(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()]) - \
         np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])
-    
+
     electrode_info_df['Q_ne'] = np.max(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]) - \
         np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])
 
