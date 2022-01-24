@@ -119,15 +119,6 @@ class BiologicDatapath(BEEPDatapath):
         data["data_point"] = list(range(1, len(raw["cycle number"]) + 1))
 
         data = pd.DataFrame(data)
-        data.loc[data.step_index % 2 == 0, "charge_capacity"] = abs(
-            data.charge_capacity
-        )
-        data.loc[data.step_index % 2 == 1, "charge_capacity"] = 0
-        data.loc[data.step_index % 2 == 1, "discharge_capacity"] = abs(
-            data.discharge_capacity
-        )
-        data.loc[data.step_index % 2 == 0, "discharge_capacity"] = 0
-
         metadata_path = path.replace(".csv", ".mpl")
         metadata = cls.parse_metadata(metadata_path)
         metadata["filename"] = path
