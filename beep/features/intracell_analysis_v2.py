@@ -507,8 +507,8 @@ class IntracellAnalysisV2:
 
         # Interpolate the emulated full-cell profile
         emulated_full_cell_interped = pd.DataFrame()
-        emulated_full_cell_interped['Q_aligned'] = Q_vec_full_cell
-        emulated_full_cell_interped['Voltage_aligned'] = emulated_full_cell_interper(Q_vec_full_cell)
+        emulated_full_cell_interped['Q_aligned'] = q_vec_full_cell
+        emulated_full_cell_interped['Voltage_aligned'] = emulated_full_cell_interper(q_vec_full_cell)
 
         return pe_out_zeroed, ne_out_zeroed, emulated_full_cell_interped
     
@@ -539,16 +539,17 @@ class IntracellAnalysisV2:
         emulated_aligned (Dataframe): full cell data corresponding to the imposed degradation
         """
         lli = x[0]
-        Q_pe = x[1]
-        Q_ne = x[2]
+        q_pe = x[1]
+        q_ne = x[2]
         x_ne_2 = x[3]
 
         pe_pristine, ne_1_pristine, ne_2_pristine_pos, ne_2_pristine_neg = params
 
         pe_out, ne_out = self._impose_electrode_scale(pe_pristine, ne_1_pristine,
-                                                  ne_2_pristine_pos, ne_2_pristine_neg,
-                                                  lli, Q_pe,
-                                                  Q_ne, x_ne_2) #outputs degraded ne and pe (on a AH basis, with electrode alignment (NaNs for voltage, when no overlap))
+                                                      ne_2_pristine_pos, ne_2_pristine_neg,
+                                                      lli, q_pe,
+                                                      q_ne, x_ne_2)
+        # outputs degraded ne and pe (on a AH basis, with electrode alignment (NaNs for voltage, when no overlap))
         
         emulated_full_cell_with_degradation = pd.DataFrame()
         emulated_full_cell_with_degradation['Q_aligned'] = pe_out['Q_aligned'].copy()
@@ -581,10 +582,10 @@ class IntracellAnalysisV2:
         ne_out_zeroed['Q_aligned'] = ne_out['Q_aligned'] - zeroing_value
 
         # Interpolate full profiles across same Q range
-        min_Q = np.min(
+        min_q = np.min(
             emulated_full_cell_with_degradation_zeroed['Q_aligned'].loc[
                 ~emulated_full_cell_with_degradation_zeroed['Voltage_aligned'].isna()])
-        max_Q = np.max(
+        max_q = np.max(
             emulated_full_cell_with_degradation_zeroed['Q_aligned'].loc[
                 ~emulated_full_cell_with_degradation_zeroed['Voltage_aligned'].isna()])
         
@@ -594,11 +595,11 @@ class IntracellAnalysisV2:
                                          ~emulated_full_cell_with_degradation_zeroed['Voltage_aligned'].isna()],
                                      bounds_error=False)
 
-        Q_vec = np.linspace(min_Q, max_Q, 1001)
+        q_vec = np.linspace(min_q, max_q, 1001)
 
         emulated_aligned = pd.DataFrame()
-        emulated_aligned['Q_aligned'] = Q_vec
-        emulated_aligned['Voltage_aligned'] = emulated_interper(Q_vec)
+        emulated_aligned['Q_aligned'] = q_vec
+        emulated_aligned['Voltage_aligned'] = emulated_interper(q_vec)
 
         return pe_out_zeroed, ne_out_zeroed, emulated_aligned
     
@@ -623,13 +624,13 @@ class IntracellAnalysisV2:
         """
         error_type = self.error_type
         if error_type == 'V-Q':
-            return self._get_error_from_degradation_matching_V_Q(x,*params)[0]
+            return self._get_error_from_degradation_matching_V_Q(x, *params)[0]
         elif error_type == 'dVdQ':
-            return self._get_error_from_degradation_matching_dVdQ(x,*params)[0]
+            return self._get_error_from_degradation_matching_dVdQ(x, *params)[0]
         elif error_type == 'dQdV':
-            return self._get_error_from_degradation_matching_dQdV(x,*params)[0]
+            return self._get_error_from_degradation_matching_dQdV(x, *params)[0]
         else:
-            return self._get_error_from_degradation_matching_V_Q(x,*params)[0]
+            return self._get_error_from_degradation_matching_V_Q(x, *params)[0]
         
     def _get_error_from_degradation_matching_V_Q(self, x, *params):
         """
@@ -658,20 +659,20 @@ class IntracellAnalysisV2:
         
         try:
             (pe_out_zeroed, ne_out_zeroed, real_aligned, emulated_aligned
-             ) = self.get_V_over_Q_from_degradation_matching_ah(x, *params)
+             ) = self.get_v_over_q_from_degradation_matching_ah(x, *params)
             
-            XA = real_aligned.dropna()
-            XB = emulated_aligned.dropna()
+            xa = real_aligned.dropna()
+            xb = emulated_aligned.dropna()
             error_matrix = distance.cdist(XA, XB, 'seuclidean')
             error_vector = error_matrix.min(axis = 1)
             error = error_vector.mean()
         except ValueError:
             error = 100
             return error, None, None, None
-        return error, error_vector, XA, XB
+        return error, error_vector, xa, xb
     
         # Pairwise euclidean from premade dQdV
-    def _get_error_from_degradation_matching_dQdV(self, x, *params):
+    def _get_error_from_degradation_matching_dqdv(self, x, *params):
         """
         Error function returning the mean standardized Euclidean distance of each point of the real curve to
                 the closest value on the emulated curve in the dQdV representation.
@@ -698,25 +699,25 @@ class IntracellAnalysisV2:
         
         try:
             # Call dQdV generating function
-            (PE_out_zeroed,
-            NE_out_zeroed,
-            dQdV_over_v_real,
-            dQdV_over_v_emulated,
+            (pe_out_zeroed,
+            ne_out_zeroed,
+            dqdv_over_v_real,
+            dqdv_over_v_emulated,
             df_real_interped,
-            emulated_full_cell_interped) = self.get_dQdV_over_V_from_degradation_matching_ah(x, *params)
+            emulated_full_cell_interped) = self.get_dqdv_over_v_from_degradation_matching_ah(x, *params)
 
-            XA = dQdV_over_v_real[[ 'Voltage_aligned','dQdV']].dropna()
-            XB = dQdV_over_v_emulated[['Voltage_aligned', 'dQdV']].dropna()
-            error_matrix = distance.cdist(XA, XB, 'seuclidean')
-            error_vector = error_matrix.min(axis = 1)
+            xa = dqdv_over_v_real[[ 'Voltage_aligned','dQdV']].dropna()
+            xb = dqdv_over_v_emulated[['Voltage_aligned', 'dQdV']].dropna()
+            error_matrix = distance.cdist(xa, xb, 'seuclidean')
+            error_vector = error_matrix.min(axis=1)
             error = error_vector.mean()
             
         except ValueError:
             error = 100
             return error, None, None, None
-        return error, error_vector, XA, XB
+        return error, error_vector, xa, xb
     
-    def _get_error_from_degradation_matching_dVdQ(self, x, *params):
+    def _get_error_from_degradation_matching_dvdq(self, x, *params):
         """
         Error function returning the mean standardized Euclidean distance of each point of the real curve to
                 the closest value on the emulated curve in the dVdQ representation.
@@ -742,28 +743,28 @@ class IntracellAnalysisV2:
         """
         
         try:
-            (PE_out_zeroed,
-             NE_out_zeroed,
-             dVdQ_over_Q_real,
-             dVdQ_over_Q_emulated,
+            (pe_out_zeroed,
+             ne_out_zeroed,
+             dvdq_over_q_real,
+             dvdq_over_q_emulated,
              df_real_interped,
-             emulated_full_cell_interped) = self.get_dVdQ_over_Q_from_degradation_matching_ah(x, *params)
+             emulated_full_cell_interped) = self.get_dvdq_over_q_from_degradation_matching_ah(x, *params)
                         
-            XA = dVdQ_over_Q_real[[ 'Q_aligned','dVdQ']].dropna()
-            XB = dVdQ_over_Q_emulated[['Q_aligned', 'dVdQ']].dropna()
+            xa = dvdq_over_q_real[[ 'Q_aligned','dVdQ']].dropna()
+            xb = dvdq_over_q_emulated[['Q_aligned', 'dVdQ']].dropna()
             
             # down-select to values with capacity more than 0.5 Ahr to eliminate high-slope region of dVdQ
-            XA = XA.loc[(XA.Q_aligned > 0.5)]
-            XB = XB.loc[(XB.Q_aligned > 0.5)]
+            xa = xa.loc[(xa.Q_aligned > 0.5)]
+            xb = xb.loc[(xb.Q_aligned > 0.5)]
             
-            error_matrix = distance.cdist(XA, XB, 'seuclidean')
-            error_vector = error_matrix.min(axis = 1)
+            error_matrix = distance.cdist(xa, xb, 'seuclidean')
+            error_vector = error_matrix.min(axis=1)
             error = error_vector.mean()
             
         except ValueError:
             error = 100
             return error, None, None, None
-        return error, error_vector, XA, XB
+        return error, error_vector, xa, xb
     
     def _get_error_from_synthetic_fitting_ah(self, x, *params):
         """
@@ -790,22 +791,22 @@ class IntracellAnalysisV2:
         
         try:
             if error_type == 'V-Q':
-                return self._get_error_from_degradation_matching_V_Q(x, *params)[0]
+                return self._get_error_from_degradation_matching_v_q(x, *params)[0]
             elif error_type == 'dVdQ':
-                return self._get_error_from_degradation_matching_dVdQ(x, *params)[0]
+                return self._get_error_from_degradation_matching_dvdq(x, *params)[0]
             elif error_type == 'dQdV':
-                return self._get_error_from_degradation_matching_dVdQ(x, *params)[0]
+                return self._get_error_from_degradation_matching_dvdq(x, *params)[0]
             else:
-                return self._get_error_from_degradation_matching_V_Q(x, *params)[0]
+                return self._get_error_from_degradation_matching_v_q(x, *params)[0]
         except:
             print("Can't return error")
             return 100
         
     def intracell_values_wrapper_ah(self,
-                                 cycle_index,
-                                 cell_struct,
-                                 degradation_bounds=None
-                                 ):
+                                    cycle_index,
+                                    cell_struct,
+                                    degradation_bounds=None
+                                    ):
         """
         Wrapper function to solve capacity sizing and offset of reference electrodes to real full cell cycle data.
         
@@ -850,12 +851,12 @@ class IntracellAnalysisV2:
                                                                  )
 #         print(degradation_optimization_result.x) #BVV
 
-        (PE_out_zeroed,
-         NE_out_zeroed,
-         dQdV_over_v_real,
-         dQdV_over_v_emulated,
+        (pe_out_zeroed,
+         ne_out_zeroed,
+         dqdv_over_v_real,
+         dqdv_over_v_emulated,
          df_real_interped,
-         emulated_full_cell_interped) = self.get_dQdV_over_V_from_degradation_matching_ah(
+         emulated_full_cell_interped) = self.get_dqdv_over_v_from_degradation_matching_ah(
             degradation_optimization_result.x,
             self.pe_pristine,
             self.ne_1_pristine,
@@ -863,36 +864,37 @@ class IntracellAnalysisV2:
             self.ne_2_pristine_neg,
             real_cell_candidate_charge_profile_aligned)
         #
-        electrode_info_df = get_electrode_info_ah(PE_out_zeroed, NE_out_zeroed)
+        electrode_info_df = get_electrode_info_ah(pe_out_zeroed, ne_out_zeroed)
         #
         error = degradation_optimization_result.fun
-        LLI_opt = degradation_optimization_result.x[0]
-        Q_pe_opt = degradation_optimization_result.x[1]
-        Q_ne_opt = degradation_optimization_result.x[2]
-        x_NE_2 = degradation_optimization_result.x[3]
+        lli_opt = degradation_optimization_result.x[0]
+        q_pe_opt = degradation_optimization_result.x[1]
+        q_ne_opt = degradation_optimization_result.x[2]
+        x_ne_2 = degradation_optimization_result.x[3]
         
-        loss_dict = {cycle_index: np.append([error, LLI_opt, Q_pe_opt, Q_ne_opt,
-                                             x_NE_2],
+        loss_dict = {cycle_index: np.append([error, lli_opt, q_pe_opt, q_ne_opt,
+                                             x_ne_2],
                                              electrode_info_df.iloc[-1].values)
                      }
 
-        profiles_per_cycle_dict = {'NE_zeroed' : NE_out_zeroed, 
-                                   'PE_zeroed' : PE_out_zeroed, 
-                                   'dQdV_over_v_real': dQdV_over_v_real,
-                                   'dQdV_over_v_emulated': dQdV_over_v_emulated,
+        profiles_per_cycle_dict = {'NE_zeroed': ne_out_zeroed,
+                                   'PE_zeroed': pe_out_zeroed,
+                                   'dQdV_over_v_real': dqdv_over_v_real,
+                                   'dQdV_over_v_emulated': dqdv_over_v_emulated,
                                    'df_real_interped': df_real_interped,
-                                   'emulated_full_cell_interped': emulated_full_cell_interped ,
-                                   'real_cell_candidate_charge_profile_aligned': real_cell_candidate_charge_profile_aligned
-                                  }
+                                   'emulated_full_cell_interped': emulated_full_cell_interped,
+                                   'real_cell_candidate_charge_profile_aligned':
+                                       real_cell_candidate_charge_profile_aligned
+                                   }
         
         profiles_dict = {cycle_index: profiles_per_cycle_dict}
 
         return loss_dict, profiles_dict
     
     def solve_emulated_degradation(self,
-                                 forward_simulated_profile,
-                                 degradation_bounds=None
-                                 ):
+                                   forward_simulated_profile,
+                                   degradation_bounds=None
+                                   ):
         
         """
         
@@ -926,7 +928,9 @@ class IntracellAnalysisV2:
 
         return degradation_optimization_result
 
-def blend_electrodes(electrode_1, electrode_2_pos, electrode_2_neg, x_2): ## this function needs revisited
+
+# TODO this function needs revisited
+def blend_electrodes(electrode_1, electrode_2_pos, electrode_2_neg, x_2):
     """
     Blends two electrode materials from their SOC-V profiles to form a blended electrode.
     
@@ -1035,7 +1039,7 @@ def get_electrode_info_ah(pe_out_zeroed, ne_out_zeroed):
         Q_li
     """
     pe_minus_ne_zeroed = pd.DataFrame(pe_out_zeroed['Voltage_aligned'] - ne_out_zeroed['Voltage_aligned'],
-                                        columns=['Voltage_aligned'])
+                                      columns=['Voltage_aligned'])
     pe_minus_ne_zeroed['Q_aligned'] = pe_out_zeroed['Q_aligned']
     
     electrode_info_df = pd.DataFrame(index=[0])
@@ -1081,16 +1085,20 @@ def get_electrode_info_ah(pe_out_zeroed, ne_out_zeroed):
             )
     )  # 4.2V
 
-    electrode_info_df['pe_soc_FC4p1V'] = ((pe_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 4.1))].Q_aligned - 
-                        np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])) / (
+    electrode_info_df['pe_soc_FC4p1V'] = (
+            (pe_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 4.1))].Q_aligned -
+             np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])) / (
                             np.max(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()]) -
-                            np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()]))
-                    ) # 4.1V
-    electrode_info_df['pe_soc_FC4p0V'] = ((pe_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 4.0))].Q_aligned - 
-                        np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])) / (
+                            np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])
+                            )
+    )  # 4.1V
+    electrode_info_df['pe_soc_FC4p0V'] = (
+            (pe_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 4.0))].Q_aligned -
+             np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])) / (
                             np.max(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()]) -
-                            np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()]))
-                    ) # 4.0V
+                            np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])
+                            )
+    )  # 4.0V
     electrode_info_df['pe_soc_FC3p9V'] = ((pe_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.9))].Q_aligned - 
                         np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])) / (
                             np.max(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()]) -
@@ -1131,137 +1139,202 @@ def get_electrode_info_ah(pe_out_zeroed, ne_out_zeroed):
                             np.max(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()]) -
                             np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()]))
                     ) # 3.2V    
-    electrode_info_df['pe_soc_FC3p1V'] = ((pe_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.1))].Q_aligned - 
-                        np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])) / (
+    electrode_info_df['pe_soc_FC3p1V'] = (
+            (pe_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.1))].Q_aligned -
+             np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])) / (
                             np.max(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()]) -
-                            np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()]))
-                    ) # 3.1V    
-    electrode_info_df['pe_soc_FC3p0V'] = ((pe_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.0))].Q_aligned - 
-                        np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])) / (
+                            np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])
+                            )
+    )  # 3.1V
+    electrode_info_df['pe_soc_FC3p0V'] = (
+            (pe_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.0))].Q_aligned -
+             np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])) / (
                             np.max(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()]) -
-                            np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()]))
-                    ) # 3.0V
-    electrode_info_df['pe_soc_FC2p9V'] = ((pe_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 2.9))].Q_aligned - 
-                        np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])) / (
+                            np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])
+                            )
+    )  # 3.0V
+    electrode_info_df['pe_soc_FC2p9V'] = (
+            (pe_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 2.9))].Q_aligned -
+             np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])) / (
                             np.max(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()]) -
-                            np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()]))
-                    ) # 2.9V    
-    electrode_info_df['pe_soc_FC2p8V'] = ((pe_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 2.8))].Q_aligned - 
-                        np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])) / (
+                            np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])
+                            )
+    )  # 2.9V
+    electrode_info_df['pe_soc_FC2p8V'] = (
+            (pe_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 2.8))].Q_aligned -
+             np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])) / (
                             np.max(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()]) -
-                            np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()]))
-                    ) # 2.8V        
-    electrode_info_df['pe_soc_FC2p7V'] = ((pe_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 2.7))].Q_aligned - 
-                        np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])) / (
+                            np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])
+    )
+    )  # 2.8V
+    electrode_info_df['pe_soc_FC2p7V'] = (
+            (pe_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 2.7))].Q_aligned -
+             np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])) / (
                             np.max(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()]) -
-                            np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()]))
-                    ) # 2.7V
+                            np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])
+                            )
+    ) # 2.7V
     
-    electrode_info_df['ne_voltage_FC4p2V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 4.2))].Voltage_aligned
-    electrode_info_df['ne_voltage_FC4p1V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 4.1))].Voltage_aligned
-    electrode_info_df['ne_voltage_FC4p0V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 4.0))].Voltage_aligned
-    electrode_info_df['ne_voltage_FC3p9V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.9))].Voltage_aligned
-    electrode_info_df['ne_voltage_FC3p8V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.8))].Voltage_aligned
-    electrode_info_df['ne_voltage_FC3p7V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.7))].Voltage_aligned
-    electrode_info_df['ne_voltage_FC3p6V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.6))].Voltage_aligned
-    electrode_info_df['ne_voltage_FC3p5V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.5))].Voltage_aligned
-    electrode_info_df['ne_voltage_FC3p4V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.4))].Voltage_aligned
-    electrode_info_df['ne_voltage_FC3p3V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.3))].Voltage_aligned
-    electrode_info_df['ne_voltage_FC3p2V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.2))].Voltage_aligned
-    electrode_info_df['ne_voltage_FC3p1V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.1))].Voltage_aligned
-    electrode_info_df['ne_voltage_FC3p0V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.0))].Voltage_aligned
-    electrode_info_df['ne_voltage_FC2p9V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 2.9))].Voltage_aligned
-    electrode_info_df['ne_voltage_FC2p8V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 2.8))].Voltage_aligned
-    electrode_info_df['ne_voltage_FC2p7V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 2.7))].Voltage_aligned
+    electrode_info_df['ne_voltage_FC4p2V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned
+                                                                                - 4.2))].Voltage_aligned
+    electrode_info_df['ne_voltage_FC4p1V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned
+                                                                                - 4.1))].Voltage_aligned
+    electrode_info_df['ne_voltage_FC4p0V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned
+                                                                                - 4.0))].Voltage_aligned
+    electrode_info_df['ne_voltage_FC3p9V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned
+                                                                                - 3.9))].Voltage_aligned
+    electrode_info_df['ne_voltage_FC3p8V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned
+                                                                                - 3.8))].Voltage_aligned
+    electrode_info_df['ne_voltage_FC3p7V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned
+                                                                                - 3.7))].Voltage_aligned
+    electrode_info_df['ne_voltage_FC3p6V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned
+                                                                                - 3.6))].Voltage_aligned
+    electrode_info_df['ne_voltage_FC3p5V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned
+                                                                                - 3.5))].Voltage_aligned
+    electrode_info_df['ne_voltage_FC3p4V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned
+                                                                                - 3.4))].Voltage_aligned
+    electrode_info_df['ne_voltage_FC3p3V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned
+                                                                                - 3.3))].Voltage_aligned
+    electrode_info_df['ne_voltage_FC3p2V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned
+                                                                                - 3.2))].Voltage_aligned
+    electrode_info_df['ne_voltage_FC3p1V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned
+                                                                                - 3.1))].Voltage_aligned
+    electrode_info_df['ne_voltage_FC3p0V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned
+                                                                                - 3.0))].Voltage_aligned
+    electrode_info_df['ne_voltage_FC2p9V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned
+                                                                                - 2.9))].Voltage_aligned
+    electrode_info_df['ne_voltage_FC2p8V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned
+                                                                                - 2.8))].Voltage_aligned
+    electrode_info_df['ne_voltage_FC2p7V'] = ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned
+                                                                                - 2.7))].Voltage_aligned
     
-    electrode_info_df['ne_soc_FC4p2V'] = ((ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 4.2))].Q_aligned - 
-                        np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
+    electrode_info_df['ne_soc_FC4p2V'] = (
+            (ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 4.2))].Q_aligned -
+             np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
                             np.max(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]) -
-                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]))
-                    ) # 4.2V    
-    electrode_info_df['ne_soc_FC4p1V'] = ((ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 4.1))].Q_aligned - 
-                        np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
+                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])
+                            )
+    )  # 4.2V
+    electrode_info_df['ne_soc_FC4p1V'] = (
+            (ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 4.1))].Q_aligned -
+             np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
                             np.max(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]) -
-                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]))
-                    ) # 4.1V
-    electrode_info_df['ne_soc_FC4p0V'] = ((ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 4.0))].Q_aligned - 
-                        np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
+                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])
+                            )
+    )  # 4.1V
+    electrode_info_df['ne_soc_FC4p0V'] = (
+            (ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 4.0))].Q_aligned -
+             np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
                             np.max(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]) -
-                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]))
-                    ) # 4.0V
-    electrode_info_df['ne_soc_FC3p9V'] = ((ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.9))].Q_aligned - 
-                        np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
+                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])
+                            )
+    )  # 4.0V
+    electrode_info_df['ne_soc_FC3p9V'] = (
+            (ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.9))].Q_aligned -
+             np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
                             np.max(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]) -
-                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]))
-                    ) # 3.9V
-    electrode_info_df['ne_soc_FC3p8V'] = ((ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.8))].Q_aligned - 
-                        np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
+                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])
+                            )
+    )  # 3.9V
+    electrode_info_df['ne_soc_FC3p8V'] = (
+            (ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.8))].Q_aligned -
+             np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
                             np.max(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]) -
-                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]))
-                    ) # 3Q_aligned.8V
-    electrode_info_df['ne_soc_FC3p7V'] = ((ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.7))].Q_aligned - 
-                        np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
+                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])
+                            )
+    )  # 3Q_aligned.8V
+    electrode_info_df['ne_soc_FC3p7V'] = (
+            (ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.7))].Q_aligned -
+             np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
                             np.max(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]) -
-                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]))
-                    ) # 3.7V
-    electrode_info_df['ne_soc_FC3p6V'] = ((ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.6))].Q_aligned - 
-                        np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
+                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])
+                            )
+    ) # 3.7V
+    electrode_info_df['ne_soc_FC3p6V'] = (
+            (ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.6))].Q_aligned -
+             np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
                             np.max(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]) -
-                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]))
-                    ) # 3.6V
-    electrode_info_df['ne_soc_FC3p5V'] = ((ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.5))].Q_aligned - 
-                        np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
+                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])
+                            )
+    )  # 3.6V
+    electrode_info_df['ne_soc_FC3p5V'] = (
+            (ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.5))].Q_aligned -
+             np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
                             np.max(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]) -
-                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]))
-                    ) # 3.5V
-    electrode_info_df['ne_soc_FC3p4V'] = ((ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.4))].Q_aligned - 
-                        np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
+                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])
+                            )
+    )  # 3.5V
+    electrode_info_df['ne_soc_FC3p4V'] = (
+            (ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.4))].Q_aligned -
+             np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
                             np.max(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]) -
-                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]))
-                    ) # 3.4V
-    electrode_info_df['ne_soc_FC3p3V'] = ((ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.3))].Q_aligned - 
-                        np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
+                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])
+                            )
+    )  # 3.4V
+    electrode_info_df['ne_soc_FC3p3V'] = (
+            (ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.3))].Q_aligned -
+             np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
                             np.max(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]) -
-                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]))
-                    ) # 3.3V
-    electrode_info_df['ne_soc_FC3p2V'] = ((ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.2))].Q_aligned - 
-                        np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
+                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])
+                            )
+    )  # 3.3V
+    electrode_info_df['ne_soc_FC3p2V'] = (
+            (ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.2))].Q_aligned -
+             np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
                             np.max(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]) -
-                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]))
-                    ) # 3.2V
-    electrode_info_df['ne_soc_FC3p1V'] = ((ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.1))].Q_aligned - 
-                        np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
+                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])
+                            )
+    )  # 3.2V
+    electrode_info_df['ne_soc_FC3p1V'] = (
+            (ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.1))].Q_aligned -
+             np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
                             np.max(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]) -
-                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]))
-                    ) # 3.1V
-    electrode_info_df['ne_soc_FC3p0V'] = ((ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.0))].Q_aligned - 
-                        np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
+                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])
+                            )
+    )  # 3.1V
+    electrode_info_df['ne_soc_FC3p0V'] = (
+            (ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 3.0))].Q_aligned -
+             np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
                             np.max(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]) -
-                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]))
-                    ) # 3.0V
-    electrode_info_df['ne_soc_FC2p9V'] = ((ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 2.9))].Q_aligned - 
-                        np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
+                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])
+                            )
+    )  # 3.0V
+    electrode_info_df['ne_soc_FC2p9V'] = (
+            (ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 2.9))].Q_aligned -
+             np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
                             np.max(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]) -
-                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]))
-                    ) # 2.9V
-    electrode_info_df['ne_soc_FC2p8V'] = ((ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 2.8))].Q_aligned - 
-                        np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
+                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])
+                            )
+    )  # 2.9V
+    electrode_info_df['ne_soc_FC2p8V'] = (
+            (ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 2.8))].Q_aligned -
+             np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
                             np.max(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]) -
-                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]))
-                    ) # 2.8V
-    electrode_info_df['ne_soc_FC2p7V'] = ((ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 2.7))].Q_aligned - 
-                        np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
+                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])
+                            )
+    )  # 2.8V
+    electrode_info_df['ne_soc_FC2p7V'] = (
+            (ne_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 2.7))].Q_aligned -
+             np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])) / (
                             np.max(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]) -
-                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]))
-                    ) # 2.7V
+                            np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])
+                            )
+    )  # 2.7V
     
     electrode_info_df['Q_fc'] = pe_minus_ne_zeroed.loc[
         np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 4.20))].Q_aligned
     
-    electrode_info_df['Q_pe'] = np.max(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()]) - np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])
+    electrode_info_df['Q_pe'] = np.max(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()]) - \
+        np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])
     
-    electrode_info_df['Q_ne'] = np.max(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]) - np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])
+    electrode_info_df['Q_ne'] = np.max(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()]) - \
+        np.min(ne_out_zeroed['Q_aligned'].loc[~ne_out_zeroed['Voltage_aligned'].isna()])
 
-    electrode_info_df['Q_li'] = np.max(pe_minus_ne_zeroed['Q_aligned'].loc[~pe_minus_ne_zeroed.Voltage_aligned.isna()]) - np.min(pe_minus_ne_zeroed['Q_aligned'].loc[~pe_minus_ne_zeroed.Voltage_aligned.isna()])
+    electrode_info_df['Q_li'] = np.max(pe_minus_ne_zeroed['Q_aligned'].loc[
+                                           ~pe_minus_ne_zeroed.Voltage_aligned.isna()
+                                       ]) - \
+                                np.min(pe_minus_ne_zeroed['Q_aligned'].loc[
+                                           ~pe_minus_ne_zeroed.Voltage_aligned.isna()
+                                       ])
 
     return electrode_info_df
