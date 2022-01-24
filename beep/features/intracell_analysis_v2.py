@@ -47,7 +47,7 @@ class IntracellAnalysisV2:
         else:
             self.ne_2_pristine_pos = pd.DataFrame()
             self.ne_2_pristine_neg = pd.DataFrame()
-            
+
         if step_type == 0:
             self.capacity_col = 'charge_capacity'
         else:
@@ -63,14 +63,12 @@ class IntracellAnalysisV2:
         """
         Ingests BEEP structured cycling data and cycle_index and returns
                 a Dataframe of evenly spaced capacity with corresponding voltage.
-        
         Inputs:
-        cell_struct (MaccorDatapath): BEEP structured cycling data
-        cycle_index (int): cycle number at which to evaluate
-        
+            cell_struct (MaccorDatapath): BEEP structured cycling data
+            cycle_index (int): cycle number at which to evaluate
         Outputs:
-        real_cell_candidate_charge_profile_aligned (Dataframe): columns Q_aligned (evenly spaced)
-                and Voltage_aligned
+            real_cell_candidate_charge_profile_aligned (Dataframe): columns Q_aligned (evenly spaced)
+                    and Voltage_aligned
         """
 
         # filter the data down to the diagnostic type of interest
@@ -80,13 +78,12 @@ class IntracellAnalysisV2:
             & (diag_type_cycles.step_type == 0)  # step_type = 0 is charge, 1 is discharge
             & (diag_type_cycles.voltage < self.FC_UPPER_VOLTAGE)
             & (diag_type_cycles[self.capacity_col] > 0)][['voltage', 'charge_capacity']]
-        
+
         # renaming capacity,voltage column
         real_cell_candidate_charge_profile['Q'] = real_cell_candidate_charge_profile['charge_capacity']
-                                                     
         real_cell_candidate_charge_profile['Voltage'] = real_cell_candidate_charge_profile['voltage']
         real_cell_candidate_charge_profile.drop('voltage', axis=1, inplace=True)
-        
+
         # interpolate voltage along evenly spaced capacity axis
         q_vec = np.linspace(0, np.max(real_cell_candidate_charge_profile['Q']), 1001)
 
@@ -113,26 +110,25 @@ class IntracellAnalysisV2:
         """
         Scales the reference electrodes according to specified capacities and 
         offsets their capacities according to lli. Blends negative electrode materials.
-        
+
         Inputs:
-        pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
-                electrode
-        ne_pristine (Dataframe): half cell data of the pristine (uncycled) negative
-                electrode
-        ne_2_pos (Dataframe): half cell data for the positive component of the anode
-        ne_2_neg (Dataframe): half cell data for the negative component of the anode
-        lli (float): Loss of Lithium Inventory - capacity of the misalignment between 
-                cathode and anode zero-capacity
-        Q_pe (float): capacity of the positive electrode (cathode)
-        Q_ne (float): capacity of the negative electrode (anode)
-        x_ne_2 (float): fraction of ne_2_pristine_pos or ne_2_pristine_neg 
-                (positive or negative value, respectively) to ne_1_pristine
-        
+            pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
+                    electrode
+            ne_pristine (Dataframe): half cell data of the pristine (uncycled) negative
+                    electrode
+            ne_2_pos (Dataframe): half cell data for the positive component of the anode
+            ne_2_neg (Dataframe): half cell data for the negative component of the anode
+            lli (float): Loss of Lithium Inventory - capacity of the misalignment between
+                    cathode and anode zero-capacity
+            Q_pe (float): capacity of the positive electrode (cathode)
+            Q_ne (float): capacity of the negative electrode (anode)
+            x_ne_2 (float): fraction of ne_2_pristine_pos or ne_2_pristine_neg
+                    (positive or negative value, respectively) to ne_1_pristine
         Outputs:
-        pe_degraded (Dataframe): positive electrode with imposed capacity 
-                scale to emulate degradation
-        ne_degraded (Dataframe): negative electrode with imposed capacity 
-                scale and capacity offset to emulate degradation
+            pe_degraded (Dataframe): positive electrode with imposed capacity
+                    scale to emulate degradation
+            ne_degraded (Dataframe): negative electrode with imposed capacity
+                    scale and capacity offset to emulate degradation
         """
 
         # Blend negative electrodes
@@ -177,28 +173,28 @@ class IntracellAnalysisV2:
         data to be within full cell voltage range and calibrates (zeros) capacity
         at the lowest permissible voltage. Interpolates real and emulated data onto
         a common capacity axis.
-        
-        Inputs:
-        x (list): [LLI, Q_pe, Q_ne, x_ne_2]
-        *params:       
-                pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
-                        electrode
-                ne_pristine (Dataframe): half cell data of the pristine (uncycled) negative
-                        electrode
-                ne_2_pos (Dataframe): half cell data for the positive component of the anode
-                ne_2_neg (Dataframe): half cell data for the negative component of the anode
-                real_cell_candidate_charge_profile_aligned (Dataframe): columns Q_aligned 
-                        (evenly spaced) and Voltage_aligned
-        Outputs:
-        pe_out_zeroed (Dataframe): cathode capacity and voltage columns scaled,
-                offset, and aligned along capacity
-        ne_out_zeroed (Dataframe): anode capacity and voltage columns scaled,
-                offset, and aligned along capacity
 
-        df_real_aligned (Dataframe): capacity and voltage interpolated evenly across
-                capacity for the real cell data
-        emulated_full_cell_aligned (Dataframe): capacity and voltage interpolated evenly
-                across capacity for the emulated cell data
+        Inputs:
+            x (list): [LLI, Q_pe, Q_ne, x_ne_2]
+            *params:
+                    pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
+                            electrode
+                    ne_pristine (Dataframe): half cell data of the pristine (uncycled) negative
+                            electrode
+                    ne_2_pos (Dataframe): half cell data for the positive component of the anode
+                    ne_2_neg (Dataframe): half cell data for the negative component of the anode
+                    real_cell_candidate_charge_profile_aligned (Dataframe): columns Q_aligned
+                            (evenly spaced) and Voltage_aligned
+        Outputs:
+            pe_out_zeroed (Dataframe): cathode capacity and voltage columns scaled,
+                    offset, and aligned along capacity
+            ne_out_zeroed (Dataframe): anode capacity and voltage columns scaled,
+                    offset, and aligned along capacity
+
+            df_real_aligned (Dataframe): capacity and voltage interpolated evenly across
+                    capacity for the real cell data
+            emulated_full_cell_aligned (Dataframe): capacity and voltage interpolated evenly
+                    across capacity for the emulated cell data
         """
         
         lli = x[0]
@@ -226,7 +222,7 @@ class IntracellAnalysisV2:
             emulated_full_cell_with_degradation['Voltage_aligned'] < self.FC_LOWER_VOLTAGE] = np.nan
         emulated_full_cell_with_degradation['Voltage_aligned'].loc[
             emulated_full_cell_with_degradation['Voltage_aligned'] > self.FC_UPPER_VOLTAGE] = np.nan
-        
+
         # Center the emulated full cell and half cell curves onto the same Q at which the real (degraded)
         # capacity measurement started (self.FC_LOWER_VOLTAGE)
         emulated_full_cell_with_degradation_zeroed = pd.DataFrame()
@@ -237,7 +233,7 @@ class IntracellAnalysisV2:
         zeroing_value = emulated_full_cell_with_degradation['Q_aligned'].loc[
             np.nanargmin(emulated_full_cell_with_degradation['Voltage_aligned'])
                                                                             ]
-    
+
         emulated_full_cell_with_degradation_zeroed['Q_aligned'] = \
             (emulated_full_cell_with_degradation['Q_aligned'].copy() - zeroing_value)
 
@@ -306,7 +302,7 @@ class IntracellAnalysisV2:
         emulated_full_cell_interped (Dataframe): capacity and voltage interpolated evenly
                 across capacity for the emulated cell data
         """
-        
+
         pe_out_zeroed, ne_out_zeroed, df_real_interped, emulated_full_cell_interped = \
             self.halfcell_degradation_matching_ah(x, *params)
 
@@ -362,27 +358,27 @@ class IntracellAnalysisV2:
         """
         This function imposes degradation scaling ,then outputs the dVdQ representation of the emulated cell data.
         Inputs:
-        x (list): [LLI, Q_pe, Q_ne, x_ne_2]
-        *params:       
-                pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
-                        electrode
-                ne_pristine (Dataframe): half cell data of the pristine (uncycled) negative
-                        electrode
-                ne_2_pos (Dataframe): half cell data for the positive component of the anode
-                ne_2_neg (Dataframe): half cell data for the negative component of the anode
-                real_cell_candidate_charge_profile_aligned (Dataframe): columns Q_aligned 
-                        (evenly spaced) and Voltage_aligned        
+            x (list): [LLI, Q_pe, Q_ne, x_ne_2]
+            *params:
+                    pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
+                            electrode
+                    ne_pristine (Dataframe): half cell data of the pristine (uncycled) negative
+                            electrode
+                    ne_2_pos (Dataframe): half cell data for the positive component of the anode
+                    ne_2_neg (Dataframe): half cell data for the negative component of the anode
+                    real_cell_candidate_charge_profile_aligned (Dataframe): columns Q_aligned
+                            (evenly spaced) and Voltage_aligned
         Outputs:
-        pe_out_zeroed (Dataframe): cathode capacity and voltage columns scaled,
-                offset, and aligned along capacity
-        ne_out_zeroed (Dataframe): anode capacity and voltage columns scaled,
-                offset, and aligned along capacity
-        dv_dq_real (Dataframe): dVdQ across capacity for the real cell data
-        dv_dq_emulated (Dataframe): dVdQ across capacity for the emulated cell data
-        df_real_interped (Dataframe): capacity and voltage interpolated evenly across
-                capacity for the real cell data
-        emulated_full_cell_interped (Dataframe): capacity and voltage interpolated evenly
-                across capacity for the emulated cell data        
+            pe_out_zeroed (Dataframe): cathode capacity and voltage columns scaled,
+                    offset, and aligned along capacity
+            ne_out_zeroed (Dataframe): anode capacity and voltage columns scaled,
+                    offset, and aligned along capacity
+            dv_dq_real (Dataframe): dVdQ across capacity for the real cell data
+            dv_dq_emulated (Dataframe): dVdQ across capacity for the emulated cell data
+            df_real_interped (Dataframe): capacity and voltage interpolated evenly across
+                    capacity for the real cell data
+            emulated_full_cell_interped (Dataframe): capacity and voltage interpolated evenly
+                    across capacity for the emulated cell data
         """
         
         pe_out_zeroed, ne_out_zeroed, df_real_interped, emulated_full_cell_interped = \
@@ -403,7 +399,6 @@ class IntracellAnalysisV2:
         dv_dq_emulated['Voltage_aligned'] = emulated_full_cell_interped['Voltage_aligned']
 
         # Q interpolation not needed, as interpolated over Q by default
-       
         return (pe_out_zeroed,
                 ne_out_zeroed,
                 dv_dq_real,
@@ -415,25 +410,25 @@ class IntracellAnalysisV2:
         """
         This function imposes degradation scaling ,then outputs the V-Q representation of the emulated cell data.
         Inputs:
-        x (list): [LLI, Q_pe, Q_ne, x_ne_2]
-        *params:       
-                pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
-                        electrode
-                ne_pristine (Dataframe): half cell data of the pristine (uncycled) negative
-                        electrode
-                ne_2_pos (Dataframe): half cell data for the positive component of the anode
-                ne_2_neg (Dataframe): half cell data for the negative component of the anode
-                real_cell_candidate_charge_profile_aligned (Dataframe): columns Q_aligned 
-                        (evenly spaced) and Voltage_aligned
+            x (list): [LLI, Q_pe, Q_ne, x_ne_2]
+            *params:
+                    pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
+                            electrode
+                    ne_pristine (Dataframe): half cell data of the pristine (uncycled) negative
+                            electrode
+                    ne_2_pos (Dataframe): half cell data for the positive component of the anode
+                    ne_2_neg (Dataframe): half cell data for the negative component of the anode
+                    real_cell_candidate_charge_profile_aligned (Dataframe): columns Q_aligned
+                            (evenly spaced) and Voltage_aligned
         Outputs:
-        pe_out_zeroed (Dataframe): cathode capacity and voltage columns scaled,
-                offset, and aligned along capacity
-        ne_out_zeroed (Dataframe): anode capacity and voltage columns scaled,
-                offset, and aligned along capacity
-        df_real_interped (Dataframe): capacity and voltage interpolated evenly across
-                capacity for the real cell data
-        emulated_full_cell_interped (Dataframe): capacity and voltage interpolated evenly
-                across capacity for the emulated cell data
+            pe_out_zeroed (Dataframe): cathode capacity and voltage columns scaled,
+                    offset, and aligned along capacity
+            ne_out_zeroed (Dataframe): anode capacity and voltage columns scaled,
+                    offset, and aligned along capacity
+            df_real_interped (Dataframe): capacity and voltage interpolated evenly across
+                    capacity for the real cell data
+            emulated_full_cell_interped (Dataframe): capacity and voltage interpolated evenly
+                    across capacity for the emulated cell data
         """
         (pe_out_zeroed, ne_out_zeroed, real_aligned, emulated_aligned) = \
             self.halfcell_degradation_matching_ah(x, *params)
@@ -466,27 +461,24 @@ class IntracellAnalysisV2:
         """
         This function imposes degradation scaling ,then outputs the V-Q representation of the emulated cell data,
         in the absence of real cell data.
-        
         Inputs:
-        x (list): [LLI, Q_pe, Q_ne, x_ne_2]
-        *params:       
-                pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
-                        electrode
-                ne_pristine (Dataframe): half cell data of the pristine (uncycled) negative
-                        electrode
-                ne_2_pos (Dataframe): half cell data for the positive component of the anode
-                ne_2_neg (Dataframe): half cell data for the negative component of the anode
-                real_cell_candidate_charge_profile_aligned (Dataframe): columns Q_aligned 
-                        (evenly spaced) and Voltage_aligned
-                        
+            x (list): [LLI, Q_pe, Q_ne, x_ne_2]
+            *params:
+                    pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
+                            electrode
+                    ne_pristine (Dataframe): half cell data of the pristine (uncycled) negative
+                            electrode
+                    ne_2_pos (Dataframe): half cell data for the positive component of the anode
+                    ne_2_neg (Dataframe): half cell data for the negative component of the anode
+                    real_cell_candidate_charge_profile_aligned (Dataframe): columns Q_aligned
+                            (evenly spaced) and Voltage_aligned
         Outputs:
-        pe_out_zeroed (Dataframe): cathode capacity and voltage columns scaled,
-                offset, and aligned along capacity
-        ne_out_zeroed (Dataframe): anode capacity and voltage columns scaled,
-                offset, and aligned along capacity
-        emulated_full_cell_interped (Dataframe): capacity and voltage interpolated evenly
-                across capacity for the emulated cell data
-        
+            pe_out_zeroed (Dataframe): cathode capacity and voltage columns scaled,
+                    offset, and aligned along capacity
+            ne_out_zeroed (Dataframe): anode capacity and voltage columns scaled,
+                    offset, and aligned along capacity
+            emulated_full_cell_interped (Dataframe): capacity and voltage interpolated evenly
+                    across capacity for the emulated cell data
         """
         (pe_out_zeroed, ne_out_zeroed, emulated_aligned) = \
             self.halfcell_degradation_matching_ah_no_real(x, *params)
@@ -514,25 +506,23 @@ class IntracellAnalysisV2:
         capacity scale and alignment through LLI. Modifies emulated full cell
         data to be within full cell voltage range and calibrates (zeros) capacity
         at the lowest permissible voltage.
-        
         Inputs:
-        x (list): [LLI, Q_pe, Q_ne, x_ne_2]
-        *params:       
-                pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
-                        electrode
-                ne_pristine (Dataframe): half cell data of the pristine (uncycled) negative
-                        electrode
-                ne_2_pos (Dataframe): half cell data for the positive component of the anode
-                ne_2_neg (Dataframe): half cell data for the negative component of the anode
-                real_cell_candidate_charge_profile_aligned (Dataframe): columns Q_aligned 
-                        (evenly spaced) and Voltage_aligned
-                        
+            x (list): [LLI, Q_pe, Q_ne, x_ne_2]
+            *params:
+                    pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
+                            electrode
+                    ne_pristine (Dataframe): half cell data of the pristine (uncycled) negative
+                            electrode
+                    ne_2_pos (Dataframe): half cell data for the positive component of the anode
+                    ne_2_neg (Dataframe): half cell data for the negative component of the anode
+                    real_cell_candidate_charge_profile_aligned (Dataframe): columns Q_aligned
+                            (evenly spaced) and Voltage_aligned
         Outputs:
-        pe_out_zeroed (Dataframe): cathode capacity and voltage columns scaled,
-                offset, and aligned along capacity
-        ne_out_zeroed (Dataframe): anode capacity and voltage columns scaled,
-                offset, and aligned along capacity
-        emulated_aligned (Dataframe): full cell data corresponding to the imposed degradation
+            pe_out_zeroed (Dataframe): cathode capacity and voltage columns scaled,
+                    offset, and aligned along capacity
+            ne_out_zeroed (Dataframe): anode capacity and voltage columns scaled,
+                    offset, and aligned along capacity
+            emulated_aligned (Dataframe): full cell data corresponding to the imposed degradation
         """
         lli = x[0]
         q_pe = x[1]
@@ -546,11 +536,10 @@ class IntracellAnalysisV2:
                                                       lli, q_pe,
                                                       q_ne, x_ne_2)
         # outputs degraded ne and pe (on a AH basis, with electrode alignment (NaNs for voltage, when no overlap))
-        
         emulated_full_cell_with_degradation = pd.DataFrame()
         emulated_full_cell_with_degradation['Q_aligned'] = pe_out['Q_aligned'].copy()
         emulated_full_cell_with_degradation['Voltage_aligned'] = pe_out['Voltage_aligned'] - ne_out['Voltage_aligned']
-        
+
         # Replace emulated full cell values outside of voltage range with NaN
         emulated_full_cell_with_degradation['Voltage_aligned'].loc[
             emulated_full_cell_with_degradation['Voltage_aligned'] < self.FC_LOWER_VOLTAGE] = np.nan
@@ -563,11 +552,11 @@ class IntracellAnalysisV2:
 
         emulated_full_cell_with_degradation_zeroed['Voltage_aligned'] = emulated_full_cell_with_degradation[
             'Voltage_aligned']
-        
+
         zeroing_value = emulated_full_cell_with_degradation['Q_aligned'].loc[
             np.nanargmin(emulated_full_cell_with_degradation['Voltage_aligned'])
                                                                             ]
-        
+
         emulated_full_cell_with_degradation_zeroed['Q_aligned'] = \
             (emulated_full_cell_with_degradation['Q_aligned'] - zeroing_value)
 
@@ -584,7 +573,7 @@ class IntracellAnalysisV2:
         max_q = np.max(
             emulated_full_cell_with_degradation_zeroed['Q_aligned'].loc[
                 ~emulated_full_cell_with_degradation_zeroed['Voltage_aligned'].isna()])
-        
+
         emulated_interper = interp1d(emulated_full_cell_with_degradation_zeroed['Q_aligned'].loc[
                                          ~emulated_full_cell_with_degradation_zeroed['Voltage_aligned'].isna()],
                                      emulated_full_cell_with_degradation_zeroed['Voltage_aligned'].loc[
@@ -598,23 +587,21 @@ class IntracellAnalysisV2:
         emulated_aligned['Voltage_aligned'] = emulated_interper(q_vec)
 
         return pe_out_zeroed, ne_out_zeroed, emulated_aligned
-    
+
     def _get_error_from_degradation_matching_ah(self, x, *params):
         """
         Wrapper function which selects the correct error sub routine and returns its error value.
-        
         Inputs:
-        x (list): [LLI, Q_pe, Q_ne, x_ne_2]
-        *params:       
-                pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
-                        electrode
-                ne_pristine (Dataframe): half cell data of the pristine (uncycled) negative
-                        electrode
-                ne_2_pos (Dataframe): half cell data for the positive component of the anode
-                ne_2_neg (Dataframe): half cell data for the negative component of the anode
-                real_cell_candidate_charge_profile_aligned (Dataframe): columns Q_aligned 
-                        (evenly spaced) and Voltage_aligned        
-        
+            x (list): [LLI, Q_pe, Q_ne, x_ne_2]
+            *params:
+                    pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
+                            electrode
+                    ne_pristine (Dataframe): half cell data of the pristine (uncycled) negative
+                            electrode
+                    ne_2_pos (Dataframe): half cell data for the positive component of the anode
+                    ne_2_neg (Dataframe): half cell data for the negative component of the anode
+                    real_cell_candidate_charge_profile_aligned (Dataframe): columns Q_aligned
+                            (evenly spaced) and Voltage_aligned
         Outputs:
             error value (float) - output of the specified error sub function
         """
@@ -632,27 +619,25 @@ class IntracellAnalysisV2:
         """
         Error function returning the mean standardized Euclidean distance of each point of the real curve to
                 the closest value on the emulated curve in the V-Q representation.
-        
         Inputs:
-        x (list): [LLI, Q_pe, Q_ne, x_ne_2]
-        *params:       
-                pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
-                        electrode
-                ne_pristine (Dataframe): half cell data of the pristine (uncycled) negative
-                        electrode
-                ne_2_pos (Dataframe): half cell data for the positive component of the anode
-                ne_2_neg (Dataframe): half cell data for the negative component of the anode
-                real_cell_candidate_charge_profile_aligned (Dataframe): columns Q_aligned 
-                        (evenly spaced) and Voltage_aligned        
-        
+            x (list): [LLI, Q_pe, Q_ne, x_ne_2]
+            *params:
+                    pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
+                            electrode
+                    ne_pristine (Dataframe): half cell data of the pristine (uncycled) negative
+                            electrode
+                    ne_2_pos (Dataframe): half cell data for the positive component of the anode
+                    ne_2_neg (Dataframe): half cell data for the negative component of the anode
+                    real_cell_candidate_charge_profile_aligned (Dataframe): columns Q_aligned
+                            (evenly spaced) and Voltage_aligned
         Outputs:
             error (float): output of the specified error sub function
             error_vector (array): vector containingEuclidean distance of each point of the real curve to
                 the closest value on the emulated curve in the V-Q representation
-            XA (Dataframe): real full cell data used for error analysis
-            XB (Dataframe): emulated full cell  data used for error analysis
+            xa (Dataframe): real full cell data used for error analysis
+            xb (Dataframe): emulated full cell  data used for error analysis
         """
-        
+
         try:
             (pe_out_zeroed, ne_out_zeroed, real_aligned, emulated_aligned
              ) = self.get_v_over_q_from_degradation_matching_ah(x, *params)
@@ -666,31 +651,29 @@ class IntracellAnalysisV2:
             error = 100
             return error, None, None, None
         return error, error_vector, xa, xb
-    
-        # Pairwise euclidean from premade dQdV
+
+    # Pairwise euclidean from premade dQdV
     def _get_error_from_degradation_matching_dqdv(self, x, *params):
         """
         Error function returning the mean standardized Euclidean distance of each point of the real curve to
                 the closest value on the emulated curve in the dQdV representation.
-        
         Inputs:
-        x (list): [LLI, Q_pe, Q_ne, x_ne_2]
-        *params:       
-                pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
-                        electrode
-                ne_pristine (Dataframe): half cell data of the pristine (uncycled) negative
-                        electrode
-                ne_2_pos (Dataframe): half cell data for the positive component of the anode
-                ne_2_neg (Dataframe): half cell data for the negative component of the anode
-                real_cell_candidate_charge_profile_aligned (Dataframe): columns Q_aligned 
-                        (evenly spaced) and Voltage_aligned        
-        
+            x (list): [LLI, Q_pe, Q_ne, x_ne_2]
+            *params:
+                    pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
+                            electrode
+                    ne_pristine (Dataframe): half cell data of the pristine (uncycled) negative
+                            electrode
+                    ne_2_pos (Dataframe): half cell data for the positive component of the anode
+                    ne_2_neg (Dataframe): half cell data for the negative component of the anode
+                    real_cell_candidate_charge_profile_aligned (Dataframe): columns Q_aligned
+                            (evenly spaced) and Voltage_aligned
         Outputs:
             error (float): output of the specified error sub function
             error_vector (array): vector containing Euclidean distance of each point of the real curve to
                 the closest value on the emulated curve in the dQdV representation
-            XA (Dataframe): real full cell data used for error analysis
-            XB (Dataframe): emulated full cell  data used for error analysis
+            xa (Dataframe): real full cell data used for error analysis
+            xb (Dataframe): emulated full cell  data used for error analysis
         """
         
         try:
@@ -717,27 +700,25 @@ class IntracellAnalysisV2:
         """
         Error function returning the mean standardized Euclidean distance of each point of the real curve to
                 the closest value on the emulated curve in the dVdQ representation.
-        
         Inputs:
-        x (list): [LLI, Q_pe, Q_ne, x_ne_2]
-        *params:       
-                pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
-                        electrode
-                ne_pristine (Dataframe): half cell data of the pristine (uncycled) negative
-                        electrode
-                ne_2_pos (Dataframe): half cell data for the positive component of the anode
-                ne_2_neg (Dataframe): half cell data for the negative component of the anode
-                real_cell_candidate_charge_profile_aligned (Dataframe): columns Q_aligned 
-                        (evenly spaced) and Voltage_aligned        
-        
+            x (list): [LLI, Q_pe, Q_ne, x_ne_2]
+            *params:
+                    pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
+                            electrode
+                    ne_pristine (Dataframe): half cell data of the pristine (uncycled) negative
+                            electrode
+                    ne_2_pos (Dataframe): half cell data for the positive component of the anode
+                    ne_2_neg (Dataframe): half cell data for the negative component of the anode
+                    real_cell_candidate_charge_profile_aligned (Dataframe): columns Q_aligned
+                            (evenly spaced) and Voltage_aligned
         Outputs:
             error (float): output of the specified error sub function
             error_vector (array): vector containing Euclidean distance of each point of the real curve to
                 the closest value on the emulated curve in the dVdQ representation
-            XA (Dataframe): real full cell data used for error analysis
-            XB (Dataframe): emulated full cell  data used for error analysis
+            xa (Dataframe): real full cell data used for error analysis
+            xb (Dataframe): emulated full cell  data used for error analysis
         """
-        
+
         try:
             (pe_out_zeroed,
              ne_out_zeroed,
@@ -745,46 +726,42 @@ class IntracellAnalysisV2:
              dvdq_over_q_emulated,
              df_real_interped,
              emulated_full_cell_interped) = self.get_dvdq_over_q_from_degradation_matching_ah(x, *params)
-                        
             xa = dvdq_over_q_real[['Q_aligned', 'dVdQ']].dropna()
             xb = dvdq_over_q_emulated[['Q_aligned', 'dVdQ']].dropna()
-            
+
             # down-select to values with capacity more than 0.5 Ahr to eliminate high-slope region of dVdQ
             xa = xa.loc[(xa.Q_aligned > 0.5)]
             xb = xb.loc[(xb.Q_aligned > 0.5)]
-            
+
             error_matrix = distance.cdist(xa, xb, 'seuclidean')
             error_vector = error_matrix.min(axis=1)
             error = error_vector.mean()
-            
+
         except ValueError:
             error = 100
             return error, None, None, None
         return error, error_vector, xa, xb
-    
+
     def _get_error_from_synthetic_fitting_ah(self, x, *params):
         """
         Wrapper function which selects the correct error sub routine and returns its error value.
         This function is specific to fitting synthetic data rather than real cycling data.
-        
         Inputs:
-        x (list): [LLI, Q_pe, Q_ne, x_ne_2]
-        *params:       
-                pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
-                        electrode
-                ne_pristine (Dataframe): half cell data of the pristine (uncycled) negative
-                        electrode
-                ne_2_pos (Dataframe): half cell data for the positive component of the anode
-                ne_2_neg (Dataframe): half cell data for the negative component of the anode
-                real_cell_candidate_charge_profile_aligned (Dataframe): columns Q_aligned 
-                        (evenly spaced) and Voltage_aligned        
-        
+            x (list): [LLI, Q_pe, Q_ne, x_ne_2]
+            *params:
+                    pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
+                            electrode
+                    ne_pristine (Dataframe): half cell data of the pristine (uncycled) negative
+                            electrode
+                    ne_2_pos (Dataframe): half cell data for the positive component of the anode
+                    ne_2_neg (Dataframe): half cell data for the negative component of the anode
+                    real_cell_candidate_charge_profile_aligned (Dataframe): columns Q_aligned
+                            (evenly spaced) and Voltage_aligned
         Outputs:
             error value (float) - output of the specified error sub function
         """
-        
         error_type = self.error_type
-        
+
         try:
             if error_type == 'V-Q':
                 return self._get_error_from_degradation_matching_v_q(x, *params)[0]
@@ -797,7 +774,7 @@ class IntracellAnalysisV2:
         except RuntimeError:
             print("Can't return error")
             return 100
-        
+
     def intracell_values_wrapper_ah(self,
                                     cycle_index,
                                     cell_struct,
@@ -805,16 +782,15 @@ class IntracellAnalysisV2:
                                     ):
         """
         Wrapper function to solve capacity sizing and offset of reference electrodes to real full cell cycle data.
-        
         Inputs:
-        cycle_index (int): the index of the cycle of interest of the structured real cycling data
-        cell_struct (MaccorDatapath): BEEP structured cycling data
+            cycle_index (int): the index of the cycle of interest of the structured real cycling data
+            cell_struct (MaccorDatapath): BEEP structured cycling data
 
         Outputs:
-        loss_dict (dict): dictionary with key of cycle index and entry of a list of
-                error, LLI_opt, Q_pe_opt, Q_ne_opt, x_NE_2, Q_li
-        profiles_dict (dict): dictionary with key of cycle index and entry of a dictionary
-                containing various key/entry pairs of resulting from the fitting
+            loss_dict (dict): dictionary with key of cycle index and entry of a list of
+                    error, LLI_opt, Q_pe_opt, Q_ne_opt, x_NE_2, Q_li
+            profiles_dict (dict): dictionary with key of cycle index and entry of a dictionary
+                    containing various key/entry pairs of resulting from the fitting
         """
 
         if degradation_bounds is None:
@@ -859,15 +835,15 @@ class IntracellAnalysisV2:
             self.ne_2_pristine_pos,
             self.ne_2_pristine_neg,
             real_cell_candidate_charge_profile_aligned)
-        #
+
         electrode_info_df = get_electrode_info_ah(pe_out_zeroed, ne_out_zeroed)
-        #
+
         error = degradation_optimization_result.fun
         lli_opt = degradation_optimization_result.x[0]
         q_pe_opt = degradation_optimization_result.x[1]
         q_ne_opt = degradation_optimization_result.x[2]
         x_ne_2 = degradation_optimization_result.x[3]
-        
+
         loss_dict = {cycle_index: np.append([error, lli_opt, q_pe_opt, q_ne_opt, x_ne_2],
                                             electrode_info_df.iloc[-1].values)
                      }
@@ -881,20 +857,14 @@ class IntracellAnalysisV2:
                                    'real_cell_candidate_charge_profile_aligned':
                                        real_cell_candidate_charge_profile_aligned
                                    }
-        
-        profiles_dict = {cycle_index: profiles_per_cycle_dict}
 
+        profiles_dict = {cycle_index: profiles_per_cycle_dict}
         return loss_dict, profiles_dict
-    
+
     def solve_emulated_degradation(self,
                                    forward_simulated_profile,
                                    degradation_bounds=None
                                    ):
-        
-        """
-        
-        
-        """
 
         if degradation_bounds is None:
             degradation_bounds = ((0, 3),  # LLI
@@ -928,15 +898,14 @@ class IntracellAnalysisV2:
 def blend_electrodes(electrode_1, electrode_2_pos, electrode_2_neg, x_2):
     """
     Blends two electrode materials from their SOC-V profiles to form a blended electrode.
-    
     Inputs:
-    electrode_1: Primary material in electrode, typically Gr. DataFrame supplied with SOC evenly spaced and voltage.
-    electrode_2: Secondary material in electrode, typically Si. DataFrame supplied with SOC evenly spaced and
-        voltage as an additional column.
-    x_2: Fraction of electrode_2 material's capacity (not mass). Supplied as scalar value.
-    
+        electrode_1: Primary material in electrode, typically Gr. DataFrame supplied with SOC evenly spaced and voltage.
+        electrode_2: Secondary material in electrode, typically Si. DataFrame supplied with SOC evenly spaced and
+            voltage as an additional column.
+        x_2: Fraction of electrode_2 material's capacity (not mass). Supplied as scalar value.
+
     Outputs:
-    df_blended_soc_mod (Dataframe): blended electrode with SOC_aligned and Voltage_aligned columns
+        df_blended_soc_mod (Dataframe): blended electrode with SOC_aligned and Voltage_aligned columns
     """
     if electrode_2_pos.empty:
         df_blended = electrode_1
@@ -993,45 +962,43 @@ def blend_electrodes(electrode_1, electrode_2_pos, electrode_2_neg, x_2):
 def get_electrode_info_ah(pe_out_zeroed, ne_out_zeroed):
     """
     Calculates a variety of half-cell metrics at various positions in the full-cell profile.
-    
     Inputs:
-    pe_out_zeroed (Dataframe): cathode capacity and voltage columns scaled,
-            offset, and aligned along capacity
-    ne_out_zeroed (Dataframe): anode capacity and voltage columns scaled,
-            offset, and aligned along capacity
-    
+        pe_out_zeroed (Dataframe): cathode capacity and voltage columns scaled,
+                offset, and aligned along capacity
+        ne_out_zeroed (Dataframe): anode capacity and voltage columns scaled,
+                offset, and aligned along capacity
     Outputs:
-    electrode_info_df (Dataframe): dataframe containing a variety of half-cell metrics 
-        at various positions in the emulated full-cell profile.
-        
-        pe_voltage_FC4p2V: voltage of the positive electrode (catahode) corresponding
-            to the full cell at 4.2V
-        ...
-        pe_voltage_FC2p7V: voltage of the positive electrode (catahode) corresponding
-            to the full cell at 2.7V
-            
-        pe_soc_FC4p2V: state of charge of the positive electrode corresponding
-            to the full cell at 4.2V
-        ...
-        pe_soc_FC2p7V: state of charge of the positive electrode corresponding
-            to the full cell at 2.7V
-            
-        ne_voltage_FC4p2V: voltage of the negative electrode (anode) corresponding
-            to the full cell at 4.2V
-        ...
-        ne_voltage_FC2p7V: voltage of the negative electrode (anode) corresponding
-            to the full cell at 2.7V
-            
-        ne_soc_FC4p2V: state of charge of the anode electrode corresponding
-            to the full cell at 4.2V
-        ...
-        ne_soc_FC2p7V: state of charge of the anode electrode corresponding
-            to the full cell at 2.7V
+        electrode_info_df (Dataframe): dataframe containing a variety of half-cell metrics
+            at various positions in the emulated full-cell profile.
 
-        Q_fc: capacity of the full cecll within the full cell voltage limits
-        Q_pe: capacity of the cathode
-        Q_ne: capacity of the anode [Ahr]
-        Q_li
+            pe_voltage_FC4p2V: voltage of the positive electrode (catahode) corresponding
+                to the full cell at 4.2V
+            ...
+            pe_voltage_FC2p7V: voltage of the positive electrode (catahode) corresponding
+                to the full cell at 2.7V
+
+            pe_soc_FC4p2V: state of charge of the positive electrode corresponding
+                to the full cell at 4.2V
+            ...
+            pe_soc_FC2p7V: state of charge of the positive electrode corresponding
+                to the full cell at 2.7V
+
+            ne_voltage_FC4p2V: voltage of the negative electrode (anode) corresponding
+                to the full cell at 4.2V
+            ...
+            ne_voltage_FC2p7V: voltage of the negative electrode (anode) corresponding
+                to the full cell at 2.7V
+
+            ne_soc_FC4p2V: state of charge of the anode electrode corresponding
+                to the full cell at 4.2V
+            ...
+            ne_soc_FC2p7V: state of charge of the anode electrode corresponding
+                to the full cell at 2.7V
+
+            Q_fc: capacity of the full cecll within the full cell voltage limits
+            Q_pe: capacity of the cathode
+            Q_ne: capacity of the anode [Ahr]
+            Q_li: lithium capacity
     """
     pe_minus_ne_zeroed = pd.DataFrame(pe_out_zeroed['Voltage_aligned'] - ne_out_zeroed['Voltage_aligned'],
                                       columns=['Voltage_aligned'])
@@ -1079,7 +1046,6 @@ def get_electrode_info_ah(pe_out_zeroed, ne_out_zeroed):
                             np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])
             )
     )  # 4.2V
-
     electrode_info_df['pe_soc_FC4p1V'] = (
             (pe_out_zeroed.loc[np.argmin(np.abs(pe_minus_ne_zeroed.Voltage_aligned - 4.1))].Q_aligned -
              np.min(pe_out_zeroed['Q_aligned'].loc[~pe_out_zeroed['Voltage_aligned'].isna()])) / (
