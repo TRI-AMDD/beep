@@ -1,7 +1,5 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from matplotlib import cm
 from scipy.interpolate import interp1d
 from scipy.spatial import distance
 from scipy.optimize import differential_evolution
@@ -22,7 +20,7 @@ class IntracellAnalysisV2:
                  ne_pristine_file,
                  cycle_type='rpt_0.2C',
                  step_type=0,
-                 error_type = 'V-Q',
+                 error_type='V-Q',
                  ne_2pos_file=None,
                  ne_2neg_file=None
                  ):
@@ -59,10 +57,9 @@ class IntracellAnalysisV2:
         self.step_type = step_type
         self.error_type = error_type
 
-
     def process_beep_cycle_data_for_candidate_halfcell_analysis_ah(self,
-                                                                cell_struct,
-                                                                cycle_index):
+                                                                   cell_struct,
+                                                                   cycle_index):
         """
         Ingests BEEP structured cycling data and cycle_index and returns
                 a Dataframe of evenly spaced capacity with corresponding voltage.
@@ -163,7 +160,6 @@ class IntracellAnalysisV2:
         pe_degraded = pe_q_scaled.copy()
         pe_degraded['Q_aligned'] = q_vec
         pe_degraded['Voltage_aligned'] = pe_pristine_interper(q_vec)
-        
 
         ne_pristine_interper = interp1d(ne_q_scaled['Q_aligned'],
                                         ne_q_scaled['Voltage_aligned'], bounds_error=False)
@@ -206,8 +202,8 @@ class IntracellAnalysisV2:
         """
         
         lli = x[0]
-        Q_pe = x[1]
-        Q_ne = x[2]
+        q_pe = x[1]
+        q_ne = x[2]
         x_ne_2 = x[3]
 
         (pe_pristine, ne_1_pristine, ne_2_pristine_pos,
@@ -216,9 +212,9 @@ class IntracellAnalysisV2:
         # output degraded ne and pe (on a AH basis, with electrode alignment
         # (NaNs for voltage, when no capacity actually at the corresponding capacity index))
         pe_out, ne_out = self._impose_electrode_scale(pe_pristine, ne_1_pristine,
-                                                  ne_2_pristine_pos, ne_2_pristine_neg,
-                                                  lli, Q_pe,
-                                                  Q_ne, x_ne_2)
+                                                      ne_2_pristine_pos, ne_2_pristine_neg,
+                                                      lli, q_pe,
+                                                      q_ne, x_ne_2)
         
         # PE - NE = full cell voltage
         emulated_full_cell_with_degradation = pd.DataFrame()
@@ -562,7 +558,8 @@ class IntracellAnalysisV2:
             emulated_full_cell_with_degradation['Voltage_aligned'] > self.FC_UPPER_VOLTAGE] = np.nan
 
 
-        ## Center the emulated full cell and half cell curves onto the same Q at which the real (degraded) capacity measurement started (self.FC_LOWER_VOLTAGE)
+        ## Center the emulated full cell and half cell curves onto the same Q at which the real (degraded)
+        # capacity measurement started (self.FC_LOWER_VOLTAGE)
         emulated_full_cell_with_degradation_zeroed = pd.DataFrame()
 
         emulated_full_cell_with_degradation_zeroed['Voltage_aligned'] = emulated_full_cell_with_degradation[
@@ -624,15 +621,15 @@ class IntracellAnalysisV2:
         """
         error_type = self.error_type
         if error_type == 'V-Q':
-            return self._get_error_from_degradation_matching_V_Q(x, *params)[0]
+            return self._get_error_from_degradation_matching_v_q(x, *params)[0]
         elif error_type == 'dVdQ':
-            return self._get_error_from_degradation_matching_dVdQ(x, *params)[0]
+            return self._get_error_from_degradation_matching_dvdq(x, *params)[0]
         elif error_type == 'dQdV':
-            return self._get_error_from_degradation_matching_dQdV(x, *params)[0]
+            return self._get_error_from_degradation_matching_dqdv(x, *params)[0]
         else:
-            return self._get_error_from_degradation_matching_V_Q(x, *params)[0]
+            return self._get_error_from_degradation_matching_v_q(x, *params)[0]
         
-    def _get_error_from_degradation_matching_V_Q(self, x, *params):
+    def _get_error_from_degradation_matching_v_q(self, x, *params):
         """
         Error function returning the mean standardized Euclidean distance of each point of the real curve to
                 the closest value on the emulated curve in the V-Q representation.
@@ -700,13 +697,13 @@ class IntracellAnalysisV2:
         try:
             # Call dQdV generating function
             (pe_out_zeroed,
-            ne_out_zeroed,
-            dqdv_over_v_real,
-            dqdv_over_v_emulated,
-            df_real_interped,
-            emulated_full_cell_interped) = self.get_dqdv_over_v_from_degradation_matching_ah(x, *params)
+             ne_out_zeroed,
+             dqdv_over_v_real,
+             dqdv_over_v_emulated,
+             df_real_interped,
+             emulated_full_cell_interped) = self.get_dqdv_over_v_from_degradation_matching_ah(x, *params)
 
-            xa = dqdv_over_v_real[[ 'Voltage_aligned','dQdV']].dropna()
+            xa = dqdv_over_v_real[['Voltage_aligned', 'dQdV']].dropna()
             xb = dqdv_over_v_emulated[['Voltage_aligned', 'dQdV']].dropna()
             error_matrix = distance.cdist(xa, xb, 'seuclidean')
             error_vector = error_matrix.min(axis=1)
@@ -750,7 +747,7 @@ class IntracellAnalysisV2:
              df_real_interped,
              emulated_full_cell_interped) = self.get_dvdq_over_q_from_degradation_matching_ah(x, *params)
                         
-            xa = dvdq_over_q_real[[ 'Q_aligned','dVdQ']].dropna()
+            xa = dvdq_over_q_real[['Q_aligned', 'dVdQ']].dropna()
             xb = dvdq_over_q_emulated[['Q_aligned', 'dVdQ']].dropna()
             
             # down-select to values with capacity more than 0.5 Ahr to eliminate high-slope region of dVdQ
@@ -798,7 +795,7 @@ class IntracellAnalysisV2:
                 return self._get_error_from_degradation_matching_dvdq(x, *params)[0]
             else:
                 return self._get_error_from_degradation_matching_v_q(x, *params)[0]
-        except:
+        except RuntimeError:
             print("Can't return error")
             return 100
         
@@ -872,9 +869,8 @@ class IntracellAnalysisV2:
         q_ne_opt = degradation_optimization_result.x[2]
         x_ne_2 = degradation_optimization_result.x[3]
         
-        loss_dict = {cycle_index: np.append([error, lli_opt, q_pe_opt, q_ne_opt,
-                                             x_ne_2],
-                                             electrode_info_df.iloc[-1].values)
+        loss_dict = {cycle_index: np.append([error, lli_opt, q_pe_opt, q_ne_opt, x_ne_2],
+                                            electrode_info_df.iloc[-1].values)
                      }
 
         profiles_per_cycle_dict = {'NE_zeroed': ne_out_zeroed,
