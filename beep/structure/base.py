@@ -197,7 +197,8 @@ class BEEPDatapath(abc.ABC, MSONable):
                 abs_schema = schema
             else:
                 abs_schema = os.path.join(VALIDATION_SCHEMA_DIR, schema)
-
+            # TODO this dependence on a file path should be removed in the case of reloading an existing file
+            # one solution would be to move this logic into the cycler subclasses and then pass the schema as a dict
             if os.path.exists(abs_schema):
                 self.schema = abs_schema
             elif os.path.exists(os.path.join(VALIDATION_SCHEMA_DIR, os.path.split(schema)[-1])):
