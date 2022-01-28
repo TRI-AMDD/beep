@@ -88,7 +88,7 @@ class IntracellAnalysisV2:
         real_cell_candidate_charge_profile.drop('voltage', axis=1, inplace=True)
 
         # interpolate voltage along evenly spaced capacity axis
-        Q_vec = np.linspace(0, np.max(real_cell_candidate_charge_profile['Q']), 1001)
+        q_vec = np.linspace(0, np.max(real_cell_candidate_charge_profile['Q']), 1001)
 
         real_cell_candidate_charge_profile_aligned = pd.DataFrame()
         real_cell_candidate_charge_profile_interper = interp1d(real_cell_candidate_charge_profile['Q'],
@@ -97,9 +97,9 @@ class IntracellAnalysisV2:
                                                                fill_value=(
                                                                self.FC_LOWER_VOLTAGE, self.FC_UPPER_VOLTAGE))
         real_cell_candidate_charge_profile_aligned['Voltage_aligned'] = real_cell_candidate_charge_profile_interper(
-            Q_vec)
+            q_vec)
 
-        real_cell_candidate_charge_profile_aligned['Q_aligned'] = Q_vec
+        real_cell_candidate_charge_profile_aligned['Q_aligned'] = q_vec
 
         return real_cell_candidate_charge_profile_aligned
 
@@ -108,8 +108,7 @@ class IntracellAnalysisV2:
                                 ne_1_pristine=pd.DataFrame(),
                                 ne_2_pristine_pos=pd.DataFrame(),
                                 ne_2_pristine_neg=pd.DataFrame(),
-                                lli=0.0, Q_pe=0.0, Q_ne=0.0, x_ne_2=0.0):
-
+                                lli=0.0, q_pe=0.0, q_ne=0.0, x_ne_2=0.0):
         """
         Scales the reference electrodes according to specified capacities and
         offsets their capacities according to lli. Blends negative electrode materials.
@@ -123,8 +122,8 @@ class IntracellAnalysisV2:
         ne_2_neg (Dataframe): half cell data for the negative component of the anode
         lli (float): Loss of Lithium Inventory - capacity of the misalignment between
                 cathode and anode zero-capacity
-        Q_pe (float): capacity of the positive electrode (cathode)
-        Q_ne (float): capacity of the negative electrode (anode)
+        q_pe (float): capacity of the positive electrode (cathode)
+        q_ne (float): capacity of the negative electrode (anode)
         x_ne_2 (float): fraction of ne_2_pristine_pos or ne_2_pristine_neg
                 (positive or negative value, respectively) to ne_1_pristine
 
@@ -134,38 +133,37 @@ class IntracellAnalysisV2:
         ne_degraded (Dataframe): negative electrode with imposed capacity
                 scale and capacity offset to emulate degradation
         """
-
         # Blend negative electrodes
         ne_pristine = blend_electrodes(ne_1_pristine, ne_2_pristine_pos, ne_2_pristine_neg, x_ne_2)
 
-        # rescaling pristine electrodes to Q_pe and Q_ne
-        pe_Q_scaled = pe_pristine.copy()
-        pe_Q_scaled['Q_aligned'] = (pe_Q_scaled['SOC_aligned'] / 100) * Q_pe
-        ne_Q_scaled = ne_pristine.copy()
-        ne_Q_scaled['Q_aligned'] = (ne_Q_scaled['SOC_aligned'] / 100) * Q_ne
+        # rescaling pristine electrodes to q_pe and q_ne
+        pe_q_scaled = pe_pristine.copy()
+        pe_q_scaled['Q_aligned'] = (pe_q_scaled['SOC_aligned'] / 100) * q_pe
+        ne_q_scaled = ne_pristine.copy()
+        ne_q_scaled['Q_aligned'] = (ne_q_scaled['SOC_aligned'] / 100) * q_ne
 
         # translate pristine ne electrode with lli
-        ne_Q_scaled['Q_aligned'] = ne_Q_scaled['Q_aligned'] + lli
+        ne_q_scaled['Q_aligned'] = ne_q_scaled['Q_aligned'] + lli
 
         # Re-interpolate to align dataframes for differencing
-        lower_Q = np.min((np.min(pe_Q_scaled['Q_aligned']),
-                          np.min(ne_Q_scaled['Q_aligned'])))
-        upper_Q = np.max((np.max(pe_Q_scaled['Q_aligned']),
-                          np.max(ne_Q_scaled['Q_aligned'])))
-        Q_vec = np.linspace(lower_Q, upper_Q, 1001)
+        lower_q = np.min((np.min(pe_q_scaled['Q_aligned']),
+                          np.min(ne_q_scaled['Q_aligned'])))
+        upper_q = np.max((np.max(pe_q_scaled['Q_aligned']),
+                          np.max(ne_q_scaled['Q_aligned'])))
+        q_vec = np.linspace(lower_q, upper_q, 1001)
 
         # Actually aligning the electrode Q's
-        pe_pristine_interper = interp1d(pe_Q_scaled['Q_aligned'],
-                                        pe_Q_scaled['Voltage_aligned'], bounds_error=False)
-        pe_degraded = pe_Q_scaled.copy()
-        pe_degraded['Q_aligned'] = Q_vec
-        pe_degraded['Voltage_aligned'] = pe_pristine_interper(Q_vec)
+        pe_pristine_interper = interp1d(pe_q_scaled['Q_aligned'],
+                                        pe_q_scaled['Voltage_aligned'], bounds_error=False)
+        pe_degraded = pe_q_scaled.copy()
+        pe_degraded['Q_aligned'] = q_vec
+        pe_degraded['Voltage_aligned'] = pe_pristine_interper(q_vec)
 
-        ne_pristine_interper = interp1d(ne_Q_scaled['Q_aligned'],
-                                        ne_Q_scaled['Voltage_aligned'], bounds_error=False)
-        ne_degraded = ne_Q_scaled.copy()
-        ne_degraded['Q_aligned'] = Q_vec
-        ne_degraded['Voltage_aligned'] = ne_pristine_interper(Q_vec)
+        ne_pristine_interper = interp1d(ne_q_scaled['Q_aligned'],
+                                        ne_q_scaled['Voltage_aligned'], bounds_error=False)
+        ne_degraded = ne_q_scaled.copy()
+        ne_degraded['Q_aligned'] = q_vec
+        ne_degraded['Voltage_aligned'] = ne_pristine_interper(q_vec)
 
         # Returning pe and ne degraded on an Ah basis
         return pe_degraded, ne_degraded
@@ -179,7 +177,7 @@ class IntracellAnalysisV2:
         a common capacity axis.
 
         Inputs:
-        x (list): [LLI, Q_pe, Q_ne, x_ne_2]
+        x (list): [LLI, q_pe, q_ne, x_ne_2]
         *params:
                 pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
                         electrode
@@ -202,17 +200,22 @@ class IntracellAnalysisV2:
         """
 
         lli = x[0]
-        Q_pe = x[1]
-        Q_ne = x[2]
+        q_pe = x[1]
+        q_ne = x[2]
         x_ne_2 = x[3]
 
-        pe_pristine, ne_1_pristine, ne_2_pristine_pos, ne_2_pristine_neg, real_cell_candidate_charge_profile_aligned = params
+        (pe_pristine,
+         ne_1_pristine,
+         ne_2_pristine_pos,
+         ne_2_pristine_neg,
+         real_cell_candidate_charge_profile_aligned) = params
 
-        # output degraded ne and pe (on a AH basis, with electrode alignment (NaNs for voltage, when no capacity actually at the corresponding capacity index))
+        # output degraded ne and pe (on a AH basis, with electrode alignment
+        # (NaNs for voltage, when no capacity actually at the corresponding capacity index))
         pe_out, ne_out = self._impose_electrode_scale(pe_pristine, ne_1_pristine,
                                                       ne_2_pristine_pos, ne_2_pristine_neg,
-                                                      lli, Q_pe,
-                                                      Q_ne, x_ne_2)
+                                                      lli, q_pe,
+                                                      q_ne, x_ne_2)
 
         # PE - NE = full cell voltage
         emulated_full_cell_with_degradation = pd.DataFrame()
@@ -225,7 +228,8 @@ class IntracellAnalysisV2:
         emulated_full_cell_with_degradation['Voltage_aligned'].loc[
             emulated_full_cell_with_degradation['Voltage_aligned'] > self.FC_UPPER_VOLTAGE] = np.nan
 
-        ## Center the emulated full cell and half cell curves onto the same Q at which the real (degraded) capacity measurement started (self.FC_LOWER_VOLTAGE)
+        # Center the emulated full cell and half cell curves onto the same Q at which the real (degraded)
+        # capacity measurement started (self.FC_LOWER_VOLTAGE)
         emulated_full_cell_with_degradation_zeroed = pd.DataFrame()
 
         emulated_full_cell_with_degradation_zeroed['Voltage_aligned'] = emulated_full_cell_with_degradation[
@@ -245,10 +249,10 @@ class IntracellAnalysisV2:
         ne_out_zeroed['Q_aligned'] = ne_out['Q_aligned'] - zeroing_value
 
         # Interpolate full cell profiles across same Q range
-        min_Q = np.min(
+        min_q = np.min(
             real_cell_candidate_charge_profile_aligned['Q_aligned'].loc[
                 ~real_cell_candidate_charge_profile_aligned['Voltage_aligned'].isna()])
-        max_Q = np.max(
+        max_q = np.max(
             real_cell_candidate_charge_profile_aligned['Q_aligned'].loc[
                 ~real_cell_candidate_charge_profile_aligned['Voltage_aligned'].isna()])
         emulated_interper = interp1d(emulated_full_cell_with_degradation_zeroed['Q_aligned'].loc[
@@ -263,24 +267,24 @@ class IntracellAnalysisV2:
                 ~real_cell_candidate_charge_profile_aligned['Voltage_aligned'].isna()],
             bounds_error=False)
 
-        Q_vec = np.linspace(min_Q, max_Q, 1001)
+        q_vec = np.linspace(min_q, max_q, 1001)
 
         emulated_aligned = pd.DataFrame()
-        emulated_aligned['Q_aligned'] = Q_vec
-        emulated_aligned['Voltage_aligned'] = emulated_interper(Q_vec)
+        emulated_aligned['Q_aligned'] = q_vec
+        emulated_aligned['Voltage_aligned'] = emulated_interper(q_vec)
 
         real_aligned = pd.DataFrame()
-        real_aligned['Q_aligned'] = Q_vec
-        real_aligned['Voltage_aligned'] = real_interper(Q_vec)
+        real_aligned['Q_aligned'] = q_vec
+        real_aligned['Voltage_aligned'] = real_interper(q_vec)
 
         return pe_out_zeroed, ne_out_zeroed, real_aligned, emulated_aligned
 
-    def get_dQdV_over_V_from_degradation_matching_ah(self, x, *params):
+    def get_dqdv_over_v_from_degradation_matching_ah(self, x, *params):
         """
-        This function imposes degradation scaling ,then outputs the dQdV representation of the emulated cell data.
+        This function imposes degradation scaling ,then outputs the dqdv representation of the emulated cell data.
 
         Inputs:
-        x (list): [LLI, Q_pe, Q_ne, x_ne_2]
+        x (list): [LLI, q_pe, q_ne, x_ne_2]
         *params:
                 pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
                         electrode
@@ -296,8 +300,8 @@ class IntracellAnalysisV2:
                 offset, and aligned along capacity
         ne_out_zeroed (Dataframe): anode capacity and voltage columns scaled,
                 offset, and aligned along capacity
-        dq_dv_over_v_real (Dataframe): dQdV across voltage for the real cell data
-        dq_dv_over_v_emulated (Dataframe): dQdV across voltage for the emulated cell data
+        dq_dv_over_v_real (Dataframe): dqdv across voltage for the real cell data
+        dq_dv_over_v_emulated (Dataframe): dqdv across voltage for the emulated cell data
         df_real_interped (Dataframe): capacity and voltage interpolated evenly across
                 capacity for the real cell data
         emulated_full_cell_interped (Dataframe): capacity and voltage interpolated evenly
@@ -307,7 +311,7 @@ class IntracellAnalysisV2:
         pe_out_zeroed, ne_out_zeroed, df_real_interped, emulated_full_cell_interped = \
             self.halfcell_degradation_matching_ah(x, *params)
 
-        # Calculate dQdV from full cell profiles
+        # Calculate dqdv from full cell profiles
         dq_dv_real = pd.DataFrame(np.gradient(df_real_interped['Q_aligned'], df_real_interped['Voltage_aligned']),
                                   columns=['dQdV']).ewm(0.1).mean()
         dq_dv_emulated = pd.DataFrame(
@@ -327,7 +331,7 @@ class IntracellAnalysisV2:
         v_dq_dv_interper_real = interp1d(dq_dv_real['Voltage_aligned'].loc[~dq_dv_real['Voltage_aligned'].isna()],
                                          dq_dv_real['dQdV'].loc[~dq_dv_real['Voltage_aligned'].isna()],
                                          bounds_error=False, fill_value=0)
-        v_Q_interper_real = interp1d(dq_dv_real['Voltage_aligned'].loc[~dq_dv_real['Voltage_aligned'].isna()],
+        v_q_interper_real = interp1d(dq_dv_real['Voltage_aligned'].loc[~dq_dv_real['Voltage_aligned'].isna()],
                                      dq_dv_real['Q_aligned'].loc[~dq_dv_real['Voltage_aligned'].isna()],
                                      bounds_error=False, fill_value=(0, np.max(df_real_interped['Q_aligned'])))
 
@@ -335,17 +339,17 @@ class IntracellAnalysisV2:
                                                  ~dq_dv_emulated['Voltage_aligned'].isna()],
                                              dq_dv_emulated['dQdV'].loc[~dq_dv_emulated['Voltage_aligned'].isna()],
                                              bounds_error=False, fill_value=0)
-        v_Q_interper_emulated = interp1d(dq_dv_emulated['Voltage_aligned'].loc[
+        v_q_interper_emulated = interp1d(dq_dv_emulated['Voltage_aligned'].loc[
                                              ~dq_dv_emulated['Voltage_aligned'].isna()],
                                          dq_dv_emulated['Q_aligned'].loc[~dq_dv_emulated['Voltage_aligned'].isna()],
                                          bounds_error=False, fill_value=(0, np.max(df_real_interped['Q_aligned'])))
 
         dq_dv_over_v_real = pd.DataFrame(v_dq_dv_interper_real(voltage_vec), columns=['dQdV']).fillna(0)
-        dq_dv_over_v_real['Q_aligned'] = v_Q_interper_real(voltage_vec)
+        dq_dv_over_v_real['Q_aligned'] = v_q_interper_real(voltage_vec)
         dq_dv_over_v_real['Voltage_aligned'] = voltage_vec
 
         dq_dv_over_v_emulated = pd.DataFrame(v_dq_dv_interper_emulated(voltage_vec), columns=['dQdV']).fillna(0)
-        dq_dv_over_v_emulated['Q_aligned'] = v_Q_interper_emulated(voltage_vec)
+        dq_dv_over_v_emulated['Q_aligned'] = v_q_interper_emulated(voltage_vec)
         dq_dv_over_v_emulated['Voltage_aligned'] = voltage_vec
 
         return (pe_out_zeroed,
@@ -355,11 +359,11 @@ class IntracellAnalysisV2:
                 df_real_interped,
                 emulated_full_cell_interped)
 
-    def get_dVdQ_over_Q_from_degradation_matching_ah(self, x, *params):
+    def get_dvdq_over_q_from_degradation_matching_ah(self, x, *params):
         """
         This function imposes degradation scaling ,then outputs the dVdQ representation of the emulated cell data.
         Inputs:
-        x (list): [LLI, Q_pe, Q_ne, x_ne_2]
+        x (list): [LLI, q_pe, q_ne, x_ne_2]
         *params:
                 pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
                         electrode
@@ -408,11 +412,11 @@ class IntracellAnalysisV2:
                 df_real_interped,
                 emulated_full_cell_interped)
 
-    def get_V_over_Q_from_degradation_matching_ah(self, x, *params):
+    def get_v_over_q_from_degradation_matching_ah(self, x, *params):
         """
         This function imposes degradation scaling ,then outputs the V-Q representation of the emulated cell data.
         Inputs:
-        x (list): [LLI, Q_pe, Q_ne, x_ne_2]
+        x (list): [LLI, q_pe, q_ne, x_ne_2]
         *params:
                 pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
                         electrode
@@ -459,12 +463,13 @@ class IntracellAnalysisV2:
         df_real_interped['Voltage_aligned'] = real_full_cell_interper(soc_vec_full_cell)
         return pe_out_zeroed, ne_out_zeroed, df_real_interped, emulated_full_cell_interped
 
-    def get_V_over_Q_from_degradation_matching_ah_no_real(self, x, *params):
+    def get_v_over_q_from_degradation_matching_ah_no_real(self, x, *params):
         """
-        This function imposes degradation scaling ,then outputs the V-Q representation of the emulated cell data, in the absence of real cell data.
+        This function imposes degradation scaling ,then outputs the V-Q representation of the
+        emulated cell data, in the absence of real cell data.
 
         Inputs:
-        x (list): [LLI, Q_pe, Q_ne, x_ne_2]
+        x (list): [LLI, q_pe, q_ne, x_ne_2]
         *params:
                 pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
                         electrode
@@ -487,10 +492,10 @@ class IntracellAnalysisV2:
         (pe_out_zeroed, ne_out_zeroed, emulated_aligned) = \
             self.halfcell_degradation_matching_ah_no_real(x, *params)
 
-        min_Q_full_cell = np.min(emulated_aligned.loc[~emulated_aligned.Voltage_aligned.isna()].Q_aligned)
-        max_Q_full_cell = np.max(emulated_aligned.loc[~emulated_aligned.Voltage_aligned.isna()].Q_aligned)
+        min_q_full_cell = np.min(emulated_aligned.loc[~emulated_aligned.Voltage_aligned.isna()].Q_aligned)
+        max_q_full_cell = np.max(emulated_aligned.loc[~emulated_aligned.Voltage_aligned.isna()].Q_aligned)
 
-        Q_vec_full_cell = np.linspace(min_Q_full_cell, max_Q_full_cell, 1001)
+        q_vec_full_cell = np.linspace(min_q_full_cell, max_q_full_cell, 1001)
 
         emulated_full_cell_interper = interp1d(
             emulated_aligned.Q_aligned.loc[~emulated_aligned.Voltage_aligned.isna()],
@@ -499,8 +504,8 @@ class IntracellAnalysisV2:
 
         # Interpolate the emulated full-cell profile
         emulated_full_cell_interped = pd.DataFrame()
-        emulated_full_cell_interped['Q_aligned'] = Q_vec_full_cell
-        emulated_full_cell_interped['Voltage_aligned'] = emulated_full_cell_interper(Q_vec_full_cell)
+        emulated_full_cell_interped['Q_aligned'] = q_vec_full_cell
+        emulated_full_cell_interped['Voltage_aligned'] = emulated_full_cell_interper(q_vec_full_cell)
 
         return pe_out_zeroed, ne_out_zeroed, emulated_full_cell_interped
 
@@ -512,7 +517,7 @@ class IntracellAnalysisV2:
         at the lowest permissible voltage.
 
         Inputs:
-        x (list): [LLI, Q_pe, Q_ne, x_ne_2]
+        x (list): [LLI, q_pe, q_ne, x_ne_2]
         *params:
                 pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
                         electrode
@@ -531,17 +536,18 @@ class IntracellAnalysisV2:
         emulated_aligned (Dataframe): full cell data corresponding to the imposed degradation
         """
         lli = x[0]
-        Q_pe = x[1]
-        Q_ne = x[2]
+        q_pe = x[1]
+        q_ne = x[2]
         x_ne_2 = x[3]
 
         pe_pristine, ne_1_pristine, ne_2_pristine_pos, ne_2_pristine_neg = params
 
         pe_out, ne_out = self._impose_electrode_scale(pe_pristine, ne_1_pristine,
                                                       ne_2_pristine_pos, ne_2_pristine_neg,
-                                                      lli, Q_pe,
-                                                      Q_ne,
-                                                      x_ne_2)  # outputs degraded ne and pe (on a AH basis, with electrode alignment (NaNs for voltage, when no overlap))
+                                                      lli, q_pe,
+                                                      q_ne,
+                                                      x_ne_2)
+        # outputs degraded ne and pe (on a AH basis, with electrode alignment (NaNs for voltage, when no overlap))
 
         emulated_full_cell_with_degradation = pd.DataFrame()
         emulated_full_cell_with_degradation['Q_aligned'] = pe_out['Q_aligned'].copy()
@@ -553,7 +559,8 @@ class IntracellAnalysisV2:
         emulated_full_cell_with_degradation['Voltage_aligned'].loc[
             emulated_full_cell_with_degradation['Voltage_aligned'] > self.FC_UPPER_VOLTAGE] = np.nan
 
-        ## Center the emulated full cell and half cell curves onto the same Q at which the real (degraded) capacity measurement started (self.FC_LOWER_VOLTAGE)
+        # Center the emulated full cell and half cell curves onto the same Q at which the real (degraded)
+        # capacity measurement started (self.FC_LOWER_VOLTAGE)
         emulated_full_cell_with_degradation_zeroed = pd.DataFrame()
 
         emulated_full_cell_with_degradation_zeroed['Voltage_aligned'] = emulated_full_cell_with_degradation[
@@ -573,10 +580,10 @@ class IntracellAnalysisV2:
         ne_out_zeroed['Q_aligned'] = ne_out['Q_aligned'] - zeroing_value
 
         # Interpolate full profiles across same Q range
-        min_Q = np.min(
+        min_q = np.min(
             emulated_full_cell_with_degradation_zeroed['Q_aligned'].loc[
                 ~emulated_full_cell_with_degradation_zeroed['Voltage_aligned'].isna()])
-        max_Q = np.max(
+        max_q = np.max(
             emulated_full_cell_with_degradation_zeroed['Q_aligned'].loc[
                 ~emulated_full_cell_with_degradation_zeroed['Voltage_aligned'].isna()])
 
@@ -586,11 +593,11 @@ class IntracellAnalysisV2:
                                          ~emulated_full_cell_with_degradation_zeroed['Voltage_aligned'].isna()],
                                      bounds_error=False)
 
-        Q_vec = np.linspace(min_Q, max_Q, 1001)
+        q_vec = np.linspace(min_q, max_q, 1001)
 
         emulated_aligned = pd.DataFrame()
-        emulated_aligned['Q_aligned'] = Q_vec
-        emulated_aligned['Voltage_aligned'] = emulated_interper(Q_vec)
+        emulated_aligned['Q_aligned'] = q_vec
+        emulated_aligned['Voltage_aligned'] = emulated_interper(q_vec)
 
         return pe_out_zeroed, ne_out_zeroed, emulated_aligned
 
@@ -599,7 +606,7 @@ class IntracellAnalysisV2:
         Wrapper function which selects the correct error sub routine and returns its error value.
 
         Inputs:
-        x (list): [LLI, Q_pe, Q_ne, x_ne_2]
+        x (list): [LLI, q_pe, q_ne, x_ne_2]
         *params:
                 pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
                         electrode
@@ -615,21 +622,21 @@ class IntracellAnalysisV2:
         """
         error_type = self.error_type
         if error_type == 'V-Q':
-            return self._get_error_from_degradation_matching_V_Q(x, *params)[0]
+            return self._get_error_from_degradation_matching_v_q(x, *params)[0]
         elif error_type == 'dVdQ':
-            return self._get_error_from_degradation_matching_dVdQ(x, *params)[0]
+            return self._get_error_from_degradation_matching_dvdq(x, *params)[0]
         elif error_type == 'dQdV':
-            return self._get_error_from_degradation_matching_dQdV(x, *params)[0]
+            return self._get_error_from_degradation_matching_dqdv(x, *params)[0]
         else:
-            return self._get_error_from_degradation_matching_V_Q(x, *params)[0]
+            return self._get_error_from_degradation_matching_v_q(x, *params)[0]
 
-    def _get_error_from_degradation_matching_V_Q(self, x, *params):
+    def _get_error_from_degradation_matching_v_q(self, x, *params):
         """
         Error function returning the mean standardized Euclidean distance of each point of the real curve to
                 the closest value on the emulated curve in the V-Q representation.
 
         Inputs:
-        x (list): [LLI, Q_pe, Q_ne, x_ne_2]
+        x (list): [LLI, q_pe, q_ne, x_ne_2]
         *params:
                 pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
                         electrode
@@ -644,33 +651,33 @@ class IntracellAnalysisV2:
             error (float): output of the specified error sub function
             error_vector (array): vector containingEuclidean distance of each point of the real curve to
                 the closest value on the emulated curve in the V-Q representation
-            XA (Dataframe): real full cell data used for error analysis
-            XB (Dataframe): emulated full cell  data used for error analysis
+            xa (Dataframe): real full cell data used for error analysis
+            xb (Dataframe): emulated full cell  data used for error analysis
         """
 
         try:
             (pe_out_zeroed, ne_out_zeroed, real_aligned, emulated_aligned
-             ) = self.get_V_over_Q_from_degradation_matching_ah(x, *params)
+             ) = self.get_v_over_q_from_degradation_matching_ah(x, *params)
 
-            XA = real_aligned.dropna()
-            XB = emulated_aligned.dropna()
-            error_matrix = distance.cdist(XA, XB, 'seuclidean')
+            xa = real_aligned.dropna()
+            xb = emulated_aligned.dropna()
+            error_matrix = distance.cdist(xa, xb, 'seuclidean')
             error_vector = error_matrix.min(axis=1)
             error = error_vector.mean()
         except ValueError:
             error = 100
             return error, None, None, None
-        return error, error_vector, XA, XB
+        return error, error_vector, xa, xb
 
         # Pairwise euclidean from premade dQdV
 
-    def _get_error_from_degradation_matching_dQdV(self, x, *params):
+    def _get_error_from_degradation_matching_dqdv(self, x, *params):
         """
         Error function returning the mean standardized Euclidean distance of each point of the real curve to
                 the closest value on the emulated curve in the dQdV representation.
 
         Inputs:
-        x (list): [LLI, Q_pe, Q_ne, x_ne_2]
+        x (list): [LLI, q_pe, q_ne, x_ne_2]
         *params:
                 pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
                         electrode
@@ -685,37 +692,37 @@ class IntracellAnalysisV2:
             error (float): output of the specified error sub function
             error_vector (array): vector containing Euclidean distance of each point of the real curve to
                 the closest value on the emulated curve in the dQdV representation
-            XA (Dataframe): real full cell data used for error analysis
-            XB (Dataframe): emulated full cell  data used for error analysis
+            xa (Dataframe): real full cell data used for error analysis
+            xb (Dataframe): emulated full cell  data used for error analysis
         """
 
         try:
             # Call dQdV generating function
-            (PE_out_zeroed,
-             NE_out_zeroed,
-             dQdV_over_v_real,
-             dQdV_over_v_emulated,
+            (pe_out_zeroed,
+             ne_out_zeroed,
+             dqdv_over_v_real,
+             dqdv_over_v_emulated,
              df_real_interped,
-             emulated_full_cell_interped) = self.get_dQdV_over_V_from_degradation_matching_ah(x, *params)
+             emulated_full_cell_interped) = self.get_dqdv_over_v_from_degradation_matching_ah(x, *params)
 
-            XA = dQdV_over_v_real[['Voltage_aligned', 'dQdV']].dropna()
-            XB = dQdV_over_v_emulated[['Voltage_aligned', 'dQdV']].dropna()
-            error_matrix = distance.cdist(XA, XB, 'seuclidean')
+            xa = dqdv_over_v_real[['Voltage_aligned', 'dQdV']].dropna()
+            xb = dqdv_over_v_emulated[['Voltage_aligned', 'dQdV']].dropna()
+            error_matrix = distance.cdist(xa, xb, 'seuclidean')
             error_vector = error_matrix.min(axis=1)
             error = error_vector.mean()
 
         except ValueError:
             error = 100
             return error, None, None, None
-        return error, error_vector, XA, XB
+        return error, error_vector, xa, xb
 
-    def _get_error_from_degradation_matching_dVdQ(self, x, *params):
+    def _get_error_from_degradation_matching_dvdq(self, x, *params):
         """
         Error function returning the mean standardized Euclidean distance of each point of the real curve to
                 the closest value on the emulated curve in the dVdQ representation.
 
         Inputs:
-        x (list): [LLI, Q_pe, Q_ne, x_ne_2]
+        x (list): [LLI, q_pe, q_ne, x_ne_2]
         *params:
                 pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
                         electrode
@@ -730,33 +737,33 @@ class IntracellAnalysisV2:
             error (float): output of the specified error sub function
             error_vector (array): vector containing Euclidean distance of each point of the real curve to
                 the closest value on the emulated curve in the dVdQ representation
-            XA (Dataframe): real full cell data used for error analysis
-            XB (Dataframe): emulated full cell  data used for error analysis
+            xa (Dataframe): real full cell data used for error analysis
+            xb (Dataframe): emulated full cell  data used for error analysis
         """
 
         try:
-            (PE_out_zeroed,
-             NE_out_zeroed,
-             dVdQ_over_Q_real,
-             dVdQ_over_Q_emulated,
+            (pe_out_zeroed,
+             ne_out_zeroed,
+             dvdq_over_q_real,
+             dvdq_over_q_emulated,
              df_real_interped,
-             emulated_full_cell_interped) = self.get_dVdQ_over_Q_from_degradation_matching_ah(x, *params)
+             emulated_full_cell_interped) = self.get_dvdq_over_q_from_degradation_matching_ah(x, *params)
 
-            XA = dVdQ_over_Q_real[['Q_aligned', 'dVdQ']].dropna()
-            XB = dVdQ_over_Q_emulated[['Q_aligned', 'dVdQ']].dropna()
+            xa = dvdq_over_q_real[['Q_aligned', 'dVdQ']].dropna()
+            xb = dvdq_over_q_emulated[['Q_aligned', 'dVdQ']].dropna()
 
             # down-select to values with capacity more than 0.5 Ahr to eliminate high-slope region of dVdQ
-            XA = XA.loc[(XA.Q_aligned > 0.5)]
-            XB = XB.loc[(XB.Q_aligned > 0.5)]
+            xa = xa.loc[(xa.Q_aligned > 0.5)]
+            xb = xb.loc[(xb.Q_aligned > 0.5)]
 
-            error_matrix = distance.cdist(XA, XB, 'seuclidean')
+            error_matrix = distance.cdist(xa, xb, 'seuclidean')
             error_vector = error_matrix.min(axis=1)
             error = error_vector.mean()
 
         except ValueError:
             error = 100
             return error, None, None, None
-        return error, error_vector, XA, XB
+        return error, error_vector, xa, xb
 
     def _get_error_from_synthetic_fitting_ah(self, x, *params):
         """
@@ -764,7 +771,7 @@ class IntracellAnalysisV2:
         This function is specific to fitting synthetic data rather than real cycling data.
 
         Inputs:
-        x (list): [LLI, Q_pe, Q_ne, x_ne_2]
+        x (list): [LLI, q_pe, q_ne, x_ne_2]
         *params:
                 pe_pristine (Dataframe): half cell data of the pristine (uncycled) positive
                         electrode
@@ -783,13 +790,13 @@ class IntracellAnalysisV2:
 
         try:
             if error_type == 'V-Q':
-                return self._get_error_from_degradation_matching_V_Q(x, *params)[0]
+                return self._get_error_from_degradation_matching_v_q(x, *params)[0]
             elif error_type == 'dVdQ':
-                return self._get_error_from_degradation_matching_dVdQ(x, *params)[0]
+                return self._get_error_from_degradation_matching_dvdq(x, *params)[0]
             elif error_type == 'dQdV':
-                return self._get_error_from_degradation_matching_dVdQ(x, *params)[0]
+                return self._get_error_from_degradation_matching_dvdq(x, *params)[0]
             else:
-                return self._get_error_from_degradation_matching_V_Q(x, *params)[0]
+                return self._get_error_from_degradation_matching_v_q(x, *params)[0]
         except:
             print("Can't return error")
             return 100
@@ -808,16 +815,15 @@ class IntracellAnalysisV2:
 
         Outputs:
         loss_dict (dict): dictionary with key of cycle index and entry of a list of
-                error, LLI_opt, Q_pe_opt, Q_ne_opt, x_NE_2, Q_li
+                error, lli_opt, q_pe_opt, q_ne_opt, x_ne_2, Q_li
         profiles_dict (dict): dictionary with key of cycle index and entry of a dictionary
                 containing various key/entry pairs of resulting from the fitting
         """
-
         if degradation_bounds is None:
             degradation_bounds = ((0, 3),  # LLI
-                                  (2.5, 6.5),  # Q_pe
-                                  (2.5, 6.5),  # Q_ne
-                                  (1, 1),  # (-1,1) x_NE_2
+                                  (2.5, 6.5),  # q_pe
+                                  (2.5, 6.5),  # q_ne
+                                  (1, 1),  # (-1,1) x_ne_2
                                   )
 
         real_cell_candidate_charge_profile_aligned = self.process_beep_cycle_data_for_candidate_halfcell_analysis_ah(
@@ -843,12 +849,12 @@ class IntracellAnalysisV2:
                                                                  )
         #         print(degradation_optimization_result.x) #BVV
 
-        (PE_out_zeroed,
-         NE_out_zeroed,
-         dQdV_over_v_real,
-         dQdV_over_v_emulated,
+        (pe_out_zeroed,
+         ne_out_zeroed,
+         dqdv_over_v_real,
+         dqdv_over_v_emulated,
          df_real_interped,
-         emulated_full_cell_interped) = self.get_dQdV_over_V_from_degradation_matching_ah(
+         emulated_full_cell_interped) = self.get_dqdv_over_v_from_degradation_matching_ah(
             degradation_optimization_result.x,
             self.pe_pristine,
             self.ne_1_pristine,
@@ -856,26 +862,27 @@ class IntracellAnalysisV2:
             self.ne_2_pristine_neg,
             real_cell_candidate_charge_profile_aligned)
         #
-        electrode_info_df = get_electrode_info_ah(PE_out_zeroed, NE_out_zeroed)
+        electrode_info_df = get_electrode_info_ah(pe_out_zeroed, ne_out_zeroed)
         #
         error = degradation_optimization_result.fun
-        LLI_opt = degradation_optimization_result.x[0]
-        Q_pe_opt = degradation_optimization_result.x[1]
-        Q_ne_opt = degradation_optimization_result.x[2]
-        x_NE_2 = degradation_optimization_result.x[3]
+        lli_opt = degradation_optimization_result.x[0]
+        q_pe_opt = degradation_optimization_result.x[1]
+        q_ne_opt = degradation_optimization_result.x[2]
+        x_ne_2 = degradation_optimization_result.x[3]
 
-        loss_dict = {cycle_index: np.append([error, LLI_opt, Q_pe_opt, Q_ne_opt,
-                                             x_NE_2],
+        loss_dict = {cycle_index: np.append([error, lli_opt, q_pe_opt, q_ne_opt,
+                                             x_ne_2],
                                             electrode_info_df.iloc[-1].values)
                      }
 
-        profiles_per_cycle_dict = {'NE_zeroed': NE_out_zeroed,
-                                   'PE_zeroed': PE_out_zeroed,
-                                   'dQdV_over_v_real': dQdV_over_v_real,
-                                   'dQdV_over_v_emulated': dQdV_over_v_emulated,
-                                   'df_real_interped': df_real_interped,
-                                   'emulated_full_cell_interped': emulated_full_cell_interped,
-                                   'real_cell_candidate_charge_profile_aligned': real_cell_candidate_charge_profile_aligned
+        profiles_per_cycle_dict = {
+           'NE_zeroed': ne_out_zeroed,
+           'PE_zeroed': pe_out_zeroed,
+           'dQdV_over_v_real': dqdv_over_v_real,
+           'dQdV_over_v_emulated': dqdv_over_v_emulated,
+           'df_real_interped': df_real_interped,
+           'emulated_full_cell_interped': emulated_full_cell_interped,
+           'real_cell_candidate_charge_profile_aligned': real_cell_candidate_charge_profile_aligned
                                    }
 
         profiles_dict = {cycle_index: profiles_per_cycle_dict}
@@ -894,9 +901,9 @@ class IntracellAnalysisV2:
 
         if degradation_bounds is None:
             degradation_bounds = ((0, 3),  # LLI
-                                  (2.5, 6.5),  # Q_pe
-                                  (2.5, 6.5),  # Q_ne
-                                  (1, 1),  # (-1,1) x_NE_2
+                                  (2.5, 6.5),  # q_pe
+                                  (2.5, 6.5),  # q_ne
+                                  (1, 1),  # (-1,1) x_ne_2
                                   )
 
         degradation_optimization_result = differential_evolution(self._get_error_from_synthetic_fitting_ah,
@@ -919,8 +926,8 @@ class IntracellAnalysisV2:
 
         return degradation_optimization_result
 
-
-def blend_electrodes(electrode_1, electrode_2_pos, electrode_2_neg, x_2):  ## this function needs revisited
+# TODO revisit this function
+def blend_electrodes(electrode_1, electrode_2_pos, electrode_2_neg, x_2):
     """
     Blends two electrode materials from their SOC-V profiles to form a blended electrode.
 
@@ -1024,8 +1031,8 @@ def get_electrode_info_ah(pe_out_zeroed, ne_out_zeroed):
             to the full cell at 2.7V
 
         Q_fc: capacity of the full cecll within the full cell voltage limits
-        Q_pe: capacity of the cathode
-        Q_ne: capacity of the anode [Ahr]
+        q_pe: capacity of the cathode
+        q_ne: capacity of the anode [Ahr]
         Q_li
     """
     pe_minus_ne_zeroed = pd.DataFrame(pe_out_zeroed['Voltage_aligned'] - ne_out_zeroed['Voltage_aligned'],
