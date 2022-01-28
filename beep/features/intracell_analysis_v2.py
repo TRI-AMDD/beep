@@ -797,7 +797,7 @@ class IntracellAnalysisV2:
                 return self._get_error_from_degradation_matching_dvdq(x, *params)[0]
             else:
                 return self._get_error_from_degradation_matching_v_q(x, *params)[0]
-        except:
+        except RuntimeError:
             print("Can't return error")
             return 100
 
@@ -925,6 +925,7 @@ class IntracellAnalysisV2:
                                                                  )
 
         return degradation_optimization_result
+
 
 # TODO revisit this function
 def blend_electrodes(electrode_1, electrode_2_pos, electrode_2_neg, x_2):
