@@ -18,7 +18,7 @@ import unittest
 import pandas as pd
 from beep.structure.cli import auto_load_processed
 from beep.features.intracell_analysis_v2 import IntracellAnalysisV2
-from beep.features.intracell_losses import IntracellCycles, IntracellFeatures
+from beep.features.intracell_losses_v2 import IntracellCyclesV2, IntracellFeaturesV2
 
 from beep.tests.constants import TEST_FILE_DIR
 
@@ -85,13 +85,11 @@ class IntracellAnalysisV2Test(unittest.TestCase):
 
 class IntracellFeaturesTestV2(unittest.TestCase):
     def setUp(self):
-        run_path = os.path.join(TEST_FILE_DIR,
-                                'PreDiag_000220_00005E_structure_omit.json')
+        run_path = os.path.join(TEST_FILE_DIR, 'PreDiag_000220_00005E_structure_omit.json')
         self.datapath = auto_load_processed(run_path)
-        cathode_file = os.path.join(TEST_FILE_DIR,
-                                    'data-share/raw/cell_info/cathode_test.csv')
-        anode_file = os.path.join(TEST_FILE_DIR,
-                                  'data-share/raw/cell_info/anode_test.csv')
+        cathode_file = os.path.join(TEST_FILE_DIR, 'cathode_clean_cc_charge_exptl_aligned.csv')
+        anode_file = os.path.join(TEST_FILE_DIR, 'anode_secondMeasure_clean_cc_charge_exptl_aligned.csv')
+
         self.params = {
             'diagnostic_cycle_type': 'rpt_0.2C',
             'step_type': 0,
@@ -100,26 +98,26 @@ class IntracellFeaturesTestV2(unittest.TestCase):
         }
 
     def test_IntracellCycles(self):
-        featurizer = IntracellCycles(self.datapath, self.params)
+        featurizer = IntracellCyclesV2(self.datapath, self.params)
         featurizer.create_features()
         X = featurizer.features
-        self.assertEqual(X.shape, (2, 17))
-        self.assertAlmostEqual(X["LLI"].iloc[0], -9.999983, 5)
-        self.assertAlmostEqual(X["Li_mass"].iloc[1], 12.312480, 3)
+        self.assertEqual(X.shape, (2, 73))
+        self.assertAlmostEqual(X["Q_li"].iloc[0], 4.743450821877655, 5)
+        self.assertAlmostEqual(X["Q_ne"].iloc[1], 5.101834164537508, 3)
 
     def test_IntracellFeatures(self):
-        featurizer = IntracellFeatures(self.datapath, self.params)
+        featurizer = IntracellFeaturesV2(self.datapath, self.params)
         featurizer.create_features()
         X = featurizer.features
-        self.assertEqual(X.shape, (1, 34))
-        self.assertAlmostEqual(X["diag_0_LLI"].iloc[0], -9.999983, 5)
-        self.assertAlmostEqual(X["diag_1_Li_mass"].iloc[0], 12.312480, 3)
+        self.assertEqual(X.shape, (1, 146))
+        self.assertAlmostEqual(X["diag_0_LLI_opt"].iloc[0], 0.1929531780384086, 5)
+        self.assertAlmostEqual(X["diag_1_LLI_opt"].iloc[0], 0.2080220199958258, 3)
 
     def test_validation(self):
         # Modify datapath_run to be invalid
         mask = self.datapath.diagnostic_summary.cycle_type == "rpt_0.2C"
-        self.datapath.diagnostic_summary.loc[mask, "discharge_capacity"] = 3.35
+        self.datapath.diagnostic_summary.loc[mask, "discharge_capacity"] = 0
 
-        featurizer = IntracellFeatures(self.datapath, self.params)
+        featurizer = IntracellFeaturesV2(self.datapath, self.params)
         val, msg = featurizer.validate()
         self.assertFalse(val)
