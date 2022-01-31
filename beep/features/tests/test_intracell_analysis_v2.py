@@ -97,6 +97,7 @@ class IntracellFeaturesTestV2(unittest.TestCase):
             "cathode_file": cathode_file
         }
 
+    @unittest.skip
     def test_IntracellCycles(self):
         featurizer = IntracellCyclesV2(self.datapath, self.params)
         featurizer.create_features()
@@ -105,6 +106,7 @@ class IntracellFeaturesTestV2(unittest.TestCase):
         self.assertAlmostEqual(X["Q_li"].iloc[0], 4.743450821877655, 5)
         self.assertAlmostEqual(X["Q_ne"].iloc[1], 5.101834164537508, 3)
 
+    @unittest.skip
     def test_IntracellFeatures(self):
         featurizer = IntracellFeaturesV2(self.datapath, self.params)
         featurizer.create_features()
