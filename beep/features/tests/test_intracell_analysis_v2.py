@@ -28,10 +28,6 @@ class IntracellAnalysisV2Test(unittest.TestCase):
         run = os.path.join(TEST_FILE_DIR,
                            'PreDiag_000220_00005E_structure_omit.json')
         self.cell_struct = auto_load_processed(run)
-        self.cathode_file = os.path.join(TEST_FILE_DIR,
-                                         'data-share/raw/cell_info/cathode_test.csv')
-        self.anode_file = os.path.join(TEST_FILE_DIR,
-                                       'data-share/raw/cell_info/anode_test.csv')
 
     def test_intracell_wrappers(self):
         ia = IntracellAnalysisV2(
