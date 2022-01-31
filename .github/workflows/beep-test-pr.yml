@@ -2,7 +2,7 @@ name: Testing - main
 
 on:
   pull_request:
-    branch: [master]
+    branch: [main]
 
 jobs:
   test:
