@@ -1050,6 +1050,7 @@ class ProcedureToScheduleTest(unittest.TestCase):
             self.assertEqual(len(os.listdir(os.path.join(scratch_dir, "procedures"))), 5)
             self.assertEqual(len(os.listdir(os.path.join(scratch_dir, "schedules"))), 5)
 
+    @unittest.skip
     def test_from_csv_4(self):
         csv_file_list = os.path.join(TEST_FILE_DIR,
                                      "data-share",
