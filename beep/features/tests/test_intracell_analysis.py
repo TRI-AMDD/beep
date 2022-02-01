@@ -66,7 +66,6 @@ class IntracellAnalysisTest(unittest.TestCase):
             real_cell_initial_charge_profile['charge_capacity'].max(), 4.539547,
             5)
 
-    @unittest.skip
     def test_intracell_halfcell_matching_v2_mock(self):
         ia = IntracellAnalysis(
             self.cathode_file,
@@ -100,7 +99,6 @@ class IntracellAnalysisTest(unittest.TestCase):
         self.assertAlmostEqual(PE_pristine_matched['Voltage_aligned'].max(),
                                4.299219386998656, 5)
 
-    @unittest.skip
     def test_intracell_get_dq_dv_mock(self):
         ia = IntracellAnalysis(
             self.cathode_file,
@@ -179,7 +177,6 @@ class IntracellAnalysisTest(unittest.TestCase):
         self.assertAlmostEqual(PE_lower_SOC, 48.8517745, 5)
         self.assertAlmostEqual(Li_mass, 185.2689422, 5)
 
-    @unittest.skip
     def test_process_beep_cycle_data_for_initial_halfcell_analysis(self):
         ia = IntracellAnalysis(os.path.join(TEST_FILE_DIR,
                                             'cathode_clean_cc_charge_exptl_aligned.csv'),
@@ -207,7 +204,6 @@ class IntracellAnalysisTest(unittest.TestCase):
             real_cell_initial_charge_profile['charge_capacity'].max(), 4.539547,
             5)
 
-    @unittest.skip
     def test_intracell(self):
         ia = IntracellAnalysis(os.path.join(TEST_FILE_DIR,
                                             'cathode_clean_cc_charge_exptl_aligned.csv'),
@@ -386,7 +382,6 @@ class IntracellAnalysisTest(unittest.TestCase):
 
         self.assertAlmostEqual(degradation_df['Li_mass'].iloc[0], 104.680978, 5)
 
-    @unittest.skip
     def test_intracell_wrappers(self):
         ia = IntracellAnalysis(
             os.path.join(TEST_FILE_DIR, 'data-share', 'raw', 'cell_info',
@@ -465,7 +460,6 @@ class IntracellFeaturesTest(unittest.TestCase):
             "cathode_file": cathode_file
         }
 
-    @unittest.skip
     def test_IntracellCycles(self):
         featurizer = IntracellCycles(self.datapath, self.params)
         featurizer.create_features()
@@ -474,7 +468,6 @@ class IntracellFeaturesTest(unittest.TestCase):
         self.assertAlmostEqual(X["LLI"].iloc[0], -9.999983, 5)
         self.assertAlmostEqual(X["Li_mass"].iloc[1], 12.312480, 3)
 
-    @unittest.skip
     def test_IntracellFeatures(self):
         featurizer = IntracellFeatures(self.datapath, self.params)
         featurizer.create_features()
