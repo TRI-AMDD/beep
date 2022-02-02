@@ -1,5 +1,12 @@
 
 
+v2022.2.1.19
+------------
+* Setup featurizers and tests
+* Added initial files for intracell analysis update
+
+
+
 v2022.1.24.16
 -------------
 * Fix bug with loading processed file from a different environment
