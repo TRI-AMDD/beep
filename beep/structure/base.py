@@ -1530,7 +1530,7 @@ def get_CV_segment_from_charge(charge, dt_tol=1, dVdt_tol=1e-5, dIdt_tol=1e-4):
 
     # Find the first index where the CV segment begins
     i = 0
-    while i < len(dV) and not (dt[i] > dt_tol and abs(dV[i]/dt[i]) < dVdt_tol and abs(dI[i]/dt[i]) > dIdt_tol):
+    while i < len(dV) and (dt[i] < dt_tol or abs(dV[i]/dt[i]) > dVdt_tol or abs(dI[i]/dt[i]) < dIdt_tol):
         i = i+1
 
     # Filter for CV phase
