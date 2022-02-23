@@ -877,17 +877,20 @@ class BEEPDatapath(abc.ABC, MSONable):
         summary["paused"] = self.raw_data.groupby("cycle_index").apply(
             get_max_paused_over_threshold)
 
-        # Add CV_time and CV_current summary stats
+        # Add CV_time, CV_current, CV_capacity summary stats
         CV_time = []
         CV_current = []
+        CV_capacity = []
         for cycle in summary.cycle_index:
             raw_cycle = self.raw_data.loc[self.raw_data.cycle_index == cycle]
             charge = raw_cycle.loc[raw_cycle.current > 0]
             CV = get_CV_segment_from_charge(charge)
             CV_time.append(get_CV_time(CV))
             CV_current.append(get_CV_current(CV))
+            CV_capacity.append(get_CV_capacity(CV))
         summary["CV_time"] = CV_time
         summary["CV_current"] = CV_current
+        summary["CV_capacity"] = CV_capacity
 
         summary = self._cast_dtypes(summary, "summary")
 
@@ -1093,9 +1096,10 @@ class BEEPDatapath(abc.ABC, MSONable):
             diagnostic_available["cycle_type"] * len(starts_at)
         )
 
-        # Add CV_time and CV_current summary stats
+        # Add CV_time, CV_current, and CV_capacity summary stats
         CV_time = []
         CV_current = []
+        CV_capacity = []
         for cycle in diag_summary.cycle_index:
             raw_cycle = self.raw_data.loc[self.raw_data.cycle_index == cycle]
 
@@ -1104,9 +1108,11 @@ class BEEPDatapath(abc.ABC, MSONable):
             CV = get_CV_segment_from_charge(CCCV)
             CV_time.append(get_CV_time(CV))
             CV_current.append(get_CV_current(CV))
+            CV_capacity.append(get_CV_capacity(CV))
 
         diag_summary["CV_time"] = CV_time
         diag_summary["CV_current"] = CV_current
+        diag_summary["CV_capacity"] = CV_capacity
 
         diag_summary = self._cast_dtypes(diag_summary, "diagnostic_summary")
 
@@ -1568,3 +1574,19 @@ def get_CV_current(CV):
     if isinstance(CV, pd.DataFrame):
         if len(CV):
             return(CV.current.iat[-1])
+
+
+def get_CV_capacity(CV):
+    """
+    Helper function to compute CV capacity.
+
+    Args:
+        CV (pd.DataFrame): CV segement of charge
+
+    Returns:
+        (float): charge capacity during the CV segment
+
+    """
+    if isinstance(CV, pd.DataFrame):
+        if len(CV):
+            return(CV.charge_capacity.iat[-1] - CV.charge_capacity.iat[0])
