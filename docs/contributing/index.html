@@ -255,6 +255,13 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#before-you-begin" class="md-nav__link">
+    Before you begin
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#code-standards" class="md-nav__link">
     Code standards
   </a>
@@ -649,6 +656,13 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#before-you-begin" class="md-nav__link">
+    Before you begin
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#code-standards" class="md-nav__link">
     Code standards
   </a>
@@ -780,6 +794,15 @@
 <p>Working within these guidelines will help your pull request be added in a timely fashion!</p>
 <p>Note this guide is meant primarily for battery scientists with limited experience in software development, particularly in python. </p>
 <p><strong>In general, our goal here is to implement ideas which can be complex, convoluted, or confusing in the simplest, most concise, and most reusable manner possible.</strong></p>
+<h2 id="before-you-begin">Before you begin<a class="headerlink" href="#before-you-begin" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Create an <a href="https://guides.github.com/features/issues/">issue</a> where new proposals can be discussed before any coding is done.</li>
+<li>Create a personal <a href="https://help.github.com/articles/fork-a-repo/">fork</a> of the master repo.</li>
+<li>Download the source code onto your local system, by <a href="https://help.github.com/articles/cloning-a-repository/">cloning</a> the repository (or your fork of the repository).</li>
+<li>Create a <a href="https://help.github.com/articles/creating-and-deleting-branches-within-your-repository/">branch</a> of this repo on your own fork where all changes will be made</li>
+<li><a href="https://tri-amdd.github.io/beep/">Install</a> BEEP with the <strong>developer options</strong>.</li>
+<li>Test if your installation worked. <code>pytest beep</code>.</li>
+</ol>
 <h2 id="code-standards">Code standards<a class="headerlink" href="#code-standards" title="Permanent link">&para;</a></h2>
 <h3 id="general">General<a class="headerlink" href="#general" title="Permanent link">&para;</a></h3>
 <ul>
@@ -829,8 +852,9 @@
 <a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">current_amps</span> <span class="o">=</span> <span class="n">voltage_volts</span><span class="o">/</span><span class="n">resistance_ohms</span>
 </code></pre></div>
 <ul>
-<li><strong>Use builtin libraries whenever possible</strong>: <a href="https://docs.python.org/3/library/">The python standard library</a> has many useful libraries. Usually, working with the standard library modules is a reasonably performant, well supported, and highly error tolerant solution. Using external libraries or writing your own alternatives to the standard library's functions are encouraged only when there are significant performance, usability, or code clarify advantages.</li>
+<li><strong>Use builtin libraries whenever possible</strong>: <a href="https://docs.python.org/3/library/">The python standard library</a> has many useful libraries. Usually, working with the standard library modules is a reasonably performant, well supported, and highly error tolerant solution. Using external libraries or writing your own alternatives to the standard library's functions are encouraged only when there are significant performance, usability, or code clarify advantages</li>
 <li><strong>Use informative exceptions</strong>: It is much easier to debug code with thoughtfully constructed exceptions (errors) than to reverse-engineer. For example, when an input is outside the expected range, use a <code>raise ValueError("Explanation goes here")</code>. </li>
+<li><strong>Discuss code changes on Github</strong>: Whether you are using a new external dependency or are unsure of how your code should be incorporated into beep, make an issue to discuss with the developers on github!</li>
 </ul>
 <h3 id="formatting">Formatting<a class="headerlink" href="#formatting" title="Permanent link">&para;</a></h3>
 <ul>
