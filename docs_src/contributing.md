@@ -106,13 +106,20 @@ final_answer = constant3 *
 
 ### Docstrings and module comments
 
-It is imperative that each function, method, class, and module you write are comprehensively documented. See [Section 3.8 of the Google Python style guide](https://google.github.io/styleguide/pyguide.html) for some examples of how to do this. 
+**It is imperative that each function, method, class, and module you write are comprehensively documented.** See [Section 3.8 of the Google Python style guide](https://google.github.io/styleguide/pyguide.html) for some examples of how to do this. 
 
 
 
 ## Writing unittests
 
+Unittests are a way to check that your code works as intended. **Code with new functionality must have tests!** Testing your code means writing "test" methods which call a desired function/method with some known ground truth inputs and output. If the *real* output of your function/method matches the expected ground truth output, the test passes. 
+
 In general, you should write unittests for each new functionality your code performs. Writing unittests at the same time you add a new piece of code (function, method, class) is the easiest way to do this.
+
+
+The fundamental unit of unittesting is a `TestCase` class. A `TestCase` class holds a set of related tests. `TestCase`s go in modules specific for testing - for example, `beep.structure.test.test_validate` is a testing module. 
+
+For more information on the syntax for checking the correctness of statements (e.g., `self.assertTrue`), see the [official python unittesting documentation.](https://docs.python.org/3/library/unittest.html)
 
 
 ### Step 1: Find the correct module for adding your tests
@@ -123,6 +130,8 @@ If your code is in a new module (e.g., `beep.structure.my_new_module`), your tes
 
 - in a new module in that test directory (`beep.structure.tests.test_my_new_module`)
 - in an existing module which implements tests for code similar to yours (e.g., if you are adding a new cycler datapath, `beep.structure.test_cyclerpaths`)
+
+**If you are not sure where your test code should go, ask a developer in your pull request!**
 
 ### Step 2: Create one or more `TestCase`s 
 
@@ -136,7 +145,7 @@ A unittest `TestCase` is a set of methods which will run to test your new code.
 
 ### Step 3: Create one test method for each method or function in your `TestCase`s
 
-Inside your `TestCase` class, implement some basic - yet realistic - test cases to ensure your code is working as intended.
+Inside your `TestCase` class, implement some basic - yet realistic - test cases to ensure your code is working as intended. This is where you will use python's unittesting library's `self.assert*` methods to check the outputs of code for correctness.
 
 If you are adding a class, there should be one testing method for each method of your new class.
 
@@ -147,4 +156,54 @@ Make sure your test cases work for:
 
 - Minimal basic inputs with known outputs; ensure these tests are simple yet realistic.
 - Edge cases which likely will be encountered (e.g., a numerical input is maximized, a numerical input is minimized, etc.)
-- Erroneous input throws the expected exceptions 
+- Erroneous input throws the expected exceptions using `self.assertRaises`
+
+
+
+### Unittesting template
+
+Here is a template/example of how to write unittests for a new class.
+
+```python
+
+import unittest
+
+from beep.my_new_module import MyNewClass
+
+
+class TestMyNewClass(unittest.TestCase)
+    def test_my_new_class(self):
+        # testing the __init__ behavior of your class, for example
+        inputs = ["A", 1, 15.2]
+        mnc = MyNewClass(*inputs)
+        
+        self.assertTrue(mnc.some_attr)
+        self.assertFalse(mnc.some_attr2)
+    
+    def test_compute(self):
+        # testing a particular method "compute" of your "MyNewClass" 
+        # class against a bunch of inputs
+
+        mnc = MyNewClass("B", 2, 21.3)
+        arg1 = SomeObject()
+        x = range(1, 5)
+        
+        for i in x:
+            self.assertEqual(mnc.compute(arg1, i), 10)
+            self.assertAlmostEqual(mnc.compute(arg1, i, as_float=True), 9.999999)
+        
+```
+
+
+
+
+### Some tips for writing tests
+
+Find more info for each of these tips on [the python unittesting docs.](https://docs.python.org/3/library/unittest.html)
+
+- You can define a special `setUp` method for performing the same setup actions (e.g., clearing or resetting class attributes, creating a common input file) for all of your test methods. This can cut down on your boilerplate code.
+- You can define a special `setUpClass` class method which will run once before *any* of the test methods run. 
+- You can define a special `tearDown` method for performing the same post-test actions after each test. This is similar to `setUp`.
+- You can define a special `tearDownClass` class method which will run once at the end of the `TestCase`. 
+
+
