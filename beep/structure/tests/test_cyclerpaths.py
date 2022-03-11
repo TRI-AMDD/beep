@@ -354,11 +354,11 @@ class TestBioLogicDatapath(unittest.TestCase):
         self.assertEqual(dp.structured_summary["date_time_iso"].iloc[1], "2021-05-06T09:44:45.604000+00:00")
         self.assertAlmostEqual(dp.raw_data["test_time"].min(), 0, 3)
         self.assertAlmostEqual(dp.raw_data["test_time"].max(), 102040.77, 3)
-        self.assertAlmostEqual(dp.structured_data["test_time"].min(), 13062.720560, 3)
+        # self.assertAlmostEqual(dp.structured_data["test_time"].min(), 13062.720560, 3)
+        self.assertAlmostEqual(dp.structured_data["test_time"].min(), 101.089, 2)
         self.assertAlmostEqual(dp.structured_data["test_time"].max(), 101972.885, 3)
 
     def test_from_txt(self):
-
         biologic_file = os.path.join(
             TEST_FILE_DIR, "raw", "test_loopsnewoutput_MB_CE1_short10k.txt"
         )
@@ -391,8 +391,44 @@ class TestBioLogicDatapath(unittest.TestCase):
         self.assertEqual(dp.structured_summary["date_time_iso"].iloc[1], "2021-05-06T09:44:22.848000+00:00")
         self.assertAlmostEqual(dp.raw_data["test_time"].min(), 0, 3)
         self.assertAlmostEqual(dp.raw_data["test_time"].max(), 102240.281, 3)
-        self.assertAlmostEqual(dp.structured_data["test_time"].min(), 13062.997, 3)
+        #self.assertAlmostEqual(dp.structured_data["test_time"].min(), 13062.997, 3)
+        self.assertAlmostEqual(dp.structured_data["test_time"].min(), 101.357, 2)
         self.assertAlmostEqual(dp.structured_data["test_time"].max(), 101972.886, 3)
+
+    def test_from_formation_txt(self):
+        biologic_file = os.path.join(
+            TEST_FILE_DIR, "raw", "test_FormRegu_000100_CG1_Append_short.txt"
+        )
+        dp = BiologicDatapath.from_file(biologic_file)
+
+        self.assertTrue(
+            {
+                "cycle_index",
+                "step_index",
+                "voltage",
+                "current",
+                "discharge_capacity",
+                "charge_capacity",
+                "data_point",
+                "charge_energy",
+                "discharge_energy",
+            }
+            < set(dp.raw_data.columns),
+        )
+
+        dp.structure(v_range=[1.0, 4.4])
+
+        self.assertAlmostEqual(dp.structured_summary["charge_capacity"].tolist()[0], 0.2673875, 6)
+        self.assertAlmostEqual(dp.structured_summary["discharge_capacity"].tolist()[0], 0.2573631, 6)
+        self.assertEqual(dp.structured_summary["date_time_iso"].iloc[0], "2022-01-18T22:09:40.640000+00:00")
+        self.assertEqual(dp.structured_summary["date_time_iso"].iloc[1], "2022-01-22T09:15:10.020000+00:00")
+        self.assertAlmostEqual(dp.raw_data["test_time"].min(), 0, 3)
+        self.assertAlmostEqual(dp.raw_data["test_time"].max(), 784864.55, 3)
+        self.assertAlmostEqual(dp.structured_data["test_time"].min(), 259220.283, 3)
+        self.assertAlmostEqual(dp.structured_data["test_time"].max(), 784853.102, 3)
+        self.assertGreater(dp.structured_summary["discharge_capacity"].tolist()[4], 0)
+        self.assertGreater(dp.structured_summary["discharge_capacity"].tolist()[20], 0)
+        self.assertGreater(dp.structured_summary["discharge_capacity"].tolist()[40], 0)
 
     def test_add_cycle_index(self):
 

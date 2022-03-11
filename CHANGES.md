@@ -1,5 +1,21 @@
 
 
+v2022.2.7.14
+------------
+* Change test back
+
+v2022.2.1.19
+------------
+* Setup featurizers and tests
+* Added initial files for intracell analysis update
+
+
+
+v2022.1.24.16
+-------------
+* Fix bug with loading processed file from a different environment
+* Allow biologic txt files to structure (#518)
+
 v2021.12.28.16
 --------------
 * Update the diagnostic parameters

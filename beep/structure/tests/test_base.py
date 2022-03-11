@@ -29,6 +29,8 @@ from beep.structure.base import BEEPDatapath
 from beep.structure.base_eis import EIS, BEEPDatapathWithEIS
 from beep.structure.maccor import MaccorDatapath
 from beep.tests.constants import TEST_FILE_DIR, BIG_FILE_TESTS, SKIP_MSG
+from beep.structure.cli import auto_load_processed
+from beep import VALIDATION_SCHEMA_DIR
 
 
 class TestBEEPDatapath(unittest.TestCase):
@@ -202,6 +204,13 @@ class TestBEEPDatapath(unittest.TestCase):
 
                 if os.path.exists(fname):
                     os.remove(fname)
+
+    # Test to address bug where schema_path is absolute but is created in a different environment
+    def test_reloading_new(self):
+        test_file = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000107_0001B9_structure_short.json")
+        struct = auto_load_processed(test_file)
+        self.assertEqual(struct.schema,
+                         os.path.join(VALIDATION_SCHEMA_DIR, "schema-maccor-2170.yaml"))
 
     # based on RCRT.test_serialization
     def test_serialization_legacy(self):

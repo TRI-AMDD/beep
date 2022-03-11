@@ -21,7 +21,7 @@ except (ImportError, ModuleNotFoundError):
 # Versioning.  The python code version is frequently tagged
 # with a commit hash from the repo, which is supplied via
 # an environment variable by the integration build procedure
-__version__ = "2021.12.28.16"
+__version__ = "2022.2.7.14"
 VERSION_TAG = os.environ.get("BEEP_VERSION_TAG")
 if VERSION_TAG is not None:
     __version__ = "-".join([__version__, VERSION_TAG])
