@@ -162,7 +162,8 @@ Make sure your test cases work for:
 
 ### Unittesting template
 
-Here is a template/example of how to write unittests for a new class.
+Here is a template/example of how to write unittests for a new class. The easiest way to get started is to copy+paste this code
+and replace the code with our own tests.
 
 ```python
 
@@ -191,9 +192,31 @@ class TestMyNewClass(unittest.TestCase)
         for i in x:
             self.assertEqual(mnc.compute(arg1, i), 10)
             self.assertAlmostEqual(mnc.compute(arg1, i, as_float=True), 9.999999)
-        
+            
+        # Make sure compute fails in the way we expect
+        with self.assertRaises(TypeError):
+            mnc.compute(arg1, "bad_input")
 ```
 
+
+### Step 4: Run your tests!
+
+While all tests are checked by the Github continuous integration, you should run your tests locally. 
+
+First, run your tests by themselves. Make sure you have the requirements from `requirements-test.txt` installed. You can then run your new test cases by  adding the following code at the bottom of the test file and running it.
+
+```python
+if __name__ == "__main__":
+    unittest.main(TestMyNewClass())
+```
+
+If your test passed, congrats!
+
+You might also want to make sure your new code did not break any other tests. You can do this from the command line  in the base `beep` directory (the same directory as `setup.py`):
+
+```shell
+$: pytest beep --color=yes
+```
 
 
 
@@ -203,7 +226,7 @@ Find more info for each of these tips on [the python unittesting docs.](https://
 
 - You can define a special `setUp` method for performing the same setup actions (e.g., clearing or resetting class attributes, creating a common input file) for all of your test methods. This can cut down on your boilerplate code.
 - You can define a special `setUpClass` class method which will run once before *any* of the test methods run. 
-- You can define a special `tearDown` method for performing the same post-test actions after each test. This is similar to `setUp`.
+- You can define a special `tearDown` method for performing the same post-test actions after each test. This is useful for cleaning up leftover files. This is similar to `setUp`.
 - You can define a special `tearDownClass` class method which will run once at the end of the `TestCase`. 
 
 
