@@ -791,7 +791,7 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Bad - incomprehensible at a glance</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">{</span><span class="n">yi</span><span class="p">:</span> <span class="n">yj</span> <span class="k">for</span> <span class="n">yi</span><span class="p">,</span> <span class="n">yj</span> <span class="ow">in</span> <span class="n">y_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">yi</span> <span class="ow">in</span> <span class="n">yset</span><span class="p">}</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="p">(</span><span class="n">t</span> <span class="o">!=</span> <span class="mi">42</span> <span class="ow">and</span> <span class="n">t</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)]</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Better - can at leas understand each line at a glance</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Better - can at leas tunderstand each line at a glance</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">y</span> <span class="o">=</span> <span class="p">{}</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">for</span> <span class="n">yi</span><span class="p">,</span> <span class="n">yj</span> <span class="ow">in</span> <span class="n">y_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="k">if</span> <span class="n">yi</span> <span class="ow">in</span> <span class="n">yset</span><span class="p">:</span>
@@ -848,7 +848,7 @@ esoteric or not explained elsewhere. Here is an example of a good block comment:
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a># Regression according to Mathiesen&#39;s method; constants taken from 
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a># this publication: https://doi.org/10.101/12345
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>my_variable2 = (input1 * input2**2)/some_constant
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>final_answer = constant3 * 
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>final_answer = constant3 * my_variable2
 </code></pre></div>
 <h3 id="docstrings-and-module-comments">Docstrings and module comments<a class="headerlink" href="#docstrings-and-module-comments" title="Permanent link">&para;</a></h3>
 <p><strong>It is imperative that each function, method, class, and module you write are comprehensively documented.</strong> See <a href="https://google.github.io/styleguide/pyguide.html">Section 3.8 of the Google Python style guide</a> for some examples of how to do this. </p>
@@ -920,7 +920,8 @@ and replace the code with our own tests.</p>
 <p>While all tests are checked by the Github continuous integration, you should run your tests locally. </p>
 <p>First, run your tests by themselves. Make sure you have the requirements from <code>requirements-test.txt</code> installed. You can then run your new test cases by  adding the following code at the bottom of the test file and running it.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">unittest</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="n">TestMyNewClass</span><span class="p">())</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="c1"># replace TestMyNewClass with your TestCase name!</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">unittest</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="n">TestMyNewClass</span><span class="p">())</span>
 </code></pre></div>
 <p>If your test passed, congrats!</p>
 <p>You might also want to make sure your new code did not break any other tests. You can do this from the command line  in the base <code>beep</code> directory (the same directory as <code>setup.py</code>):</p>
