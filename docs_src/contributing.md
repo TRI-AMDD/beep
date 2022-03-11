@@ -6,7 +6,7 @@ Working within these guidelines will help your pull request be added in a timely
 
 Note this guide is meant primarily for battery scientists with limited experience in software development, particularly in python. 
 
-**In general, our goal here is to write code** (which can complex, convoluted, or confusing  things) **in the absolute simplest, most concise, and reusable manner possible.**
+**In general, our goal here is to implement ideas which can be complex, convoluted, or confusing in the simplest, most concise, and most reusable manner possible.**
 
 
 ## Code standards
