@@ -72,7 +72,7 @@ class BEEPFeaturizer(MSONable, abc.ABC):
         else:
             self.hyperparameters = self.DEFAULT_HYPERPARAMETERS
 
-        if structured_datapath is not None and not structured_datapath.is_structured:
+        if not (structured_datapath is None or structured_datapath.is_structured):
             raise BEEPFeaturizationError("BEEPDatapath input is not structured!")
         self.datapath = structured_datapath
 
