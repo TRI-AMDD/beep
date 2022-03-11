@@ -68,7 +68,7 @@ current_amps = voltage_volts/resistance_ohms
 
 
 - **Use builtin libraries whenever possible**: [The python standard library](https://docs.python.org/3/library/) has many useful libraries. Usually, working with the standard library modules is a reasonably performant, well supported, and highly error tolerant solution. Using external libraries or writing your own alternatives to the standard library's functions are encouraged only when there are significant performance, usability, or code clarify advantages.
-
+- **Use informative exceptions**: It is much easier to debug code with thoughtfully constructed exceptions (errors) than to reverse-engineer. For example, when an input is outside the expected range, use a `raise ValueError("Explanation goes here")`. 
 
 ### Formatting
 
@@ -112,4 +112,39 @@ It is imperative that each function, method, class, and module you write are com
 
 ## Writing unittests
 
-In general, you should write unittests for each new functionality your code performs. 
+In general, you should write unittests for each new functionality your code performs. Writing unittests at the same time you add a new piece of code (function, method, class) is the easiest way to do this.
+
+
+### Step 1: Find the correct module for adding your tests
+
+If your code is in an existing module (e.g., `beep.features.intracell_analysis`), your tests will go in that module's test module (e.g., `beep.features.tests.test_intracell_analysis`)
+
+If your code is in a new module (e.g., `beep.structure.my_new_module`), your tests will go either:
+
+- in a new module in that test directory (`beep.structure.tests.test_my_new_module`)
+- in an existing module which implements tests for code similar to yours (e.g., if you are adding a new cycler datapath, `beep.structure.test_cyclerpaths`)
+
+### Step 2: Create one or more `TestCase`s 
+
+A unittest `TestCase` is a set of methods which will run to test your new code. 
+
+- If your contribution is a small bug fix, you will add testing code inside an existing `TestCase` class.
+- If your contribution adds new methods to an existing class or new functions to an existing module, your tests will go inside an existing `TestCase` class.
+- If you are adding a new class, your tests should go in a new `TestCase` class.
+- If you are adding multiple new classes or a new module, your tests shoudl go in multiple `TestCase` classes. For example, if you are adding `Class1` and `Class2` as new classes, you should probably have `TestClass1` and `TestClass2` as `TestCases`.
+
+
+### Step 3: Create one test method for each method or function in your `TestCase`s
+
+Inside your `TestCase` class, implement some basic - yet realistic - test cases to ensure your code is working as intended.
+
+If you are adding a class, there should be one testing method for each method of your new class.
+
+If you are adding one or more functions, there should be one testing method for each function added.
+
+
+Make sure your test cases work for:
+
+- Minimal basic inputs with known outputs; ensure these tests are simple yet realistic.
+- Edge cases which likely will be encountered (e.g., a numerical input is maximized, a numerical input is minimized, etc.)
+- Erroneous input throws the expected exceptions 
