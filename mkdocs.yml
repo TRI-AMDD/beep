@@ -25,6 +25,11 @@ markdown_extensions:
   - footnotes
   - toc:
       permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
 
 repo_url: https://github.com/tri-amdd/beep
 #docs_dir: src
