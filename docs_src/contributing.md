@@ -23,7 +23,7 @@ Example 1:
 # Bad - incomprehensible at a glance
 x = [t for t in {yi: yj for yi, yj in y_dict.items() if yi in yset}.values() if (t != 42 and t is not None)]
 
-# Better - can at leas understand each line at a glance
+# Better - can at leas tunderstand each line at a glance
 y = {}
 for yi, yj in y_dict.items():
     if yi in yset:
@@ -100,7 +100,7 @@ esoteric or not explained elsewhere. Here is an example of a good block comment:
 # Regression according to Mathiesen's method; constants taken from 
 # this publication: https://doi.org/10.101/12345
 my_variable2 = (input1 * input2**2)/some_constant
-final_answer = constant3 * 
+final_answer = constant3 * my_variable2
 
 ```
 
@@ -207,6 +207,7 @@ First, run your tests by themselves. Make sure you have the requirements from `r
 
 ```python
 if __name__ == "__main__":
+    # replace TestMyNewClass with your TestCase name!
     unittest.main(TestMyNewClass())
 ```
 
