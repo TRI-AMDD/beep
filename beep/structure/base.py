@@ -319,7 +319,7 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         return cls.from_dict(d)
 
-    def to_json_file(self, filename, omit_raw=False):
+    def to_json_file(self, filename, omit_raw=True):
         """Save a BEEPDatapath to disk as a json.
 
         .json.gz files are supported.
