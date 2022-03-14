@@ -76,7 +76,7 @@ current_amps = voltage_volts/resistance_ohms
 ```
 
 
-- **Use builtin libraries whenever possible**: [The python standard library](https://docs.python.org/3/library/) has many useful libraries. Usually, working with the standard library modules is a reasonably performant, well supported, and highly error tolerant solution. Using external libraries or writing your own alternatives to the standard library's functions are encouraged only when there are significant performance, usability, or code clarify advantages
+- **Use builtin libraries whenever possible**: [The python standard library](https://docs.python.org/3/library/) has many useful libraries. Usually, working with the standard library modules is a reasonably performant, well supported, and highly error tolerant solution. Using external libraries or writing your own alternatives to the standard library's functions are encouraged only when there are significant performance, usability, or code clarity advantages
 - **Use informative exceptions**: It is much easier to debug code with thoughtfully constructed exceptions (errors) than to reverse-engineer. For example, when an input is outside the expected range, use a `raise ValueError("Explanation goes here")`. 
 - **Discuss code changes on Github**: Whether you are using a new external dependency or are unsure of how your code should be incorporated into beep, make an issue to discuss with the developers on github!
 
