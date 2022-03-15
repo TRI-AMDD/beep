@@ -255,6 +255,13 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#before-you-begin" class="md-nav__link">
+    Before you begin
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#code-standards" class="md-nav__link">
     Code standards
   </a>
@@ -649,6 +656,13 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#before-you-begin" class="md-nav__link">
+    Before you begin
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#code-standards" class="md-nav__link">
     Code standards
   </a>
@@ -780,6 +794,15 @@
 <p>Working within these guidelines will help your pull request be added in a timely fashion!</p>
 <p>Note this guide is meant primarily for battery scientists with limited experience in software development, particularly in python. </p>
 <p><strong>In general, our goal here is to implement ideas which can be complex, convoluted, or confusing in the simplest, most concise, and most reusable manner possible.</strong></p>
+<h2 id="before-you-begin">Before you begin<a class="headerlink" href="#before-you-begin" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Create an <a href="https://guides.github.com/features/issues/">issue</a> where new proposals can be discussed before any coding is done.</li>
+<li>Create a personal <a href="https://help.github.com/articles/fork-a-repo/">fork</a> of the master repo.</li>
+<li>Download the source code onto your local system, by <a href="https://help.github.com/articles/cloning-a-repository/">cloning</a> the repository (or your fork of the repository).</li>
+<li>Create a <a href="https://help.github.com/articles/creating-and-deleting-branches-within-your-repository/">branch</a> of this repo on your own fork where all changes will be made</li>
+<li><a href="https://tri-amdd.github.io/beep/">Install</a> BEEP with the <strong>developer options</strong>.</li>
+<li>Test if your installation worked. <code>pytest beep</code>.</li>
+</ol>
 <h2 id="code-standards">Code standards<a class="headerlink" href="#code-standards" title="Permanent link">&para;</a></h2>
 <h3 id="general">General<a class="headerlink" href="#general" title="Permanent link">&para;</a></h3>
 <ul>
@@ -791,7 +814,7 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Bad - incomprehensible at a glance</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">{</span><span class="n">yi</span><span class="p">:</span> <span class="n">yj</span> <span class="k">for</span> <span class="n">yi</span><span class="p">,</span> <span class="n">yj</span> <span class="ow">in</span> <span class="n">y_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">yi</span> <span class="ow">in</span> <span class="n">yset</span><span class="p">}</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="p">(</span><span class="n">t</span> <span class="o">!=</span> <span class="mi">42</span> <span class="ow">and</span> <span class="n">t</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)]</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Better - can at leas understand each line at a glance</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Better - can at leas tunderstand each line at a glance</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">y</span> <span class="o">=</span> <span class="p">{}</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">for</span> <span class="n">yi</span><span class="p">,</span> <span class="n">yj</span> <span class="ow">in</span> <span class="n">y_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="k">if</span> <span class="n">yi</span> <span class="ow">in</span> <span class="n">yset</span><span class="p">:</span>
@@ -829,8 +852,9 @@
 <a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">current_amps</span> <span class="o">=</span> <span class="n">voltage_volts</span><span class="o">/</span><span class="n">resistance_ohms</span>
 </code></pre></div>
 <ul>
-<li><strong>Use builtin libraries whenever possible</strong>: <a href="https://docs.python.org/3/library/">The python standard library</a> has many useful libraries. Usually, working with the standard library modules is a reasonably performant, well supported, and highly error tolerant solution. Using external libraries or writing your own alternatives to the standard library's functions are encouraged only when there are significant performance, usability, or code clarify advantages.</li>
+<li><strong>Use builtin libraries whenever possible</strong>: <a href="https://docs.python.org/3/library/">The python standard library</a> has many useful libraries. Usually, working with the standard library modules is a reasonably performant, well supported, and highly error tolerant solution. Using external libraries or writing your own alternatives to the standard library's functions are encouraged only when there are significant performance, usability, or code clarity advantages</li>
 <li><strong>Use informative exceptions</strong>: It is much easier to debug code with thoughtfully constructed exceptions (errors) than to reverse-engineer. For example, when an input is outside the expected range, use a <code>raise ValueError("Explanation goes here")</code>. </li>
+<li><strong>Discuss code changes on Github</strong>: Whether you are using a new external dependency or are unsure of how your code should be incorporated into beep, make an issue to discuss with the developers on github!</li>
 </ul>
 <h3 id="formatting">Formatting<a class="headerlink" href="#formatting" title="Permanent link">&para;</a></h3>
 <ul>
@@ -848,7 +872,7 @@ esoteric or not explained elsewhere. Here is an example of a good block comment:
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a># Regression according to Mathiesen&#39;s method; constants taken from 
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a># this publication: https://doi.org/10.101/12345
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>my_variable2 = (input1 * input2**2)/some_constant
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>final_answer = constant3 * 
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>final_answer = constant3 * my_variable2
 </code></pre></div>
 <h3 id="docstrings-and-module-comments">Docstrings and module comments<a class="headerlink" href="#docstrings-and-module-comments" title="Permanent link">&para;</a></h3>
 <p><strong>It is imperative that each function, method, class, and module you write are comprehensively documented.</strong> See <a href="https://google.github.io/styleguide/pyguide.html">Section 3.8 of the Google Python style guide</a> for some examples of how to do this. </p>
@@ -920,7 +944,8 @@ and replace the code with our own tests.</p>
 <p>While all tests are checked by the Github continuous integration, you should run your tests locally. </p>
 <p>First, run your tests by themselves. Make sure you have the requirements from <code>requirements-test.txt</code> installed. You can then run your new test cases by  adding the following code at the bottom of the test file and running it.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">unittest</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="n">TestMyNewClass</span><span class="p">())</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="c1"># replace TestMyNewClass with your TestCase name!</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">unittest</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="n">TestMyNewClass</span><span class="p">())</span>
 </code></pre></div>
 <p>If your test passed, congrats!</p>
 <p>You might also want to make sure your new code did not break any other tests. You can do this from the command line  in the base <code>beep</code> directory (the same directory as <code>setup.py</code>):</p>

@@ -8,6 +8,15 @@ Note this guide is meant primarily for battery scientists with limited experienc
 
 **In general, our goal here is to implement ideas which can be complex, convoluted, or confusing in the simplest, most concise, and most reusable manner possible.**
 
+## Before you begin
+
+1. Create an [issue](https://guides.github.com/features/issues/) where new proposals can be discussed before any coding is done.
+2. Create a personal [fork](https://help.github.com/articles/fork-a-repo/) of the master repo.
+3. Download the source code onto your local system, by [cloning](https://help.github.com/articles/cloning-a-repository/) the repository (or your fork of the repository).
+4. Create a [branch](https://help.github.com/articles/creating-and-deleting-branches-within-your-repository/) of this repo on your own fork where all changes will be made
+5. [Install](https://tri-amdd.github.io/beep/) BEEP with the **developer options**.
+6. Test if your installation worked. `pytest beep`.
+
 
 ## Code standards
 
@@ -23,7 +32,7 @@ Example 1:
 # Bad - incomprehensible at a glance
 x = [t for t in {yi: yj for yi, yj in y_dict.items() if yi in yset}.values() if (t != 42 and t is not None)]
 
-# Better - can at leas understand each line at a glance
+# Better - can at leas tunderstand each line at a glance
 y = {}
 for yi, yj in y_dict.items():
     if yi in yset:
@@ -67,8 +76,10 @@ current_amps = voltage_volts/resistance_ohms
 ```
 
 
-- **Use builtin libraries whenever possible**: [The python standard library](https://docs.python.org/3/library/) has many useful libraries. Usually, working with the standard library modules is a reasonably performant, well supported, and highly error tolerant solution. Using external libraries or writing your own alternatives to the standard library's functions are encouraged only when there are significant performance, usability, or code clarify advantages.
+- **Use builtin libraries whenever possible**: [The python standard library](https://docs.python.org/3/library/) has many useful libraries. Usually, working with the standard library modules is a reasonably performant, well supported, and highly error tolerant solution. Using external libraries or writing your own alternatives to the standard library's functions are encouraged only when there are significant performance, usability, or code clarity advantages
 - **Use informative exceptions**: It is much easier to debug code with thoughtfully constructed exceptions (errors) than to reverse-engineer. For example, when an input is outside the expected range, use a `raise ValueError("Explanation goes here")`. 
+- **Discuss code changes on Github**: Whether you are using a new external dependency or are unsure of how your code should be incorporated into beep, make an issue to discuss with the developers on github!
+
 
 ### Formatting
 
@@ -100,7 +111,7 @@ esoteric or not explained elsewhere. Here is an example of a good block comment:
 # Regression according to Mathiesen's method; constants taken from 
 # this publication: https://doi.org/10.101/12345
 my_variable2 = (input1 * input2**2)/some_constant
-final_answer = constant3 * 
+final_answer = constant3 * my_variable2
 
 ```
 
@@ -207,6 +218,7 @@ First, run your tests by themselves. Make sure you have the requirements from `r
 
 ```python
 if __name__ == "__main__":
+    # replace TestMyNewClass with your TestCase name!
     unittest.main(TestMyNewClass())
 ```
 
