@@ -1,12 +1,11 @@
 import os
-
+import numpy as np
 import pandas as pd
 
 from beep import PROTOCOL_PARAMETERS_DIR
 from beep.features import featurizer_helpers
 from beep.features.base import BEEPFeaturizer
 from beep.features.intracell_analysis_v2 import IntracellAnalysisV2
-
 
 DEFAULT_CELL_INFO_DIR = os.path.join(PROTOCOL_PARAMETERS_DIR, "intracell_info")
 
@@ -24,19 +23,24 @@ class IntracellCyclesV2(BEEPFeaturizer):
     """
 
     DEFAULT_HYPERPARAMETERS = {
-        "diagnostic_cycle_type": 'rpt_0.2C',
-        "step_type": 0,
-        # Paths for anode files should be absolute
-        # Defaults are for the specified names in the current dir
-        "anode_file": os.path.join(
-            DEFAULT_CELL_INFO_DIR,
-            'anode_test.csv'
-        ),
-        "cathode_file": os.path.join(
-            DEFAULT_CELL_INFO_DIR,
-            'cathode_test.csv'
-        ),
-    }
+        'pe_pristine_files_dict':{},
+        'pe_pristine_usecols':['Ecell/V','Capacity/mA.h',
+                               'SOC_aligned','c_rate',
+                               'BVV_c_rate','Voltage_aligned'],
+        'ne_1_pristine_files_dict':{},
+        'ne_1_pristine_usecols':['Ecell/V','Capacity/mA.h',
+                                 'SOC_aligned','c_rate',
+                                 'BVV_c_rate','Voltage_aligned'],
+        'Q_fc_nom':4.84,
+        'C_nom':-0.2,
+        'cycle_type':'rpt_0.2C',
+        'step_type': 1, 
+        'error_type':'dVdQ',
+        'error_weighting':'dQdV',
+        'dvdq_bound':None,
+        'ne_2pos_file':None,
+        'ne_2neg_file':None
+    } 
 
     def validate(self):
         """
@@ -58,7 +62,7 @@ class IntracellCyclesV2(BEEPFeaturizer):
 
             # Ensure overlap of cycle indices above threshold and matching cycle type
             eol_cycle_index_list = self.datapath.diagnostic_summary[
-                (self.datapath.diagnostic_summary.cycle_type == self.hyperparameters["diagnostic_cycle_type"]) &
+                (self.datapath.diagnostic_summary.cycle_type == self.hyperparameters["cycle_type"]) &
                 (self.datapath.diagnostic_summary.discharge_capacity > IntracellAnalysisV2.THRESHOLD)
                 ].cycle_index.to_list()
             if not eol_cycle_index_list:
@@ -93,10 +97,19 @@ class IntracellCyclesV2(BEEPFeaturizer):
              (pd.DataFrame) containing the cell material parameters as a function of cycle index
         """
         ia = IntracellAnalysisV2(
-            self.hyperparameters["cathode_file"],
-            self.hyperparameters["anode_file"],
-            cycle_type=self.hyperparameters["diagnostic_cycle_type"],
-            step_type=self.hyperparameters["step_type"]
+            pe_pristine_files_dict=self.hyperparameters["pe_pristine_files_dict"],
+            pe_pristine_usecols=self.hyperparameters["pe_pristine_usecols"],
+            ne_1_pristine_files_dict=self.hyperparameters["ne_1_pristine_files_dict"],
+            ne_1_pristine_usecols=self.hyperparameters["ne_1_pristine_usecols"],
+            Q_fc_nom=self.hyperparameters["Q_fc_nom"],
+            C_nom=self.hyperparameters["C_nom"],
+            cycle_type=self.hyperparameters["cycle_type"],
+            step_type=self.hyperparameters["step_type"],
+            error_type=self.hyperparameters["error_type"],
+            error_weighting=self.hyperparameters["error_weighting"],
+            dvdq_bound=self.hyperparameters["dvdq_bound"],
+            ne_2pos_file=self.hyperparameters["ne_2pos_file"],
+            ne_2neg_file=self.hyperparameters["ne_2neg_file"]
         )
 
         # (cell_init_aligned, cell_init_profile, PE_matched, NE_matched) = ia.intracell_wrapper_init(
@@ -111,15 +124,17 @@ class IntracellCyclesV2(BEEPFeaturizer):
         # initialize dicts before for loop
         dataset_dict_of_cell_degradation_path = dict()
         real_cell_dict_of_profiles = dict()
-        for i, cycle_index in enumerate(eol_cycle_index_list):
+        for diag_pos, cycle_index in enumerate(eol_cycle_index_list):
             loss_dict, profiles_dict = ia.intracell_values_wrapper_ah(cycle_index,
                                                                       self.datapath
                                                                       )
+            loss_dict[cycle_index] = np.append(diag_pos,loss_dict[cycle_index])
             dataset_dict_of_cell_degradation_path.update(loss_dict)
-            real_cell_dict_of_profiles.update(profiles_dict)
+#             real_cell_dict_of_profiles.update(profiles_dict)
 
         degradation_df = pd.DataFrame(dataset_dict_of_cell_degradation_path,
-                                      index=['rmse_error', 'LLI_opt', 'Q_pe_opt', 'Q_ne_opt', 'x_NE_2',
+                                      index=['diag_pos','rmse_error', 'LLI_opt', 'Q_pe_opt', 'Q_ne_opt', 'x_NE_2',
+                                             'IR_coef_pe_opt','IR_coef_ne_opt',
                                              'pe_voltage_FC4p2V', 'pe_voltage_FC4p1V', 'pe_voltage_FC4p0V',
                                              'pe_voltage_FC3p9V', 'pe_voltage_FC3p8V', 'pe_voltage_FC3p7V',
                                              'pe_voltage_FC3p6V', 'pe_voltage_FC3p5V', 'pe_voltage_FC3p4V',
@@ -143,6 +158,8 @@ class IntracellCyclesV2(BEEPFeaturizer):
                                              'ne_soc_FC3p2V', 'ne_soc_FC3p1V',
                                              'ne_soc_FC3p0V', 'ne_soc_FC2p9V', 'ne_soc_FC2p8V', 'ne_soc_FC2p7V',
                                              'Q_fc', 'Q_pe', 'Q_ne', 'Q_li']).T
+        degradation_df = degradation_df.reset_index().rename(columns={'index':'cycle_index'})
+        degradation_df['diag_pos'] = degradation_df['diag_pos'].astype(int)
         self.features = degradation_df
 
 
@@ -173,10 +190,17 @@ class IntracellFeaturesV2(IntracellCyclesV2):
         """
 
         ia = IntracellAnalysisV2(
-            self.hyperparameters["cathode_file"],
-            self.hyperparameters["anode_file"],
-            cycle_type=self.hyperparameters["diagnostic_cycle_type"],
-            step_type=self.hyperparameters["step_type"]
+            pe_pristine_dict=self.hyperparameters["pe_pristine_dict"],
+            ne_1_pristine_dict=self.hyperparameters["ne_1_pristine_dict"],
+            Q_fc_nom=self.hyperparameters["Q_fc_nom"],
+            C_nom=self.hyperparameters["C_nom"],
+            cycle_type=self.hyperparameters["cycle_type"],
+            step_type=self.hyperparameters["step_type"],
+            error_type=self.hyperparameters["error_type"],
+            error_weighting=self.hyperparameters["error_weighting"],
+            dvdq_bound=self.hyperparameters["dvdq_bound"],
+            ne_2pos_file=self.hyperparameters["ne_2pos_file"],
+            ne_2neg_file=self.hyperparameters["ne_2neg_file"]
         )
 
         # (cell_init_aligned, cell_init_profile, PE_matched, NE_matched) = ia.intracell_wrapper_init(
