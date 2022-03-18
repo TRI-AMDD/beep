@@ -361,7 +361,8 @@ class BEEPFeatureMatrix(MSONable):
         """
         d = self.as_dict()
         dumpfn(d, filename)
-        
+
+
 class BEEPCycleFeatureMatrix(MSONable):
     """
     Create an ((n battery cycler files) x (j cycles)) x (k features)  array composed of
