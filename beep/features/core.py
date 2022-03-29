@@ -4,17 +4,18 @@ from scipy.stats import skew, kurtosis
 from scipy.interpolate import interp1d
 
 from beep import PROTOCOL_PARAMETERS_DIR
-from beep.features import featurizer_helps
+from beep.features import featurizer_helpers
 from functools import reduce
 from beep.utils.parameters_lookup import get_protocol_parameters
 
 from beep.features.base import BEEPFeaturizer, BEEPFeaturizationError
 
+
 class HPPCResistanceVoltageEarlyFeatures(BEEPFeaturizer):
     DEFAULT_HYPERPARAMETERS = {
         "test_time_filter_sec": 1000000,
         "cycle_index_filter": 6,
-        "diag_pos":1,
+        "diag_pos": 1,
         "soc_window": 8,
         "parameters_path": PROTOCOL_PARAMETERS_DIR
     }
@@ -86,7 +87,8 @@ class HPPCResistanceVoltageEarlyFeatures(BEEPFeaturizer):
         # merge everything together as a final result dataframe
         self.features = pd.concat(
             [hppc_r, hppc_ocv, v_diff, diffusion_features], axis=1)
-        
+
+
 class HPPCResistanceVoltageCycleFeatures(BEEPFeaturizer):
     DEFAULT_HYPERPARAMETERS = {
         "test_time_filter_sec": 1000000,
@@ -94,7 +96,7 @@ class HPPCResistanceVoltageCycleFeatures(BEEPFeaturizer):
         "soc_window": 8,
         "parameters_path": PROTOCOL_PARAMETERS_DIR
     }
-    
+
     def validate(self):
         val, msg = featurizer_helpers.check_diagnostic_validation(self.datapath)
         if val:
@@ -114,7 +116,7 @@ class HPPCResistanceVoltageCycleFeatures(BEEPFeaturizer):
                 return False, "HPPC conditions not met for this cycler run"
         else:
             return val, msg
-        
+
     def create_features(self):
         # Filter out low cycle numbers at the end of the test, corresponding to the "final" diagnostic
         self.datapath.diagnostic_data = self.datapath.diagnostic_data[
@@ -126,40 +128,40 @@ class HPPCResistanceVoltageCycleFeatures(BEEPFeaturizer):
         self.datapath.diagnostic_data = self.datapath.diagnostic_data.groupby(
             ["cycle_index", "step_index", "step_index_counter"]
         ).filter(lambda x: ~x["test_time"].isnull().all())
-        
+
         # Only hppc_resistance_features are able to be calculated without error.
         # Xiao Cui should be pulled in to understand the issue with the others features.
-        
-        
+
         # diffusion features
-#         diffusion_features = featurizer_helpers.get_diffusion_cycle_features(
-#             self.datapath,
-#         )
-        
+        #         diffusion_features = featurizer_helpers.get_diffusion_cycle_features(
+        #             self.datapath,
+        #         )
+
         # hppc resistance features
         hppc_resistance_features = featurizer_helpers.get_hppc_resistance_cycle_features(
             self.datapath,
         )
 
         # the variance of ocv features
-#         hppc_ocv_features = featurizer_helpers.get_hppc_ocv_cycle_features(
-#             self.datapath,
-#         )
+        #         hppc_ocv_features = featurizer_helpers.get_hppc_ocv_cycle_features(
+        #             self.datapath,
+        #         )
 
         # the v_diff features
-#         v_diff = featurizer_helpers.get_v_diff_cycle_features(
-#             self.datapath,
-#             self.hyperparameters["soc_window"],
-#             self.hyperparameters["parameters_path"]
-#         )
+        #         v_diff = featurizer_helpers.get_v_diff_cycle_features(
+        #             self.datapath,
+        #             self.hyperparameters["soc_window"],
+        #             self.hyperparameters["parameters_path"]
+        #         )
 
         # merge everything together as a final result dataframe
         self.features = pd.concat(
-            [hppc_resistance_features, 
-             #hppc_ocv_features,
-             #v_diff, #diffusion_features
-            ], axis=1)
-        
+            [hppc_resistance_features,
+             # hppc_ocv_features,
+             # v_diff, #diffusion_features
+             ], axis=1)
+
+
 class CycleSummaryStatsEarlyFeatures(BEEPFeaturizer):
     DEFAULT_HYPERPARAMETERS = {
         "cycle_comp_num": [10, 100],
@@ -577,9 +579,11 @@ class DeltaQFastChargeEarlyFeatures(BEEPFeaturizer):
             bool: True/False indication of ability to proceed with feature generation
         """
 
-        if not self.datapath.structured_summary.index.max() > self.hyperparameters["final_pred_cycle"]:
+        if not self.datapath.structured_summary.index.max() > \
+               self.hyperparameters["final_pred_cycle"]:
             return False, "Structured summary index max is less than final pred cycle"
-        elif not self.datapath.structured_summary.index.min() <= self.hyperparameters["init_pred_cycle"]:
+        elif not self.datapath.structured_summary.index.min() <= \
+                 self.hyperparameters["init_pred_cycle"]:
             return False, "Structured summary index min is more than initial pred cycle"
         elif "cycle_index" not in self.datapath.structured_summary.columns:
             return False, "Structured summary missing critical data: 'cycle_index'"
@@ -587,7 +591,8 @@ class DeltaQFastChargeEarlyFeatures(BEEPFeaturizer):
             return False, "Structured data missing critical data: 'cycle_index'"
         elif not self.hyperparameters["mid_pred_cycle"] > 10:
             return False, "Middle pred. cycle less than threshold value of 10"
-        elif not self.hyperparameters["final_pred_cycle"] > self.hyperparameters["mid_pred_cycle"]:
+        elif not self.hyperparameters["final_pred_cycle"] > \
+                 self.hyperparameters["mid_pred_cycle"]:
             return False, "Final pred cycle less than middle pred cycle"
         else:
             return True, None
@@ -899,7 +904,8 @@ class DiagnosticProperties(BEEPFeaturizer):
         if filter_kinks:
             if np.any(df['fractional_metric'].diff().diff() < filter_kinks):
                 last_good_cycle = df[
-                    df['fractional_metric'].diff().diff() < filter_kinks]['cycle_index'].min()
+                    df['fractional_metric'].diff().diff() < filter_kinks][
+                    'cycle_index'].min()
                 df = df[df['cycle_index'] < last_good_cycle]
 
         x_axes = []
@@ -968,7 +974,8 @@ class DiagnosticProperties(BEEPFeaturizer):
                                                'initial_regular_throughput'].values[
                                                0]
             x_to_threshold.append(real_throughput_to_threshold)
-            interpolation_axes = interpolation_axes + ["real_regular_throughput"]
+            interpolation_axes = interpolation_axes + [
+                "real_regular_throughput"]
 
         threshold_dict = {
             'initial_regular_throughput':
@@ -981,7 +988,8 @@ class DiagnosticProperties(BEEPFeaturizer):
                 x_to_threshold[indx]]
 
         return pd.DataFrame(threshold_dict)
-    
+
+
 class DiagnosticCycleFeatures(BEEPFeaturizer):
     """
     This class stores fractional levels of degradation in discharge capacity and discharge energy
@@ -999,7 +1007,7 @@ class DiagnosticCycleFeatures(BEEPFeaturizer):
     DEFAULT_HYPERPARAMETERS = {
         "parameters_dir": PROTOCOL_PARAMETERS_DIR,
         "nominal_capacity": 4.84,
-        
+
     }
 
     def validate(self):
@@ -1033,79 +1041,121 @@ class DiagnosticCycleFeatures(BEEPFeaturizer):
         """
 
         parameters_path = self.hyperparameters["parameters_dir"]
-        
-        # RPT discharge capacities       
-        data_rpt_02C = self.datapath.diagnostic_data.loc[self.datapath.diagnostic_data.cycle_type == 'rpt_0.2C']
-        Q_rpt_02C = data_rpt_02C.groupby('cycle_index')[['discharge_capacity','discharge_energy']].max().reset_index(drop=False)
-        Q_rpt_02C.rename(columns={'discharge_capacity':'rpt_0.2C_discharge_capacity','discharge_energy':'rpt_0.2C_discharge_energy'},
-                         inplace=True)
-        Q_rpt_02C = Q_rpt_02C.reset_index(drop=False).rename(columns={'index':'diag_pos'})
-        
-        rpt_02C_cycles = data_rpt_02C.cycle_index.unique() # for referencing last regular cycle before diagnostic
-        
-        data_rpt_1C = self.datapath.diagnostic_data.loc[self.datapath.diagnostic_data.cycle_type == 'rpt_1C']
-        Q_rpt_1C = data_rpt_1C.groupby('cycle_index')[['discharge_capacity','discharge_energy']].max().reset_index(drop=False)
-        Q_rpt_1C.rename(columns={'discharge_capacity':'rpt_1C_discharge_capacity','discharge_energy':'rpt_1C_discharge_energy'},
-                         inplace=True)
-        Q_rpt_1C = Q_rpt_1C.reset_index(drop=False).rename(columns={'index':'diag_pos'})
-        
-        data_rpt_2C = self.datapath.diagnostic_data.loc[self.datapath.diagnostic_data.cycle_type == 'rpt_2C']
-        Q_rpt_2C = data_rpt_2C.groupby('cycle_index')[['discharge_capacity','discharge_energy']].max().reset_index(drop=False)
-        Q_rpt_2C.rename(columns={'discharge_capacity':'rpt_2C_discharge_capacity','discharge_energy':'rpt_2C_discharge_energy'},
-                         inplace=True)
-        Q_rpt_2C = Q_rpt_2C.reset_index(drop=False).rename(columns={'index':'diag_pos'})
-        
-        # cumuative discharge throughput
-        aging_df = self.datapath.structured_summary[['cycle_index','charge_throughput','energy_throughput','energy_efficiency','charge_duration','CV_time','CV_current','energy_efficiency']]
-        aging_df = aging_df.loc[aging_df.cycle_index.isin(rpt_02C_cycles - 3)]
-        
-        cumulative_discharge_throughput = aging_df[['cycle_index','charge_throughput']].rename(columns={'charge_throughput':'discharge_throughput'}).reset_index(drop=True)
-        cumulative_discharge_throughput = cumulative_discharge_throughput.reset_index(drop=False).rename(columns={'index':'diag_pos'})
 
-        cumulative_energy_throughput = aging_df[['cycle_index','energy_throughput']].reset_index(drop=True)
+        # RPT discharge capacities       
+        data_rpt_02C = self.datapath.diagnostic_data.loc[
+            self.datapath.diagnostic_data.cycle_type == 'rpt_0.2C']
+        Q_rpt_02C = data_rpt_02C.groupby('cycle_index')[
+            ['discharge_capacity', 'discharge_energy']].max().reset_index(
+            drop=False)
+        Q_rpt_02C.rename(
+            columns={'discharge_capacity': 'rpt_0.2C_discharge_capacity',
+                     'discharge_energy': 'rpt_0.2C_discharge_energy'},
+            inplace=True)
+        Q_rpt_02C = Q_rpt_02C.reset_index(drop=False).rename(
+            columns={'index': 'diag_pos'})
+
+        rpt_02C_cycles = data_rpt_02C.cycle_index.unique()  # for referencing last regular cycle before diagnostic
+
+        data_rpt_1C = self.datapath.diagnostic_data.loc[
+            self.datapath.diagnostic_data.cycle_type == 'rpt_1C']
+        Q_rpt_1C = data_rpt_1C.groupby('cycle_index')[
+            ['discharge_capacity', 'discharge_energy']].max().reset_index(
+            drop=False)
+        Q_rpt_1C.rename(
+            columns={'discharge_capacity': 'rpt_1C_discharge_capacity',
+                     'discharge_energy': 'rpt_1C_discharge_energy'},
+            inplace=True)
+        Q_rpt_1C = Q_rpt_1C.reset_index(drop=False).rename(
+            columns={'index': 'diag_pos'})
+
+        data_rpt_2C = self.datapath.diagnostic_data.loc[
+            self.datapath.diagnostic_data.cycle_type == 'rpt_2C']
+        Q_rpt_2C = data_rpt_2C.groupby('cycle_index')[
+            ['discharge_capacity', 'discharge_energy']].max().reset_index(
+            drop=False)
+        Q_rpt_2C.rename(
+            columns={'discharge_capacity': 'rpt_2C_discharge_capacity',
+                     'discharge_energy': 'rpt_2C_discharge_energy'},
+            inplace=True)
+        Q_rpt_2C = Q_rpt_2C.reset_index(drop=False).rename(
+            columns={'index': 'diag_pos'})
+
+        # cumuative discharge throughput
+        aging_df = self.datapath.structured_summary[
+            ['cycle_index', 'charge_throughput', 'energy_throughput',
+             'energy_efficiency', 'charge_duration', 'CV_time', 'CV_current',
+             'energy_efficiency']]
+        aging_df = aging_df.loc[aging_df.cycle_index.isin(rpt_02C_cycles - 3)]
+
+        cumulative_discharge_throughput = aging_df[
+            ['cycle_index', 'charge_throughput']].rename(
+            columns={'charge_throughput': 'discharge_throughput'}).reset_index(
+            drop=True)
+        cumulative_discharge_throughput = cumulative_discharge_throughput.reset_index(
+            drop=False).rename(columns={'index': 'diag_pos'})
+
+        cumulative_energy_throughput = aging_df[
+            ['cycle_index', 'energy_throughput']].reset_index(drop=True)
         cumulative_energy_throughput = cumulative_energy_throughput.reset_index(
-            drop=False).rename(columns={'index':'diag_pos'})
-        
+            drop=False).rename(columns={'index': 'diag_pos'})
+
         equivalent_full_cycles = cumulative_discharge_throughput.copy()
-        equivalent_full_cycles.rename(columns={'discharge_throughput':'equivalent_full_cycles'},inplace=True)
-        equivalent_full_cycles['equivalent_full_cycles'] = equivalent_full_cycles['equivalent_full_cycles']/self.hyperparameters['nominal_capacity']
-                
+        equivalent_full_cycles.rename(
+            columns={'discharge_throughput': 'equivalent_full_cycles'},
+            inplace=True)
+        equivalent_full_cycles['equivalent_full_cycles'] = \
+        equivalent_full_cycles['equivalent_full_cycles'] / self.hyperparameters[
+            'nominal_capacity']
+
         # Q_aging_pre_diag - discharge capacity of aging cycle before diagnostic
         Q_aging_pre_diag = self.datapath.structured_data.groupby('cycle_index')[
-                    'discharge_capacity'].max().loc[rpt_02C_cycles[1:] - 3].reset_index(drop=False) # ignore first diagnostic, adjust cycle index to Q_aging_pre_diag
-        Q_aging_pre_diag.rename(columns={'discharge_capacity':'Q_aging_pre_diag'},inplace=True)
+            'discharge_capacity'].max().loc[rpt_02C_cycles[1:] - 3].reset_index(
+            drop=False)  # ignore first diagnostic, adjust cycle index to Q_aging_pre_diag
+        Q_aging_pre_diag.rename(
+            columns={'discharge_capacity': 'Q_aging_pre_diag'}, inplace=True)
         Q_aging_pre_diag = Q_aging_pre_diag.reset_index(
-            drop=False).rename(columns={'index':'diag_pos'})
-        Q_aging_pre_diag['diag_pos'] = Q_aging_pre_diag['diag_pos'] + 1 # since, first diag is ignored, add one to diag_pos
-        
+            drop=False).rename(columns={'index': 'diag_pos'})
+        Q_aging_pre_diag['diag_pos'] = Q_aging_pre_diag[
+                                           'diag_pos'] + 1  # since, first diag is ignored, add one to diag_pos
+
         # Q_aging_post_diag - discharge capacity of aging cycle after diagnostic
-        Q_aging_post_diag = self.datapath.structured_data.groupby('cycle_index')[
-                    'discharge_capacity'].max().loc[rpt_02C_cycles + 3].reset_index(drop=False) # does not ignore first diag since Q_aging exists after first diag
-        Q_aging_post_diag.rename(columns={'discharge_capacity':'Q_aging_post_diag'},inplace=True)
+        Q_aging_post_diag = \
+        self.datapath.structured_data.groupby('cycle_index')[
+            'discharge_capacity'].max().loc[rpt_02C_cycles + 3].reset_index(
+            drop=False)  # does not ignore first diag since Q_aging exists after first diag
+        Q_aging_post_diag.rename(
+            columns={'discharge_capacity': 'Q_aging_post_diag'}, inplace=True)
         Q_aging_post_diag = Q_aging_post_diag.reset_index(
-            drop=False).rename(columns={'index':'diag_pos'})
-        
+            drop=False).rename(columns={'index': 'diag_pos'})
+
         # Diagnostic time
-        diagnostic_time = data_rpt_02C.groupby('cycle_index')['test_time'].min().reset_index(drop=False).rename(columns={'test_time':'diagnostic_time'})
+        diagnostic_time = data_rpt_02C.groupby('cycle_index')[
+            'test_time'].min().reset_index(drop=False).rename(
+            columns={'test_time': 'diagnostic_time'})
         diagnostic_time = diagnostic_time.reset_index(
-            drop=False).rename(columns={'index':'diag_pos'})
-        
+            drop=False).rename(columns={'index': 'diag_pos'})
+
         # Combine dataframes
-        df_list = [Q_rpt_02C,Q_rpt_1C,Q_rpt_2C,
-                    cumulative_discharge_throughput,
-                    cumulative_energy_throughput,
-                    equivalent_full_cycles,
-                    Q_aging_pre_diag,
-                    Q_aging_post_diag,
-                    diagnostic_time]
+        df_list = [Q_rpt_02C, Q_rpt_1C, Q_rpt_2C,
+                   cumulative_discharge_throughput,
+                   cumulative_energy_throughput,
+                   equivalent_full_cycles,
+                   Q_aging_pre_diag,
+                   Q_aging_post_diag,
+                   diagnostic_time]
 
         for df in df_list:
             df['cycle_index'] = df['cycle_index'].copy().astype(int)
             df['diag_pos'] = df['diag_pos'].copy().astype(int)
-            
-        cycle_features = reduce(lambda x,y: pd.merge(x,y,on=['cycle_index','diag_pos'],how='outer'), df_list)
-        self.features = cycle_features.sort_values('cycle_index').reset_index(drop=True)
-        
+
+        cycle_features = reduce(
+            lambda x, y: pd.merge(x, y, on=['cycle_index', 'diag_pos'],
+                                  how='outer'), df_list)
+        self.features = cycle_features.sort_values('cycle_index').reset_index(
+            drop=True)
+
+
 class CyclingProtocol(BEEPFeaturizer):
     """
     This class stores information about the charging protocol used
@@ -1121,7 +1171,8 @@ class CyclingProtocol(BEEPFeaturizer):
         "parameters_dir": PROTOCOL_PARAMETERS_DIR,
         "quantities": ["charge_constant_current_1", "charge_constant_current_2",
                        "charge_cutoff_voltage", "charge_constant_voltage_time",
-                       "discharge_constant_current", "discharge_cutoff_voltage"],
+                       "discharge_constant_current",
+                       "discharge_cutoff_voltage"],
     }
 
     def validate(self):
@@ -1136,7 +1187,8 @@ class CyclingProtocol(BEEPFeaturizer):
         Returns:
             bool: True/False indication of ability to proceed with feature generation
         """
-        if not ('raw' in self.datapath.paths.keys() or 'structured' in self.datapath.paths.keys()):
+        if not (
+                'raw' in self.datapath.paths.keys() or 'structured' in self.datapath.paths.keys()):
             message = "datapath paths not set, unable to fetch charging protocol"
             return False, message
         else:
@@ -1148,11 +1200,15 @@ class CyclingProtocol(BEEPFeaturizer):
         """
 
         parameters_path = self.hyperparameters["parameters_dir"]
-        file_path = self.datapath.paths['raw'] if 'raw' in self.datapath.paths.keys() else self.datapath.paths['structured']
+        file_path = self.datapath.paths[
+            'raw'] if 'raw' in self.datapath.paths.keys() else \
+        self.datapath.paths['structured']
 
         parameters, _ = get_protocol_parameters(file_path, parameters_path)
 
         parameters = parameters[self.hyperparameters["quantities"]]
-        parameters['cycle_index'] = int(0) # create a cycle index column for merging with other featurizers
-        parameters['diag_pos'] = int(0) # create a diag_pos column for merging with other featurizers
+        parameters['cycle_index'] = int(
+            0)  # create a cycle index column for merging with other featurizers
+        parameters['diag_pos'] = int(
+            0)  # create a diag_pos column for merging with other featurizers
         self.features = parameters

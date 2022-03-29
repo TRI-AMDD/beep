@@ -293,7 +293,7 @@ class BEEPFeatureMatrix(MSONable):
         self.featurizers = beepfeaturizers
 
     def as_dict(self):
-        """Serialize a BEEPDatapath as a dictionary.
+        """Serialize a BEEPFeatureMatrix as a dictionary.
 
         Must not be loaded from legacy.
 
@@ -313,7 +313,7 @@ class BEEPFeatureMatrix(MSONable):
 
     @classmethod
     def from_dict(cls, d):
-        """Create a BEEPDatapath object from a dictionary.
+        """Create a BEEPFeatureMatrix object from a dictionary.
 
         Args:
             d (dict): dictionary represenation.
