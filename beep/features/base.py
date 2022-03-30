@@ -57,7 +57,8 @@ class BEEPFeaturizer(MSONable, abc.ABC):
 
     DEFAULT_HYPERPARAMETERS = {}
 
-    def __init__(self, structured_datapath: Union[BEEPDatapath, None], hyperparameters: Union[dict, None] = None):
+    def __init__(self, structured_datapath: Union[BEEPDatapath, None],
+                 hyperparameters: Union[dict, None] = None):
         # If all required hyperparameters are specified, use those
         # If some subset of required hyperparameters are specified, throw error
         # If no hyperparameters are specified, use defaults
@@ -73,7 +74,8 @@ class BEEPFeaturizer(MSONable, abc.ABC):
             self.hyperparameters = self.DEFAULT_HYPERPARAMETERS
 
         if structured_datapath is not None and not structured_datapath.is_structured:
-            raise BEEPFeaturizationError("BEEPDatapath input is not structured!")
+            raise BEEPFeaturizationError(
+                "BEEPDatapath input is not structured!")
         self.datapath = structured_datapath
 
         self.features = None
@@ -117,7 +119,8 @@ class BEEPFeaturizer(MSONable, abc.ABC):
         """
 
         if self.features is None:
-            raise BEEPFeaturizationError("Cannot serialize features which have not been generated.")
+            raise BEEPFeaturizationError(
+                "Cannot serialize features which have not been generated.")
 
         features = self.features.to_dict("list")
 
@@ -196,13 +199,66 @@ class BEEPFeaturizer(MSONable, abc.ABC):
         dumpfn(d, filename)
 
 
+class BEEPAllCyclesFeaturizer(BEEPFeaturizer):
+    """Base class for featurizers that return a constant number of features
+    for any number of cycles in a structured datapath.
+
+    These features are typically used for early prediction.
+
+    A BEEPAllCyclesFeaturizer always returns the same number of features
+    for files for datapaths with any number of samples. Thus,
+
+
+    [Datapath w/ 2 cycles]   ---> (vector of k features)
+
+    [Datapath w/ 100 cycles] ---> (vector of k features)
+    """
+    PER_CYCLE = False
+
+
+class BEEPPerCycleFeaturizer(BEEPFeaturizer):
+    """Base class for featurizers that return a vector of features for
+    EACH cycle in a structured datapath.
+
+    These features are generally used for analysis
+
+    A BEEPPerCycleFeaturizer always returns an (n x k) matrix of features
+    for datapaths with n cycles each producing k features. Thus,
+
+    [Datapath w/ 2 cycles]   ---> (2 x k feature matrix)
+
+    [Datapath w/ 100 cycles] ---> (100 x k feature matrix)
+
+    """
+    PER_CYCLE = True
+
+
 class BEEPFeatureMatrix(MSONable):
     """
-    Create an (n battery cycler files) x (k features) array composed of
-    m BEEPFeaturizer objects.
+    Create an array composed of BEEPFeaturizer objects.
+
+    The array may either be:
+
+    PER-CYCLER-RUN, using BEEPAllCyclesFeaturizer.
+    One feature vector per cycler file, resulting in an array w. dimenions:
+        (n battery cycler files) x (k features)
+
+    OR:
+
+    PER-CYCLE, using BEEPPerCycleFeaturizer.
+    One feature vector per cycle, resulting in an array w. dimensions:
+        (n total cycles) x (k features)
+
+    Sets of featurizer objects must exclusively belong to EITHER of these
+    two paradigms (base classes), but may not be mixed.
+
+    So a set of featurizrs may be -per-cycler-file OR per-cycle, but not
+    both.
 
     Args:
-        beepfeaturizers ([BEEPFeaturizer]): A list of BEEPFeaturizer objects
+        beepfeaturizers ([BEEPFeaturizer]): A list of BEEPFeaturizer objects,
+            either ALL BEEPAllCyclesFeaturizer child objects OR ALL
+            BEEPPerCycleFeaturizer child objects.
 
     """
 
@@ -211,14 +267,30 @@ class BEEPFeatureMatrix(MSONable):
     def __init__(self, beepfeaturizers: List[BEEPFeaturizer]):
 
         if beepfeaturizers:
-            dfs_by_file = {bf.paths.get("structured", "no file found"): [] for bf in beepfeaturizers}
+            bfs_types_per_cycle = [bf.PER_CYCLE for bf in beepfeaturizers]
+
+            # the array should be either all True or all False
+            if all(bfs_types_per_cycle):
+                self.per_cycle = True
+            elif not any(bfs_types_per_cycle):
+                self.per_cycle = False
+            else:
+                raise TypeError(
+                    f"Featurizer types are mixed!\n"
+                    f"BEEPFeatureMatrix can only use EITHER a set of ALL "
+                    f"BEEPAllCyclesFeaturizers OR a set of ALL "
+                    f"BEEPPerCycleFeaturizers.")
+
+
+            dfs_by_file = {bf.paths.get("structured", f"no file found_{i}"): []
+                           for i, bf in enumerate(beepfeaturizers)}
             # big_df_rows = {bf.__class__.__name__: [] for bf in beepfeaturizers}
             unique_features = {}
             for i, bf in enumerate(beepfeaturizers):
+
                 if bf.features is None:
-                    raise BEEPFeatureMatrixError(f"BEEPFeaturizer {bf} has not created features")
-                elif bf.features.shape[0] != 1:
-                    raise BEEPFeatureMatrixError(f"BEEPFeaturizer {bf} features are not 1-dimensional.")
+                    raise BEEPFeatureMatrixError(
+                        f"BEEPFeaturizer {bf} has not created features")
                 else:
                     bfcn = bf.__class__.__name__
 
@@ -233,7 +305,8 @@ class BEEPFeatureMatrix(MSONable):
                     # on identical files
 
                     # sort params for this featurizer obj by key
-                    params = sorted(list(bf.hyperparameters.items()), key=lambda x: x[0])
+                    params = sorted(list(bf.hyperparameters.items()),
+                                    key=lambda x: x[0])
 
                     # Prevent identical features from identical input files
                     # create a unique operation string for the application of this featurizer
@@ -241,7 +314,8 @@ class BEEPFeatureMatrix(MSONable):
                     # the featurizer class name, hyperparameters, and class are the same
 
                     param_str = "-".join([f"{k}:{v}" for k, v in params])
-                    param_hash = hashlib.sha256(param_str.encode("utf-8")).hexdigest()
+                    param_hash = hashlib.sha256(
+                        param_str.encode("utf-8")).hexdigest()
 
                     # Get an id for this featurizer operation (including hyperparameters)
                     # regardless of the file it is applied on
@@ -255,13 +329,15 @@ class BEEPFeatureMatrix(MSONable):
                     # featurizer on a specific file.
                     this_file_feature_columns_ids = \
                         [
-                            f"{file_feature_op_id}{self.OP_DELIMITER}{c}" for c in bf.features.columns
+                            f"{file_feature_op_id}{self.OP_DELIMITER}{c}" for c
+                            in bf.features.columns
                         ]
 
                     # Check to make sure there are no duplicates of the exact same feature for
                     # the exact same featurizer with the exact same hyperparameters on the exact
                     # same file.
-                    collisions = {c: f for c, f in unique_features.items() if c in this_file_feature_columns_ids}
+                    collisions = {c: f for c, f in unique_features.items() if
+                                  c in this_file_feature_columns_ids}
                     if collisions:
                         raise BEEPFeatureMatrixError(
                             f"Multiple features generated with identical classes and identical hyperparameters"
@@ -273,7 +349,9 @@ class BEEPFeatureMatrix(MSONable):
 
                     # Create consistent scheme for naming features regardless of file
                     df = copy.deepcopy(bf.features)
-                    consistent_column_names = [f"{c}{self.OP_DELIMITER}{feature_op_id}" for c in df.columns]
+                    consistent_column_names = [
+                        f"{c}{self.OP_DELIMITER}{feature_op_id}" for c in
+                        df.columns]
                     df.columns = consistent_column_names
 
                     df.index = [fname] * df.shape[0]
@@ -323,7 +401,8 @@ class BEEPFeatureMatrix(MSONable):
         """
         # no need for original datapaths, as their ref paths should
         # be in the subobjects
-        featurizers = [MontyDecoder().process_decoded(f) for f in d["featurizers"]]
+        featurizers = [MontyDecoder().process_decoded(f) for f in
+                       d["featurizers"]]
         return cls(featurizers)
 
     @classmethod
@@ -381,20 +460,22 @@ class BEEPCycleFeatureMatrix(MSONable):
             # initialize emtpy dict of file names
             dfs_by_file = {os.path.basename(
                 bf.paths.get("structured", "no file found")
-             )[0:-19]: pd.DataFrame(columns=['filename','cycle_index','diag_pos']
-                                   ) for bf in beepfeaturizers}
+            )[0:-19]: pd.DataFrame(
+                columns=['filename', 'cycle_index', 'diag_pos']
+                ) for bf in beepfeaturizers}
             # big_df_rows = {bf.__class__.__name__: [] for bf in beepfeaturizers}
             unique_features = {}
             for i, bf in enumerate(beepfeaturizers):
                 if bf.features is None:
-                    raise BEEPFeatureMatrixError(f"BEEPFeaturizer {bf} has not created features")
-                    
-#                 elif bf.features.shape[0] != 1:
-#                     raise BEEPFeatureMatrixError(f"BEEPFeaturizer {bf} features are not 1-dimensional.")
+                    raise BEEPFeatureMatrixError(
+                        f"BEEPFeaturizer {bf} has not created features")
+
+                #                 elif bf.features.shape[0] != 1:
+                #                     raise BEEPFeatureMatrixError(f"BEEPFeaturizer {bf} features are not 1-dimensional.")
                 else:
                     bfcn = bf.__class__.__name__
 
-#                     fname = bf.paths.get("structured", None)
+                    #                     fname = bf.paths.get("structured", None)
                     fname = os.path.basename(bf.paths['structured'])[0:-19]
                     if not fname:
                         raise BEEPFeatureMatrixError(
@@ -406,7 +487,8 @@ class BEEPCycleFeatureMatrix(MSONable):
                     # on identical files
 
                     # sort params for this featurizer obj by key
-                    params = sorted(list(bf.hyperparameters.items()), key=lambda x: x[0])
+                    params = sorted(list(bf.hyperparameters.items()),
+                                    key=lambda x: x[0])
 
                     # Prevent identical features from identical input files
                     # create a unique operation string for the application of this featurizer
@@ -414,7 +496,8 @@ class BEEPCycleFeatureMatrix(MSONable):
                     # the featurizer class name, hyperparameters, and class are the same
 
                     param_str = "-".join([f"{k}:{v}" for k, v in params])
-                    param_hash = hashlib.sha256(param_str.encode("utf-8")).hexdigest()
+                    param_hash = hashlib.sha256(
+                        param_str.encode("utf-8")).hexdigest()
 
                     # Get an id for this featurizer operation (including hyperparameters)
                     # regardless of the file it is applied on
@@ -428,13 +511,15 @@ class BEEPCycleFeatureMatrix(MSONable):
                     # featurizer on a specific file.
                     this_file_feature_columns_ids = \
                         [
-                            f"{file_feature_op_id}{self.OP_DELIMITER}{c}" for c in bf.features.columns
+                            f"{file_feature_op_id}{self.OP_DELIMITER}{c}" for c
+                            in bf.features.columns
                         ]
 
                     # Check to make sure there are no duplicates of the exact same feature for
                     # the exact same featurizer with the exact same hyperparameters on the exact
                     # same file.
-                    collisions = {c: f for c, f in unique_features.items() if c in this_file_feature_columns_ids}
+                    collisions = {c: f for c, f in unique_features.items() if
+                                  c in this_file_feature_columns_ids}
                     if collisions:
                         raise BEEPFeatureMatrixError(
                             f"Multiple features generated with identical classes and identical hyperparameters"
@@ -446,49 +531,59 @@ class BEEPCycleFeatureMatrix(MSONable):
 
                     # Create consistent scheme for naming features regardless of file
                     df = copy.deepcopy(bf.features)
-                    consistent_column_names = [f"{c}{self.OP_DELIMITER}{feature_op_id}" for c in df.columns]
+                    consistent_column_names = [
+                        f"{c}{self.OP_DELIMITER}{feature_op_id}" for c in
+                        df.columns]
                     df.columns = consistent_column_names
 
-#                     df.index = [fname] * df.shape[0]
-#                     df.index.rename("filename", inplace=True)
+                    #                     df.index = [fname] * df.shape[0]
+                    #                     df.index.rename("filename", inplace=True)
 
                     # create filename column to merge on
-                    df['filename'] = os.path.basename(bf.paths['structured'])[0:-19]
-                    
-#                     df = df.reset_index(drop=True)
+                    df['filename'] = os.path.basename(bf.paths['structured'])[
+                                     0:-19]
+
+                    #                     df = df.reset_index(drop=True)
 
                     # remove hash from cycle_index and diag_pos column
-                    cycle_index_col = [col for col in df.columns if 'cycle_index' in col]
-                    df.rename(columns={cycle_index_col[0]:'cycle_index'},inplace=True)
-        
+                    cycle_index_col = [col for col in df.columns if
+                                       'cycle_index' in col]
+                    df.rename(columns={cycle_index_col[0]: 'cycle_index'},
+                              inplace=True)
+
                     # remove hash from diag_pos column
-                    diag_pos_col = [col for col in df.columns if 'diag_pos' in col]
-                    df.rename(columns={diag_pos_col[0]:'diag_pos'},inplace=True)
-                    
+                    diag_pos_col = [col for col in df.columns if
+                                    'diag_pos' in col]
+                    df.rename(columns={diag_pos_col[0]: 'diag_pos'},
+                              inplace=True)
+
                     # ensure cycle_index and diag_pos are integers
                     df['cycle_index'] = df['cycle_index'].astype(int)
                     df['diag_pos'] = df['diag_pos'].astype(int)
-                    
+
                     # append each BEEPFeaturizer df to the corresponding cell dict entry
-#                     dfs_by_file[fname].append(df)
+                    #                     dfs_by_file[fname].append(df)
                     dfs_by_file[fname] = dfs_by_file[fname].merge(
-                        df,how='outer',on=['filename','cycle_index','diag_pos']).sort_values('cycle_index').reset_index(drop=True)
-#                     dfs_by_file[fname] = pd.concat(
-#                         [dfs_by_file[fname],df],
-#                         axis=1,join='outer',ignore_index=True,
-#                         keys=['filename'])
-#                     self.dfs_by_file = dfs_by_file
-#                     self.df = df
-#             return None
-            
-            
+                        df, how='outer',
+                        on=['filename', 'cycle_index', 'diag_pos']).sort_values(
+                        'cycle_index').reset_index(drop=True)
+            #                     dfs_by_file[fname] = pd.concat(
+            #                         [dfs_by_file[fname],df],
+            #                         axis=1,join='outer',ignore_index=True,
+            #                         keys=['filename'])
+            #                     self.dfs_by_file = dfs_by_file
+            #                     self.df = df
+            #             return None
+
             rows = []
             self.matrix = pd.DataFrame()
             for filename, dfs in dfs_by_file.items():
-#                 row = pd.concat([row,dfs], axis=1)
-#                 row = row[sorted(row.columns)]
-#                 rows.append(row)
-                self.matrix = pd.concat([self.matrix,dfs], axis=0, ignore_index=True, join='outer') #, keys=['filename']
+                #                 row = pd.concat([row,dfs], axis=1)
+                #                 row = row[sorted(row.columns)]
+                #                 rows.append(row)
+                self.matrix = pd.concat([self.matrix, dfs], axis=0,
+                                        ignore_index=True,
+                                        join='outer')  # , keys=['filename']
 
         else:
             self.matrix = None
@@ -526,7 +621,8 @@ class BEEPCycleFeatureMatrix(MSONable):
         """
         # no need for original datapaths, as their ref paths should
         # be in the subobjects
-        featurizers = [MontyDecoder().process_decoded(f) for f in d["featurizers"]]
+        featurizers = [MontyDecoder().process_decoded(f) for f in
+                       d["featurizers"]]
         return cls(featurizers)
 
     @classmethod
