@@ -3,10 +3,10 @@ import pandas as pd
 from scipy.stats import skew, kurtosis
 
 from beep import PROTOCOL_PARAMETERS_DIR
-from beep.features.featurizer import BEEPAllCyclesFeaturizer
+from beep.features.featurizer import BEEPEarlyCyclesFeaturizer
 
 
-class CycleSummaryStats(BEEPAllCyclesFeaturizer):
+class CycleSummaryStats(BEEPEarlyCyclesFeaturizer):
     DEFAULT_HYPERPARAMETERS = {
         "cycle_comp_num": [10, 100],
         "statistics": ["var", "min", "mean", "skew", "kurtosis", "abs",

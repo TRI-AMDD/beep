@@ -7,7 +7,7 @@ import pandas as pd
 from monty.json import MSONable, MontyDecoder
 from monty.serialization import loadfn, dumpfn
 
-from beep.features.featurizer import BEEPFeaturizer, BEEPPerCycleFeaturizer, BEEPAllCyclesFeaturizer
+from beep.features.featurizer import BEEPFeaturizer, BEEPPerCycleFeaturizer, BEEPEarlyCyclesFeaturizer
 
 
 class BEEPFeatureMatrixError(BaseException):
@@ -21,7 +21,7 @@ class BEEPFeatureMatrix(MSONable):
 
     The array may either be:
 
-    PER-CYCLER-RUN, using BEEPAllCyclesFeaturizer.
+    PER-CYCLER-RUN, using BEEPEarlyCyclesFeaturizer.
     One feature vector per cycler file, resulting in an array w. dimenions:
         (n battery cycler files) x (k features)
 
@@ -39,7 +39,7 @@ class BEEPFeatureMatrix(MSONable):
 
     Args:
         beepfeaturizers ([BEEPFeaturizer]): A list of BEEPFeaturizer objects,
-            either ALL BEEPAllCyclesFeaturizer child objects OR ALL
+            either ALL BEEPEarlyCyclesFeaturizer child objects OR ALL
             BEEPPerCycleFeaturizer child objects.
 
     """
@@ -48,7 +48,7 @@ class BEEPFeatureMatrix(MSONable):
 
     def __init__(
             self,
-            beepfeaturizers: List[Union[BEEPPerCycleFeaturizer, BEEPAllCyclesFeaturizer]]
+            beepfeaturizers: List[Union[BEEPPerCycleFeaturizer, BEEPEarlyCyclesFeaturizer]]
     ):
 
         if beepfeaturizers:

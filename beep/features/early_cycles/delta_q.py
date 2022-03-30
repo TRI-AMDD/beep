@@ -2,10 +2,10 @@ import numpy as np
 import pandas as pd
 from scipy.stats import skew, kurtosis
 
-from beep.features.featurizer import BEEPAllCyclesFeaturizer
+from beep.features.featurizer import BEEPEarlyCyclesFeaturizer
 
 
-class DeltaQFastCharge(BEEPAllCyclesFeaturizer):
+class DeltaQFastCharge(BEEPEarlyCyclesFeaturizer):
     """
     Object corresponding to feature object. Includes constructors
     to create the features, object names and metadata attributes in the

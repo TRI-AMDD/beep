@@ -192,13 +192,13 @@ class BEEPFeaturizer(MSONable, abc.ABC):
         dumpfn(d, filename)
 
 
-class BEEPAllCyclesFeaturizer(BEEPFeaturizer):
+class BEEPEarlyCyclesFeaturizer(BEEPFeaturizer):
     """Base class for featurizers that return a constant number of features
     for any number of cycles in a structured datapath.
 
     These features are typically used for early prediction.
 
-    A BEEPAllCyclesFeaturizer always returns the same number of features
+    A BEEPEarlyCyclesFeaturizer always returns the same number of features
     for files for datapaths with any number of samples. Thus,
 
 

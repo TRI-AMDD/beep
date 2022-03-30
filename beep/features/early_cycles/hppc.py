@@ -2,10 +2,10 @@ import pandas as pd
 
 from beep import PROTOCOL_PARAMETERS_DIR
 from beep.features import featurizer_helpers
-from beep.features.featurizer import BEEPAllCyclesFeaturizer
+from beep.features.featurizer import BEEPEarlyCyclesFeaturizer
 
 
-class HPPCResistanceVoltageAllCycles(BEEPAllCyclesFeaturizer):
+class HPPCResistanceVoltage(BEEPEarlyCyclesFeaturizer):
     DEFAULT_HYPERPARAMETERS = {
         "test_time_filter_sec": 1000000,
         "cycle_index_filter": 6,
