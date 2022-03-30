@@ -167,19 +167,22 @@ class BEEPFeatureMatrix(MSONable):
 
             blocks = []
             self.dfs_by_file = dfs_by_file
+            indexing_cols = ["filename"] + list(BEEPPerCycleFeaturizer.SPECIAL_COLUMNS)
 
             # concat dfs by file across columns
             for filename, dfs in dfs_by_file.items():
                 if self.per_cycle:
-                    rows = pd.DataFrame()
-                    for df in dfs:
+                    rows = dfs[0]
+                    for df in dfs[1:]:
                         rows = pd.merge(
                             rows,
                             df,
                             how="outer",
-                            on=["filename", "cycle_index", "diag_pos"]
+                            on=indexing_cols
                         )
-                    rows.reset_index(inplace=True).sort_values(["cycle_index"], inplace=True)
+                    rows = rows.reset_index().sort_values(["cycle_index"])
+                    feature_cols = sorted([f for f in rows.columns if f not in indexing_cols])
+                    rows = rows[indexing_cols + feature_cols]
 
                 else:
                     rows = pd.concat(dfs, axis=1)
@@ -187,16 +190,6 @@ class BEEPFeatureMatrix(MSONable):
 
                 blocks.append(rows)
 
-
-            # if self.per_cycle:
-            #     self.matrix = pd.concat(
-            #         blocks,
-            #         join="outer",
-            #         ignore_index=False,
-            #         axis=1,
-            #         keys=merge_keys
-            #     )
-            # else:
             # concat all dfs for all files across rows
             self.matrix = pd.concat(blocks, axis=0)
 
