@@ -885,6 +885,8 @@ class BEEPDatapath(abc.ABC, MSONable):
             raw_cycle = self.raw_data.loc[self.raw_data.cycle_index == cycle]
             charge = raw_cycle.loc[raw_cycle.current > 0]
             CV = get_CV_segment_from_charge(charge)
+            if CV.empty:
+                logger.debug(f"Failed to extract CV segment for cycle {cycle}!")
             CV_time.append(get_CV_time(CV))
             CV_current.append(get_CV_current(CV))
             CV_capacity.append(get_CV_capacity(CV))
@@ -1106,6 +1108,8 @@ class BEEPDatapath(abc.ABC, MSONable):
             # Charge is the very first step_index
             CCCV = raw_cycle.loc[raw_cycle.step_index == raw_cycle.step_index.min()]
             CV = get_CV_segment_from_charge(CCCV)
+            if CV.empty:
+                logger.debug(f"Failed to extract CV segment for diagnostic cycle {cycle}!")
             CV_time.append(get_CV_time(CV))
             CV_current.append(get_CV_current(CV))
             CV_capacity.append(get_CV_capacity(CV))
@@ -1529,18 +1533,20 @@ def get_CV_segment_from_charge(charge, dt_tol=1, dVdt_tol=1e-5, dIdt_tol=1e-4):
         (pd.DataFrame): dataframe containing the CV segment
 
     """
-    # Compute dI and dV
-    dI = np.diff(charge.current)
-    dV = np.diff(charge.voltage)
-    dt = np.diff(charge.test_time)
+    if charge.empty:
+        return(charge)
+    else:
+        # Compute dI and dV
+        dI = np.diff(charge.current)
+        dV = np.diff(charge.voltage)
+        dt = np.diff(charge.test_time)
 
-    # Find the first index where the CV segment begins
-    i = 0
-    while i < len(dV) and (dt[i] < dt_tol or abs(dV[i]/dt[i]) > dVdt_tol or abs(dI[i]/dt[i]) < dIdt_tol):
-        i = i+1
+        # Find the first index where the CV segment begins
+        i = 0
+        while i < len(dV) and (dt[i] < dt_tol or abs(dV[i]/dt[i]) > dVdt_tol or abs(dI[i]/dt[i]) < dIdt_tol):
+            i = i+1
 
-    # Filter for CV phase
-    if len(charge):
+        # Filter for CV phase
         return(charge.loc[charge.test_time >= charge.test_time.iat[i-1]])
 
 
@@ -1555,9 +1561,8 @@ def get_CV_time(CV):
         (float): length of the CV segment in seconds
 
     """
-    if isinstance(CV, pd.DataFrame):
-        if len(CV):
-            return(CV.test_time.iat[-1] - CV.test_time.iat[0])
+    if not CV.empty:
+        return(CV.test_time.iat[-1] - CV.test_time.iat[0])
 
 
 def get_CV_current(CV):
@@ -1571,9 +1576,8 @@ def get_CV_current(CV):
         (float): current reached at the end of the CV segment
 
     """
-    if isinstance(CV, pd.DataFrame):
-        if len(CV):
-            return(CV.current.iat[-1])
+    if not CV.empty:
+        return(CV.current.iat[-1])
 
 
 def get_CV_capacity(CV):
@@ -1587,6 +1591,5 @@ def get_CV_capacity(CV):
         (float): charge capacity during the CV segment
 
     """
-    if isinstance(CV, pd.DataFrame):
-        if len(CV):
-            return(CV.charge_capacity.iat[-1] - CV.charge_capacity.iat[0])
+    if not CV.empty:
+        return(CV.charge_capacity.iat[-1] - CV.charge_capacity.iat[0])
