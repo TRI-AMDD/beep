@@ -4,13 +4,13 @@ import pandas as pd
 
 from beep import PROTOCOL_PARAMETERS_DIR
 from beep.features import featurizer_helpers
-from beep.features.base import BEEPFeaturizer
-from beep.features.intracell_analysis_v2 import IntracellAnalysisV2
+from beep.features.featurizer import BEEPPerCycleFeaturizer
+from beep.features.intracell.intracell_analysisv2 import IntracellAnalysisV2
 
 DEFAULT_CELL_INFO_DIR = os.path.join(PROTOCOL_PARAMETERS_DIR, "intracell_info")
 
 
-class IntracellCyclesV2(BEEPFeaturizer):
+class IntracellCyclesV2(BEEPPerCycleFeaturizer):
     """
     Object corresponding to the fitted material parameters of the cell. Material parameters
     are determined by using high resolution half cell data to fit full cell dQdV curves. Rows

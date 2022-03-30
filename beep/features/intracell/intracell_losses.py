@@ -4,14 +4,14 @@ import pandas as pd
 
 from beep import PROTOCOL_PARAMETERS_DIR
 from beep.features import featurizer_helpers
-from beep.features.base import BEEPFeaturizer
-from beep.features.intracell_analysis import IntracellAnalysis
+from beep.features.featurizer import BEEPAllCyclesFeaturizer
+from beep.features.intracell.intracell_analysis import IntracellAnalysis
 
 
 DEFAULT_CELL_INFO_DIR = os.path.join(PROTOCOL_PARAMETERS_DIR, "intracell_info")
 
 
-class IntracellCycles(BEEPFeaturizer):
+class IntracellAllCycles(BEEPAllCyclesFeaturizer):
     """
     Object corresponding to the fitted material parameters of the cell. Material parameters
     are determined by using high resolution half cell data to fit full cell dQdV curves. Rows
@@ -131,7 +131,7 @@ class IntracellCycles(BEEPFeaturizer):
         self.features = degradation_df
 
 
-class IntracellFeatures(IntracellCycles):
+class IntracellAllCyclesFeatures(IntracellAllCycles):
     """
     Object corresponding to the fitted material parameters of the cell. Material parameters
     are determined by using high resolution half cell data to fit full cell dQdV curves. The

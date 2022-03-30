@@ -140,11 +140,14 @@ class BEEPFeatureMatrix(MSONable):
                     # Create consistent scheme for naming features regardless of file
                     # Only rename non-special column names
                     df = copy.deepcopy(bf.features)
-
                     special_column_names = BEEPPerCycleFeaturizer.SPECIAL_COLUMNS if self.per_cycle else set()
-                    consistent_column_names = [
-                        f"{c}{self.OP_DELIMITER}{feature_op_id}" for c in df.columns if c not in special_column_names
-                    ]
+                    consistent_column_names = []
+
+                    for c in df.columns:
+                        if c in special_column_names:
+                            consistent_column_names.append(c)
+                        else:
+                            consistent_column_names.append(f"{c}{self.OP_DELIMITER}{feature_op_id}")
                     df.columns = consistent_column_names
 
                     # ensure cycle_index and diag_pos are integers
