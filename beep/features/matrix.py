@@ -1,13 +1,13 @@
 
 import copy
 import hashlib
-from typing import List
+from typing import List, Union
 
 import pandas as pd
 from monty.json import MSONable, MontyDecoder
 from monty.serialization import loadfn, dumpfn
 
-from beep.features.featurizer import BEEPFeaturizer, BEEPPerCycleFeaturizer
+from beep.features.featurizer import BEEPFeaturizer, BEEPPerCycleFeaturizer, BEEPAllCyclesFeaturizer
 
 
 class BEEPFeatureMatrixError(BaseException):
@@ -46,7 +46,10 @@ class BEEPFeatureMatrix(MSONable):
 
     OP_DELIMITER = "::"
 
-    def __init__(self, beepfeaturizers: List[BEEPFeaturizer]):
+    def __init__(
+            self,
+            beepfeaturizers: List[Union[BEEPPerCycleFeaturizer, BEEPAllCyclesFeaturizer]]
+    ):
 
         if beepfeaturizers:
             bfs_types_per_cycle = [bf.PER_CYCLE for bf in beepfeaturizers]
@@ -163,18 +166,20 @@ class BEEPFeatureMatrix(MSONable):
                     dfs_by_file[fname].append(df)
 
             blocks = []
+            self.dfs_by_file = dfs_by_file
+
             # concat dfs by file across columns
             for filename, dfs in dfs_by_file.items():
                 if self.per_cycle:
-                    merge_keys = list(BEEPPerCycleFeaturizer.SPECIAL_COLUMNS) + \
-                        ["filename"]
-                    rows = pd.concat(
-                        dfs,
-                        axis=1,
-                        join="outer",
-                        ignore_index=True,
-                        keys=merge_keys
-                    )
+                    rows = pd.DataFrame()
+                    for df in dfs:
+                        rows = pd.merge(
+                            rows,
+                            df,
+                            how="outer",
+                            on=["filename", "cycle_index", "diag_pos"]
+                        )
+                    rows.reset_index(inplace=True).sort_values(["cycle_index"], inplace=True)
 
                 else:
                     rows = pd.concat(dfs, axis=1)
@@ -187,8 +192,9 @@ class BEEPFeatureMatrix(MSONable):
             #     self.matrix = pd.concat(
             #         blocks,
             #         join="outer",
-            #         ignore_index=True
-            #         axis=0
+            #         ignore_index=False,
+            #         axis=1,
+            #         keys=merge_keys
             #     )
             # else:
             # concat all dfs for all files across rows
