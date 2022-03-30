@@ -154,31 +154,43 @@ class BEEPFeatureMatrix(MSONable):
                     if self.per_cycle:
                         for col in BEEPPerCycleFeaturizer.SPECIAL_COLUMNS:
                             df[col] = df[col].astype(int)
+                        df["filename"] = [fname] * df.shape[0]
 
-                    df.index = [fname] * df.shape[0]
-                    df.index.rename("filename", inplace=True)
+                    else:
+                        df.index = [fname] * df.shape[0]
+                        df.index.rename("filename", inplace=True)
+
                     dfs_by_file[fname].append(df)
 
             blocks = []
             # concat dfs by file across columns
             for filename, dfs in dfs_by_file.items():
-
                 if self.per_cycle:
+                    merge_keys = list(BEEPPerCycleFeaturizer.SPECIAL_COLUMNS) + \
+                        ["filename"]
                     rows = pd.concat(
                         dfs,
                         axis=1,
                         join="outer",
-                        ignore_index=False,
-                        keys=list(BEEPPerCycleFeaturizer.SPECIAL_COLUMNS)
+                        ignore_index=True,
+                        keys=merge_keys
                     )
 
                 else:
-
                     rows = pd.concat(dfs, axis=1)
                     rows = rows[sorted(rows.columns)]
 
                 blocks.append(rows)
 
+
+            # if self.per_cycle:
+            #     self.matrix = pd.concat(
+            #         blocks,
+            #         join="outer",
+            #         ignore_index=True
+            #         axis=0
+            #     )
+            # else:
             # concat all dfs for all files across rows
             self.matrix = pd.concat(blocks, axis=0)
 
