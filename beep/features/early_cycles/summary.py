@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import skew, kurtosis
 
+from beep.features import helper_functions
 from beep import PROTOCOL_PARAMETERS_DIR
 from beep.features.featurizer import BEEPEarlyCyclesFeaturizer
 
@@ -208,7 +209,7 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         Returns:
             bool: True/False indication of ability to proceed with feature generation
         """
-        val, msg = featurizer_helpers.check_diagnostic_validation(self.datapath)
+        val, msg = helper_functions.check_diagnostic_validation(self.datapath)
         if val:
             df = self.datapath.diagnostic_summary
             df = df[
@@ -291,13 +292,13 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         cycles = diag_intrp.cycle_index[diag_intrp.cycle_type ==
                                         self.hyperparameters[
                                             "diagnostic_cycle_type"]].unique()
-        step_dict_0 = featurizer_helpers.get_step_index(
+        step_dict_0 = helper_functions.get_step_index(
             self.datapath,
             cycle_type=self.hyperparameters["diagnostic_cycle_type"],
             diag_pos=self.hyperparameters["diag_pos_list"][0],
             parameters_path=self.hyperparameters["parameters_path"]
         )
-        step_dict_1 = featurizer_helpers.get_step_index(
+        step_dict_1 = helper_functions.get_step_index(
             self.datapath,
             cycle_type=self.hyperparameters["diagnostic_cycle_type"],
             diag_pos=self.hyperparameters["diag_pos_list"][1],

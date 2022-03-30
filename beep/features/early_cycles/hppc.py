@@ -5,7 +5,7 @@ from beep.features import helper_functions
 from beep.features.featurizer import BEEPEarlyCyclesFeaturizer
 
 
-class HPPCResistanceVoltage(BEEPEarlyCyclesFeaturizer):
+class HPPCResistanceVoltageFeatures(BEEPEarlyCyclesFeaturizer):
     DEFAULT_HYPERPARAMETERS = {
         "test_time_filter_sec": 1000000,
         "cycle_index_filter": 6,
@@ -47,7 +47,7 @@ class HPPCResistanceVoltage(BEEPEarlyCyclesFeaturizer):
         ).filter(lambda x: ~x["test_time"].isnull().all())
 
         # diffusion features
-        diffusion_features = helper_functions.get_diffusion_early_features(
+        diffusion_features = helper_functions.get_diffusion_features(
             self.datapath,
         )
 

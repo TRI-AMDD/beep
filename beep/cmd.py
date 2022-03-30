@@ -42,12 +42,13 @@ from beep import (
 from beep.structure.base import BEEPDatapath
 from beep.structure.cli import auto_load, auto_load_processed
 from beep.structure.validate import BEEPValidationError
-from beep.features.base import (
+from beep.features.featurizer import (
     BEEPFeaturizer,
     BEEPFeaturizationError,
-    BEEPFeatureMatrix,
 )
-from beep.features.core import (
+from beep.features.matrix import BEEPFeatureMatrix
+
+from beep.features.early_cycles import (
     HPPCResistanceVoltageFeatures,
     DeltaQFastCharge,
     TrajectoryFastCharge,
