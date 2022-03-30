@@ -2,7 +2,7 @@
 import pandas as pd
 
 from beep import PROTOCOL_PARAMETERS_DIR
-from beep.features import featurizer_helpers
+from beep.features import helper_functions
 from functools import reduce
 
 from beep.features.featurizer import BEEPPerCycleFeaturizer
@@ -41,7 +41,7 @@ class DiagnosticFeaturesPerCycle(BEEPPerCycleFeaturizer):
         Returns:
             bool: True/False indication of ability to proceed with feature generation
         """
-        return featurizer_helpers.check_diagnostic_validation(self.datapath)
+        return helper_functions.check_diagnostic_validation(self.datapath)
 
     def create_features(self):
         """

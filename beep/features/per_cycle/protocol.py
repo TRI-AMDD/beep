@@ -1,6 +1,6 @@
 
 from beep import PROTOCOL_PARAMETERS_DIR
-from beep.features import featurizer_helpers
+from beep.features import helper_functions
 from beep.utils.parameters_lookup import get_protocol_parameters
 
 from beep.features.featurizer import BEEPPerCycleFeaturizer
@@ -42,7 +42,7 @@ class CyclingProtocolPerCycle(BEEPPerCycleFeaturizer):
             message = "datapath paths not set, unable to fetch charging protocol"
             return False, message
         else:
-            return featurizer_helpers.check_diagnostic_validation(self.datapath)
+            return helper_functions.check_diagnostic_validation(self.datapath)
 
     def create_features(self):
         """

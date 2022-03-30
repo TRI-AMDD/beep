@@ -29,7 +29,7 @@ from beep.features.base import BEEPFeaturizationError
 
 from beep.structure.maccor import MaccorDatapath
 from beep.structure.cli import auto_load_processed, auto_load
-from beep.features import featurizer_helpers
+from beep.features import helper_functions
 from beep.utils import parameters_lookup
 from monty.serialization import dumpfn, loadfn
 from monty.tempfile import ScratchDir
@@ -270,9 +270,9 @@ class TestFeaturizerHelpers(unittest.TestCase):
         structured_datapath.structured_summary = structured_datapath.structured_summary[
             ~structured_datapath.structured_summary.cycle_index.isin(structured_datapath.diagnostic_summary.cycle_index)]
 
-        sum_diag = featurizer_helpers.get_fractional_quantity_remaining_nx(structured_datapath,
-                                                                           metric="discharge_energy",
-                                                                           diagnostic_cycle_type="hppc")
+        sum_diag = helper_functions.get_fractional_quantity_remaining_nx(structured_datapath,
+                                                                         metric="discharge_energy",
+                                                                         diagnostic_cycle_type="hppc")
         # print(sum_diag["normalized_regular_throughput"])
         self.assertEqual(len(sum_diag.index), 16)
         self.assertEqual(sum_diag.cycle_index.max(), 1507)
@@ -284,9 +284,9 @@ class TestFeaturizerHelpers(unittest.TestCase):
         self.assertEqual(sum_diag['diagnostic_interval'].iloc[0], 100)
         self.assertEqual(sum_diag['epoch_time'].iloc[0], 1576641695)
 
-        sum_diag = featurizer_helpers.get_fractional_quantity_remaining_nx(structured_datapath,
-                                                                           metric="discharge_energy",
-                                                                           diagnostic_cycle_type="rpt_1C")
+        sum_diag = helper_functions.get_fractional_quantity_remaining_nx(structured_datapath,
+                                                                         metric="discharge_energy",
+                                                                         diagnostic_cycle_type="rpt_1C")
         self.assertEqual(len(sum_diag.index), 16)
         self.assertEqual(sum_diag.cycle_index.max(), 1509)
         self.assertEqual(np.around(sum_diag["initial_regular_throughput"].iloc[0], 3), np.around(237.001769, 3))
@@ -301,9 +301,9 @@ class TestFeaturizerHelpers(unittest.TestCase):
         )
         structured_datapath = auto_load_processed(processed_cycler_run_path_2)
 
-        sum_diag = featurizer_helpers.get_fractional_quantity_remaining_nx(structured_datapath,
-                                                                           metric="discharge_energy",
-                                                                           diagnostic_cycle_type="hppc")
+        sum_diag = helper_functions.get_fractional_quantity_remaining_nx(structured_datapath,
+                                                                         metric="discharge_energy",
+                                                                         diagnostic_cycle_type="hppc")
         self.assertEqual(len(sum_diag.index), 3)
         self.assertEqual(sum_diag.cycle_index.max(), 242)
         self.assertEqual(np.around(sum_diag["initial_regular_throughput"].iloc[0], 3), np.around(331.428, 3))
@@ -329,7 +329,7 @@ class TestFeaturizerHelpers(unittest.TestCase):
         with ScratchDir("."):
             # processed_cycler_run_path_1
             structured_datapath = auto_load_processed(processed_cycler_run_path_1)
-            v_vars_df = featurizer_helpers.get_v_diff(structured_datapath, 1, 8)
+            v_vars_df = helper_functions.get_v_diff(structured_datapath, 1, 8)
             # print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var_v_diff'], decimals=8),
                              np.round(0.00472705, decimals=8))
@@ -344,7 +344,7 @@ class TestFeaturizerHelpers(unittest.TestCase):
 
             # processed_cycler_run_path_2
             structured_datapath = auto_load_processed(processed_cycler_run_path_2)
-            v_vars_df = featurizer_helpers.get_v_diff(structured_datapath, 1, 8)
+            v_vars_df = helper_functions.get_v_diff(structured_datapath, 1, 8)
             # print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var_v_diff'], decimals=8),
                              np.round(2.664e-05, decimals=8))
@@ -359,7 +359,7 @@ class TestFeaturizerHelpers(unittest.TestCase):
 
             # processed_cycler_run_path_3
             structured_datapath = auto_load_processed(processed_cycler_run_path_3)
-            v_vars_df = featurizer_helpers.get_v_diff(structured_datapath, 1, 8)
+            v_vars_df = helper_functions.get_v_diff(structured_datapath, 1, 8)
             # print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var_v_diff'], decimals=8),
                              np.round(4.82e-06, decimals=8))
@@ -374,7 +374,7 @@ class TestFeaturizerHelpers(unittest.TestCase):
 
             # processed_cycler_run_path_4
             structured_datapath = auto_load_processed(processed_cycler_run_path_4)
-            v_vars_df = featurizer_helpers.get_v_diff(structured_datapath, 1, 8)
+            v_vars_df = helper_functions.get_v_diff(structured_datapath, 1, 8)
             # print(v_vars_df)
             self.assertEqual(np.round(v_vars_df.iloc[0]['var_v_diff'], decimals=8),
                              np.round(9.71e-06, decimals=8))
@@ -392,7 +392,7 @@ class TestFeaturizerHelpers(unittest.TestCase):
             TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
         )
         structured_datapath = auto_load_processed(structured_datapath_loc)
-        hppc_ocv_features = featurizer_helpers.get_hppc_ocv(structured_datapath, 1)
+        hppc_ocv_features = helper_functions.get_hppc_ocv(structured_datapath, 1)
         self.assertAlmostEqual(hppc_ocv_features['var_ocv'].iloc[0], 0.000016, 6)
         self.assertAlmostEqual(hppc_ocv_features['min_ocv'].iloc[0], -0.001291, 6)
         self.assertAlmostEqual(hppc_ocv_features['mean_ocv'].iloc[0], 0.002221, 6)
@@ -425,9 +425,9 @@ class TestFeaturizerHelpers(unittest.TestCase):
                                             parameter_row["capacity_nominal"].iloc[0], 2)
                     # print(step, median_crate, duration)
 
-        step_ind = featurizer_helpers.get_step_index(structured_datapath,
-                                                     cycle_type="hppc",
-                                                     diag_pos=0)
+        step_ind = helper_functions.get_step_index(structured_datapath,
+                                                   cycle_type="hppc",
+                                                   diag_pos=0)
         self.assertEqual(len(step_ind.values()), 6)
         print([step_ind["hppc_long_rest"],
                step_ind["hppc_discharge_pulse"],
@@ -443,9 +443,9 @@ class TestFeaturizerHelpers(unittest.TestCase):
             'hppc_charge_pulse': 14,
             'hppc_discharge_to_next_soc': 15
         })
-        step_ind = featurizer_helpers.get_step_index(structured_datapath,
-                                                     cycle_type="hppc",
-                                                     diag_pos=1)
+        step_ind = helper_functions.get_step_index(structured_datapath,
+                                                   cycle_type="hppc",
+                                                   diag_pos=1)
         self.assertEqual(len(step_ind.values()), 6)
         self.assertEqual(step_ind, {
             'hppc_charge_to_soc': 41,
@@ -465,9 +465,9 @@ class TestFeaturizerHelpers(unittest.TestCase):
         _, protocol_name = os.path.split(structured_datapath.metadata.protocol)
         parameter_row, _ = parameters_lookup.get_protocol_parameters(protocol_name, parameters_path=parameters_path)
 
-        step_ind = featurizer_helpers.get_step_index(structured_datapath,
-                                                     cycle_type="hppc",
-                                                     diag_pos=0)
+        step_ind = helper_functions.get_step_index(structured_datapath,
+                                                   cycle_type="hppc",
+                                                   diag_pos=0)
         self.assertEqual(len(step_ind.values()), 7)
 
         self.assertEqual(step_ind, {
@@ -479,9 +479,9 @@ class TestFeaturizerHelpers(unittest.TestCase):
             'hppc_discharge_to_next_soc': 15,
             'hppc_final_discharge': 17
         })
-        step_ind = featurizer_helpers.get_step_index(structured_datapath,
-                                                     cycle_type="hppc",
-                                                     diag_pos=1)
+        step_ind = helper_functions.get_step_index(structured_datapath,
+                                                   cycle_type="hppc",
+                                                   diag_pos=1)
         self.assertEqual(len(step_ind.values()), 7)
         self.assertEqual(step_ind, {
             'hppc_charge_to_soc': 41,
@@ -492,24 +492,24 @@ class TestFeaturizerHelpers(unittest.TestCase):
             'hppc_discharge_to_next_soc': 47,
             'hppc_final_discharge': 49
         })
-        step_ind = featurizer_helpers.get_step_index(structured_datapath, cycle_type="reset", diag_pos=0)
+        step_ind = helper_functions.get_step_index(structured_datapath, cycle_type="reset", diag_pos=0)
         self.assertEqual(step_ind, {'reset_charge': 5, 'reset_discharge': 6})
-        step_ind = featurizer_helpers.get_step_index(structured_datapath, cycle_type="reset", diag_pos=1)
+        step_ind = helper_functions.get_step_index(structured_datapath, cycle_type="reset", diag_pos=1)
         self.assertEqual(step_ind, {'reset_charge': 38, 'reset_discharge': 39})
 
-        step_ind = featurizer_helpers.get_step_index(structured_datapath, cycle_type="rpt_0.2C", diag_pos=0)
+        step_ind = helper_functions.get_step_index(structured_datapath, cycle_type="rpt_0.2C", diag_pos=0)
         self.assertEqual(step_ind, {'rpt_0.2C_charge': 19, 'rpt_0.2C_discharge': 20})
-        step_ind = featurizer_helpers.get_step_index(structured_datapath, cycle_type="rpt_0.2C", diag_pos=1)
+        step_ind = helper_functions.get_step_index(structured_datapath, cycle_type="rpt_0.2C", diag_pos=1)
         self.assertEqual(step_ind, {'rpt_0.2C_charge': 51, 'rpt_0.2C_discharge': 52})
 
-        step_ind = featurizer_helpers.get_step_index(structured_datapath, cycle_type="rpt_1C", diag_pos=0)
+        step_ind = helper_functions.get_step_index(structured_datapath, cycle_type="rpt_1C", diag_pos=0)
         self.assertEqual(step_ind, {'rpt_1C_charge': 22, 'rpt_1C_discharge': 23})
-        step_ind = featurizer_helpers.get_step_index(structured_datapath, cycle_type="rpt_1C", diag_pos=1)
+        step_ind = helper_functions.get_step_index(structured_datapath, cycle_type="rpt_1C", diag_pos=1)
         self.assertEqual(step_ind, {'rpt_1C_charge': 54, 'rpt_1C_discharge': 55})
 
-        step_ind = featurizer_helpers.get_step_index(structured_datapath, cycle_type="rpt_2C", diag_pos=0)
+        step_ind = helper_functions.get_step_index(structured_datapath, cycle_type="rpt_2C", diag_pos=0)
         self.assertEqual(step_ind, {'rpt_2C_charge': 25, 'rpt_2C_discharge': 26})
-        step_ind = featurizer_helpers.get_step_index(structured_datapath, cycle_type="rpt_2C", diag_pos=1)
+        step_ind = helper_functions.get_step_index(structured_datapath, cycle_type="rpt_2C", diag_pos=1)
         self.assertEqual(step_ind, {'rpt_2C_charge': 57, 'rpt_2C_discharge': 58})
 
     def test_get_step_index_3(self):
@@ -517,7 +517,7 @@ class TestFeaturizerHelpers(unittest.TestCase):
             TEST_FILE_DIR, "PredictionDiagnostics_000136_00002D_truncated_structure.json"
         )
         structured_datapath = auto_load_processed(structured_datapath_loc)
-        step_ind = featurizer_helpers.get_step_index(structured_datapath, cycle_type="hppc", diag_pos=0)
+        step_ind = helper_functions.get_step_index(structured_datapath, cycle_type="hppc", diag_pos=0)
         self.assertEqual(len(step_ind.values()), 6)
 
     def test_get_diffusion_coeff(self):
@@ -526,7 +526,7 @@ class TestFeaturizerHelpers(unittest.TestCase):
                 TEST_FILE_DIR, "PreDiag_000240_000227_truncated_structure.json"
             )
             structured_datapath = auto_load_processed(structured_datapath_loc)
-            diffusion_df = featurizer_helpers.get_diffusion_coeff(structured_datapath, 1)
+            diffusion_df = helper_functions.get_diffusion_coeff(structured_datapath, 1)
             print(np.round(diffusion_df.iloc[0].to_list(), 3))
             self.assertEqual(np.round(diffusion_df.iloc[0].to_list(), 3)[0], -0.016)
             self.assertEqual(np.round(diffusion_df.iloc[0].to_list(), 3)[5], -0.011)

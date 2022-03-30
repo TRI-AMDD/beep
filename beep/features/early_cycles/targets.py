@@ -3,7 +3,7 @@ import pandas as pd
 from scipy.interpolate import interp1d
 
 from beep import PROTOCOL_PARAMETERS_DIR
-from beep.features import featurizer_helpers
+from beep.features import helper_functions
 
 from beep.features.featurizer import BEEPFeaturizer, BEEPFeaturizationError
 
@@ -118,7 +118,7 @@ class DiagnosticProperties(BEEPFeaturizer):
         Returns:
             bool: True/False indication of ability to proceed with feature generation
         """
-        return featurizer_helpers.check_diagnostic_validation(self.datapath)
+        return helper_functions.check_diagnostic_validation(self.datapath)
 
     def create_features(self):
         """
@@ -140,7 +140,7 @@ class DiagnosticProperties(BEEPFeaturizer):
         X = pd.DataFrame()
         for quantity in self.hyperparameters["quantities"]:
             for cycle_type in cycle_types:
-                summary_diag_cycle_type = featurizer_helpers.get_fractional_quantity_remaining_nx(
+                summary_diag_cycle_type = helper_functions.get_fractional_quantity_remaining_nx(
                     self.datapath, quantity, cycle_type,
                     parameters_path=parameters_path
                 )

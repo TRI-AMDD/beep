@@ -3,7 +3,7 @@ import os
 import pandas as pd
 
 from beep import PROTOCOL_PARAMETERS_DIR
-from beep.features import featurizer_helpers
+from beep.features import helper_functions
 from beep.features.featurizer import BEEPEarlyCyclesFeaturizer
 from beep.features.intracell.intracell_analysis import IntracellAnalysis
 
@@ -52,7 +52,7 @@ class IntracellAllCycles(BEEPEarlyCyclesFeaturizer):
         Returns:
             bool: True/False indication of ability to proceed with feature generation
         """
-        val, msg = featurizer_helpers.check_diagnostic_validation(self.datapath)
+        val, msg = helper_functions.check_diagnostic_validation(self.datapath)
         if val:
             conditions = []
 

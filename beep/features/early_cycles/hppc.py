@@ -1,7 +1,7 @@
 import pandas as pd
 
 from beep import PROTOCOL_PARAMETERS_DIR
-from beep.features import featurizer_helpers
+from beep.features import helper_functions
 from beep.features.featurizer import BEEPEarlyCyclesFeaturizer
 
 
@@ -15,7 +15,7 @@ class HPPCResistanceVoltage(BEEPEarlyCyclesFeaturizer):
     }
 
     def validate(self):
-        val, msg = featurizer_helpers.check_diagnostic_validation(self.datapath)
+        val, msg = helper_functions.check_diagnostic_validation(self.datapath)
         if val:
             conditions = []
             conditions.append(
@@ -47,13 +47,13 @@ class HPPCResistanceVoltage(BEEPEarlyCyclesFeaturizer):
         ).filter(lambda x: ~x["test_time"].isnull().all())
 
         # diffusion features
-        diffusion_features = featurizer_helpers.get_diffusion_early_features(
+        diffusion_features = helper_functions.get_diffusion_early_features(
             self.datapath,
         )
 
         hppc_r = pd.DataFrame()
         # the 9 by 6 dataframe
-        df_dr = featurizer_helpers.get_dr_df(
+        df_dr = helper_functions.get_dr_df(
             self.datapath, self.hyperparameters["diag_pos"]
         )
         # transform this dataframe to be 1 by 54
@@ -64,14 +64,14 @@ class HPPCResistanceVoltage(BEEPEarlyCyclesFeaturizer):
                 hppc_r[name] = [df_dr[column][r]]
 
         # the variance of ocv features
-        hppc_ocv = featurizer_helpers.get_hppc_ocv(
+        hppc_ocv = helper_functions.get_hppc_ocv(
             self.datapath,
             self.hyperparameters["diag_pos"],
             parameters_path=self.hyperparameters["parameters_path"]
         )
 
         # the v_diff features
-        v_diff = featurizer_helpers.get_v_diff(
+        v_diff = helper_functions.get_v_diff(
             self.datapath,
             self.hyperparameters["diag_pos"],
             self.hyperparameters["soc_window"],
