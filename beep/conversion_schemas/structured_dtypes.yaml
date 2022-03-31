@@ -30,6 +30,7 @@ summary:
   paused: 'int32'
   CV_time: 'float32'
   CV_current: 'float32'
+  CV_capacity: 'float32'
 
 diagnostic_summary:
   discharge_capacity: 'float64'
@@ -46,6 +47,7 @@ diagnostic_summary:
   cycle_type: 'category'
   CV_time: 'float32'
   CV_current: 'float32'
+  CV_capacity: 'float32'
 
 diagnostic_interpolated:
   voltage: 'float32'

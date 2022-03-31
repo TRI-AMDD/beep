@@ -345,6 +345,7 @@ class TestBEEPDatapath(unittest.TestCase):
                     "energy_efficiency",
                     "CV_time",
                     "CV_current",
+                    "CV_capacity"
                 },
                 set(summary_diag.columns),
             )
@@ -354,6 +355,7 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertEqual(summary_diag["paused"].max(), 0)
         self.assertEqual(summary_diag["CV_time"][1], np.float32(160111.796875))
         self.assertEqual(summary_diag["CV_current"][1], np.float32(0.4699016))
+        self.assertEqual(summary_diag["CV_capacity"][1], np.float32(94.090355))
         self.run_dtypes_check(summary_diag)
 
         # incorporates test_get_energy and get_charge_throughput
@@ -432,6 +434,7 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertEqual(diag_summary["paused"].max(), 0)
         self.assertEqual(diag_summary["CV_time"][0], np.float32(125502.578125))
         self.assertEqual(diag_summary["CV_current"][0], np.float32(2.3499656))
+        self.assertEqual(diag_summary["CV_capacity"][0], np.float32(84.70442))
 
     # based on RCRT.test_determine_paused
     def test_paused_intervals(self):
