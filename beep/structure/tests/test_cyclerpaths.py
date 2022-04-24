@@ -28,6 +28,7 @@ from beep.structure.neware import NewareDatapath
 from beep.structure.indigo import IndigoDatapath
 from beep.structure.biologic import BiologicDatapath, get_cycle_index
 from beep.structure.battery_archive import BatteryArchiveDatapath
+from beep.structure.novonix import NovonixDatapath
 from beep.tests.constants import TEST_FILE_DIR
 
 
@@ -479,6 +480,54 @@ class TestBatteryArchiveDatapath(unittest.TestCase):
         summary = bd.summarize_cycles()
         self.assertAlmostEqual(summary["temperature_maximum"].loc[3], 16.832001, places=4)
         self.assertAlmostEqual(summary["charge_duration"].loc[4548], 5773.640137, places=4)
+
+
+class TestNovonixDatapath(unittest.TestCase):
+    def setUp(self) -> None:
+        self.file = os.path.join(
+            TEST_FILE_DIR, "raw", "test_Nova_Form-CH01-01_short.csv"
+        )
+
+    def test_from_file(self):
+        dp = NovonixDatapath.from_file(self.file)
+        self.assertEqual(dp.paths.get("raw"), self.file)
+        self.assertTupleEqual(dp.raw_data.shape, (3942,21))
+        self.assertTrue(
+            {
+                'cycle_index',
+                'step_index',
+                'step_type',
+                'test_time',
+                'voltage',
+                'current',
+                'temperature',
+                'charge_capacity',
+                'discharge_capacity',
+            }
+            < set(dp.raw_data.columns)
+        )
+        self.assertTrue(dp.raw_data["test_time"].is_monotonic_increasing)
+
+    # def test_interpolate_cycles(self):
+    #     dp = NovonixDatapath.from_file(self.file)
+    #     summary = dp.summarize_cycles(nominal_capacity=0.24, full_fast_charge=0.8)
+        # all_interpolated = dp.interpolate_cycles(
+        #         v_range=[3.0, 4.4], resolution=10000
+        #     )
+        #
+        # self.assertSetEqual(set(all_interpolated.columns.tolist()),
+        #                     {'voltage',
+        #                      'test_time',
+        #                      'discharge_capacity',
+        #                      'discharge_energy',
+        #                      'current',
+        #                      'charge_capacity',
+        #                      'charge_energy',
+        #                      'internal_resistance',
+        #                      'temperature',
+        #                      'cycle_index',
+        #                      'step_type'}
+        #                     )
 
 
 if __name__ == "__main__":
