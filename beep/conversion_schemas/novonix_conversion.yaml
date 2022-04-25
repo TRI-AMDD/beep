@@ -1,7 +1,7 @@
 file_pattern: ".*CH.*\\.csv"
 data_columns:
   Date and Time:
-    beep_name: date_time_iso
+    beep_name: date_time
     data_type: str
   Cycle Number:
     beep_name: cycle_index

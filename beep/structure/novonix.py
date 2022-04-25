@@ -3,7 +3,7 @@ import os
 from beep.structure.base import BEEPDatapath
 from beep.conversion_schemas import NOVONIX_CONFIG
 from beep import logger, VALIDATION_SCHEMA_DIR
-
+from datetime import datetime
 
 class NovonixDatapath(BEEPDatapath):
     """A BEEPDatapath for ingesting and structuring Novonix data files.
@@ -19,7 +19,7 @@ class NovonixDatapath(BEEPDatapath):
         Returns:
             (NonovixDatapath)
         """
-        #format raw data
+    #format raw data
         with open(path, "rb") as f:
             i = 1
             search_lines = 200
@@ -34,14 +34,14 @@ class NovonixDatapath(BEEPDatapath):
         raw = pd.read_csv(path, header=None)
         raw.dropna(axis=0, how='all', inplace=True)
         data = raw.iloc[header_starts_line-1:]
-        data = data[0].str.split(',', expand = True)
+        data = data[0].str.split(',', expand=True)
         headers = data.iloc[0]
         data = pd.DataFrame(data.values[1:], columns=headers, index=None)
 
-        # format columns
+    # format columns
         map = NOVONIX_CONFIG['data_columns']
-        name_map = {i:map[i]['beep_name'] for i in map}
-        type_map = {j:map[j]['data_type'] for j in map}
+        name_map = {i: map[i]['beep_name'] for i in map}
+        type_map = {j: map[j]['data_type'] for j in map}
         data = data.astype(type_map)
         data.rename(name_map, axis="columns", inplace=True)
 
@@ -60,6 +60,9 @@ class NovonixDatapath(BEEPDatapath):
         data['charge_energy'] = data[cc_charge | cccv_charge]['energy'].astype('float')
         data['discharge_energy'] = data[cc_discharge | cv_hold_discharge | cccv_discharge | cccv_hold_discharge][
             'energy'].astype('float')
+        #format time
+        data['date_time_iso']=data['date_time'].map(lambda x: datetime.strptime(x,'%Y-%m-%d %I:%M:%S %p'). isoformat())
+        # data['data_time_iso'] = datetime.strptime(data['date_time'],'%Y-%m-%d %I:%M:S %p').isoformat()
 
         # add step type #todo add schema
         step_map = {0: 'discharge',
@@ -72,16 +75,13 @@ class NovonixDatapath(BEEPDatapath):
         data['step_type'] = data['step_type_num'].replace(step_map)
         data.fillna(0)
 
-        #paths
+    #paths
         metadata = {}
         paths = {
             "raw": path,
             "metadata": path if metadata else None
         }
-        # todo convert time
-        # validation
+    # validation
         schema = os.path.join(VALIDATION_SCHEMA_DIR, "schema-novonix.yaml")
-
+    # todo change base for more 1 cycle_index
         return cls(data, metadata, paths=paths, schema=schema)
-
-    # todo change base for more than 1 cycle index
