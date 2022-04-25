@@ -42,9 +42,9 @@ class NovonixDatapath(BEEPDatapath):
 
         # format columns
         map = NOVONIX_CONFIG['data_columns']
-        name_map = {i: map[i]['beep_name'] for i in map}
         type_map = {j: map[j]['data_type'] for j in map}
         data = data.astype(type_map)
+        name_map = {i: map[i]['beep_name'] for i in map}
         data.rename(name_map, axis="columns", inplace=True)
 
         # format capacity and energy
@@ -62,7 +62,8 @@ class NovonixDatapath(BEEPDatapath):
         data['charge_energy'] = data[cc_charge | cccv_charge]['energy'].astype('float')
         data['discharge_energy'] = data[cc_discharge | cv_hold_discharge | cccv_discharge | cccv_hold_discharge][
             'energy'].astype('float')
-        data['date_time_iso'] = data['date_time'].map(lambda x: datetime.strptime(x, '%Y-%m-%d %I:%M:%S %p').isoformat())
+        data['date_time_iso'] = data['date_time'].map(
+            lambda x: datetime.strptime(x, '%Y-%m-%d %I:%M:%S %p').isoformat())
         # add step type #todo add schema
         step_map = {0: 'discharge',
                     1: 'charge',

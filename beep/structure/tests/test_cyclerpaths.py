@@ -512,7 +512,7 @@ class TestNovonixDatapath(unittest.TestCase):
     # def test_interpolate_cycles(self):
     #     dp = NovonixDatapath.from_file(self.file)
     #     summary = dp.summarize_cycles(nominal_capacity=0.24, full_fast_charge=0.8)
-        # all_interpolated = dp.interpolate_cycles(
+    #     # all_interpolated = dp.interpolate_cycles(
         #         v_range=[3.0, 4.4], resolution=10000
         #     )
         #
