@@ -24,12 +24,6 @@ data_columns:
   Capacity (Ah):
     beep_name: capacity
     data_type: float
-  Temperature (°C):
-    beep_name: temperature
-    data_type: float
-  Circuit Temperature (°C):
-    beep_name: circuit_temperature
-    data_type: float
   Energy (Wh):
     beep_name: energy
     data_type: float

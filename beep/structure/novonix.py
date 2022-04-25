@@ -2,7 +2,7 @@ import pandas as pd
 import os
 from beep.structure.base import BEEPDatapath
 from beep.conversion_schemas import NOVONIX_CONFIG
-from beep import logger, VALIDATION_SCHEMA_DIR
+from beep import VALIDATION_SCHEMA_DIR
 from datetime import datetime
 
 
@@ -44,8 +44,11 @@ class NovonixDatapath(BEEPDatapath):
         map = NOVONIX_CONFIG['data_columns']
         type_map = {j: map[j]['data_type'] for j in map}
         data = data.astype(type_map)
+        data['Temperature (°C)'] = data['Temperature (°C)'].astype('float')
+        data['Circuit Temperature (°C)'] = data['Circuit Temperature (°C)'].astype('float')
         name_map = {i: map[i]['beep_name'] for i in map}
         data.rename(name_map, axis="columns", inplace=True)
+        data.rename({'Temperature (°C)': 'temperature', 'Circuit Temperature (°C)': 'circuit_temperature'}, axis ='columns')
 
         # format capacity and energy
         # rest = data['step_type'] == '0'

@@ -491,7 +491,7 @@ class TestNovonixDatapath(unittest.TestCase):
     def test_from_file(self):
         dp = NovonixDatapath.from_file(self.file)
         self.assertEqual(dp.paths.get("raw"), self.file)
-        self.assertTupleEqual(dp.raw_data.shape, (3942,22))
+        self.assertTupleEqual(dp.raw_data.shape, (3942,23))
         self.assertTrue(
             {
                 'cycle_index',
@@ -508,28 +508,6 @@ class TestNovonixDatapath(unittest.TestCase):
             < set(dp.raw_data.columns)
         )
         self.assertTrue(dp.raw_data["test_time"].is_monotonic_increasing)
-
-    # def test_interpolate_cycles(self):
-    #     dp = NovonixDatapath.from_file(self.file)
-    #     summary = dp.summarize_cycles(nominal_capacity=0.24, full_fast_charge=0.8)
-    #     # all_interpolated = dp.interpolate_cycles(
-        #         v_range=[3.0, 4.4], resolution=10000
-        #     )
-        #
-        # self.assertSetEqual(set(all_interpolated.columns.tolist()),
-        #                     {'voltage',
-        #                      'test_time',
-        #                      'discharge_capacity',
-        #                      'discharge_energy',
-        #                      'current',
-        #                      'charge_capacity',
-        #                      'charge_energy',
-        #                      'internal_resistance',
-        #                      'temperature',
-        #                      'cycle_index',
-        #                      'step_type'}
-        #                     )
-
 
 if __name__ == "__main__":
     unittest.main()
