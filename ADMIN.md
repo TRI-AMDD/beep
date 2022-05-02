@@ -32,6 +32,8 @@ For each env, install some packages using conda followed by dev install for
 pymatgen
 
 	conda activate py38
+	git clone https://github.com/TRI-AMDD/beep
+	cd beep
 	pip install -r requirements.txt
 	pip install invoke twine
 	python setup.py develop
