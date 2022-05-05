@@ -49,13 +49,10 @@ setup(name="beep",
           "beep.validation_schemas": ["*.yaml"],
           # "beep.model": ["*.model"],
           # "beep.features": ["*.yaml"]
-
       },
       include_package_data=True,
-      author="AMDD - Toyota Research Institute",
-      author_email="patrick.herring@tri.global",
-      maintainer="Patrick Herring",
-      maintainer_email="patrick.herring@tri.global",
+      author="Energy and Materials - Toyota Research Institute",
+      maintainer="Energy and Materials - Toyota Research Institute",
       license="Apache",
       keywords=[
           "materials", "battery", "chemistry", "science",
