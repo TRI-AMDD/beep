@@ -3,15 +3,15 @@ import os
 import pandas as pd
 
 from beep import PROTOCOL_PARAMETERS_DIR
-from beep.features import featurizer_helpers
-from beep.features.base import BEEPFeaturizer
-from beep.features.intracell_analysis_v2 import IntracellAnalysisV2
+from beep.features import helper_functions
+from beep.features.featurizer import BEEPEarlyCyclesFeaturizer
+from beep.features.intracell.intracell_analysis import IntracellAnalysis
 
 
 DEFAULT_CELL_INFO_DIR = os.path.join(PROTOCOL_PARAMETERS_DIR, "intracell_info")
 
 
-class IntracellCyclesV2(BEEPFeaturizer):
+class IntracellAllCycles(BEEPEarlyCyclesFeaturizer):
     """
     Object corresponding to the fitted material parameters of the cell. Material parameters
     are determined by using high resolution half cell data to fit full cell dQdV curves. Rows
@@ -52,14 +52,14 @@ class IntracellCyclesV2(BEEPFeaturizer):
         Returns:
             bool: True/False indication of ability to proceed with feature generation
         """
-        val, msg = featurizer_helpers.check_diagnostic_validation(self.datapath)
+        val, msg = helper_functions.check_diagnostic_validation(self.datapath)
         if val:
             conditions = []
 
             # Ensure overlap of cycle indices above threshold and matching cycle type
             eol_cycle_index_list = self.datapath.diagnostic_summary[
                 (self.datapath.diagnostic_summary.cycle_type == self.hyperparameters["diagnostic_cycle_type"]) &
-                (self.datapath.diagnostic_summary.discharge_capacity > IntracellAnalysisV2.THRESHOLD)
+                (self.datapath.diagnostic_summary.discharge_capacity > IntracellAnalysis.THRESHOLD)
                 ].cycle_index.to_list()
             if not eol_cycle_index_list:
                 return False, "Overlap of cycle indices not above threshold for matching cycle type"
@@ -92,16 +92,16 @@ class IntracellCyclesV2(BEEPFeaturizer):
         Returns:
              (pd.DataFrame) containing the cell material parameters as a function of cycle index
         """
-        ia = IntracellAnalysisV2(
+        ia = IntracellAnalysis(
             self.hyperparameters["cathode_file"],
             self.hyperparameters["anode_file"],
             cycle_type=self.hyperparameters["diagnostic_cycle_type"],
             step_type=self.hyperparameters["step_type"]
         )
 
-        # (cell_init_aligned, cell_init_profile, PE_matched, NE_matched) = ia.intracell_wrapper_init(
-        #     self.datapath,
-        # )
+        (cell_init_aligned, cell_init_profile, PE_matched, NE_matched) = ia.intracell_wrapper_init(
+            self.datapath,
+        )
 
         eol_cycle_index_list = self.datapath.diagnostic_summary[
             (self.datapath.diagnostic_summary.cycle_type == ia.cycle_type) &
@@ -112,41 +112,26 @@ class IntracellCyclesV2(BEEPFeaturizer):
         dataset_dict_of_cell_degradation_path = dict()
         real_cell_dict_of_profiles = dict()
         for i, cycle_index in enumerate(eol_cycle_index_list):
-            loss_dict, profiles_dict = ia.intracell_values_wrapper_ah(cycle_index,
-                                                                      self.datapath
-                                                                      )
+            loss_dict, profiles_dict = ia.intracell_values_wrapper(cycle_index,
+                                                                   self.datapath,
+                                                                   cell_init_aligned,
+                                                                   cell_init_profile,
+                                                                   PE_matched,
+                                                                   NE_matched,
+                                                                   )
             dataset_dict_of_cell_degradation_path.update(loss_dict)
             real_cell_dict_of_profiles.update(profiles_dict)
 
         degradation_df = pd.DataFrame(dataset_dict_of_cell_degradation_path,
-                                      index=['rmse_error', 'LLI_opt', 'Q_pe_opt', 'Q_ne_opt', 'x_NE_2',
-                                             'pe_voltage_FC4p2V', 'pe_voltage_FC4p1V', 'pe_voltage_FC4p0V',
-                                             'pe_voltage_FC3p9V', 'pe_voltage_FC3p8V', 'pe_voltage_FC3p7V',
-                                             'pe_voltage_FC3p6V', 'pe_voltage_FC3p5V', 'pe_voltage_FC3p4V',
-                                             'pe_voltage_FC3p3V', 'pe_voltage_FC3p2V', 'pe_voltage_FC3p1V',
-                                             'pe_voltage_FC3p0V', 'pe_voltage_FC2p9V', 'pe_voltage_FC2p8V',
-                                             'pe_voltage_FC2p7V',
-                                             'pe_soc_FC4p2V', 'pe_soc_FC4p1V', 'pe_soc_FC4p0V', 'pe_soc_FC3p9V',
-                                             'pe_soc_FC3p8V', 'pe_soc_FC3p7V',
-                                             'pe_soc_FC3p6V', 'pe_soc_FC3p5V', 'pe_soc_FC3p4V', 'pe_soc_FC3p3V',
-                                             'pe_soc_FC3p2V', 'pe_soc_FC3p1V',
-                                             'pe_soc_FC3p0V', 'pe_soc_FC2p9V', 'pe_soc_FC2p8V', 'pe_soc_FC2p7V',
-                                             'ne_voltage_FC4p2V', 'ne_voltage_FC4p1V', 'ne_voltage_FC4p0V',
-                                             'ne_voltage_FC3p9V', 'ne_voltage_FC3p8V', 'ne_voltage_FC3p7V',
-                                             'ne_voltage_FC3p6V', 'ne_voltage_FC3p5V', 'ne_voltage_FC3p4V',
-                                             'ne_voltage_FC3p3V', 'ne_voltage_FC3p2V', 'ne_voltage_FC3p1V',
-                                             'ne_voltage_FC3p0V', 'ne_voltage_FC2p9V', 'ne_voltage_FC2p8V',
-                                             'ne_voltage_FC2p7V',
-                                             'ne_soc_FC4p2V', 'ne_soc_FC4p1V', 'ne_soc_FC4p0V', 'ne_soc_FC3p9V',
-                                             'ne_soc_FC3p8V', 'ne_soc_FC3p7V',
-                                             'ne_soc_FC3p6V', 'ne_soc_FC3p5V', 'ne_soc_FC3p4V', 'ne_soc_FC3p3V',
-                                             'ne_soc_FC3p2V', 'ne_soc_FC3p1V',
-                                             'ne_soc_FC3p0V', 'ne_soc_FC2p9V', 'ne_soc_FC2p8V', 'ne_soc_FC2p7V',
-                                             'Q_fc', 'Q_pe', 'Q_ne', 'Q_li']).T
+                                      index=['LLI', 'LAM_PE', 'LAM_NE', 'x_NE_2', 'alpha_real', 'alpha_emulated',
+                                             'PE_upper_voltage', 'PE_lower_voltage', 'PE_upper_SOC', 'PE_lower_SOC',
+                                             'PE_mass', 'NE_upper_voltage', 'NE_lower_voltage', 'NE_upper_SOC',
+                                             'NE_lower_SOC', 'NE_mass', 'Li_mass'
+                                             ]).T
         self.features = degradation_df
 
 
-class IntracellFeaturesV2(IntracellCyclesV2):
+class IntracellAllCyclesFeatures(IntracellAllCycles):
     """
     Object corresponding to the fitted material parameters of the cell. Material parameters
     are determined by using high resolution half cell data to fit full cell dQdV curves. The
@@ -172,16 +157,16 @@ class IntracellFeaturesV2(IntracellCyclesV2):
                 as a single row dataframe
         """
 
-        ia = IntracellAnalysisV2(
+        ia = IntracellAnalysis(
             self.hyperparameters["cathode_file"],
             self.hyperparameters["anode_file"],
             cycle_type=self.hyperparameters["diagnostic_cycle_type"],
             step_type=self.hyperparameters["step_type"]
         )
 
-        # (cell_init_aligned, cell_init_profile, PE_matched, NE_matched) = ia.intracell_wrapper_init(
-        #     self.datapath,
-        # )
+        (cell_init_aligned, cell_init_profile, PE_matched, NE_matched) = ia.intracell_wrapper_init(
+            self.datapath,
+        )
 
         eol_cycle_index_list = self.datapath.diagnostic_summary[
             (self.datapath.diagnostic_summary.cycle_type == ia.cycle_type) &
@@ -192,38 +177,22 @@ class IntracellFeaturesV2(IntracellCyclesV2):
         dataset_dict_of_cell_degradation_path = dict()
         real_cell_dict_of_profiles = dict()
         for i, cycle_index in enumerate(eol_cycle_index_list[0:2]):
-            loss_dict, profiles_dict = ia.intracell_values_wrapper_ah(cycle_index,
-                                                                      self.datapath
-                                                                      )
+            loss_dict, profiles_dict = ia.intracell_values_wrapper(cycle_index,
+                                                                   self.datapath,
+                                                                   cell_init_aligned,
+                                                                   cell_init_profile,
+                                                                   PE_matched,
+                                                                   NE_matched,
+                                                                   )
             dataset_dict_of_cell_degradation_path.update(loss_dict)
             real_cell_dict_of_profiles.update(profiles_dict)
 
         degradation_df = pd.DataFrame(dataset_dict_of_cell_degradation_path,
-                                      index=['rmse_error', 'LLI_opt', 'Q_pe_opt', 'Q_ne_opt', 'x_NE_2',
-                                             'pe_voltage_FC4p2V', 'pe_voltage_FC4p1V', 'pe_voltage_FC4p0V',
-                                             'pe_voltage_FC3p9V', 'pe_voltage_FC3p8V', 'pe_voltage_FC3p7V',
-                                             'pe_voltage_FC3p6V', 'pe_voltage_FC3p5V', 'pe_voltage_FC3p4V',
-                                             'pe_voltage_FC3p3V', 'pe_voltage_FC3p2V', 'pe_voltage_FC3p1V',
-                                             'pe_voltage_FC3p0V', 'pe_voltage_FC2p9V', 'pe_voltage_FC2p8V',
-                                             'pe_voltage_FC2p7V',
-                                             'pe_soc_FC4p2V', 'pe_soc_FC4p1V', 'pe_soc_FC4p0V', 'pe_soc_FC3p9V',
-                                             'pe_soc_FC3p8V', 'pe_soc_FC3p7V',
-                                             'pe_soc_FC3p6V', 'pe_soc_FC3p5V', 'pe_soc_FC3p4V', 'pe_soc_FC3p3V',
-                                             'pe_soc_FC3p2V', 'pe_soc_FC3p1V',
-                                             'pe_soc_FC3p0V', 'pe_soc_FC2p9V', 'pe_soc_FC2p8V', 'pe_soc_FC2p7V',
-                                             'ne_voltage_FC4p2V', 'ne_voltage_FC4p1V', 'ne_voltage_FC4p0V',
-                                             'ne_voltage_FC3p9V', 'ne_voltage_FC3p8V', 'ne_voltage_FC3p7V',
-                                             'ne_voltage_FC3p6V', 'ne_voltage_FC3p5V', 'ne_voltage_FC3p4V',
-                                             'ne_voltage_FC3p3V', 'ne_voltage_FC3p2V', 'ne_voltage_FC3p1V',
-                                             'ne_voltage_FC3p0V', 'ne_voltage_FC2p9V', 'ne_voltage_FC2p8V',
-                                             'ne_voltage_FC2p7V',
-                                             'ne_soc_FC4p2V', 'ne_soc_FC4p1V', 'ne_soc_FC4p0V', 'ne_soc_FC3p9V',
-                                             'ne_soc_FC3p8V', 'ne_soc_FC3p7V',
-                                             'ne_soc_FC3p6V', 'ne_soc_FC3p5V', 'ne_soc_FC3p4V', 'ne_soc_FC3p3V',
-                                             'ne_soc_FC3p2V', 'ne_soc_FC3p1V',
-                                             'ne_soc_FC3p0V', 'ne_soc_FC2p9V', 'ne_soc_FC2p8V', 'ne_soc_FC2p7V',
-                                             'Q_fc', 'Q_pe', 'Q_ne', 'Q_li']).T
-
+                                      index=['LLI', 'LAM_PE', 'LAM_NE', 'x_NE_2', 'alpha_real', 'alpha_emulated',
+                                             'PE_upper_voltage', 'PE_lower_voltage', 'PE_upper_SOC', 'PE_lower_SOC',
+                                             'PE_mass', 'NE_upper_voltage', 'NE_lower_voltage', 'NE_upper_SOC',
+                                             'NE_lower_SOC', 'NE_mass', 'Li_mass'
+                                             ]).T
         diag_0_names = ["diag_0_" + name for name in degradation_df.columns]
         diag_1_names = ["diag_1_" + name for name in degradation_df.columns]
         values = {0: degradation_df.iloc[0].tolist() + degradation_df.iloc[1].tolist()}
