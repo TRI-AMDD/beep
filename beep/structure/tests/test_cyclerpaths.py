@@ -508,6 +508,5 @@ class TestNovonixDatapath(unittest.TestCase):
             < set(dp.raw_data.columns)
         )
         self.assertTrue(dp.raw_data["test_time"].is_monotonic_increasing)
-
 if __name__ == "__main__":
     unittest.main()

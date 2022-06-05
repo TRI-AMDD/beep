@@ -39,7 +39,6 @@ data_columns:
   Step position:
     beep_name: step_position
     data_type: int
-
 step_names:
   0: rest
   1: cc_charge
