@@ -67,7 +67,7 @@ class NovonixDatapath(BEEPDatapath):
             'energy'].astype('float')
         data['date_time_iso'] = data['date_time'].map(
             lambda x: datetime.strptime(x, '%Y-%m-%d %I:%M:%S %p').isoformat())
-        # add step type #todo add schema
+        # add step type #todo set schema
         step_map = {0: 'discharge',
                     1: 'charge',
                     2: 'discharge',
@@ -86,5 +86,4 @@ class NovonixDatapath(BEEPDatapath):
         }
         # validation
         schema = os.path.join(VALIDATION_SCHEMA_DIR, "schema-novonix.yaml")
-        # todo change base for more 1 cycle_index
         return cls(data, metadata, paths=paths, schema=schema)
