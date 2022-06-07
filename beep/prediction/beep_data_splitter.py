@@ -11,8 +11,10 @@ from monty.serialization import loadfn, dumpfn
 import pandas as pd
 from functools import reduce
 
+
 class BEEPDataSplitterError(BaseException):
     pass
+
 
 class BEEPDataset(MSONable):
     """
@@ -34,7 +36,6 @@ class BEEPDataset(MSONable):
         test_y
     ):
 
-
         self.train_X = train_X
         self.train_y = train_y
         self.test_X = test_X
@@ -52,9 +53,11 @@ class BEEPDataset(MSONable):
 
     @classmethod
     def from_dict(cls, d):
-        dataset = cls(pd.DataFrame.from_dict(d["train_X"]), pd.DataFrame.from_dict(d["train_y"]), pd.DataFrame.from_dict(d["test_X"]), pd.DataFrame.from_dict(d["test_y"]))
+        dataset = cls(pd.DataFrame.from_dict(d["train_X"]), pd.DataFrame.from_dict(
+            d["train_y"]), pd.DataFrame.from_dict(d["test_X"]), pd.DataFrame.from_dict(d["test_y"]))
 
         return dataset
+
 
 class BEEPDataSplitter(MSONable):
     """
@@ -101,8 +104,8 @@ class BEEPDataSplitter(MSONable):
             impute_strategy: str = "median",
             n_splits: int = 5,
             homogenize_features: bool = True,
-            random_state: int=10,
-            split_columns: List[str]=None,
+            random_state: int = 10,
+            split_columns: List[str] = None,
             exclusion_columns: List[str] = None,
             drop_split_threshold: float = 0.5,
     ):
@@ -126,7 +129,8 @@ class BEEPDataSplitter(MSONable):
                 f"feature matrix: {missing_columns}"
             )
 
-        retain_columns = features + (split_columns if split_columns is not None else []) + (exclusion_columns if exclusion_columns is not None else []) 
+        retain_columns = features + (split_columns if split_columns is not None else []) + \
+            (exclusion_columns if exclusion_columns is not None else []) 
         X = self.feature_matrix.matrix[retain_columns]
         y = self.feature_matrix.matrix[targets]
 
@@ -136,29 +140,29 @@ class BEEPDataSplitter(MSONable):
         # Form the clean feature matrix
         X = X.dropna(axis=1, thresh=train_feature_drop_nan_thresh * X.shape[0])
         X = X.dropna(axis=0, thresh=train_sample_drop_nan_thresh * X.shape[1])
-   
+
         if exclusion_columns is not None:
             X[exclusion_columns] = X[exclusion_columns].fillna(value=False, axis='columns')
-   
+
         X = self._impute_df(X, method=impute_strategy)
 
         self.impute_strategy = impute_strategy
 
-
-        #Create an aggregate column to group splits on by concatenating split column values
+        # Create an aggregate column to group splits on by concatenating split column values
         if split_columns is not None:
             X["grouping_column"] = X.apply(lambda x: "::".join([str(x[s]) for s in split_columns]), axis=1)
             unique_grouping_values = X["grouping_column"].unique()
-        
+
         if exclusion_columns is not None:
 
             if len(exclusion_columns) > 1:
-                is_included_condition = reduce(lambda c1, c2: c1 & c2, [X[e] for e in exclusion_columns[1:]], X[exclusion_columns[0]])
+                is_included_condition = reduce(lambda c1, c2: c1 & c2, [
+                                               X[e] for e in exclusion_columns[1:]], X[exclusion_columns[0]])
             else:
                 is_included_condition = X[exclusion_columns[0]]
 
             X_incl = X[is_included_condition]
-            #Check if any entire split should be excluded
+            # Check if any entire split should be excluded
             if split_columns is not None:
                 exclude_groups = []
                 for group in unique_grouping_values:
@@ -178,7 +182,6 @@ class BEEPDataSplitter(MSONable):
                 f"Number of samples ({X.shape[0]}) less than number of "
                 f"features ({X.shape[1]}); may cause overfitting."
             )
-
 
         if X.shape[0] < 2 or X.shape[1] < 1:
             raise BEEPDataSplitterError(
@@ -232,7 +235,7 @@ class BEEPDataSplitter(MSONable):
             self.kfold = KFold(n_splits=self.n_splits, shuffle=True, random_state=self.random_state)
 
             for train_indices, test_indices in self.kfold.split(self.X): 
-                
+
                 train_X = self.X[self.feature_labels].iloc[train_indices]
                 train_y = self.y.iloc[train_indices]
 
@@ -273,8 +276,6 @@ class BEEPDataSplitter(MSONable):
 
                 self.datasets.append(dataset)
         return self.datasets
-
-
 
     @staticmethod
     def _remove_param_hash_from_features(X):
@@ -342,16 +343,16 @@ class BEEPDataSplitter(MSONable):
         feature_matrix = BEEPFeatureMatrix.from_dict(d['feature_matrix'])
 
         bds = cls(
-            feature_matrix = feature_matrix,
-            features = d["features"],
-            targets = d["targets"],
-            train_feature_drop_nan_thresh = d["train_feature_drop_nan_thresh"],
-            train_sample_drop_nan_thresh = d["train_sample_drop_nan_thresh"],
-            drop_nan_training_targets = d["drop_nan_training_targets"],
-            homogenize_features = d["homogenize_features"],
-            n_splits = d["n_splits"],
-            random_state = d["random_state"],
-            split_columns = d["split_columns"]
+            feature_matrix=feature_matrix,
+            features=d["features"],
+            targets=d["targets"],
+            train_feature_drop_nan_thresh=d["train_feature_drop_nan_thresh"],
+            train_sample_drop_nan_thresh=d["train_sample_drop_nan_thresh"],
+            drop_nan_training_targets=d["drop_nan_training_targets"],
+            homogenize_features=d["homogenize_features"],
+            n_splits=d["n_splits"],
+            random_state=d["random_state"],
+            split_columns=d["split_columns"]
         )
 
         bds.datasets = [BEEPDataset.from_dict(dataset) for dataset in d["datasets"]]

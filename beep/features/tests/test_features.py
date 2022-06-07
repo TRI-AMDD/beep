@@ -114,11 +114,11 @@ class TestFeaturizer(unittest.TestCase):
 
     def test_HPPCResistanceVoltageFeatures(self):
         structured_datapath = auto_load_processed(self.structured_cycler_file_path_trunc)
-        
+
         f = HPPCResistanceVoltageFeatures(structured_datapath)
         self.assertTrue(f.validate()[0])
         f.create_features()
-        
+
         self.assertEqual(f.features.shape[1], 76)
         self.assertEqual(f.features.columns[0], "r_c_0s_00")
         self.assertEqual(f.features.columns[-1], "D_8")
@@ -126,7 +126,7 @@ class TestFeaturizer(unittest.TestCase):
         self.assertAlmostEqual(f.features.iloc[0, 0], -0.08845776922490017, 6)
         self.assertAlmostEqual(f.features.iloc[0, 5], -0.1280224700339366, 6)
         self.assertAlmostEqual(f.features.iloc[0, 27], -0.10378359476555565, 6)
-        
+
     def test_DiagnosticSummaryStats(self):
         structured_datapath = auto_load_processed(self.structured_cycler_file_path_trunc)
 
@@ -179,7 +179,7 @@ class TestFeaturizer(unittest.TestCase):
             np.around(-3.771727344982484, 6))
 
         structured_datapath_loc2 = os.path.join(TEST_FILE_DIR,
-                                               "PredictionDiagnostics_000136_00002D_truncated_structure.json")
+                                                "PredictionDiagnostics_000136_00002D_truncated_structure.json")
         structured_datapath2 = auto_load_processed(structured_datapath_loc2)
 
         f2 = DiagnosticSummaryStats(structured_datapath2)
@@ -266,7 +266,12 @@ class TestFeaturizer(unittest.TestCase):
         f = ChargingProtocol(structured_datapath)
         self.assertTrue(f.validate()[0])
         self.assertListEqual(f.hyperparameters["quantities"],
-                             ["charge_constant_current_1", "charge_constant_current_2", "charge_cutoff_voltage", "charge_constant_voltage_time", "discharge_constant_current", "discharge_cutoff_voltage"])
+                             ["charge_constant_current_1",
+                              "charge_constant_current_2",
+                              "charge_cutoff_voltage",
+                              "charge_constant_voltage_time",
+                              "discharge_constant_current",
+                              "discharge_cutoff_voltage"])
         f.create_features()
 
         self.assertEqual(f.features.shape, (1, 6))
@@ -324,18 +329,18 @@ class TestFeaturizer(unittest.TestCase):
         self.assertTrue(f.features["to_include"].iloc[0])
 
         fail_fractional_capacity_at_EOT_hyperparameters = {
-        "parameters_dir": PROTOCOL_PARAMETERS_DIR,
-        "EOL_conditions": {"cycle_type": "rpt_0.2C", "threshold": 0.25, "quantity": "discharge_capacity"},
-        "throughput_first_n_cycles": {"n": 30, "cutoff": 20},
-        "equivalent_full_cycles_cutoff": 30,
-        "early_CV_cutoff": 0.3
+            "parameters_dir": PROTOCOL_PARAMETERS_DIR,
+            "EOL_conditions": {"cycle_type": "rpt_0.2C", "threshold": 0.25, "quantity": "discharge_capacity"},
+            "throughput_first_n_cycles": {"n": 30, "cutoff": 20},
+            "equivalent_full_cycles_cutoff": 30,
+            "early_CV_cutoff": 0.3
         }
 
         f = ExclusionCriteria(structured_datapath, hyperparameters=fail_fractional_capacity_at_EOT_hyperparameters)
         self.assertTrue(f.validate()[0])
         f.create_features()
 
-        #Changing definition of EOL should change EFC at EOL
+        # Changing definition of EOL should change EFC at EOL
         self.assertAlmostEqual(f.features['equivalent_full_cycles_at_EOL'].iloc[0], 168.22696402053202, 4)
         self.assertFalse(f.features["is_below_fractional_capacity_at_EOT"].iloc[0])
         self.assertTrue(f.features["is_above_equivalent_full_cycles_at_EOL"].iloc[0])
@@ -344,11 +349,11 @@ class TestFeaturizer(unittest.TestCase):
         self.assertFalse(f.features["to_include"].iloc[0])
 
         fail_first_n_cycles_hyperparameters = {
-        "parameters_dir": PROTOCOL_PARAMETERS_DIR,
-        "EOL_conditions": {"cycle_type": "rpt_0.2C", "threshold": 0.8, "quantity": "discharge_capacity"},
-        "throughput_first_n_cycles": {"n": 30, "cutoff": 141},
-        "equivalent_full_cycles_cutoff": 30,
-        "early_CV_cutoff": 0.3
+            "parameters_dir": PROTOCOL_PARAMETERS_DIR,
+            "EOL_conditions": {"cycle_type": "rpt_0.2C", "threshold": 0.8, "quantity": "discharge_capacity"},
+            "throughput_first_n_cycles": {"n": 30, "cutoff": 141},
+            "equivalent_full_cycles_cutoff": 30,
+            "early_CV_cutoff": 0.3
         }        
         f = ExclusionCriteria(structured_datapath, hyperparameters=fail_first_n_cycles_hyperparameters)
         self.assertTrue(f.validate()[0])
@@ -366,11 +371,11 @@ class TestFeaturizer(unittest.TestCase):
         self.assertFalse(f.features["to_include"].iloc[0])
 
         fail_all_criteria_hyperparameters = {
-        "parameters_dir": PROTOCOL_PARAMETERS_DIR,
-        "EOL_conditions": {"cycle_type": "rpt_0.2C", "threshold": 0.25, "quantity": "discharge_capacity"},
-        "throughput_first_n_cycles": {"n": 30, "cutoff": 141},
-        "equivalent_full_cycles_cutoff": 860,
-        "early_CV_cutoff": 0.3
+            "parameters_dir": PROTOCOL_PARAMETERS_DIR,
+            "EOL_conditions": {"cycle_type": "rpt_0.2C", "threshold": 0.25, "quantity": "discharge_capacity"},
+            "throughput_first_n_cycles": {"n": 30, "cutoff": 141},
+            "equivalent_full_cycles_cutoff": 860,
+            "early_CV_cutoff": 0.3
         }        
         f = ExclusionCriteria(structured_datapath, hyperparameters=fail_all_criteria_hyperparameters)
         self.assertTrue(f.validate()[0])
@@ -391,6 +396,7 @@ class TestFeaturizer(unittest.TestCase):
         f = DiagnosticProperties(structured_datapath)
         f.create_features()
         self.assertEqual(f.features.shape, (1, 4))
+
 
 class TestFeaturizerHelpers(unittest.TestCase):
     def setUp(self):

@@ -9,6 +9,7 @@ from beep.features.base import BEEPFeaturizer, BEEPFeaturizationError
 from beep.utils.parameters_lookup import get_protocol_parameters
 from beep.structure.base import get_CV_segment_from_charge
 
+
 class HPPCResistanceVoltageFeatures(BEEPFeaturizer):
     DEFAULT_HYPERPARAMETERS = {
         "test_time_filter_sec": 1000000,
@@ -912,6 +913,7 @@ class DiagnosticProperties(BEEPFeaturizer):
 
         return pd.DataFrame(threshold_dict)
 
+
 class ExclusionCriteria(BEEPFeaturizer):
     """
     This class calculates unusual behaviour criteria for whether a cell should be excluded
@@ -961,7 +963,7 @@ class ExclusionCriteria(BEEPFeaturizer):
 
         features = pd.DataFrame()
 
-        #Throughput_first_n_cycles criteria
+        # Throughput_first_n_cycles criteria
         n = self.hyperparameters["throughput_first_n_cycles"]["n"]
         first_n_cycles_throughput = self.datapath.structured_summary[self.datapath.structured_summary.index == n]
         first_n_cycles_throughput = first_n_cycles_throughput.fillna(0)
@@ -973,15 +975,17 @@ class ExclusionCriteria(BEEPFeaturizer):
         features["first_n_cycles_throughput"] = first_n_cycles_throughput.reset_index(drop=True)
         features["is_above_first_n_cycles_throughput"] = first_n_cycles_throughput_criteria.reset_index(drop=True)
 
-        #EOL reached criteria
+        # EOL reached criteria
         diag_fractional_quantity_remaining = featurizer_helpers.get_fractional_quantity_remaining_nx(
                     self.datapath, self.hyperparameters["EOL_conditions"]["quantity"], self.hyperparameters["EOL_conditions"]["cycle_type"],
                     parameters_path=self.hyperparameters["parameters_dir"]
                 )
-        fractional_capacity_at_EOT = diag_fractional_quantity_remaining["fractional_metric"].fillna(method='ffill').iloc[-1:]
+        fractional_capacity_at_EOT = diag_fractional_quantity_remaining["fractional_metric"].fillna(
+            method='ffill').iloc[-1:]
 
         if fractional_capacity_at_EOT.iloc[0] > 1:
-            fractional_capacity_at_EOT = diag_fractional_quantity_remaining["fractional_metric"].fillna(method='ffill').iloc[-2:]
+            fractional_capacity_at_EOT = diag_fractional_quantity_remaining["fractional_metric"].fillna(
+                method='ffill').iloc[-2:]
 
         threshold = self.hyperparameters["EOL_conditions"]["threshold"]
         fractional_capacity_at_EOT_criteria = fractional_capacity_at_EOT.map(lambda x: x < threshold)
@@ -989,38 +993,43 @@ class ExclusionCriteria(BEEPFeaturizer):
         features["fractional_capacity_at_EOT"] = fractional_capacity_at_EOT.reset_index(drop=True)
         features["is_below_fractional_capacity_at_EOT"] = fractional_capacity_at_EOT_criteria.reset_index(drop=True)
 
-        #EFC at EOL condition
-        #First ensure EOL is reached
+        # EFC at EOL condition
+        # First ensure EOL is reached
         if features["is_below_fractional_capacity_at_EOT"].iloc[0]:
-            cutoff_cycle_index = diag_fractional_quantity_remaining[diag_fractional_quantity_remaining["fractional_metric"] < threshold].iloc[0]["cycle_index"]
+            cutoff_cycle_index = diag_fractional_quantity_remaining[diag_fractional_quantity_remaining["fractional_metric"]
+                                                                    < threshold].iloc[0]["cycle_index"]
         else:
-            #If EOL is not reached take last diagnostic
+            # If EOL is not reached take last diagnostic
             cutoff_cycle_index = diag_fractional_quantity_remaining.iloc[-1]["cycle_index"]
 
         cutoff_cycle_index = int(cutoff_cycle_index)
 
-        #Find nomimal capacity, either from structuring_parameters or looking up paramaters file
+        # Find nomimal capacity, either from structuring_parameters or looking up paramaters file
         nominal_capacity = self.datapath.structuring_parameters.get("nominal_capacity", None)
         if nominal_capacity is None:
             parameters_path = self.hyperparameters["parameters_dir"]
-            file_path = self.datapath.paths['raw'] if 'raw' in self.datapath.paths.keys() else self.datapath.paths['structured']
+            file_path = self.datapath.paths['raw'] if 'raw' in self.datapath.paths.keys(
+            ) else self.datapath.paths['structured']
 
             parameters, _ = get_protocol_parameters(file_path, parameters_path)
             nominal_capacity = float(parameters["capacity_nominal"].iloc[0])
 
-
-        last_regular_cycle_before_EOL = self.datapath.structured_summary[self.datapath.structured_summary['cycle_index'] <= cutoff_cycle_index]['cycle_index'].max()
-        equivalent_full_cycles_at_EOL = self.datapath.structured_summary.fillna(method='ffill')[self.datapath.structured_summary['cycle_index'] == last_regular_cycle_before_EOL]["charge_throughput"].map(lambda x: x/nominal_capacity)
+        last_regular_cycle_before_EOL = self.datapath.structured_summary[self.datapath.structured_summary['cycle_index'] <= cutoff_cycle_index]['cycle_index'].max(
+        )
+        equivalent_full_cycles_at_EOL = self.datapath.structured_summary.fillna(method='ffill')[
+                                                                                self.datapath.structured_summary['cycle_index'] == last_regular_cycle_before_EOL]["charge_throughput"].map(lambda x: x/nominal_capacity)
 
         cutoff = self.hyperparameters["equivalent_full_cycles_cutoff"]
         equivalent_full_cycles_at_EOL_criteria = equivalent_full_cycles_at_EOL.map(lambda x: x > cutoff)
 
         features["equivalent_full_cycles_at_EOL"] = equivalent_full_cycles_at_EOL.reset_index(drop=True)
-        features["is_above_equivalent_full_cycles_at_EOL"] = equivalent_full_cycles_at_EOL_criteria.reset_index(drop=True)
+        features["is_above_equivalent_full_cycles_at_EOL"] = equivalent_full_cycles_at_EOL_criteria.reset_index(
+            drop=True)
 
-        #Check if CC1 > CC2 and CV onsets before 30% of test time
+        # Check if CC1 > CC2 and CV onsets before 30% of test time
         parameters_path = self.hyperparameters["parameters_dir"]
-        file_path = self.datapath.paths['raw'] if 'raw' in self.datapath.paths.keys() else self.datapath.paths['structured']
+        file_path = self.datapath.paths['raw'] if 'raw' in self.datapath.paths.keys(
+        ) else self.datapath.paths['structured']
 
         parameters, _ = get_protocol_parameters(file_path, parameters_path)
         CC1 = float(parameters["charge_constant_current_1"].iloc[0])
@@ -1048,13 +1057,14 @@ class ExclusionCriteria(BEEPFeaturizer):
                 if CV_onset_frac < self.hyperparameters["early_CV_cutoff"]:
                     is_not_early_CV = False
                     break
-                    
+
             features["is_not_early_CV"] = is_not_early_CV
 
-        #Set overall "to_include" column
+        # Set overall "to_include" column
         exclusion_criteria_columns = [c for c in features.columns if c[:3] == "is_"]
         features["to_include"] = features.apply(lambda row: all([row[c] for c in exclusion_criteria_columns]), axis=1)
         self.features = features
+
 
 class RawInterpolatedData(BEEPFeaturizer):
     """
@@ -1151,9 +1161,10 @@ class RawInterpolatedData(BEEPFeaturizer):
                             y_val_list.append(df1[metric])
 
         features = pd.DataFrame(columns=image_list)
-        #It's pretty ugly to set each column to an array but ¯\_(ツ)_/¯
+        # It's pretty ugly to set each column to an array but ¯\_(ツ)_/¯
         features.loc[0] = [y.tolist() for y in y_val_list]
         self.features = features
+
 
 class ChargingProtocol(BEEPFeaturizer):
     """
@@ -1198,7 +1209,8 @@ class ChargingProtocol(BEEPFeaturizer):
         """
 
         parameters_path = self.hyperparameters["parameters_dir"]
-        file_path = self.datapath.paths['raw'] if 'raw' in self.datapath.paths.keys() else self.datapath.paths['structured']
+        file_path = self.datapath.paths['raw'] if 'raw' in self.datapath.paths.keys(
+        ) else self.datapath.paths['structured']
 
         parameters, _ = get_protocol_parameters(file_path, parameters_path)
 
