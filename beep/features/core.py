@@ -926,10 +926,13 @@ class ExclusionCriteria(BEEPFeaturizer):
 
     Hyperparameters:
         parameters_dir (str): Full path to directory of charging protocol parameters
-        EOL_conditions (dict): conditions defining EOL for a cell, should contain cycle type, quantity, and fractional degradation threshold
-        throughput_first_n_cycles (dict): Exclude cells with charge throughput in first n cycles below a cutoff. dict containing number of cycles and cutoff
+        EOL_conditions (dict): conditions defining EOL for a cell, should contain cycle type, quantity, and fractional 
+        degradation threshold
+        throughput_first_n_cycles (dict): Exclude cells with charge throughput in first n cycles below a cutoff. dict 
+        containing number of cycles and cutoff
         equivalent_full_cycles_cutoff (int): Exclude cells which have undergone fewer than (int) EFCs
-        discharge_capacity_fractional_decrease_at_EOL_cutoff (float): Exclude cells whose discharge capacity has not degraded below a given fraction of initial value.
+        discharge_capacity_fractional_decrease_at_EOL_cutoff (float): Exclude cells whose discharge capacity has not 
+        degraded below a given fraction of initial value.
         early_CV_cutoff (float): Fraction of cycle time at which CV onset is considered early
     """
     DEFAULT_HYPERPARAMETERS = {
@@ -977,9 +980,10 @@ class ExclusionCriteria(BEEPFeaturizer):
 
         # EOL reached criteria
         diag_fractional_quantity_remaining = featurizer_helpers.get_fractional_quantity_remaining_nx(
-                    self.datapath, self.hyperparameters["EOL_conditions"]["quantity"], self.hyperparameters["EOL_conditions"]["cycle_type"],
-                    parameters_path=self.hyperparameters["parameters_dir"]
-                )
+            self.datapath,
+            self.hyperparameters["EOL_conditions"]["quantity"],
+            self.hyperparameters["EOL_conditions"]["cycle_type"],
+            parameters_path=self.hyperparameters["parameters_dir"])
         fractional_capacity_at_EOT = diag_fractional_quantity_remaining["fractional_metric"].fillna(
             method='ffill').iloc[-1:]
 
@@ -996,8 +1000,8 @@ class ExclusionCriteria(BEEPFeaturizer):
         # EFC at EOL condition
         # First ensure EOL is reached
         if features["is_below_fractional_capacity_at_EOT"].iloc[0]:
-            cutoff_cycle_index = diag_fractional_quantity_remaining[diag_fractional_quantity_remaining["fractional_metric"]
-                                                                    < threshold].iloc[0]["cycle_index"]
+            is_below_threshold = diag_fractional_quantity_remaining["fractional_metric"] < threshold
+            cutoff_cycle_index = diag_fractional_quantity_remaining[is_below_threshold].iloc[0]["cycle_index"]
         else:
             # If EOL is not reached take last diagnostic
             cutoff_cycle_index = diag_fractional_quantity_remaining.iloc[-1]["cycle_index"]
@@ -1014,10 +1018,12 @@ class ExclusionCriteria(BEEPFeaturizer):
             parameters, _ = get_protocol_parameters(file_path, parameters_path)
             nominal_capacity = float(parameters["capacity_nominal"].iloc[0])
 
-        last_regular_cycle_before_EOL = self.datapath.structured_summary[self.datapath.structured_summary['cycle_index'] <= cutoff_cycle_index]['cycle_index'].max(
-        )
-        equivalent_full_cycles_at_EOL = self.datapath.structured_summary.fillna(method='ffill')[
-                                                                                self.datapath.structured_summary['cycle_index'] == last_regular_cycle_before_EOL]["charge_throughput"].map(lambda x: x/nominal_capacity)
+        is_before_last_cycle = self.datapath.structured_summary['cycle_index'] <= cutoff_cycle_index
+        last_regular_cycle_before_EOL = self.datapath.structured_summary[is_before_last_cycle]['cycle_index'].max()
+        equivalent_full_cycles_at_EOL = self.datapath.structured_summary.fillna(
+            method='ffill')[
+            self.datapath.structured_summary['cycle_index'] == last_regular_cycle_before_EOL]["charge_throughput"].map(
+            lambda x: x/nominal_capacity)
 
         cutoff = self.hyperparameters["equivalent_full_cycles_cutoff"]
         equivalent_full_cycles_at_EOL_criteria = equivalent_full_cycles_at_EOL.map(lambda x: x > cutoff)
@@ -1039,7 +1045,8 @@ class ExclusionCriteria(BEEPFeaturizer):
             features["is_not_early_CV"] = True
         else:
             is_not_early_CV = True
-            regular_cycles_pre_EOL = self.datapath.structured_summary[self.datapath.structured_summary["cycle_index"] <= cutoff_cycle_index] 
+            regular_cycles_pre_EOL = self.datapath.structured_summary[
+                self.datapath.structured_summary["cycle_index"] <= cutoff_cycle_index] 
             for cycle in regular_cycles_pre_EOL.cycle_index:
                 cycle_data = self.datapath.structured_data[(self.datapath.structured_data.cycle_index == cycle)]
 
@@ -1181,8 +1188,14 @@ class ChargingProtocol(BEEPFeaturizer):
     """
     DEFAULT_HYPERPARAMETERS = {
         "parameters_dir": PROTOCOL_PARAMETERS_DIR,
-        "quantities": ["charge_constant_current_1", "charge_constant_current_2", "charge_cutoff_voltage", "charge_constant_voltage_time", "discharge_constant_current", "discharge_cutoff_voltage"],
-    }
+        "quantities": [
+            "charge_constant_current_1",
+            "charge_constant_current_2",
+            "charge_cutoff_voltage",
+            "charge_constant_voltage_time",
+            "discharge_constant_current",
+            "discharge_cutoff_voltage"],
+         }
 
     def validate(self):
         """
