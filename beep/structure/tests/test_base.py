@@ -29,6 +29,8 @@ from beep.structure.base import BEEPDatapath
 from beep.structure.base_eis import EIS, BEEPDatapathWithEIS
 from beep.structure.maccor import MaccorDatapath
 from beep.tests.constants import TEST_FILE_DIR, BIG_FILE_TESTS, SKIP_MSG
+from beep.structure.cli import auto_load_processed
+from beep import VALIDATION_SCHEMA_DIR
 
 
 class TestBEEPDatapath(unittest.TestCase):
@@ -203,6 +205,13 @@ class TestBEEPDatapath(unittest.TestCase):
                 if os.path.exists(fname):
                     os.remove(fname)
 
+    # Test to address bug where schema_path is absolute but is created in a different environment
+    def test_reloading_new(self):
+        test_file = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_000107_0001B9_structure_short.json")
+        struct = auto_load_processed(test_file)
+        self.assertEqual(struct.schema,
+                         os.path.join(VALIDATION_SCHEMA_DIR, "schema-maccor-2170.yaml"))
+
     # based on RCRT.test_serialization
     def test_serialization_legacy(self):
         test_file = os.path.join(
@@ -336,6 +345,7 @@ class TestBEEPDatapath(unittest.TestCase):
                     "energy_efficiency",
                     "CV_time",
                     "CV_current",
+                    "CV_capacity"
                 },
                 set(summary_diag.columns),
             )
@@ -345,6 +355,7 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertEqual(summary_diag["paused"].max(), 0)
         self.assertEqual(summary_diag["CV_time"][1], np.float32(160111.796875))
         self.assertEqual(summary_diag["CV_current"][1], np.float32(0.4699016))
+        self.assertEqual(summary_diag["CV_capacity"][1], np.float32(94.090355))
         self.run_dtypes_check(summary_diag)
 
         # incorporates test_get_energy and get_charge_throughput
@@ -423,6 +434,7 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertEqual(diag_summary["paused"].max(), 0)
         self.assertEqual(diag_summary["CV_time"][0], np.float32(125502.578125))
         self.assertEqual(diag_summary["CV_current"][0], np.float32(2.3499656))
+        self.assertEqual(diag_summary["CV_capacity"][0], np.float32(84.70442))
 
     # based on RCRT.test_determine_paused
     def test_paused_intervals(self):

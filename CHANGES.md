@@ -1,3 +1,45 @@
+v2022.5.2.14
+------------
+* Update beep contribution guideline
+* Remove raw data from default structured files
+* Adds a CV capacity summary stat.
+* Drop testing for python 3.7 due to updating packages
+
+v2022.2.7.14
+------------
+* Change test back
+
+v2022.2.1.19
+------------
+* Setup featurizers and tests
+* Added initial files for intracell analysis update
+
+
+
+v2022.1.24.16
+-------------
+* Fix bug with loading processed file from a different environment
+* Allow biologic txt files to structure (#518)
+
+v2021.12.28.16
+--------------
+* Update the diagnostic parameters
+
+v2021.12.15.7
+-------------
+* Change suffix separator to better align with previous usage
+* Add python 3.9 for integration tests (#465)
+* update requirements
+* Add back the windows testing for integration tests (#440)
+* add in a test for maccor files in auto_load_processed
+* append structured path when using auto_load_processed
+* Make changes to reflect current testing parameters for formation degradation
+
+v2021.10.28.12
+--------------
+* Add ability to use mapping file for generating cycle_index
+* Add ability to stucture both manual and automatically exported files from BioLogic
+* Fixed a bug where the featurization hyperparameter dict was altered in place, causing an error on multiple consecutive featurization calls
 
 
 v2021.10.11.13

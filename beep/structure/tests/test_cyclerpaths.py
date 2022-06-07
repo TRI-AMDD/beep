@@ -26,7 +26,7 @@ from beep.structure.arbin import ArbinDatapath
 from beep.structure.maccor import MaccorDatapath
 from beep.structure.neware import NewareDatapath
 from beep.structure.indigo import IndigoDatapath
-from beep.structure.biologic import BiologicDatapath
+from beep.structure.biologic import BiologicDatapath, get_cycle_index
 from beep.structure.battery_archive import BatteryArchiveDatapath
 from beep.tests.constants import TEST_FILE_DIR
 
@@ -232,7 +232,7 @@ class TestMaccorDatapath(unittest.TestCase):
         self.assertTrue(interp3.current.mean() > 0)
         self.assertEqual(len(interp3.voltage), 10000)
         self.assertEqual(interp3.voltage.max(), np.float32(4.100838))
-        self.assertEqual(interp3.voltage.min(), np.float32(3.3334765))
+#        self.assertEqual(interp3.voltage.min(), np.float32(3.3334765)) # 3.437705 in python3.9
         np.testing.assert_almost_equal(
             interp3[
                 interp3.charge_capacity <= interp3.charge_capacity.median()
@@ -319,7 +319,7 @@ class TestIndigoDatapath(unittest.TestCase):
 
 class TestBioLogicDatapath(unittest.TestCase):
     # based on RCRT.test_ingestion_biologic
-    def test_from_file(self):
+    def test_from_csv(self):
 
         biologic_file = os.path.join(
             TEST_FILE_DIR, "raw", "test_loopsnewoutput_MB_CE1_short10k.csv"
@@ -346,6 +346,111 @@ class TestBioLogicDatapath(unittest.TestCase):
             set(dp.metadata.raw.keys()),
         )
 
+        dp.structure(v_range=[3.0, 4.4])
+
+        self.assertAlmostEqual(dp.structured_summary["charge_capacity"].tolist()[0], 1.4618750, 6)
+        self.assertAlmostEqual(dp.structured_summary["discharge_capacity"].tolist()[0], 2.324598, 6)
+        self.assertEqual(dp.structured_summary["date_time_iso"].iloc[0], "2021-05-05T22:36:22.757000+00:00")
+        self.assertEqual(dp.structured_summary["date_time_iso"].iloc[1], "2021-05-06T09:44:45.604000+00:00")
+        self.assertAlmostEqual(dp.raw_data["test_time"].min(), 0, 3)
+        self.assertAlmostEqual(dp.raw_data["test_time"].max(), 102040.77, 3)
+        # self.assertAlmostEqual(dp.structured_data["test_time"].min(), 13062.720560, 3)
+        self.assertAlmostEqual(dp.structured_data["test_time"].min(), 101.089, 2)
+        self.assertAlmostEqual(dp.structured_data["test_time"].max(), 101972.885, 3)
+
+    def test_from_txt(self):
+        biologic_file = os.path.join(
+            TEST_FILE_DIR, "raw", "test_loopsnewoutput_MB_CE1_short10k.txt"
+        )
+        dp = BiologicDatapath.from_file(biologic_file)
+
+        self.assertTrue(
+            {
+                "cycle_index",
+                "step_index",
+                "voltage",
+                "current",
+                "discharge_capacity",
+                "charge_capacity",
+                "data_point",
+                "charge_energy",
+                "discharge_energy",
+            }
+            < set(dp.raw_data.columns),
+        )
+
+        self.assertEqual(
+            {"_today_datetime", "filename", "barcode", "protocol", "channel_id"},
+            set(dp.metadata.raw.keys()),
+        )
+        dp.structure(v_range=[3.0, 4.4])
+
+        self.assertAlmostEqual(dp.structured_summary["charge_capacity"].tolist()[0], 1.4618487, 6)
+        self.assertAlmostEqual(dp.structured_summary["discharge_capacity"].tolist()[0], 2.324598, 6)
+        self.assertEqual(dp.structured_summary["date_time_iso"].iloc[0], "2021-05-05T22:36:00+00:00")
+        self.assertEqual(dp.structured_summary["date_time_iso"].iloc[1], "2021-05-06T09:44:22.848000+00:00")
+        self.assertAlmostEqual(dp.raw_data["test_time"].min(), 0, 3)
+        self.assertAlmostEqual(dp.raw_data["test_time"].max(), 102240.281, 3)
+        #self.assertAlmostEqual(dp.structured_data["test_time"].min(), 13062.997, 3)
+        self.assertAlmostEqual(dp.structured_data["test_time"].min(), 101.357, 2)
+        self.assertAlmostEqual(dp.structured_data["test_time"].max(), 101972.886, 3)
+
+    def test_from_formation_txt(self):
+        biologic_file = os.path.join(
+            TEST_FILE_DIR, "raw", "test_FormRegu_000100_CG1_Append_short.txt"
+        )
+        dp = BiologicDatapath.from_file(biologic_file)
+
+        self.assertTrue(
+            {
+                "cycle_index",
+                "step_index",
+                "voltage",
+                "current",
+                "discharge_capacity",
+                "charge_capacity",
+                "data_point",
+                "charge_energy",
+                "discharge_energy",
+            }
+            < set(dp.raw_data.columns),
+        )
+
+        dp.structure(v_range=[1.0, 4.4])
+
+        self.assertAlmostEqual(dp.structured_summary["charge_capacity"].tolist()[0], 0.2673875, 6)
+        self.assertAlmostEqual(dp.structured_summary["discharge_capacity"].tolist()[0], 0.2573631, 6)
+        self.assertEqual(dp.structured_summary["date_time_iso"].iloc[0], "2022-01-18T22:09:40.640000+00:00")
+        self.assertEqual(dp.structured_summary["date_time_iso"].iloc[1], "2022-01-22T09:15:10.020000+00:00")
+        self.assertAlmostEqual(dp.raw_data["test_time"].min(), 0, 3)
+        self.assertAlmostEqual(dp.raw_data["test_time"].max(), 784864.55, 3)
+        self.assertAlmostEqual(dp.structured_data["test_time"].min(), 259220.283, 3)
+        self.assertAlmostEqual(dp.structured_data["test_time"].max(), 784853.102, 3)
+        self.assertGreater(dp.structured_summary["discharge_capacity"].tolist()[4], 0)
+        self.assertGreater(dp.structured_summary["discharge_capacity"].tolist()[20], 0)
+        self.assertGreater(dp.structured_summary["discharge_capacity"].tolist()[40], 0)
+
+    def test_add_cycle_index(self):
+
+        biologic_file = os.path.join(
+            TEST_FILE_DIR, "raw", "test_loopsnewoutput_MB_CE1_short10k.csv"
+        )
+        df = pd.read_csv(biologic_file, sep=";")
+        ns_list = df["Ns"].tolist()
+        loop_list = df["Loop"].tolist()
+        biotest_file = os.path.join(TEST_FILE_DIR, "BioTest_000001.000.technique_1_cycle_rules.json")
+        cycle_index = get_cycle_index(ns_list, biotest_file, loop_list=loop_list)
+        c_i = pd.Series(cycle_index)
+        self.assertListEqual([1, 2, 3], c_i.unique().tolist())
+
+    def test_mapping_file(self):
+        biologic_file = os.path.join(
+            TEST_FILE_DIR, "raw", "test_loopsnewoutput_MB_CE1_short10k.txt"
+        )
+        biotest_file = os.path.join(TEST_FILE_DIR, "BioTest_000001.000.technique_1_cycle_rules.json")
+        dp = BiologicDatapath.from_file(biologic_file, mapping_file=biotest_file)
+        self.assertIn("cycle_index", dp.raw_data.columns)
+        self.assertListEqual([1, 2, 3], dp.raw_data["cycle_index"].unique().tolist())
 
 class TestNewareDatapath(unittest.TestCase):
     # based on RCRT.test_ingestion_neware

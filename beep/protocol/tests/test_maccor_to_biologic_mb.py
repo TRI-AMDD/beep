@@ -423,21 +423,21 @@ class ConversionTest(unittest.TestCase):
                 'project_name': {0: 'FormDegrade'},
                 'seq_num': {0: 0},
                 'template': {0: 'diagnosticV5.000'},
-                'charge_constant_current_1': {0: 3.0},
+                'charge_constant_current_1': {0: 2.0},
                 'charge_percent_limit_1': {0: 30},
-                'charge_constant_current_2': {0: 3.0},
-                'charge_cutoff_voltage': {0: 4.3},
+                'charge_constant_current_2': {0: 2.0},
+                'charge_cutoff_voltage': {0: 4.4},
                 'charge_constant_voltage_time': {0: 60},
                 'charge_rest_time': {0: 5},
-                'discharge_constant_current': {0: 2.0},
-                'discharge_cutoff_voltage': {0: 2.7},
+                'discharge_constant_current': {0: 1.0},
+                'discharge_cutoff_voltage': {0: 3.0},
                 'discharge_rest_time': {0: 15},
                 'cell_temperature_nominal': {0: 25},
                 'cell_type': {0: 'LiFun240'},
                 'capacity_nominal': {0: 0.240},
                 'diagnostic_type': {0: 'HPPC+RPT'},
                 'diagnostic_parameter_set': {0: 'LiFunForm'},
-                'diagnostic_start_cycle': {0: 100},
+                'diagnostic_start_cycle': {0: 30},
                 'diagnostic_interval': {0: 100}
                           }
 
@@ -456,17 +456,17 @@ class ConversionTest(unittest.TestCase):
             procedure.generate_procedure_diagcyclev3(
                 protocol_params["capacity_nominal"], diagnostic_params
             )
-            procedure.set_skip_to_end_diagnostic(4.4, 2.0, step_key="070", new_step_key="095")
+            procedure.set_skip_to_end_diagnostic(4.5, 2.0, step_key="070", new_step_key="095")
             procedure.to_file(os.path.join(scratch_dir, "BioTest_000001.000"))
 
             # Setup the converter and run it
             def set_i_range(tech_num, seq, idx):
                 seq_copy = copy.deepcopy(seq)
-                seq_copy["I Range"] = "100 mA"
+                seq_copy["I Range"] = "1 A"
                 return seq_copy
             converter.seq_mappers.append(set_i_range)
             converter.min_voltage_v = 2.0
-            converter.max_voltage_v = 4.4
+            converter.max_voltage_v = 4.5
 
             converter.convert(os.path.join(scratch_dir, "BioTest_000001.000"),
                               TEST_FILE_DIR, "BioTest_000001")
@@ -481,23 +481,23 @@ class ConversionTest(unittest.TestCase):
             value_list = [
                 'ctrl1_val', '240.000', '34.300', '4.400', '34.300', '100.000', '80.000', '4.400', '240.000',
                 '180.000', '80.000', '100.000', '3.000', '80.000', '48.000', '4.400', '48.000', '48.000', '4.400',
-                '240.000', '48.000', '4.400', '480.000', '720.000', '720.000', '4.300', '480.000', '100.000'
+                '240.000', '48.000', '4.400', '480.000', '480.000', '480.000', '4.400', '240.000', '100.000'
             ]
             self.assertListEqual(value_list, file[37].split())
 
             voltage_min = '\tEcell min = 2.00 V\n'
             self.assertEqual(voltage_min, file[9])
-            voltage_max = '\tEcell max = 4.40 V\n'
+            voltage_max = '\tEcell max = 4.50 V\n'
             self.assertEqual(voltage_max, file[10])
 
     def test_cycle_transition_serialization(self):
         cycle_transition_rules = CycleAdvancementRules(
             tech_num=2,
             tech_does_loop=True,
-            adv_cycle_on_start = 1,
-            adv_cycle_on_tech_loop = 1,
-            adv_cycle_seq_transitions = {(2, 5): 1, (14, 17): 1},
-            debug_adv_cycle_on_step_transitions = {(72, 71): 1, (72, 75): 1},
+            adv_cycle_on_start=1,
+            adv_cycle_on_tech_loop=1,
+            adv_cycle_seq_transitions={(2, 5): 1, (14, 17): 1},
+            debug_adv_cycle_on_step_transitions={(72, 71): 1, (72, 75): 1},
         )
 
         serializer = CycleAdvancementRulesSerializer()

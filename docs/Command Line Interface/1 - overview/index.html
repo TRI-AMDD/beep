@@ -10,8 +10,8 @@
       
       
       
-      <link rel="shortcut icon" href="../../static/tri_cropped_favicon.png">
-      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-6.1.0">
+      <link rel="icon" href="../../static/tri_cropped_favicon.png">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.2.5">
     
     
       
@@ -19,10 +19,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.bc7e593a.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.2d9f7617.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab28b872.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.e6a45f82.min.css">
         
           
           
@@ -34,15 +34,17 @@
     
       
         
-        <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
-        <style>body,input{font-family:"Roboto",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"Roboto Mono",SFMono-Regular,Consolas,Menlo,monospace}</style>
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
       
     
     
-    
+    <script>__md_scope=new URL("../..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
+
     
     
   </head>
@@ -54,8 +56,9 @@
     
     
     <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="red" data-md-color-accent="orange">
-      
   
+    
+    
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" for="__drawer"></label>
@@ -71,49 +74,57 @@
       
     </div>
     
+    
       
 
 <header class="md-header" data-md-component="header">
-  <nav class="md-header-nav md-grid" aria-label="Header">
-    <a href="../.." title="BEEP - Battery Evaluation and Early Prediction" class="md-header-nav__button md-logo" aria-label="BEEP - Battery Evaluation and Early Prediction">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="BEEP - Battery Evaluation and Early Prediction" class="md-header__button md-logo" aria-label="BEEP - Battery Evaluation and Early Prediction" data-md-component="logo">
       
   <img src="../../static/tri_cropped.png" alt="logo">
 
     </a>
-    <label class="md-header-nav__button md-icon" for="__drawer">
+    <label class="md-header__button md-icon" for="__drawer">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
     </label>
-    <div class="md-header-nav__title" data-md-component="header-title">
-      
-        <div class="md-header-nav__ellipsis">
-          <span class="md-header-nav__topic md-ellipsis">
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
             BEEP - Battery Evaluation and Early Prediction
           </span>
-          <span class="md-header-nav__topic md-ellipsis">
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
             
               Overview
             
           </span>
         </div>
-      
+      </div>
     </div>
     
-      <label class="md-header-nav__button md-icon" for="__search">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
       </label>
-      
-<div class="md-search" data-md-component="search" role="dialog">
+      <div class="md-search" data-md-component="search" role="dialog">
   <label class="md-search__overlay" for="__search"></label>
   <div class="md-search__inner" role="search">
     <form class="md-search__form" name="search">
-      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" data-md-state="active">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
       <label class="md-search__icon md-icon" for="__search">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
       </label>
-      <button type="reset" class="md-search__icon md-icon" aria-label="Clear" data-md-component="search-reset" tabindex="-1">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
-      </button>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
     </form>
     <div class="md-search__output">
       <div class="md-search__scrollwrap" data-md-scrollfix>
@@ -129,12 +140,11 @@
 </div>
     
     
-      <div class="md-header-nav__source">
-        
-<a href="https://github.com/tri-amdd/beep/" title="Go to repository" class="md-source">
+      <div class="md-header__source">
+        <a href="https://github.com/tri-amdd/beep/" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
   </div>
   <div class="md-source__repository">
     GitHub
@@ -143,25 +153,30 @@
       </div>
     
   </nav>
+  
 </header>
     
     <div class="md-container" data-md-component="container">
       
       
         
+          
+        
       
       <main class="md-main" data-md-component="main">
         <div class="md-main__inner md-grid">
           
             
-              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
                     
 
+
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="BEEP - Battery Evaluation and Early Prediction" class="md-nav__button md-logo" aria-label="BEEP - Battery Evaluation and Early Prediction">
+    <a href="../.." title="BEEP - Battery Evaluation and Early Prediction" class="md-nav__button md-logo" aria-label="BEEP - Battery Evaluation and Early Prediction" data-md-component="logo">
       
   <img src="../../static/tri_cropped.png" alt="logo">
 
@@ -170,11 +185,10 @@
   </label>
   
     <div class="md-nav__source">
-      
-<a href="https://github.com/tri-amdd/beep/" title="Go to repository" class="md-source">
+      <a href="https://github.com/tri-amdd/beep/" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
   </div>
   <div class="md-source__repository">
     GitHub
@@ -188,24 +202,15 @@
       
       
 
-
-  <li class="md-nav__item">
-    <a href="../.." class="md-nav__link">
-      Introduction
-    </a>
-  </li>
-
-    
-      
-      
-      
-
-
-  <li class="md-nav__item">
-    <a href="../../data/" class="md-nav__link">
-      Cycler data requirements
-    </a>
-  </li>
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        Introduction
+      </a>
+    </li>
+  
 
     
       
@@ -213,49 +218,89 @@
       
 
   
-
-
-  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
-    
-      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3" checked>
-    
-    <label class="md-nav__link" for="nav-3">
-      Command Line Interface
-      <span class="md-nav__icon md-icon"></span>
-    </label>
-    <nav class="md-nav" aria-label="Command Line Interface" data-md-level="1">
-      <label class="md-nav__title" for="nav-3">
-        <span class="md-nav__icon md-icon"></span>
-        Command Line Interface
-      </label>
-      <ul class="md-nav__list" data-md-scrollfix>
-        
-        
-          
-          
-          
-
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        Contribution guidelines
+      </a>
+    </li>
   
 
-
-  <li class="md-nav__item md-nav__item--active">
-    
-    <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
     
       
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data/" class="md-nav__link">
+        Cycler data requirements
+      </a>
+    </li>
+  
+
     
+      
+      
+      
+
+  
+  
     
-      <label class="md-nav__link md-nav__link--active" for="__toc">
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Command Line Interface
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Command Line Interface" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Command Line Interface
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Overview
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         Overview
-        <span class="md-nav__icon md-icon"></span>
-      </label>
-    
-    <a href="./" class="md-nav__link md-nav__link--active">
-      Overview
-    </a>
-    
+      </a>
       
+        
+
 <nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
   
   
     
@@ -265,7 +310,7 @@
       <span class="md-nav__icon md-icon"></span>
       Table of contents
     </label>
-    <ul class="md-nav__list" data-md-scrollfix>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
   <a href="#basics" class="md-nav__link">
@@ -348,174 +393,214 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#controlling-compression-and-output-file-formats" class="md-nav__link">
+    Controlling compression and output file formats
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
-    
-  </li>
+      
+    </li>
+  
 
-        
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../2%20-%20structuring/" class="md-nav__link">
+        Structure
+      </a>
+    </li>
+  
+
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../3%20-%20featurize/" class="md-nav__link">
+        Featurize
+      </a>
+    </li>
+  
+
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../4%20-%20train/" class="md-nav__link">
+        Train
+      </a>
+    </li>
+  
 
-
-  <li class="md-nav__item">
-    <a href="../2%20-%20structuring/" class="md-nav__link">
-      Structure
-    </a>
-  </li>
-
-        
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5%20-%20predict/" class="md-nav__link">
+        Predict
+      </a>
+    </li>
+  
+
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../6%20-%20protocol/" class="md-nav__link">
+        Protocol
+      </a>
+    </li>
+  
+
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../7%20-%20inspect/" class="md-nav__link">
+        Inspect
+      </a>
+    </li>
+  
 
-
-  <li class="md-nav__item">
-    <a href="../3%20-%20featurize/" class="md-nav__link">
-      Featurize
-    </a>
-  </li>
-
-        
+            
           
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../4%20-%20train/" class="md-nav__link">
-      Train
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../5%20-%20predict/" class="md-nav__link">
-      Predict
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../6%20-%20protocol/" class="md-nav__link">
-      Protocol
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../7%20-%20inspect/" class="md-nav__link">
-      Inspect
-    </a>
-  </li>
-
-        
-      </ul>
-    </nav>
-  </li>
+        </ul>
+      </nav>
+    </li>
+  
 
     
       
       
       
 
-
-  <li class="md-nav__item md-nav__item--nested">
+  
+  
+  
     
-      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4">
-    
-    <label class="md-nav__link" for="nav-4">
-      Python tutorials
-      <span class="md-nav__icon md-icon"></span>
-    </label>
-    <nav class="md-nav" aria-label="Python tutorials" data-md-level="1">
-      <label class="md-nav__title" for="nav-4">
-        <span class="md-nav__icon md-icon"></span>
-        Python tutorials
-      </label>
-      <ul class="md-nav__list" data-md-scrollfix>
-        
-        
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          Python tutorials
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Python tutorials" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Python tutorials
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Python%20tutorials/1%20-%20quickstart/" class="md-nav__link">
+        1: Quickstart
+      </a>
+    </li>
+  
+
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Python%20tutorials/2%20-%20structuring/" class="md-nav__link">
+        2: Structuring
+      </a>
+    </li>
+  
+
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Python%20tutorials/3%20-%20featurization/" class="md-nav__link">
+        3: Featurization
+      </a>
+    </li>
+  
 
-
-  <li class="md-nav__item">
-    <a href="../../Python%20tutorials/1%20-%20quickstart/" class="md-nav__link">
-      1: Quickstart
-    </a>
-  </li>
-
-        
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Python%20tutorials/4%20-%20models/" class="md-nav__link">
+        4: Machine Learning
+      </a>
+    </li>
+  
+
+            
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Python%20tutorials/advanced_structuring/" class="md-nav__link">
+        Advanced Structuring: Unsupported cyclers
+      </a>
+    </li>
+  
+
+            
           
-
-
-  <li class="md-nav__item">
-    <a href="../../Python%20tutorials/2%20-%20structuring/" class="md-nav__link">
-      2: Structuring
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../../Python%20tutorials/3%20-%20featurization/" class="md-nav__link">
-      3: Featurization
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../../Python%20tutorials/4%20-%20models/" class="md-nav__link">
-      4: Machine Learning
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../../Python%20tutorials/advanced_structuring/" class="md-nav__link">
-      Advanced Structuring: Unsupported cyclers
-    </a>
-  </li>
-
-        
-      </ul>
-    </nav>
-  </li>
+        </ul>
+      </nav>
+    </li>
+  
 
     
   </ul>
@@ -525,11 +610,14 @@
               </div>
             
             
-              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
                     
+
 <nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
   
   
     
@@ -539,7 +627,7 @@
       <span class="md-nav__icon md-icon"></span>
       Table of contents
     </label>
-    <ul class="md-nav__list" data-md-scrollfix>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
   <a href="#basics" class="md-nav__link">
@@ -622,6 +710,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#controlling-compression-and-output-file-formats" class="md-nav__link">
+    Controlling compression and output file formats
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -630,22 +725,24 @@
               </div>
             
           
-          <div class="md-content">
+          <div class="md-content" data-md-component="content">
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/tri-amdd/beep/edit/master/docs/Command Line Interface/1 - overview.md" title="Edit this page" class="md-content__button md-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
-                  </a>
-                
-                
-                <h1 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h1>
+<a href="https://github.com/tri-amdd/beep/edit/master/docs/Command Line Interface/1 - overview.md" title="Edit this page" class="md-content__button md-icon">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+</a>
+
+
+
+<h1 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h1>
 <p>The beep base command specifies options for creating metadata and logging for all subcommands.</p>
+<p>This page is a general overview of options that are common among <em>any</em> beep subcommand. You can expect 
+options on this page to pertain to basically any beep CLI operation's inputs, outputs, and file formats.</p>
 <h2 id="basics">Basics<a class="headerlink" href="#basics" title="Permanent link">&para;</a></h2>
 <p>The BEEP CLI can be used like:</p>
-<div class="codehilite"><pre><span></span><code>$: beep &lt;options&gt; &lt;subcommand&gt;
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$: beep &lt;options&gt; &lt;subcommand&gt;
 </code></pre></div>
-
 <p>Options for the base <code>beep</code> command are specified before the subcommand. All beep subcommands take at least one file as input and return one or more files as output.</p>
 <p>Beep has six subcommands:</p>
 <ul>
@@ -658,139 +755,135 @@
 </ul>
 <p>For more info on any command or the base command, simply pass <code>--help</code> as an option.</p>
 <p>The help dialog for <code>beep</code> base command looks like:</p>
-<div class="codehilite"><pre><span></span><code>$: beep --help
-
-Usage: beep <span class="o">[</span>OPTIONS<span class="o">]</span> COMMAND <span class="o">[</span>ARGS<span class="o">]</span>...
-
-  Base BEEP command.
-
-Options:
-  -l, --log-file FILE            File to log formatted json to. Log will still
-                                 be output in human readable form to stdout,
-                                 but <span class="k">if</span> --log-file is specified, it will be
-                                 additionally logged to a jsonl <span class="o">(</span>json-lines<span class="o">)</span>
-                                 formatted file.
-  -r, --run-id INTEGER           An integer run_id which can be optionally
-                                 assigned to this run. It will be output in
-                                 the metadata status json <span class="k">for</span> any subcommand
-                                 <span class="k">if</span> the status json is enabled.
-  -t, --tags TEXT                Add optional tags to the status json
-                                 metadata. Can be later used forlarge-scale
-                                 queries on database data about sets of BEEP
-                                 runs. Example:<span class="s1">&#39;experiments_for_kristin&#39;</span>.
-  -s, --output-status-json FILE  File to output with JSON info about the
-                                 states of files which have had any beep
-                                 subcommand operationrun on them <span class="o">(</span>e.g.,
-                                 structuring<span class="o">)</span>. Contains comprehensiveinfo
-                                 about the success of the operation <span class="k">for</span> all
-                                 files.1 status <span class="nv">json</span> <span class="o">=</span> <span class="m">1</span> operation.
-  --halt-on-error                Set to halt BEEP <span class="k">if</span> critical featurization
-                                 errors are encountered on any file with any
-                                 featurizer. Otherwise, logs critical errors
-                                 to the status json.
-  --help                         Show this message and exit.
-
-Commands:
-  featurize  Featurize one or more files.
-  predict    Run a previously trained model to predict degradation...
-  protocol   Generate protocol <span class="k">for</span> battery cyclers from a csv file input.
-  structure  Structure and/or validate one or more files.
-  train      Train a machine learning model using all available data and...
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>$: beep --help
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>Usage: beep <span class="o">[</span>OPTIONS<span class="o">]</span> COMMAND <span class="o">[</span>ARGS<span class="o">]</span>...
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>  Base BEEP command.
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>Options:
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>  -l, --log-file FILE            File to log formatted json to. Log will still
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>                                 be output <span class="k">in</span> human readable form to stdout,
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>                                 but <span class="k">if</span> --log-file is specified, it will be
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>                                 additionally logged to a jsonl <span class="o">(</span>json-lines<span class="o">)</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>                                 formatted file.
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>  -r, --run-id INTEGER           An integer run_id which can be optionally
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>                                 assigned to this run. It will be output <span class="k">in</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>                                 the metadata status json <span class="k">for</span> any subcommand
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>                                 <span class="k">if</span> the status json is enabled.
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>  -t, --tags TEXT                Add optional tags to the status json
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>                                 metadata. Can be later used forlarge-scale
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>                                 queries on database data about sets of BEEP
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>                                 runs. Example:<span class="s1">&#39;experiments_for_kristin&#39;</span>.
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>  -s, --output-status-json FILE  File to output with JSON info about the
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>                                 states of files which have had any beep
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>                                 subcommand operationrun on them <span class="o">(</span>e.g.,
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>                                 structuring<span class="o">)</span>. Contains comprehensiveinfo
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>                                 about the success of the operation <span class="k">for</span> all
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>                                 files.1 status <span class="nv">json</span> <span class="o">=</span> <span class="m">1</span> operation.
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>  --halt-on-error                Set to halt BEEP <span class="k">if</span> critical featurization
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>                                 errors are encountered on any file with any
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>                                 featurizer. Otherwise, logs critical errors
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>                                 to the status json.
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>  --help                         Show this message and exit.
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>
+<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a>Commands:
+<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a>  featurize  Featurize one or more files.
+<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a>  predict    Run a previously trained model to predict degradation...
+<a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a>  protocol   Generate protocol <span class="k">for</span> battery cyclers from a csv file input.
+<a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a>  structure  Structure and/or validate one or more files.
+<a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a>  train      Train a machine learning model using all available data and...
 </code></pre></div>
-
 <h2 id="output-streams">Output streams<a class="headerlink" href="#output-streams" title="Permanent link">&para;</a></h2>
 <p>The beep base command options are used for specifying if and where to output the metadata and status of any CLI operation.</p>
 <p>Human-readable output will always be logged to stdout, for example:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">2021-09-21 16:14:43 INFO     Structuring 1 files</span>
-<span class="err">2021-09-21 16:14:43 DEBUG    Hashing file &#39;/beep/beep/tests/test_files/2017-12-04_4_65C-69per_6C_CH29.csv&#39; to MD5</span>
-<span class="err">2021-09-21 16:14:43 INFO     File 1 of 1: Reading raw file /beep/beep/tests/test_files/2017-12-04_4_65C-69per_6C_CH29.csv from disk...</span>
-<span class="err">2021-09-21 16:14:44 INFO     File 1 of 1: Validating: /beep/beep/tests/test_files/2017-12-04_4_65C-69per_6C_CH29.csv according to schema file &#39;/beep/beep/validation_schemas/schema-arbin-lfp.yaml&#39;</span>
-<span class="err">2021-09-21 16:14:44 INFO     File 1 of 1: Validated: /beep/beep/tests/test_files/2017-12-04_4_65C-69per_6C_CH29.csv</span>
-<span class="err">2021-09-21 16:14:44 INFO     File 1 of 1: Structuring: Read from /beep/beep/tests/test_files/2017-12-04_4_65C-69per_6C_CH29.csv</span>
-<span class="err">2021-09-21 16:14:44 INFO     Beginning structuring along charge axis &#39;charge_capacity&#39; and discharge axis &#39;voltage&#39;.</span>
-<span class="err">2021-09-21 16:15:21 INFO     File 1 of 1: Structured: Written to /beep/beep/CLI_TEST_FILES_FEATURIZATION/tmp.json.gz</span>
-<span class="err">2021-09-21 16:15:21 INFO     Structuring report:</span>
-<span class="err">2021-09-21 16:15:21 INFO        Succeeded: 1/1</span>
-<span class="err">2021-09-21 16:15:21 INFO        Invalid: 0/1</span>
-<span class="err">2021-09-21 16:15:21 INFO        Failed: 0/1</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>2021-09-21 16:14:43 INFO     Structuring 1 files
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>2021-09-21 16:14:43 DEBUG    Hashing file &#39;/beep/beep/tests/test_files/2017-12-04_4_65C-69per_6C_CH29.csv&#39; to MD5
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>2021-09-21 16:14:43 INFO     File 1 of 1: Reading raw file /beep/beep/tests/test_files/2017-12-04_4_65C-69per_6C_CH29.csv from disk...
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>2021-09-21 16:14:44 INFO     File 1 of 1: Validating: /beep/beep/tests/test_files/2017-12-04_4_65C-69per_6C_CH29.csv according to schema file &#39;/beep/beep/validation_schemas/schema-arbin-lfp.yaml&#39;
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>2021-09-21 16:14:44 INFO     File 1 of 1: Validated: /beep/beep/tests/test_files/2017-12-04_4_65C-69per_6C_CH29.csv
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>2021-09-21 16:14:44 INFO     File 1 of 1: Structuring: Read from /beep/beep/tests/test_files/2017-12-04_4_65C-69per_6C_CH29.csv
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>2021-09-21 16:14:44 INFO     Beginning structuring along charge axis &#39;charge_capacity&#39; and discharge axis &#39;voltage&#39;.
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>2021-09-21 16:15:21 INFO     File 1 of 1: Structured: Written to /beep/beep/CLI_TEST_FILES_FEATURIZATION/tmp.json.gz
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>2021-09-21 16:15:21 INFO     Structuring report:
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>2021-09-21 16:15:21 INFO        Succeeded: 1/1
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>2021-09-21 16:15:21 INFO        Invalid: 0/1
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>2021-09-21 16:15:21 INFO        Failed: 0/1
 </code></pre></div>
-
 <p>But other output streams are also available:</p>
 <h3 id="-log-file"><code>--log-file</code><a class="headerlink" href="#-log-file" title="Permanent link">&para;</a></h3>
 <p>Machine-readable json log file to write. If not specified, no log file will be created. Example:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">{&quot;time&quot;: &quot;2021-09-21 16:13:48,938&quot;, &quot;level&quot;: &quot;INFO&quot;, &quot;process&quot;: &quot;67214&quot;, &quot;module&quot;: &quot;cmd&quot;, &quot;func&quot;: &quot;structure&quot;, &quot;msg&quot;: &quot;Structuring 1 files&quot;}</span>
-<span class="err">{&quot;time&quot;: &quot;2021-09-21 16:13:48,939&quot;, &quot;level&quot;: &quot;DEBUG&quot;, &quot;process&quot;: &quot;67214&quot;, &quot;module&quot;: &quot;cmd&quot;, &quot;func&quot;: &quot;structure&quot;, &quot;msg&quot;: &quot;Hashing file &#39;/beep/beep/CLI_TEST_FILES_FEATURIZATION/PreDiag_000440_0000FB_structure.json&#39; to MD5&quot;}</span>
-<span class="err">{&quot;time&quot;: &quot;2021-09-21 16:13:49,228&quot;, &quot;level&quot;: &quot;INFO&quot;, &quot;process&quot;: &quot;67214&quot;, &quot;module&quot;: &quot;cmd&quot;, &quot;func&quot;: &quot;structure&quot;, &quot;msg&quot;: &quot;File 1 of 1: Reading raw file /beep/beep/CLI_TEST_FILES_FEATURIZATION/PreDiag_000440_0000FB_structure.json from disk...&quot;}</span>
-<span class="err">{&quot;time&quot;: &quot;2021-09-21 16:13:50,390&quot;, &quot;level&quot;: &quot;ERROR&quot;, &quot;process&quot;: &quot;67214&quot;, &quot;module&quot;: &quot;cmd&quot;, &quot;func&quot;: &quot;structure&quot;, &quot;msg&quot;: &quot;File 1 of 1: Failed/invalid: (EmptyDataError): /beep/beep/CLI_TEST_FILES_FEATURIZATION/PreDiag_000440_0000FB_structure.json&quot;}</span>
-<span class="err">{&quot;time&quot;: &quot;2021-09-21 16:13:50,391&quot;, &quot;level&quot;: &quot;INFO&quot;, &quot;process&quot;: &quot;67214&quot;, &quot;module&quot;: &quot;cmd&quot;, &quot;func&quot;: &quot;structure&quot;, &quot;msg&quot;: &quot;Structuring report:&quot;}</span>
-<span class="err">{&quot;time&quot;: &quot;2021-09-21 16:13:50,391&quot;, &quot;level&quot;: &quot;INFO&quot;, &quot;process&quot;: &quot;67214&quot;, &quot;module&quot;: &quot;cmd&quot;, &quot;func&quot;: &quot;structure&quot;, &quot;msg&quot;: &quot; Succeeded: 0/1&quot;}</span>
-<span class="err">{&quot;time&quot;: &quot;2021-09-21 16:13:50,391&quot;, &quot;level&quot;: &quot;INFO&quot;, &quot;process&quot;: &quot;67214&quot;, &quot;module&quot;: &quot;cmd&quot;, &quot;func&quot;: &quot;structure&quot;, &quot;msg&quot;: &quot; Invalid: 1/1&quot;}</span>
-<span class="err">{&quot;time&quot;: &quot;2021-09-21 16:13:50,391&quot;, &quot;level&quot;: &quot;INFO&quot;, &quot;process&quot;: &quot;67214&quot;, &quot;module&quot;: &quot;cmd&quot;, &quot;func&quot;: &quot;structure&quot;, &quot;msg&quot;: &quot;         - /beep/beep/CLI_TEST_FILES_FEATURIZATION/PreDiag_000440_0000FB_structure.json&quot;}</span>
-<span class="err">{&quot;time&quot;: &quot;2021-09-21 16:13:50,391&quot;, &quot;level&quot;: &quot;INFO&quot;, &quot;process&quot;: &quot;67214&quot;, &quot;module&quot;: &quot;cmd&quot;, &quot;func&quot;: &quot;structure&quot;, &quot;msg&quot;: &quot; Failed: 0/1&quot;}</span>
-<span class="err">{&quot;time&quot;: &quot;2021-09-21 16:14:43,291&quot;, &quot;level&quot;: &quot;INFO&quot;, &quot;process&quot;: &quot;67264&quot;, &quot;module&quot;: &quot;cmd&quot;, &quot;func&quot;: &quot;structure&quot;, &quot;msg&quot;: &quot;Structuring 1 files&quot;}</span>
-<span class="err">{&quot;time&quot;: &quot;2021-09-21 16:14:43,291&quot;, &quot;level&quot;: &quot;DEBUG&quot;, &quot;process&quot;: &quot;67264&quot;, &quot;module&quot;: &quot;cmd&quot;, &quot;func&quot;: &quot;structure&quot;, &quot;msg&quot;: &quot;Hashing file &#39;/beep/beep/tests/test_files/2017-12-04_4_65C-69per_6C_CH29.csv&#39; to MD5&quot;}</span>
-<span class="err">{&quot;time&quot;: &quot;2021-09-21 16:14:43,385&quot;, &quot;level&quot;: &quot;INFO&quot;, &quot;process&quot;: &quot;67264&quot;, &quot;module&quot;: &quot;cmd&quot;, &quot;func&quot;: &quot;structure&quot;, &quot;msg&quot;: &quot;File 1 of 1: Reading raw file /beep/beep/tests/test_files/2017-12-04_4_65C-69per_6C_CH29.csv from disk..</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>{&quot;time&quot;: &quot;2021-09-21 16:13:48,938&quot;, &quot;level&quot;: &quot;INFO&quot;, &quot;process&quot;: &quot;67214&quot;, &quot;module&quot;: &quot;cmd&quot;, &quot;func&quot;: &quot;structure&quot;, &quot;msg&quot;: &quot;Structuring 1 files&quot;}
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>{&quot;time&quot;: &quot;2021-09-21 16:13:48,939&quot;, &quot;level&quot;: &quot;DEBUG&quot;, &quot;process&quot;: &quot;67214&quot;, &quot;module&quot;: &quot;cmd&quot;, &quot;func&quot;: &quot;structure&quot;, &quot;msg&quot;: &quot;Hashing file &#39;/beep/beep/CLI_TEST_FILES_FEATURIZATION/PreDiag_000440_0000FB_structure.json&#39; to MD5&quot;}
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>{&quot;time&quot;: &quot;2021-09-21 16:13:49,228&quot;, &quot;level&quot;: &quot;INFO&quot;, &quot;process&quot;: &quot;67214&quot;, &quot;module&quot;: &quot;cmd&quot;, &quot;func&quot;: &quot;structure&quot;, &quot;msg&quot;: &quot;File 1 of 1: Reading raw file /beep/beep/CLI_TEST_FILES_FEATURIZATION/PreDiag_000440_0000FB_structure.json from disk...&quot;}
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>{&quot;time&quot;: &quot;2021-09-21 16:13:50,390&quot;, &quot;level&quot;: &quot;ERROR&quot;, &quot;process&quot;: &quot;67214&quot;, &quot;module&quot;: &quot;cmd&quot;, &quot;func&quot;: &quot;structure&quot;, &quot;msg&quot;: &quot;File 1 of 1: Failed/invalid: (EmptyDataError): /beep/beep/CLI_TEST_FILES_FEATURIZATION/PreDiag_000440_0000FB_structure.json&quot;}
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>{&quot;time&quot;: &quot;2021-09-21 16:13:50,391&quot;, &quot;level&quot;: &quot;INFO&quot;, &quot;process&quot;: &quot;67214&quot;, &quot;module&quot;: &quot;cmd&quot;, &quot;func&quot;: &quot;structure&quot;, &quot;msg&quot;: &quot;Structuring report:&quot;}
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>{&quot;time&quot;: &quot;2021-09-21 16:13:50,391&quot;, &quot;level&quot;: &quot;INFO&quot;, &quot;process&quot;: &quot;67214&quot;, &quot;module&quot;: &quot;cmd&quot;, &quot;func&quot;: &quot;structure&quot;, &quot;msg&quot;: &quot; Succeeded: 0/1&quot;}
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>{&quot;time&quot;: &quot;2021-09-21 16:13:50,391&quot;, &quot;level&quot;: &quot;INFO&quot;, &quot;process&quot;: &quot;67214&quot;, &quot;module&quot;: &quot;cmd&quot;, &quot;func&quot;: &quot;structure&quot;, &quot;msg&quot;: &quot; Invalid: 1/1&quot;}
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>{&quot;time&quot;: &quot;2021-09-21 16:13:50,391&quot;, &quot;level&quot;: &quot;INFO&quot;, &quot;process&quot;: &quot;67214&quot;, &quot;module&quot;: &quot;cmd&quot;, &quot;func&quot;: &quot;structure&quot;, &quot;msg&quot;: &quot;         - /beep/beep/CLI_TEST_FILES_FEATURIZATION/PreDiag_000440_0000FB_structure.json&quot;}
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>{&quot;time&quot;: &quot;2021-09-21 16:13:50,391&quot;, &quot;level&quot;: &quot;INFO&quot;, &quot;process&quot;: &quot;67214&quot;, &quot;module&quot;: &quot;cmd&quot;, &quot;func&quot;: &quot;structure&quot;, &quot;msg&quot;: &quot; Failed: 0/1&quot;}
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>{&quot;time&quot;: &quot;2021-09-21 16:14:43,291&quot;, &quot;level&quot;: &quot;INFO&quot;, &quot;process&quot;: &quot;67264&quot;, &quot;module&quot;: &quot;cmd&quot;, &quot;func&quot;: &quot;structure&quot;, &quot;msg&quot;: &quot;Structuring 1 files&quot;}
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>{&quot;time&quot;: &quot;2021-09-21 16:14:43,291&quot;, &quot;level&quot;: &quot;DEBUG&quot;, &quot;process&quot;: &quot;67264&quot;, &quot;module&quot;: &quot;cmd&quot;, &quot;func&quot;: &quot;structure&quot;, &quot;msg&quot;: &quot;Hashing file &#39;/beep/beep/tests/test_files/2017-12-04_4_65C-69per_6C_CH29.csv&#39; to MD5&quot;}
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>{&quot;time&quot;: &quot;2021-09-21 16:14:43,385&quot;, &quot;level&quot;: &quot;INFO&quot;, &quot;process&quot;: &quot;67264&quot;, &quot;module&quot;: &quot;cmd&quot;, &quot;func&quot;: &quot;structure&quot;, &quot;msg&quot;: &quot;File 1 of 1: Reading raw file /beep/beep/tests/test_files/2017-12-04_4_65C-69per_6C_CH29.csv from disk..
 </code></pre></div>
-
 <h3 id="-output-status-json"><code>--output-status-json</code><a class="headerlink" href="#-output-status-json" title="Permanent link">&para;</a></h3>
 <p>JSON file to write containing comprehensive structured metadata about any operation and all of its sub-operations. If not specified, no status json will be written. Example:</p>
-<div class="codehilite"><pre><span></span><code><span class="err">{</span>
-<span class="err">  &quot;op_type&quot;: &quot;featurize&quot;,</span>
-<span class="err">  &quot;feature_matrix&quot;: {</span>
-<span class="err">    &quot;created&quot;: true,</span>
-<span class="err">    &quot;traceback&quot;: null,</span>
-<span class="err">    &quot;output&quot;: &quot;/beep/beep/CLI_TEST_FILES_FEATURIZATION/features.json.gz&quot;</span>
-<span class="err">  },</span>
-<span class="err">  &quot;files&quot;: {</span>
-<span class="err">    &quot;/beep/beep/CLI_TEST_FILES_FEATURIZATION/PreDiag_000440_0000FB_structure.json&quot;: {</span>
-<span class="err">      &quot;walltime&quot;: 8.546396970748901,</span>
-<span class="err">      &quot;output&quot;: null,</span>
-<span class="err">      &quot;processed_md5_chksum&quot;: &quot;5848d8598584e45addfa8129bb078d95&quot;,</span>
-<span class="err">      &quot;featurizers&quot;: {</span>
-<span class="err">        &quot;HPPCResistanceVoltageFeatures&quot;: {</span>
-<span class="err">          &quot;output&quot;: null,</span>
-<span class="err">          &quot;valid&quot;: true,</span>
-<span class="err">          &quot;featurized&quot;: true,</span>
-<span class="err">          &quot;walltime&quot;: 1.2403650283813477,</span>
-<span class="err">          &quot;traceback&quot;: null,</span>
-<span class="err">          &quot;subop_md5_chksum&quot;: null</span>
-<span class="err">        },</span>
-<span class="err">        &quot;DeltaQFastCharge&quot;: {</span>
-<span class="err">          &quot;output&quot;: null,</span>
-<span class="err">          &quot;valid&quot;: true,</span>
-<span class="err">          &quot;featurized&quot;: true,</span>
-<span class="err">          &quot;walltime&quot;: 0.05008506774902344,</span>
-<span class="err">          &quot;traceback&quot;: null,</span>
-<span class="err">          &quot;subop_md5_chksum&quot;: null</span>
-<span class="err">        },</span>
-<span class="err">        &quot;DiagnosticSummaryStats&quot;: {</span>
-<span class="err">          &quot;output&quot;: null,</span>
-<span class="err">          &quot;valid&quot;: true,</span>
-<span class="err">          &quot;featurized&quot;: true,</span>
-<span class="err">          &quot;walltime&quot;: 0.19507122039794922,</span>
-<span class="err">          &quot;traceback&quot;: null,</span>
-<span class="err">          &quot;subop_md5_chksum&quot;: null</span>
-<span class="err">        },</span>
-<span class="err">        &quot;CycleSummaryStats&quot;: {</span>
-<span class="err">          &quot;output&quot;: null,</span>
-<span class="err">          &quot;valid&quot;: true,</span>
-<span class="err">          &quot;featurized&quot;: true,</span>
-<span class="err">          &quot;walltime&quot;: 0.013413190841674805,</span>
-<span class="err">          &quot;traceback&quot;: null,</span>
-<span class="err">          &quot;subop_md5_chksum&quot;: null</span>
-<span class="err">        }</span>
-<span class="err">      }</span>
-<span class="err">    },</span>
-<span class="err">...</span>
-<span class="err">  &quot;metadata&quot;: {</span>
-<span class="err">    &quot;beep_verison&quot;: &quot;2021.8.2.15&quot;,</span>
-<span class="err">    &quot;op_datetime_utc&quot;: &quot;2021-09-04 00:40:12&quot;,</span>
-<span class="err">    &quot;run_id&quot;: null,</span>
-<span class="err">    &quot;tags&quot;: []</span>
-<span class="err">  }</span>
-<span class="err">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>{
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>  &quot;op_type&quot;: &quot;featurize&quot;,
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>  &quot;feature_matrix&quot;: {
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    &quot;created&quot;: true,
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    &quot;traceback&quot;: null,
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    &quot;output&quot;: &quot;/beep/beep/CLI_TEST_FILES_FEATURIZATION/features.json.gz&quot;
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>  },
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>  &quot;files&quot;: {
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    &quot;/beep/beep/CLI_TEST_FILES_FEATURIZATION/PreDiag_000440_0000FB_structure.json&quot;: {
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>      &quot;walltime&quot;: 8.546396970748901,
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>      &quot;output&quot;: null,
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>      &quot;processed_md5_chksum&quot;: &quot;5848d8598584e45addfa8129bb078d95&quot;,
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>      &quot;featurizers&quot;: {
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>        &quot;HPPCResistanceVoltageFeatures&quot;: {
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>          &quot;output&quot;: null,
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>          &quot;valid&quot;: true,
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>          &quot;featurized&quot;: true,
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>          &quot;walltime&quot;: 1.2403650283813477,
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>          &quot;traceback&quot;: null,
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>          &quot;subop_md5_chksum&quot;: null
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>        },
+<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>        &quot;DeltaQFastCharge&quot;: {
+<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a>          &quot;output&quot;: null,
+<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>          &quot;valid&quot;: true,
+<a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a>          &quot;featurized&quot;: true,
+<a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a>          &quot;walltime&quot;: 0.05008506774902344,
+<a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a>          &quot;traceback&quot;: null,
+<a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a>          &quot;subop_md5_chksum&quot;: null
+<a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a>        },
+<a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a>        &quot;DiagnosticSummaryStats&quot;: {
+<a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a>          &quot;output&quot;: null,
+<a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a>          &quot;valid&quot;: true,
+<a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a>          &quot;featurized&quot;: true,
+<a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a>          &quot;walltime&quot;: 0.19507122039794922,
+<a id="__codelineno-4-35" name="__codelineno-4-35" href="#__codelineno-4-35"></a>          &quot;traceback&quot;: null,
+<a id="__codelineno-4-36" name="__codelineno-4-36" href="#__codelineno-4-36"></a>          &quot;subop_md5_chksum&quot;: null
+<a id="__codelineno-4-37" name="__codelineno-4-37" href="#__codelineno-4-37"></a>        },
+<a id="__codelineno-4-38" name="__codelineno-4-38" href="#__codelineno-4-38"></a>        &quot;CycleSummaryStats&quot;: {
+<a id="__codelineno-4-39" name="__codelineno-4-39" href="#__codelineno-4-39"></a>          &quot;output&quot;: null,
+<a id="__codelineno-4-40" name="__codelineno-4-40" href="#__codelineno-4-40"></a>          &quot;valid&quot;: true,
+<a id="__codelineno-4-41" name="__codelineno-4-41" href="#__codelineno-4-41"></a>          &quot;featurized&quot;: true,
+<a id="__codelineno-4-42" name="__codelineno-4-42" href="#__codelineno-4-42"></a>          &quot;walltime&quot;: 0.013413190841674805,
+<a id="__codelineno-4-43" name="__codelineno-4-43" href="#__codelineno-4-43"></a>          &quot;traceback&quot;: null,
+<a id="__codelineno-4-44" name="__codelineno-4-44" href="#__codelineno-4-44"></a>          &quot;subop_md5_chksum&quot;: null
+<a id="__codelineno-4-45" name="__codelineno-4-45" href="#__codelineno-4-45"></a>        }
+<a id="__codelineno-4-46" name="__codelineno-4-46" href="#__codelineno-4-46"></a>      }
+<a id="__codelineno-4-47" name="__codelineno-4-47" href="#__codelineno-4-47"></a>    },
+<a id="__codelineno-4-48" name="__codelineno-4-48" href="#__codelineno-4-48"></a>...
+<a id="__codelineno-4-49" name="__codelineno-4-49" href="#__codelineno-4-49"></a>  &quot;metadata&quot;: {
+<a id="__codelineno-4-50" name="__codelineno-4-50" href="#__codelineno-4-50"></a>    &quot;beep_verison&quot;: &quot;2021.8.2.15&quot;,
+<a id="__codelineno-4-51" name="__codelineno-4-51" href="#__codelineno-4-51"></a>    &quot;op_datetime_utc&quot;: &quot;2021-09-04 00:40:12&quot;,
+<a id="__codelineno-4-52" name="__codelineno-4-52" href="#__codelineno-4-52"></a>    &quot;run_id&quot;: null,
+<a id="__codelineno-4-53" name="__codelineno-4-53" href="#__codelineno-4-53"></a>    &quot;tags&quot;: []
+<a id="__codelineno-4-54" name="__codelineno-4-54" href="#__codelineno-4-54"></a>  }
+<a id="__codelineno-4-55" name="__codelineno-4-55" href="#__codelineno-4-55"></a>}
 </code></pre></div>
-
 <p>Any one beep command (e.g., <code>beep structure *</code>), regardless of how many files it intakes or generates, will always produce exactly one status json if <code>--output-status-json</code> is defined.</p>
 <h2 id="fault-tolerance">Fault-tolerance<a class="headerlink" href="#fault-tolerance" title="Permanent link">&para;</a></h2>
 <h3 id="-halt-on-error"><code>--halt-on-error</code><a class="headerlink" href="#-halt-on-error" title="Permanent link">&para;</a></h3>
@@ -805,97 +898,99 @@ the status json, but for further tracking there are two arguments which can be s
 <h3 id="-tags"><code>--tags</code><a class="headerlink" href="#-tags" title="Permanent link">&para;</a></h3>
 <p>A list of string tags to associate with this operation. The <code>tags</code> are recorded in the <code>metadata</code> field of any operation in its status json.</p>
 <p>An example of a status json containing a user run id and user tags:</p>
-<div class="codehilite"><pre><span></span><code><span class="err"># in status json output</span>
-<span class="err">...</span>
-<span class="err">  &quot;metadata&quot;: {</span>
-<span class="err">    &quot;beep_verison&quot;: &quot;2021.8.2.15&quot;,</span>
-<span class="err">    &quot;op_datetime_utc&quot;: &quot;2021-09-04 00:40:12&quot;,</span>
-<span class="err">    &quot;run_id&quot;: 234,</span>
-<span class="err">    &quot;tags&quot;: [&quot;my_tag_1&quot;, &quot;TRI_experiments_2021&quot;, &quot;debugging&quot;]</span>
-<span class="err">  }</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a># in status json output
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>...
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>  &quot;metadata&quot;: {
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    &quot;beep_verison&quot;: &quot;2021.8.2.15&quot;,
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    &quot;op_datetime_utc&quot;: &quot;2021-09-04 00:40:12&quot;,
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    &quot;run_id&quot;: 234,
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    &quot;tags&quot;: [&quot;my_tag_1&quot;, &quot;TRI_experiments_2021&quot;, &quot;debugging&quot;]
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>  }
 </code></pre></div>
-                
-              
-              
-                
-
+<h2 id="controlling-compression-and-output-file-formats">Controlling compression and output file formats<a class="headerlink" href="#controlling-compression-and-output-file-formats" title="Permanent link">&para;</a></h2>
+<p>Serialization in <code>beep</code> is done by the <a href="https://guide.materialsvirtuallab.org/monty/"><code>monty</code> library</a>; to use compression on any output
+files, status files, or intermediate files in any beep subcommand, append <code>.gz</code> to the end of the output filename(s).</p>
+<p>For example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># For example, write our status json to a regular (uncompressed) json file</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="c1"># And write our feature matrix output artifact to a gzipped json file</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>$: beep -s status.json featurize * outputFeatureMatrix.json.gz
+</code></pre></div>
+<p>Although they are not officially supported, other compression methods (such as <code>.bz2</code>) and file formats (<code>.yaml</code>) may be serialized to/from <code>beep</code> if they are supported
+by the current version of <code>monty</code>. </p>
 
               
             </article>
           </div>
         </div>
+        
       </main>
       
-        
-<footer class="md-footer">
+        <footer class="md-footer">
   
-    <div class="md-footer-nav">
-      <nav class="md-footer-nav__inner md-grid" aria-label="Footer">
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
         
-          <a href="../../data/" class="md-footer-nav__link md-footer-nav__link--prev" rel="prev">
-            <div class="md-footer-nav__button md-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+        <a href="../../data/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Cycler data requirements" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Cycler data requirements
             </div>
-            <div class="md-footer-nav__title">
-              <div class="md-ellipsis">
-                <span class="md-footer-nav__direction">
-                  Previous
-                </span>
-                Cycler data requirements
-              </div>
-            </div>
-          </a>
+          </div>
+        </a>
+      
+      
         
-        
-          <a href="../2%20-%20structuring/" class="md-footer-nav__link md-footer-nav__link--next" rel="next">
-            <div class="md-footer-nav__title">
-              <div class="md-ellipsis">
-                <span class="md-footer-nav__direction">
-                  Next
-                </span>
-                Structure
-              </div>
+        <a href="../2%20-%20structuring/" class="md-footer__link md-footer__link--next" aria-label="Next: Structure" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Structure
             </div>
-            <div class="md-footer-nav__button md-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
-            </div>
-          </a>
-        
-      </nav>
-    </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
   
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">
-      <div class="md-footer-copyright">
-        
-          <div class="md-footer-copyright__highlight">
-            Toyota Research Institute
-          </div>
-        
-        Made with
-        <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
-          Material for MkDocs
-        </a>
-      </div>
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Toyota Research Institute
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
       
     </div>
   </div>
 </footer>
       
     </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.bd0b6b67.min.js"}</script>
     
-      <script src="../../assets/javascripts/vendor.6a3d08fc.min.js"></script>
-      <script src="../../assets/javascripts/bundle.71201edf.min.js"></script><script id="__lang" type="application/json">{"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing"}</script>
-      
-      <script>
-        app = initialize({
-          base: "../..",
-          features: [],
-          search: Object.assign({
-            worker: "../../assets/javascripts/worker/search.4ac00218.min.js"
-          }, typeof search !== "undefined" && search)
-        })
-      </script>
+    
+      <script src="../../assets/javascripts/bundle.467223ff.min.js"></script>
       
     
   </body>

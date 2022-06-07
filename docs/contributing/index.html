@@ -1,0 +1,1038 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Documentation for TRI-AMDD BEEP, for handling battery cycling data and predicting battery lifetines">
+      
+      
+      
+      <link rel="icon" href="../static/tri_cropped_favicon.png">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.2.5">
+    
+    
+      
+        <title>Contribution guidelines - BEEP - Battery Evaluation and Early Prediction</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.2d9f7617.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.e6a45f82.min.css">
+        
+          
+          
+          <meta name="theme-color" content="#ef5552">
+        
+      
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="red" data-md-color-accent="orange">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#contribution-guidelines" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="BEEP - Battery Evaluation and Early Prediction" class="md-header__button md-logo" aria-label="BEEP - Battery Evaluation and Early Prediction" data-md-component="logo">
+      
+  <img src="../static/tri_cropped.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            BEEP - Battery Evaluation and Early Prediction
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Contribution guidelines
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/tri-amdd/beep/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="BEEP - Battery Evaluation and Early Prediction" class="md-nav__button md-logo" aria-label="BEEP - Battery Evaluation and Early Prediction" data-md-component="logo">
+      
+  <img src="../static/tri_cropped.png" alt="logo">
+
+    </a>
+    BEEP - Battery Evaluation and Early Prediction
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/tri-amdd/beep/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Introduction
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Contribution guidelines
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Contribution guidelines
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#before-you-begin" class="md-nav__link">
+    Before you begin
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#code-standards" class="md-nav__link">
+    Code standards
+  </a>
+  
+    <nav class="md-nav" aria-label="Code standards">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#general" class="md-nav__link">
+    General
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#formatting" class="md-nav__link">
+    Formatting
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documenting-your-code" class="md-nav__link">
+    Documenting your code
+  </a>
+  
+    <nav class="md-nav" aria-label="Documenting your code">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#inline-comments" class="md-nav__link">
+    Inline comments
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docstrings-and-module-comments" class="md-nav__link">
+    Docstrings and module comments
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#writing-unittests" class="md-nav__link">
+    Writing unittests
+  </a>
+  
+    <nav class="md-nav" aria-label="Writing unittests">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-find-the-correct-module-for-adding-your-tests" class="md-nav__link">
+    Step 1: Find the correct module for adding your tests
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-create-one-or-more-testcases" class="md-nav__link">
+    Step 2: Create one or more TestCases
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-create-one-test-method-for-each-method-or-function-in-your-testcases" class="md-nav__link">
+    Step 3: Create one test method for each method or function in your TestCases
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unittesting-template" class="md-nav__link">
+    Unittesting template
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-run-your-tests" class="md-nav__link">
+    Step 4: Run your tests!
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#some-tips-for-writing-tests" class="md-nav__link">
+    Some tips for writing tests
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data/" class="md-nav__link">
+        Cycler data requirements
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Command Line Interface
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Command Line Interface" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Command Line Interface
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Command%20Line%20Interface/1%20-%20overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Command%20Line%20Interface/2%20-%20structuring/" class="md-nav__link">
+        Structure
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Command%20Line%20Interface/3%20-%20featurize/" class="md-nav__link">
+        Featurize
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Command%20Line%20Interface/4%20-%20train/" class="md-nav__link">
+        Train
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Command%20Line%20Interface/5%20-%20predict/" class="md-nav__link">
+        Predict
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Command%20Line%20Interface/6%20-%20protocol/" class="md-nav__link">
+        Protocol
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Command%20Line%20Interface/7%20-%20inspect/" class="md-nav__link">
+        Inspect
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          Python tutorials
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Python tutorials" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Python tutorials
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Python%20tutorials/1%20-%20quickstart/" class="md-nav__link">
+        1: Quickstart
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Python%20tutorials/2%20-%20structuring/" class="md-nav__link">
+        2: Structuring
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Python%20tutorials/3%20-%20featurization/" class="md-nav__link">
+        3: Featurization
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Python%20tutorials/4%20-%20models/" class="md-nav__link">
+        4: Machine Learning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Python%20tutorials/advanced_structuring/" class="md-nav__link">
+        Advanced Structuring: Unsupported cyclers
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#before-you-begin" class="md-nav__link">
+    Before you begin
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#code-standards" class="md-nav__link">
+    Code standards
+  </a>
+  
+    <nav class="md-nav" aria-label="Code standards">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#general" class="md-nav__link">
+    General
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#formatting" class="md-nav__link">
+    Formatting
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documenting-your-code" class="md-nav__link">
+    Documenting your code
+  </a>
+  
+    <nav class="md-nav" aria-label="Documenting your code">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#inline-comments" class="md-nav__link">
+    Inline comments
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#docstrings-and-module-comments" class="md-nav__link">
+    Docstrings and module comments
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#writing-unittests" class="md-nav__link">
+    Writing unittests
+  </a>
+  
+    <nav class="md-nav" aria-label="Writing unittests">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-find-the-correct-module-for-adding-your-tests" class="md-nav__link">
+    Step 1: Find the correct module for adding your tests
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-create-one-or-more-testcases" class="md-nav__link">
+    Step 2: Create one or more TestCases
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-create-one-test-method-for-each-method-or-function-in-your-testcases" class="md-nav__link">
+    Step 3: Create one test method for each method or function in your TestCases
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unittesting-template" class="md-nav__link">
+    Unittesting template
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-run-your-tests" class="md-nav__link">
+    Step 4: Run your tests!
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#some-tips-for-writing-tests" class="md-nav__link">
+    Some tips for writing tests
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+<a href="https://github.com/tri-amdd/beep/edit/master/docs/contributing.md" title="Edit this page" class="md-content__button md-icon">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+</a>
+
+
+
+<h1 id="contribution-guidelines">Contribution guidelines<a class="headerlink" href="#contribution-guidelines" title="Permanent link">&para;</a></h1>
+<p>Here are some simple contribution guidelines which you may find useful if you are considering adding features, bug fixes, or other updates to <code>beep</code>.</p>
+<p>Working within these guidelines will help your pull request be added in a timely fashion!</p>
+<p>Note this guide is meant primarily for battery scientists with limited experience in software development, particularly in python. </p>
+<p><strong>In general, our goal here is to implement ideas which can be complex, convoluted, or confusing in the simplest, most concise, and most reusable manner possible.</strong></p>
+<h2 id="before-you-begin">Before you begin<a class="headerlink" href="#before-you-begin" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Create an <a href="https://guides.github.com/features/issues/">issue</a> where new proposals can be discussed before any coding is done.</li>
+<li>Create a personal <a href="https://help.github.com/articles/fork-a-repo/">fork</a> of the master repo.</li>
+<li>Download the source code onto your local system, by <a href="https://help.github.com/articles/cloning-a-repository/">cloning</a> the repository (or your fork of the repository).</li>
+<li>Create a <a href="https://help.github.com/articles/creating-and-deleting-branches-within-your-repository/">branch</a> of this repo on your own fork where all changes will be made</li>
+<li><a href="https://tri-amdd.github.io/beep/">Install</a> BEEP with the <strong>developer options</strong>.</li>
+<li>Test if your installation worked. <code>pytest beep</code>.</li>
+</ol>
+<h2 id="code-standards">Code standards<a class="headerlink" href="#code-standards" title="Permanent link">&para;</a></h2>
+<h3 id="general">General<a class="headerlink" href="#general" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Don't write boilerplate code</strong>: If repeated or similar lines of code can be encapsulated in a function, define a function and reuse the function.</li>
+<li><strong>Good code should be easily readable on a line by line basis</strong>: Generally, we try to keep the total number of lines of code to a minimum. However, each line of code should be readable and as short as possible. If you are stuck choosing between fewer (yet more complex) lines of code and more (yet simpler), usually you should opt for more (yet simpler) code.</li>
+<li><strong>Don't use highly complex one-liners</strong>: Although python allows for list and generator comprehensions in a single line, nesting these comprehensions or making them overly complex makes code very difficult to read. Often, it is easier to read an explicit <code>for</code> loop than to decompose a complex one-line comprehension or boolean condition.</li>
+</ul>
+<p>Example 1:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Bad - incomprehensible at a glance</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">{</span><span class="n">yi</span><span class="p">:</span> <span class="n">yj</span> <span class="k">for</span> <span class="n">yi</span><span class="p">,</span> <span class="n">yj</span> <span class="ow">in</span> <span class="n">y_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">yi</span> <span class="ow">in</span> <span class="n">yset</span><span class="p">}</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="p">(</span><span class="n">t</span> <span class="o">!=</span> <span class="mi">42</span> <span class="ow">and</span> <span class="n">t</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)]</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Better - can at leas tunderstand each line at a glance</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">y</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">for</span> <span class="n">yi</span><span class="p">,</span> <span class="n">yj</span> <span class="ow">in</span> <span class="n">y_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="k">if</span> <span class="n">yi</span> <span class="ow">in</span> <span class="n">yset</span><span class="p">:</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        <span class="n">y</span><span class="p">[</span><span class="n">yi</span><span class="p">]</span> <span class="o">=</span> <span class="n">yj</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">x</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">y</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="k">if</span> <span class="n">t</span> <span class="o">!=</span> <span class="mi">42</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">t</span><span class="p">:</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        <span class="n">x</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+</code></pre></div>
+<p>Example 2:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Bad - impossible to read</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">if</span> <span class="p">(</span><span class="n">t</span> <span class="o">!=</span> <span class="mi">42</span> <span class="ow">and</span> <span class="n">t</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">array</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">42</span> <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">array</span><span class="p">))))</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">forbidden_arrays</span><span class="p">):</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">do_something</span><span class="p">()</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># Better - can at least understand each line at a glance</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">t_valid</span> <span class="o">=</span> <span class="n">t</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">42</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">array_valid</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">42</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">array_forbidden</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">array</span><span class="p">)))</span> <span class="ow">in</span> <span class="n">forbidden_arrays</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="k">if</span> <span class="n">t_valid</span> <span class="ow">or</span> <span class="p">(</span><span class="n">array_valid</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">array_forbidden</span><span class="p">):</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="n">do_something</span><span class="p">()</span>
+</code></pre></div></p>
+<ul>
+<li><strong>Limit the number of arguments to functions/methods to ~10</strong>: Usually methods or functions with more than 10 arguments are hard to read.</li>
+<li><strong>Use informative variable names</strong>: Use properly formatted, minimal, and informative names for variables, functions, and module names. </li>
+</ul>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Bad - a few examples of uninformative or ambiguous variable names</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">output_value</span> <span class="o">=</span> <span class="n">V</span><span class="o">/</span><span class="n">R</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">OutputValue</span> <span class="o">=</span> <span class="n">V</span><span class="o">/</span><span class="n">R</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">CurrentValue</span> <span class="o">=</span> <span class="n">V</span><span class="o">/</span><span class="n">R</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># Better - minimal and informative variable names</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">current</span> <span class="o">=</span> <span class="n">V</span><span class="o">/</span><span class="n">R</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">current_amps</span> <span class="o">=</span> <span class="n">voltage_volts</span><span class="o">/</span><span class="n">resistance_ohms</span>
+</code></pre></div>
+<ul>
+<li><strong>Use builtin libraries whenever possible</strong>: <a href="https://docs.python.org/3/library/">The python standard library</a> has many useful libraries. Usually, working with the standard library modules is a reasonably performant, well supported, and highly error tolerant solution. Using external libraries or writing your own alternatives to the standard library's functions are encouraged only when there are significant performance, usability, or code clarity advantages</li>
+<li><strong>Use informative exceptions</strong>: It is much easier to debug code with thoughtfully constructed exceptions (errors) than to reverse-engineer. For example, when an input is outside the expected range, use a <code>raise ValueError("Explanation goes here")</code>. </li>
+<li><strong>Discuss code changes on Github</strong>: Whether you are using a new external dependency or are unsure of how your code should be incorporated into beep, make an issue to discuss with the developers on github!</li>
+</ul>
+<h3 id="formatting">Formatting<a class="headerlink" href="#formatting" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Adhering to any formatting standard (numpy-style, Google style, etc.) ensures your code can be read more easily.</li>
+<li>We encourage using the <a href="https://google.github.io/styleguide/pyguide.html">Google python standard style guide</a></li>
+<li>The <a href="https://peps.python.org/pep-0008/">PEP8 style guidelines</a> can also be quite helpful for cleaning up your code.</li>
+<li><strong>Programmatic tools</strong>: We encourage you to check your code with <a href="https://flake8.pycqa.org/en/latest/"><code>flake8</code></a> and <a href="https://pycodestyle.pycqa.org/en/latest/"><code>pycodestyle</code></a>; these are the tools we use for automatically linting new pull requests.</li>
+</ul>
+<h2 id="documenting-your-code">Documenting your code<a class="headerlink" href="#documenting-your-code" title="Permanent link">&para;</a></h2>
+<p>Well-documented code ensures others can use and improve upon your code. </p>
+<h3 id="inline-comments">Inline comments<a class="headerlink" href="#inline-comments" title="Permanent link">&para;</a></h3>
+<p>In general, your code should explain itself; it should not need clarification from additional comments. However, it is
+occasionally necessary to add inline comments for explaining or citing particular methods, especially if those methods are
+esoteric or not explained elsewhere. Here is an example of a good block comment:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a># Regression according to Mathiesen&#39;s method; constants taken from 
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a># this publication: https://doi.org/10.101/12345
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>my_variable2 = (input1 * input2**2)/some_constant
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>final_answer = constant3 * my_variable2
+</code></pre></div>
+<h3 id="docstrings-and-module-comments">Docstrings and module comments<a class="headerlink" href="#docstrings-and-module-comments" title="Permanent link">&para;</a></h3>
+<p><strong>It is imperative that each function, method, class, and module you write are comprehensively documented.</strong> See <a href="https://google.github.io/styleguide/pyguide.html">Section 3.8 of the Google Python style guide</a> for some examples of how to do this. </p>
+<h2 id="writing-unittests">Writing unittests<a class="headerlink" href="#writing-unittests" title="Permanent link">&para;</a></h2>
+<p>Unittests are a way to check that your code works as intended. <strong>Code with new functionality must have tests!</strong> Testing your code means writing "test" methods which call a desired function/method with some known ground truth inputs and output. If the <em>real</em> output of your function/method matches the expected ground truth output, the test passes. </p>
+<p>In general, you should write unittests for each new functionality your code performs. Writing unittests at the same time you add a new piece of code (function, method, class) is the easiest way to do this.</p>
+<p>The fundamental unit of unittesting is a <code>TestCase</code> class. A <code>TestCase</code> class holds a set of related tests. <code>TestCase</code>s go in modules specific for testing - for example, <code>beep.structure.test.test_validate</code> is a testing module. </p>
+<p>For more information on the syntax for checking the correctness of statements (e.g., <code>self.assertTrue</code>), see the <a href="https://docs.python.org/3/library/unittest.html">official python unittesting documentation.</a></p>
+<h3 id="step-1-find-the-correct-module-for-adding-your-tests">Step 1: Find the correct module for adding your tests<a class="headerlink" href="#step-1-find-the-correct-module-for-adding-your-tests" title="Permanent link">&para;</a></h3>
+<p>If your code is in an existing module (e.g., <code>beep.features.intracell_analysis</code>), your tests will go in that module's test module (e.g., <code>beep.features.tests.test_intracell_analysis</code>)</p>
+<p>If your code is in a new module (e.g., <code>beep.structure.my_new_module</code>), your tests will go either:</p>
+<ul>
+<li>in a new module in that test directory (<code>beep.structure.tests.test_my_new_module</code>)</li>
+<li>in an existing module which implements tests for code similar to yours (e.g., if you are adding a new cycler datapath, <code>beep.structure.test_cyclerpaths</code>)</li>
+</ul>
+<p><strong>If you are not sure where your test code should go, ask a developer in your pull request!</strong></p>
+<h3 id="step-2-create-one-or-more-testcases">Step 2: Create one or more <code>TestCase</code>s<a class="headerlink" href="#step-2-create-one-or-more-testcases" title="Permanent link">&para;</a></h3>
+<p>A unittest <code>TestCase</code> is a set of methods which will run to test your new code. </p>
+<ul>
+<li>If your contribution is a small bug fix, you will add testing code inside an existing <code>TestCase</code> class.</li>
+<li>If your contribution adds new methods to an existing class or new functions to an existing module, your tests will go inside an existing <code>TestCase</code> class.</li>
+<li>If you are adding a new class, your tests should go in a new <code>TestCase</code> class.</li>
+<li>If you are adding multiple new classes or a new module, your tests shoudl go in multiple <code>TestCase</code> classes. For example, if you are adding <code>Class1</code> and <code>Class2</code> as new classes, you should probably have <code>TestClass1</code> and <code>TestClass2</code> as <code>TestCases</code>.</li>
+</ul>
+<h3 id="step-3-create-one-test-method-for-each-method-or-function-in-your-testcases">Step 3: Create one test method for each method or function in your <code>TestCase</code>s<a class="headerlink" href="#step-3-create-one-test-method-for-each-method-or-function-in-your-testcases" title="Permanent link">&para;</a></h3>
+<p>Inside your <code>TestCase</code> class, implement some basic - yet realistic - test cases to ensure your code is working as intended. This is where you will use python's unittesting library's <code>self.assert*</code> methods to check the outputs of code for correctness.</p>
+<p>If you are adding a class, there should be one testing method for each method of your new class.</p>
+<p>If you are adding one or more functions, there should be one testing method for each function added.</p>
+<p>Make sure your test cases work for:</p>
+<ul>
+<li>Minimal basic inputs with known outputs; ensure these tests are simple yet realistic.</li>
+<li>Edge cases which likely will be encountered (e.g., a numerical input is maximized, a numerical input is minimized, etc.)</li>
+<li>Erroneous input throws the expected exceptions using <code>self.assertRaises</code></li>
+</ul>
+<h3 id="unittesting-template">Unittesting template<a class="headerlink" href="#unittesting-template" title="Permanent link">&para;</a></h3>
+<p>Here is a template/example of how to write unittests for a new class. The easiest way to get started is to copy+paste this code
+and replace the code with our own tests.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">import</span> <span class="nn">unittest</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="kn">from</span> <span class="nn">beep.my_new_module</span> <span class="kn">import</span> <span class="n">MyNewClass</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="k">class</span> <span class="nc">TestMyNewClass</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">)</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="k">def</span> <span class="nf">test_my_new_class</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>        <span class="c1"># testing the __init__ behavior of your class, for example</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>        <span class="n">inputs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">15.2</span><span class="p">]</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>        <span class="n">mnc</span> <span class="o">=</span> <span class="n">MyNewClass</span><span class="p">(</span><span class="o">*</span><span class="n">inputs</span><span class="p">)</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">assertTrue</span><span class="p">(</span><span class="n">mnc</span><span class="o">.</span><span class="n">some_attr</span><span class="p">)</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">assertFalse</span><span class="p">(</span><span class="n">mnc</span><span class="o">.</span><span class="n">some_attr2</span><span class="p">)</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>    <span class="k">def</span> <span class="nf">test_compute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>        <span class="c1"># testing a particular method &quot;compute&quot; of your &quot;MyNewClass&quot; </span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>        <span class="c1"># class against a bunch of inputs</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>        <span class="n">mnc</span> <span class="o">=</span> <span class="n">MyNewClass</span><span class="p">(</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mf">21.3</span><span class="p">)</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>        <span class="n">arg1</span> <span class="o">=</span> <span class="n">SomeObject</span><span class="p">()</span>
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>        <span class="n">x</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>
+<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a>        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">x</span><span class="p">:</span>
+<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="n">mnc</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span> <span class="n">i</span><span class="p">),</span> <span class="mi">10</span><span class="p">)</span>
+<a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">assertAlmostEqual</span><span class="p">(</span><span class="n">mnc</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">as_float</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="mf">9.999999</span><span class="p">)</span>
+<a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a>
+<a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a>        <span class="c1"># Make sure compute fails in the way we expect</span>
+<a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a>        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">assertRaises</span><span class="p">(</span><span class="ne">TypeError</span><span class="p">):</span>
+<a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a>            <span class="n">mnc</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">arg1</span><span class="p">,</span> <span class="s2">&quot;bad_input&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="step-4-run-your-tests">Step 4: Run your tests!<a class="headerlink" href="#step-4-run-your-tests" title="Permanent link">&para;</a></h3>
+<p>While all tests are checked by the Github continuous integration, you should run your tests locally. </p>
+<p>First, run your tests by themselves. Make sure you have the requirements from <code>requirements-test.txt</code> installed. You can then run your new test cases by  adding the following code at the bottom of the test file and running it.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="c1"># replace TestMyNewClass with your TestCase name!</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">unittest</span><span class="o">.</span><span class="n">main</span><span class="p">(</span><span class="n">TestMyNewClass</span><span class="p">())</span>
+</code></pre></div>
+<p>If your test passed, congrats!</p>
+<p>You might also want to make sure your new code did not break any other tests. You can do this from the command line  in the base <code>beep</code> directory (the same directory as <code>setup.py</code>):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>$: pytest beep --color<span class="o">=</span>yes
+</code></pre></div>
+<h3 id="some-tips-for-writing-tests">Some tips for writing tests<a class="headerlink" href="#some-tips-for-writing-tests" title="Permanent link">&para;</a></h3>
+<p>Find more info for each of these tips on <a href="https://docs.python.org/3/library/unittest.html">the python unittesting docs.</a></p>
+<ul>
+<li>You can define a special <code>setUp</code> method for performing the same setup actions (e.g., clearing or resetting class attributes, creating a common input file) for all of your test methods. This can cut down on your boilerplate code.</li>
+<li>You can define a special <code>setUpClass</code> class method which will run once before <em>any</em> of the test methods run. </li>
+<li>You can define a special <code>tearDown</code> method for performing the same post-test actions after each test. This is useful for cleaning up leftover files. This is similar to <code>setUp</code>.</li>
+<li>You can define a special <code>tearDownClass</code> class method which will run once at the end of the <code>TestCase</code>. </li>
+</ul>
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href=".." class="md-footer__link md-footer__link--prev" aria-label="Previous: Introduction" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Introduction
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../data/" class="md-footer__link md-footer__link--next" aria-label="Next: Cycler data requirements" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Cycler data requirements
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Toyota Research Institute
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../assets/javascripts/workers/search.bd0b6b67.min.js"}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.467223ff.min.js"></script>
+      
+    
+  </body>
+</html>
