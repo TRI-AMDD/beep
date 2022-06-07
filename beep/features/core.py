@@ -1117,8 +1117,6 @@ class RawInterpolatedData(BEEPFeaturizer):
 
         df = self.datapath.diagnostic_data
 
-        feature_df = pd.DataFrame()
-
         # Store a vector of arrays which will then be shaped into a multi-channel image
         y_val_list = []
 

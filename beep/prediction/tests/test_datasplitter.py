@@ -1,5 +1,4 @@
 import os
-import json
 import unittest
 from beep.tests.constants import TEST_FILE_DIR
 from beep.features.base import BEEPFeatureMatrix
