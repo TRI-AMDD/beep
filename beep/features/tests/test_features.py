@@ -22,7 +22,10 @@ from beep.features.core import (
     TrajectoryFastCharge,
     DiagnosticProperties,
     DiagnosticSummaryStats,
-    HPPCResistanceVoltageFeatures
+    HPPCResistanceVoltageFeatures,
+    ExclusionCriteria,
+    ChargingProtocol,
+    RawInterpolatedData
 
 )
 from beep.features.base import BEEPFeaturizationError
@@ -35,6 +38,7 @@ from monty.serialization import dumpfn, loadfn
 from monty.tempfile import ScratchDir
 from beep.utils.s3 import download_s3_object
 from beep.tests.constants import TEST_FILE_DIR, BIG_FILE_TESTS, SKIP_MSG
+from beep import PROTOCOL_PARAMETERS_DIR
 
 
 class TestFeaturizer(unittest.TestCase):
@@ -110,11 +114,11 @@ class TestFeaturizer(unittest.TestCase):
 
     def test_HPPCResistanceVoltageFeatures(self):
         structured_datapath = auto_load_processed(self.structured_cycler_file_path_trunc)
-        
+
         f = HPPCResistanceVoltageFeatures(structured_datapath)
         self.assertTrue(f.validate()[0])
         f.create_features()
-        
+
         self.assertEqual(f.features.shape[1], 76)
         self.assertEqual(f.features.columns[0], "r_c_0s_00")
         self.assertEqual(f.features.columns[-1], "D_8")
@@ -122,7 +126,7 @@ class TestFeaturizer(unittest.TestCase):
         self.assertAlmostEqual(f.features.iloc[0, 0], -0.08845776922490017, 6)
         self.assertAlmostEqual(f.features.iloc[0, 5], -0.1280224700339366, 6)
         self.assertAlmostEqual(f.features.iloc[0, 27], -0.10378359476555565, 6)
-        
+
     def test_DiagnosticSummaryStats(self):
         structured_datapath = auto_load_processed(self.structured_cycler_file_path_trunc)
 
@@ -175,7 +179,7 @@ class TestFeaturizer(unittest.TestCase):
             np.around(-3.771727344982484, 6))
 
         structured_datapath_loc2 = os.path.join(TEST_FILE_DIR,
-                                               "PredictionDiagnostics_000136_00002D_truncated_structure.json")
+                                                "PredictionDiagnostics_000136_00002D_truncated_structure.json")
         structured_datapath2 = auto_load_processed(structured_datapath_loc2)
 
         f2 = DiagnosticSummaryStats(structured_datapath2)
@@ -253,10 +257,146 @@ class TestFeaturizer(unittest.TestCase):
 
         self.assertAlmostEqual(f.features.iloc[0]["initial_regular_throughput"], 497.587658, 5)
 
+    def test_ChargingProtocol(self):
+        structured_datapath_loc = os.path.join(
+            TEST_FILE_DIR, "PredictionDiagnostics_000132_00004C_structure.json"
+        )
+        structured_datapath = auto_load_processed(structured_datapath_loc)
+
+        f = ChargingProtocol(structured_datapath)
+        self.assertTrue(f.validate()[0])
+        self.assertListEqual(f.hyperparameters["quantities"],
+                             ["charge_constant_current_1",
+                              "charge_constant_current_2",
+                              "charge_cutoff_voltage",
+                              "charge_constant_voltage_time",
+                              "discharge_constant_current",
+                              "discharge_cutoff_voltage"])
+        f.create_features()
+
+        self.assertEqual(f.features.shape, (1, 6))
+        # print(list(f.features.iloc[2, :]))
+
+        self.assertAlmostEqual(f.features.iloc[0]["charge_constant_current_1"], 1.0, 2)
+
+        # Test if rerunning feature works since dictionaries are being updated in place
+        f = ChargingProtocol(structured_datapath)
+        f.create_features()
+        self.assertEqual(f.features.shape, (1, 6))
+
+    def test_RawInterpolatedData(self):
+        structured_datapath_loc = os.path.join(
+            TEST_FILE_DIR, "PredictionDiagnostics_000132_00004C_structure.json"
+        )
+        structured_datapath = auto_load_processed(structured_datapath_loc)
+
+        f = RawInterpolatedData(structured_datapath)
+        self.assertTrue(f.validate()[0])
+        self.assertListEqual(f.hyperparameters["metrics"],
+                             ['capacity', 'dQdV', 'test_time'])
+        f.create_features()
+
+        self.assertEqual(f.features.shape, (1, 36))
+
+        for column, content in f.features.items():
+            self.assertEqual(len(content.tolist()[0]), 500)
+        self.assertAlmostEqual(f.features.iloc[0]["diag_cycle_1_rpt_0.2C_test_time_step_0"][-1], 1.685e+04, delta=1e2)
+
+        # Test if rerunning feature works since dictionaries are being updated in place
+        f = RawInterpolatedData(structured_datapath)
+        f.create_features()
+        self.assertEqual(f.features.shape, (1, 36))
+
+    def test_ExclusionCriteria(self):        
+        structured_datapath_loc = os.path.join(
+            TEST_FILE_DIR, "PredictionDiagnostics_000170_000256_structure.json"
+        )
+        structured_datapath = auto_load_processed(structured_datapath_loc)
+
+        f = ExclusionCriteria(structured_datapath)
+        self.assertTrue(f.validate()[0])
+        f.create_features()
+
+        self.assertAlmostEqual(f.features['first_n_cycles_throughput'].iloc[0], 133.34644, 4)
+        self.assertAlmostEqual(f.features['fractional_capacity_at_EOT'].iloc[0], 0.28528152938518053, 4)
+        self.assertAlmostEqual(f.features['equivalent_full_cycles_at_EOL'].iloc[0], 93.07684780152377, 4)
+
+        self.assertTrue(f.features["is_above_first_n_cycles_throughput"].iloc[0])
+        self.assertTrue(f.features["is_below_fractional_capacity_at_EOT"].iloc[0])
+        self.assertTrue(f.features["is_above_equivalent_full_cycles_at_EOL"].iloc[0])
+        self.assertTrue(f.features["is_not_early_CV"].iloc[0])
+
+        self.assertTrue(f.features["to_include"].iloc[0])
+
+        fail_fractional_capacity_at_EOT_hyperparameters = {
+            "parameters_dir": PROTOCOL_PARAMETERS_DIR,
+            "EOL_conditions": {"cycle_type": "rpt_0.2C", "threshold": 0.25, "quantity": "discharge_capacity"},
+            "throughput_first_n_cycles": {"n": 30, "cutoff": 20},
+            "equivalent_full_cycles_cutoff": 30,
+            "early_CV_cutoff": 0.3
+        }
+
+        f = ExclusionCriteria(structured_datapath, hyperparameters=fail_fractional_capacity_at_EOT_hyperparameters)
+        self.assertTrue(f.validate()[0])
+        f.create_features()
+
+        # Changing definition of EOL should change EFC at EOL
+        self.assertAlmostEqual(f.features['equivalent_full_cycles_at_EOL'].iloc[0], 168.22696402053202, 4)
+        self.assertFalse(f.features["is_below_fractional_capacity_at_EOT"].iloc[0])
+        self.assertTrue(f.features["is_above_equivalent_full_cycles_at_EOL"].iloc[0])
+        self.assertTrue(f.features["is_not_early_CV"].iloc[0])
+
+        self.assertFalse(f.features["to_include"].iloc[0])
+
+        fail_first_n_cycles_hyperparameters = {
+            "parameters_dir": PROTOCOL_PARAMETERS_DIR,
+            "EOL_conditions": {"cycle_type": "rpt_0.2C", "threshold": 0.8, "quantity": "discharge_capacity"},
+            "throughput_first_n_cycles": {"n": 30, "cutoff": 141},
+            "equivalent_full_cycles_cutoff": 30,
+            "early_CV_cutoff": 0.3
+        }        
+        f = ExclusionCriteria(structured_datapath, hyperparameters=fail_first_n_cycles_hyperparameters)
+        self.assertTrue(f.validate()[0])
+        f.create_features()
+
+        self.assertAlmostEqual(f.features['first_n_cycles_throughput'].iloc[0], 133.34644, 4)
+        self.assertAlmostEqual(f.features['fractional_capacity_at_EOT'].iloc[0], 0.28528152938518053, 4)
+        self.assertAlmostEqual(f.features['equivalent_full_cycles_at_EOL'].iloc[0], 93.07684780152377, 4)
+
+        self.assertFalse(f.features["is_above_first_n_cycles_throughput"].iloc[0])
+        self.assertTrue(f.features["is_below_fractional_capacity_at_EOT"].iloc[0])
+        self.assertTrue(f.features["is_above_equivalent_full_cycles_at_EOL"].iloc[0])
+        self.assertTrue(f.features["is_not_early_CV"].iloc[0])
+
+        self.assertFalse(f.features["to_include"].iloc[0])
+
+        fail_all_criteria_hyperparameters = {
+            "parameters_dir": PROTOCOL_PARAMETERS_DIR,
+            "EOL_conditions": {"cycle_type": "rpt_0.2C", "threshold": 0.25, "quantity": "discharge_capacity"},
+            "throughput_first_n_cycles": {"n": 30, "cutoff": 141},
+            "equivalent_full_cycles_cutoff": 860,
+            "early_CV_cutoff": 0.3
+        }        
+        f = ExclusionCriteria(structured_datapath, hyperparameters=fail_all_criteria_hyperparameters)
+        self.assertTrue(f.validate()[0])
+        f.create_features()
+
+        self.assertAlmostEqual(f.features['first_n_cycles_throughput'].iloc[0], 133.34644, 4)
+        self.assertAlmostEqual(f.features['fractional_capacity_at_EOT'].iloc[0], 0.28528152938518053, 4)
+        self.assertAlmostEqual(f.features['equivalent_full_cycles_at_EOL'].iloc[0], 168.22696402053202, 4)
+
+        self.assertFalse(f.features["is_above_first_n_cycles_throughput"].iloc[0])
+        self.assertFalse(f.features["is_below_fractional_capacity_at_EOT"].iloc[0])
+        self.assertFalse(f.features["is_above_equivalent_full_cycles_at_EOL"].iloc[0])
+        self.assertTrue(f.features["is_not_early_CV"].iloc[0])
+
+        self.assertFalse(f.features["to_include"].iloc[0])
+
         # Test if rerunning feature works since dictionaries are being updated in place
         f = DiagnosticProperties(structured_datapath)
         f.create_features()
         self.assertEqual(f.features.shape, (1, 4))
+
 
 class TestFeaturizerHelpers(unittest.TestCase):
     def setUp(self):
