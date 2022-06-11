@@ -48,7 +48,10 @@ class NovonixDatapath(BEEPDatapath):
         data['Circuit Temperature (°C)'] = data['Circuit Temperature (°C)'].astype('float')
         name_map = {i: map[i]['beep_name'] for i in map}
         data.rename(name_map, axis="columns", inplace=True)
-        data.rename({'Temperature (°C)': 'temperature', 'Circuit Temperature (°C)': 'circuit_temperature'}, axis ='columns')
+        data.rename(
+            {'Temperature (°C)': 'temperature', 'Circuit Temperature (°C)': 'circuit_temperature'},
+            axis='columns'
+        )
 
         # format capacity and energy
         # rest = data['step_type'] == '0'
