@@ -491,7 +491,7 @@ class TestNovonixDatapath(unittest.TestCase):
     def test_from_file(self):
         dp = NovonixDatapath.from_file(self.file)
         self.assertEqual(dp.paths.get("raw"), self.file)
-        self.assertTupleEqual(dp.raw_data.shape, (3942,23))
+        self.assertTupleEqual(dp.raw_data.shape, (3942, 22))
         self.assertTrue(
             {
                 'cycle_index',
@@ -508,5 +508,16 @@ class TestNovonixDatapath(unittest.TestCase):
             < set(dp.raw_data.columns)
         )
         self.assertTrue(dp.raw_data["test_time"].is_monotonic_increasing)
+        self.assertListEqual(list(dp.raw_data["step_type_num"].unique()), [0, 7, 8, 1])
+
+    def test_structure_novonix(self):
+
+        dp = NovonixDatapath.from_file(self.file)
+        dp.structure(resolution=1000)
+
+        self.assertFalse(dp.structured_summary.empty)
+        self.assertTupleEqual(dp.structured_data.shape, (2000, 11))
+
+
 if __name__ == "__main__":
     unittest.main()

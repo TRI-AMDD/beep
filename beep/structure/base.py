@@ -725,7 +725,6 @@ class BEEPDatapath(abc.ABC, MSONable):
         v_range = v_range or [2.8, 3.5]
 
         # If any regular cycle contains a waveform step, interpolate on test_time.
-
         if self.raw_data[self.raw_data.cycle_index.isin(reg_cycles)]. \
                 groupby(["cycle_index", "step_index"]). \
                 apply(step_is_waveform_dchg).any():
@@ -1406,7 +1405,6 @@ def interpolate_df(
     # Merge interpolated and uninterpolated DFs to use pandas interpolation
     interpolated_df = interpolated_df.merge(df, how="outer", on=field_name, sort=True)
     interpolated_df = interpolated_df.set_index(field_name)
-
     interpolated_df = interpolated_df.interpolate("slinear")
 
     # Filter for only interpolated values

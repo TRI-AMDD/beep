@@ -62,7 +62,6 @@ class NovonixDatapath(BEEPDatapath):
         cccv_discharge = data['step_type_num'] == 9
         cccv_hold_discharge = data['step_type_num'] == 10
 
-
         data['charge_capacity'] = data[cc_charge | cccv_charge]['capacity'].astype('float')
 
         data['discharge_capacity'] = data[cc_discharge | cv_hold_discharge | cccv_discharge | cccv_hold_discharge][
