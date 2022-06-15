@@ -39,6 +39,12 @@ data_columns:
   Step position:
     beep_name: step_position
     data_type: int
+  Temperature (°C):
+    beep_name: temperature
+    data_type: float
+  Circuit Temperature (°C):
+    beep_name: circuit_temperature
+    data_type: float
 step_names:
   0: rest
   1: cc_charge

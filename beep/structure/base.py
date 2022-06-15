@@ -808,11 +808,6 @@ class BEEPDatapath(abc.ABC, MSONable):
             reg_cycles_at = [i for i in self.raw_data.cycle_index.unique()]
 
         summary = self.raw_data.groupby("cycle_index").agg(self._aggregation)
-
-
-        print("ARDEBUG: summary is!")
-        print(summary)
-
         summary.columns = self._summary_cols
 
         summary = summary[summary.index.isin(reg_cycles_at)]
@@ -827,10 +822,6 @@ class BEEPDatapath(abc.ABC, MSONable):
             summary.loc[summary[col].abs() > error_threshold, col] = np.NaN
         summary["charge_throughput"] = summary.charge_capacity.cumsum()
         summary["energy_throughput"] = summary.charge_energy.cumsum()
-
-
-        print("ARDEBUG sunmmary 2")
-        print(summary)
 
         # This method for computing charge start and end times implicitly
         # assumes that a cycle starts with a charge step and is then followed
@@ -880,9 +871,6 @@ class BEEPDatapath(abc.ABC, MSONable):
                 "cycle_index").apply(
                 lambda g: integrate.trapz(g.temperature, x=g.time_since_cycle_start)
             )
-
-        print("ARDEBUG summary 3")
-        print(summary)
 
         # Drop the time since cycle start column
         self.raw_data.drop(columns=["time_since_cycle_start"])
@@ -1449,9 +1437,6 @@ def step_is_chg_state(step_df, chg):
     Returns:
         (bool): True if step is the charge state specified.
     """
-
-    print(f"ARDEBUG: STEP DF IS \n {step_df}")
-
     cap = step_df[["charge_capacity", "discharge_capacity"]]
     cap = cap.diff(axis=0).mean(axis=0).diff().iloc[-1]
 
