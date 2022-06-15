@@ -55,14 +55,17 @@ class NovonixDatapath(BEEPDatapath):
 
         # format capacity and energy
         # rest = data['step_type'] == '0'
-        cc_charge = data['step_type_num'] == '1'
-        cc_discharge = data['step_type_num'] == '2'
-        cccv_charge = data['step_type_num'] == '7'
-        cv_hold_discharge = data['step_type_num'] == '8'
-        cccv_discharge = data['step_type_num'] == '9'
-        cccv_hold_discharge = data['step_type_num'] == '10'
+        cc_charge = data['step_type_num'] == 1
+        cc_discharge = data['step_type_num'] == 2
+        cccv_charge = data['step_type_num'] == 7
+        cv_hold_discharge = data['step_type_num'] == 8
+        cccv_discharge = data['step_type_num'] == 9
+        cccv_hold_discharge = data['step_type_num'] == 10
+
 
         data['charge_capacity'] = data[cc_charge | cccv_charge]['capacity'].astype('float')
+
+        print(data["charge_capacity"].isna().all())
         data['discharge_capacity'] = data[cc_discharge | cv_hold_discharge | cccv_discharge | cccv_hold_discharge][
             'capacity'].astype('float')
         data['charge_energy'] = data[cc_charge | cccv_charge]['energy'].astype('float')
@@ -90,3 +93,33 @@ class NovonixDatapath(BEEPDatapath):
         # validation
         schema = os.path.join(VALIDATION_SCHEMA_DIR, "schema-novonix.yaml")
         return cls(data, metadata, paths=paths, schema=schema)
+
+
+if __name__ == "__main__":
+    fname = "/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/raw/test_Nova_Form-CH01-01_short.csv"
+    nd = NovonixDatapath.from_file(fname)
+
+    import pandas as pd
+
+    pd.options.display.max_rows = None
+    pd.options.display.max_columns = None
+    pd.options.display.width = None
+
+
+
+    print(nd.raw_data[:500])
+
+    nd.structure()
+    # print(nd.raw_data["discharge_capacity"].isna().all())
+
+    #
+    # nd.structure()
+
+
+
+
+    # from beep.structure.arbin import ArbinDatapath
+    #
+    #
+    # nd = ArbinDatapath.from_file("/Users/ardunn/alex/tri/code/beep/beep/alex_debuggging_novonix1/2018-08-28_oed_0_CH1.csv")
+    # nd.structure()

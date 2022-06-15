@@ -625,11 +625,29 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         for cycle_index in tqdm(cycle_indices, desc=desc):
             # Use a cycle_index mask instead of a global groupby to save memory
-            new_df = (
-                self.raw_data.loc[self.raw_data["cycle_index"] == cycle_index]
-                    .groupby("step_index")
-                    .filter(step_filter)
-            )
+            # new_df = (
+            #     self.raw_data.loc[self.raw_data["cycle_index"] == cycle_index]
+            #         .groupby("step_index")
+            #         .filter(step_filter)
+            # )
+
+            cycle_df = self.raw_data.loc[self.raw_data["cycle_index"] == cycle_index]
+
+
+            if "step_type" in self.raw_data.columns:
+                new_df = cycle_df.groupby("step_type").filter(lambda ldf: (ldf["step_type"] == step_type).all())
+            else:
+                new_df = cycle_df.groupby("step_index").filter(step_filter)
+
+
+            print(type(new_df))
+
+
+            print(f"ARDEBUG: Newdf is {new_df}")
+            print(f"ARDEBUG: Step type is {step_type}")
+
+            # raise ValueError
+
             if new_df.size == 0:
                 continue
 
@@ -667,12 +685,15 @@ class BEEPDatapath(abc.ABC, MSONable):
             new_df["step_type"] = new_df["step_type"].astype("category")
             all_dfs.append(new_df)
 
+        if not all_dfs:
+            logger.warn(f"No steps found for cycle indices {cycle_indices} and step type {step_type}!")
+            return pd.DataFrame()
+
         # Ignore the index to avoid issues with overlapping voltages
         result = pd.concat(all_dfs, ignore_index=True)
 
         # Cycle_index gets a little weird about typing, so round it here
         result.cycle_index = result.cycle_index.round()
-
         return result
 
     def interpolate_cycles(
@@ -802,10 +823,6 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         summary = self.raw_data.groupby("cycle_index").agg(self._aggregation)
 
-        # pd.set_option('display.max_rows', 500)
-        # pd.set_option('display.max_columns', 500)
-        # pd.set_option('display.width', 1000)
-
         summary.columns = self._summary_cols
 
         summary = summary[summary.index.isin(reg_cycles_at)]
@@ -845,7 +862,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         # Charge duration stored in seconds - note that date_time_iso is only ~1sec resolution
         time_diff = np.subtract(
             pd.to_datetime(merged.date_time_iso_y, utc=True, errors="coerce"),
-            pd.to_datetime(merged.date_time_iso_x, errors="coerce"),
+            pd.to_datetime(merged.date_time_iso_x, utc=True, errors="coerce"),
         )
         summary["charge_duration"] = np.round(
             time_diff / np.timedelta64(1, "s"), 2)
@@ -1420,7 +1437,7 @@ def interpolate_df(
 def step_is_chg_state(step_df, chg):
     """
     Helper function to determine whether a given dataframe corresponding
-    to a single cycle_index/step is charging or discharging, only intended
+    to a single cycle_index's step is charging or discharging, only intended
     to be used with a dataframe for single step/cycle
 
     Args:
@@ -1431,6 +1448,9 @@ def step_is_chg_state(step_df, chg):
     Returns:
         (bool): True if step is the charge state specified.
     """
+
+    print(f"ARDEBUG: STEP DF IS \n {step_df}")
+
     cap = step_df[["charge_capacity", "discharge_capacity"]]
     cap = cap.diff(axis=0).mean(axis=0).diff().iloc[-1]
 
