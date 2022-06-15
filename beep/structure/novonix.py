@@ -65,7 +65,6 @@ class NovonixDatapath(BEEPDatapath):
 
         data['charge_capacity'] = data[cc_charge | cccv_charge]['capacity'].astype('float')
 
-        print(data["charge_capacity"].isna().all())
         data['discharge_capacity'] = data[cc_discharge | cv_hold_discharge | cccv_discharge | cccv_hold_discharge][
             'capacity'].astype('float')
         data['charge_energy'] = data[cc_charge | cccv_charge]['energy'].astype('float')
@@ -110,6 +109,32 @@ if __name__ == "__main__":
     print(nd.raw_data[:500])
 
     nd.structure()
+
+
+
+    # print("Structured data")
+    # print(nd.structured_data)
+    #
+    #
+    print("Structured summary")
+    print(nd.structured_summary)
+    #
+    #
+    #
+    # print("Diagnostic data")
+    # print(nd.diagnostic_data)
+    #
+    #
+    #
+    # print("Diagnostic summary")
+    # print(nd.diagnostic_summary)
+
+
+
+    print(f"Semiunique ID: {nd.semiunique_id}")
+
+
+
     # print(nd.raw_data["discharge_capacity"].isna().all())
 
     #

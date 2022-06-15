@@ -624,29 +624,15 @@ class BEEPDatapath(abc.ABC, MSONable):
         cycle_indices = sorted([c for c in cycle_indices if c in reg_cycles])
 
         for cycle_index in tqdm(cycle_indices, desc=desc):
-            # Use a cycle_index mask instead of a global groupby to save memory
-            # new_df = (
-            #     self.raw_data.loc[self.raw_data["cycle_index"] == cycle_index]
-            #         .groupby("step_index")
-            #         .filter(step_filter)
-            # )
 
             cycle_df = self.raw_data.loc[self.raw_data["cycle_index"] == cycle_index]
 
-
             if "step_type" in self.raw_data.columns:
-                new_df = cycle_df.groupby("step_type").filter(lambda ldf: (ldf["step_type"] == step_type).all())
+                new_df = cycle_df.groupby("step_type").filter(
+                    lambda ldf: (ldf["step_type"] == step_type).all()
+                )
             else:
                 new_df = cycle_df.groupby("step_index").filter(step_filter)
-
-
-            print(type(new_df))
-
-
-            print(f"ARDEBUG: Newdf is {new_df}")
-            print(f"ARDEBUG: Step type is {step_type}")
-
-            # raise ValueError
 
             if new_df.size == 0:
                 continue
@@ -823,6 +809,10 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         summary = self.raw_data.groupby("cycle_index").agg(self._aggregation)
 
+
+        print("ARDEBUG: summary is!")
+        print(summary)
+
         summary.columns = self._summary_cols
 
         summary = summary[summary.index.isin(reg_cycles_at)]
@@ -837,6 +827,10 @@ class BEEPDatapath(abc.ABC, MSONable):
             summary.loc[summary[col].abs() > error_threshold, col] = np.NaN
         summary["charge_throughput"] = summary.charge_capacity.cumsum()
         summary["energy_throughput"] = summary.charge_energy.cumsum()
+
+
+        print("ARDEBUG sunmmary 2")
+        print(summary)
 
         # This method for computing charge start and end times implicitly
         # assumes that a cycle starts with a charge step and is then followed
@@ -887,6 +881,9 @@ class BEEPDatapath(abc.ABC, MSONable):
                 lambda g: integrate.trapz(g.temperature, x=g.time_since_cycle_start)
             )
 
+        print("ARDEBUG summary 3")
+        print(summary)
+
         # Drop the time since cycle start column
         self.raw_data.drop(columns=["time_since_cycle_start"])
 
@@ -912,6 +909,10 @@ class BEEPDatapath(abc.ABC, MSONable):
         summary["CV_capacity"] = CV_capacity
 
         summary = self._cast_dtypes(summary, "summary")
+
+        # Avoid returning empty summary dataframe for single cycle raw_data
+        if summary.shape[0] == 1:
+            return summary
 
         last_voltage = self.raw_data.loc[
             self.raw_data["cycle_index"] == self.raw_data["cycle_index"].max()
