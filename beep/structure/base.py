@@ -1314,15 +1314,22 @@ class BEEPDatapath(abc.ABC, MSONable):
 
     def iterate_steps_in_cycle(self, cycle_df, step_type):
         """
-        For a given cycle df, return a subset of the df which
+        For a given cycle df, return an inteable (or yield)
+        individual dfs corresponding to step indices and charge step.
+
+        For the simplest and easiest use, this means that within a
+        single charge cycle, there will be one discharge and one charge
+        step, each with an equal number of interpolated points.
+
         Args:
-            cycle_df:
+            cycle_df (pd.Dataframe): The dataframe corresponding to an
+                entire cycle.
 
         Returns:
+            (pd.Dataframe): The dataframe corresponding to a particular
+                charge/discharge step. Used downstream for interpolation.
 
         """
-
-        print("Filtering")
 
         if step_type == "discharge":
             step_filter = step_is_dchg
@@ -1351,7 +1358,6 @@ class BEEPDatapath(abc.ABC, MSONable):
                 available_dtypes[field] = dtype
 
         return result.astype(available_dtypes)
-
 
 
 # based on get_interpolated_data

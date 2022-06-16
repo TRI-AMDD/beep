@@ -507,16 +507,24 @@ class TestNovonixDatapath(unittest.TestCase):
             }
             < set(dp.raw_data.columns)
         )
+
         self.assertTrue(dp.raw_data["test_time"].is_monotonic_increasing)
         self.assertListEqual(list(dp.raw_data["step_type_num"].unique()), [0, 7, 8, 1])
 
     def test_structure_novonix(self):
 
         dp = NovonixDatapath.from_file(self.file)
-        dp.structure(resolution=1000)
+        dp.structure(
+            charge_axis="test_time",
+            discharge_axis="test_time",
+            resolution=100
+        )
 
         self.assertFalse(dp.structured_summary.empty)
-        self.assertTupleEqual(dp.structured_data.shape, (2000, 11))
+
+        # The number of rows is 400 since there are 4 step type numbers
+        self.assertTupleEqual(dp.structured_data.shape, (400, 11))
+
 
 
 if __name__ == "__main__":

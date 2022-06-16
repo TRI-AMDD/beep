@@ -64,7 +64,8 @@ class NovonixDatapath(BEEPDatapath):
 
         data['charge_capacity'] = data[cc_charge | cccv_charge]['capacity'].astype('float')
 
-        data['discharge_capacity'] = data[rest | cc_discharge | cv_hold_discharge | cccv_discharge | cccv_hold_discharge][
+        data['discharge_capacity'] = \
+            data[rest | cc_discharge | cv_hold_discharge | cccv_discharge | cccv_hold_discharge][
             'capacity'].astype('float')
         data['charge_energy'] = data[cc_charge | cccv_charge]['energy'].astype('float')
         data['discharge_energy'] = data[cc_discharge | cv_hold_discharge | cccv_discharge | cccv_hold_discharge][
@@ -122,15 +123,3 @@ class NovonixDatapath(BEEPDatapath):
         for _, step_df in gb:
             if (step_df["step_type"] == step_type).all():
                 yield step_df
-
-
-
-if __name__ == "__main__":
-    dp = NovonixDatapath.from_file("/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/raw/test_Nova_Form-CH01-01_short.csv")
-
-    pd.set_option('display.max_rows', None)
-    pd.set_option('display.max_columns', None)
-    pd.set_option('display.width', None)
-
-
-    dp.structure(resolution=3000)
