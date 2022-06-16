@@ -602,12 +602,6 @@ class BEEPDatapath(abc.ABC, MSONable):
                 f"Interpolating {step_type} ({v_range[0]} - {v_range[1]})V " \
                 f"({resolution} points)"
 
-        if step_type == "discharge":
-            step_filter = step_is_dchg
-        elif step_type == "charge":
-            step_filter = step_is_chg
-        else:
-            raise ValueError("{} is not a recognized step type")
         incl_columns = [
             "test_time",
             "voltage",
@@ -624,52 +618,35 @@ class BEEPDatapath(abc.ABC, MSONable):
         cycle_indices = sorted([c for c in cycle_indices if c in reg_cycles])
 
         for cycle_index in tqdm(cycle_indices, desc=desc):
-
             cycle_df = self.raw_data.loc[self.raw_data["cycle_index"] == cycle_index]
 
-            if "step_type" in self.raw_data.columns:
-                new_df = cycle_df.groupby("step_type").filter(
-                    lambda ldf: (ldf["step_type"] == step_type).all()
-                )
-            else:
-                new_df = cycle_df.groupby("step_index").filter(step_filter)
+            step_dfs = self.iterate_steps_in_cycle(cycle_df, step_type)
 
-            if new_df.size == 0:
-                continue
+            for step_df in step_dfs:
+                if step_df.size == 0:
+                    continue
+                if axis in ["charge_capacity", "discharge_capacity"]:
+                    axis_range = [self.raw_data[axis].min(),
+                                  self.raw_data[axis].max()]
+                elif axis == "test_time":
+                    axis_range = [step_df[axis].min(), step_df[axis].max()]
+                elif axis == "voltage":
+                    axis_range = v_range
+                else:
+                    raise ValueError(f"Axis {axis} not a valid step interpolation axis.")
 
-            if axis in ["charge_capacity", "discharge_capacity"]:
-                axis_range = [self.raw_data[axis].min(),
-                              self.raw_data[axis].max()]
-                new_df = interpolate_df(
-                    new_df,
+                step_df = interpolate_df(
+                    step_df,
                     axis,
                     field_range=axis_range,
                     columns=incl_columns,
                     resolution=resolution,
                 )
-            elif axis == "test_time":
-                axis_range = [new_df[axis].min(), new_df[axis].max()]
-                new_df = interpolate_df(
-                    new_df,
-                    axis,
-                    field_range=axis_range,
-                    columns=incl_columns,
-                    resolution=resolution,
-                )
-            elif axis == "voltage":
-                new_df = interpolate_df(
-                    new_df,
-                    axis,
-                    field_range=v_range,
-                    columns=incl_columns,
-                    resolution=resolution,
-                )
-            else:
-                raise ValueError(f"Axis {axis} not a valid step interpolation axis.")
-            new_df["cycle_index"] = cycle_index
-            new_df["step_type"] = step_type
-            new_df["step_type"] = new_df["step_type"].astype("category")
-            all_dfs.append(new_df)
+
+                step_df["cycle_index"] = cycle_index
+                step_df["step_type"] = step_type
+                step_df["step_type"] = step_df["step_type"].astype("category")
+                all_dfs.append(step_df)
 
         if not all_dfs:
             logger.warn(f"No steps found for cycle indices {cycle_indices} and step type {step_type}!")
@@ -1335,6 +1312,27 @@ class BEEPDatapath(abc.ABC, MSONable):
         else:
             return False
 
+    def iterate_steps_in_cycle(self, cycle_df, step_type):
+        """
+        For a given cycle df, return a subset of the df which
+        Args:
+            cycle_df:
+
+        Returns:
+
+        """
+
+        print("Filtering")
+
+        if step_type == "discharge":
+            step_filter = step_is_dchg
+        elif step_type == "charge":
+            step_filter = step_is_chg
+        else:
+            raise ValueError("{} is not a recognized step type")
+
+        return [cycle_df.groupby("step_index").filter(step_filter)]
+
     def _cast_dtypes(self, result, structure_dtypes_key):
         """Cast data types of a result dataframe to those specified by the structuring config.
 
@@ -1353,6 +1351,7 @@ class BEEPDatapath(abc.ABC, MSONable):
                 available_dtypes[field] = dtype
 
         return result.astype(available_dtypes)
+
 
 
 # based on get_interpolated_data

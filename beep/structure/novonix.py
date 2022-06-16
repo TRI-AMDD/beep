@@ -54,7 +54,7 @@ class NovonixDatapath(BEEPDatapath):
         )
 
         # format capacity and energy
-        # rest = data['step_type'] == '0'
+        rest = data['step_type_num'] == 0
         cc_charge = data['step_type_num'] == 1
         cc_discharge = data['step_type_num'] == 2
         cccv_charge = data['step_type_num'] == 7
@@ -64,7 +64,7 @@ class NovonixDatapath(BEEPDatapath):
 
         data['charge_capacity'] = data[cc_charge | cccv_charge]['capacity'].astype('float')
 
-        data['discharge_capacity'] = data[cc_discharge | cv_hold_discharge | cccv_discharge | cccv_hold_discharge][
+        data['discharge_capacity'] = data[rest | cc_discharge | cv_hold_discharge | cccv_discharge | cccv_hold_discharge][
             'capacity'].astype('float')
         data['charge_energy'] = data[cc_charge | cccv_charge]['energy'].astype('float')
         data['discharge_energy'] = data[cc_discharge | cv_hold_discharge | cccv_discharge | cccv_hold_discharge][
@@ -91,3 +91,46 @@ class NovonixDatapath(BEEPDatapath):
         # validation
         schema = os.path.join(VALIDATION_SCHEMA_DIR, "schema-novonix.yaml")
         return cls(data, metadata, paths=paths, schema=schema)
+
+    def iterate_steps_in_cycle(self, cycle_df, step_type):
+        """
+        A Novonix-specific method of filtering steps for interpolation
+        since the charge/discharge changes are known via the step_type_num
+        specification.
+
+        For example, steps within a single cycle are not separated JUST
+        by whether they are charge or discharge, they are separated by
+        the KIND of charge/discharge.
+
+
+        For example, a cycle with step type numbers 0, 7, and 8 would be
+        broken up into three dataframes. If we are interested in the
+        charge cycles, only the 7 data is returned. If we are interested
+        in the discharge cycles, the 0 and 8 data is returned separately.
+
+        Args:
+            cycle_df (pd.Dataframe): The dataframe for a specific cycle
+            step_type (str): "charge" or "discharge"
+
+        Returns:
+            (pd.Dataframe): Yields Novonix data as a dataframe
+                for a particular step_type num if that step type num
+                is the correct step type (chg/discharge)
+        """
+        gb = cycle_df.groupby("step_type_num")
+
+        for _, step_df in gb:
+            if (step_df["step_type"] == step_type).all():
+                yield step_df
+
+
+
+if __name__ == "__main__":
+    dp = NovonixDatapath.from_file("/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/raw/test_Nova_Form-CH01-01_short.csv")
+
+    pd.set_option('display.max_rows', None)
+    pd.set_option('display.max_columns', None)
+    pd.set_option('display.width', None)
+
+
+    dp.structure(resolution=3000)
