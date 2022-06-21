@@ -491,7 +491,7 @@ class TestNovonixDatapath(unittest.TestCase):
     def test_from_file(self):
         dp = NovonixDatapath.from_file(self.file)
         self.assertEqual(dp.paths.get("raw"), self.file)
-        self.assertTupleGreaterEqual(dp.raw_data.shape, (3942, 22))
+        self.assertTupleEqual(dp.raw_data.shape, (3942, 23))
         self.assertTrue(
             {
                 'cycle_index',
