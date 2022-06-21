@@ -26,3 +26,5 @@ MACCOR_WAVEFORM_CONFIG = loadfn(
 STRUCTURE_DTYPES = loadfn(os.path.join(CONVERSION_SCHEMA_DIR, "structured_dtypes.yaml"))
 
 ALL_CONFIGS = [ARBIN_CONFIG, MACCOR_CONFIG]
+
+NOVONIX_CONFIG = loadfn(os.path.join(CONVERSION_SCHEMA_DIR, "novonix_conversion.yaml"))

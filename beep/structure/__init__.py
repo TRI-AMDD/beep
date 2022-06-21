@@ -5,3 +5,4 @@ from beep.structure.maccor import MaccorDatapath
 from beep.structure.neware import NewareDatapath
 from beep.structure.biologic import BiologicDatapath
 from beep.structure.battery_archive import BatteryArchiveDatapath
+from beep.structure.novonix import NovonixDatapath

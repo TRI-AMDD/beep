@@ -28,6 +28,7 @@ from beep.structure.neware import NewareDatapath
 from beep.structure.indigo import IndigoDatapath
 from beep.structure.biologic import BiologicDatapath, get_cycle_index
 from beep.structure.battery_archive import BatteryArchiveDatapath
+from beep.structure.novonix import NovonixDatapath
 from beep.tests.constants import TEST_FILE_DIR
 
 
@@ -479,6 +480,51 @@ class TestBatteryArchiveDatapath(unittest.TestCase):
         summary = bd.summarize_cycles()
         self.assertAlmostEqual(summary["temperature_maximum"].loc[3], 16.832001, places=4)
         self.assertAlmostEqual(summary["charge_duration"].loc[4548], 5773.640137, places=4)
+
+
+class TestNovonixDatapath(unittest.TestCase):
+    def setUp(self) -> None:
+        self.file = os.path.join(
+            TEST_FILE_DIR, "raw", "test_Nova_Form-CH01-01_short.csv"
+        )
+
+    def test_from_file(self):
+        dp = NovonixDatapath.from_file(self.file)
+        self.assertEqual(dp.paths.get("raw"), self.file)
+        self.assertTupleEqual(dp.raw_data.shape, (3942, 23))
+        self.assertTrue(
+            {
+                'cycle_index',
+                'step_index',
+                'step_type',
+                'test_time',
+                'voltage',
+                'current',
+                'temperature',
+                'charge_capacity',
+                'discharge_capacity',
+                'date_time_iso',
+            }
+            < set(dp.raw_data.columns)
+        )
+
+        self.assertTrue(dp.raw_data["test_time"].is_monotonic_increasing)
+        self.assertListEqual(list(dp.raw_data["step_type_num"].unique()), [0, 7, 8, 1])
+
+    def test_structure_novonix(self):
+
+        dp = NovonixDatapath.from_file(self.file)
+        dp.structure(
+            charge_axis="test_time",
+            discharge_axis="test_time",
+            resolution=100
+        )
+
+        self.assertFalse(dp.structured_summary.empty)
+
+        # The number of rows is 400 since there are 4 step type numbers
+        self.assertTupleEqual(dp.structured_data.shape, (400, 11))
+
 
 
 if __name__ == "__main__":
