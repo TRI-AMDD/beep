@@ -1,8 +1,14 @@
+v2022.7.1.10
+------------
+* Update readme
+* All Novonix files to structure 
+* Add ExclusionCriteria and Datasplitter functions
+
 v2022.5.2.14
 ------------
 * Update beep contribution guideline
 * Remove raw data from default structured files
-* Adds a CV capacity summary stat.
+* Add a CV capacity summary stat.
 * Drop testing for python 3.7 due to updating packages
 
 v2022.2.7.14
