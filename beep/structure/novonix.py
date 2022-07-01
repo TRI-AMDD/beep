@@ -33,7 +33,7 @@ class NovonixDatapath(BEEPDatapath):
                 i += 1
                 if i > search_lines:
                     raise LookupError("Unable to find the header line in first {} lines of file".format(search_lines))
-        raw = pd.read_csv(path, header=None)
+        raw = pd.read_csv(path, sep ='\t', header=None)
         raw.dropna(axis=0, how='all', inplace=True)
         data = raw.iloc[header_starts_line - 1:]
         data = data[0].str.split(',', expand=True)
