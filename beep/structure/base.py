@@ -602,12 +602,6 @@ class BEEPDatapath(abc.ABC, MSONable):
                 f"Interpolating {step_type} ({v_range[0]} - {v_range[1]})V " \
                 f"({resolution} points)"
 
-        if step_type == "discharge":
-            step_filter = step_is_dchg
-        elif step_type == "charge":
-            step_filter = step_is_chg
-        else:
-            raise ValueError("{} is not a recognized step type")
         incl_columns = [
             "test_time",
             "voltage",
@@ -624,55 +618,45 @@ class BEEPDatapath(abc.ABC, MSONable):
         cycle_indices = sorted([c for c in cycle_indices if c in reg_cycles])
 
         for cycle_index in tqdm(cycle_indices, desc=desc):
-            # Use a cycle_index mask instead of a global groupby to save memory
-            new_df = (
-                self.raw_data.loc[self.raw_data["cycle_index"] == cycle_index]
-                    .groupby("step_index")
-                    .filter(step_filter)
-            )
-            if new_df.size == 0:
-                continue
+            cycle_df = self.raw_data.loc[self.raw_data["cycle_index"] == cycle_index]
 
-            if axis in ["charge_capacity", "discharge_capacity"]:
-                axis_range = [self.raw_data[axis].min(),
-                              self.raw_data[axis].max()]
-                new_df = interpolate_df(
-                    new_df,
+            step_dfs = self.iterate_steps_in_cycle(cycle_df, step_type)
+
+            for step_df in step_dfs:
+                if step_df.size == 0:
+                    continue
+                if axis in ["charge_capacity", "discharge_capacity"]:
+                    axis_range = [self.raw_data[axis].min(),
+                                  self.raw_data[axis].max()]
+                elif axis == "test_time":
+                    axis_range = [step_df[axis].min(), step_df[axis].max()]
+                elif axis == "voltage":
+                    axis_range = v_range
+                else:
+                    raise ValueError(f"Axis {axis} not a valid step interpolation axis.")
+
+                step_df = interpolate_df(
+                    step_df,
                     axis,
                     field_range=axis_range,
                     columns=incl_columns,
                     resolution=resolution,
                 )
-            elif axis == "test_time":
-                axis_range = [new_df[axis].min(), new_df[axis].max()]
-                new_df = interpolate_df(
-                    new_df,
-                    axis,
-                    field_range=axis_range,
-                    columns=incl_columns,
-                    resolution=resolution,
-                )
-            elif axis == "voltage":
-                new_df = interpolate_df(
-                    new_df,
-                    axis,
-                    field_range=v_range,
-                    columns=incl_columns,
-                    resolution=resolution,
-                )
-            else:
-                raise ValueError(f"Axis {axis} not a valid step interpolation axis.")
-            new_df["cycle_index"] = cycle_index
-            new_df["step_type"] = step_type
-            new_df["step_type"] = new_df["step_type"].astype("category")
-            all_dfs.append(new_df)
+
+                step_df["cycle_index"] = cycle_index
+                step_df["step_type"] = step_type
+                step_df["step_type"] = step_df["step_type"].astype("category")
+                all_dfs.append(step_df)
+
+        if not all_dfs:
+            logger.warn(f"No steps found for cycle indices {cycle_indices} and step type {step_type}!")
+            return pd.DataFrame()
 
         # Ignore the index to avoid issues with overlapping voltages
         result = pd.concat(all_dfs, ignore_index=True)
 
         # Cycle_index gets a little weird about typing, so round it here
         result.cycle_index = result.cycle_index.round()
-
         return result
 
     def interpolate_cycles(
@@ -718,7 +702,6 @@ class BEEPDatapath(abc.ABC, MSONable):
         v_range = v_range or [2.8, 3.5]
 
         # If any regular cycle contains a waveform step, interpolate on test_time.
-
         if self.raw_data[self.raw_data.cycle_index.isin(reg_cycles)]. \
                 groupby(["cycle_index", "step_index"]). \
                 apply(step_is_waveform_dchg).any():
@@ -801,11 +784,6 @@ class BEEPDatapath(abc.ABC, MSONable):
             reg_cycles_at = [i for i in self.raw_data.cycle_index.unique()]
 
         summary = self.raw_data.groupby("cycle_index").agg(self._aggregation)
-
-        # pd.set_option('display.max_rows', 500)
-        # pd.set_option('display.max_columns', 500)
-        # pd.set_option('display.width', 1000)
-
         summary.columns = self._summary_cols
 
         summary = summary[summary.index.isin(reg_cycles_at)]
@@ -845,7 +823,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         # Charge duration stored in seconds - note that date_time_iso is only ~1sec resolution
         time_diff = np.subtract(
             pd.to_datetime(merged.date_time_iso_y, utc=True, errors="coerce"),
-            pd.to_datetime(merged.date_time_iso_x, errors="coerce"),
+            pd.to_datetime(merged.date_time_iso_x, utc=True, errors="coerce"),
         )
         summary["charge_duration"] = np.round(
             time_diff / np.timedelta64(1, "s"), 2)
@@ -895,6 +873,10 @@ class BEEPDatapath(abc.ABC, MSONable):
         summary["CV_capacity"] = CV_capacity
 
         summary = self._cast_dtypes(summary, "summary")
+
+        # Avoid returning empty summary dataframe for single cycle raw_data
+        if summary.shape[0] == 1:
+            return summary
 
         last_voltage = self.raw_data.loc[
             self.raw_data["cycle_index"] == self.raw_data["cycle_index"].max()
@@ -1330,6 +1312,34 @@ class BEEPDatapath(abc.ABC, MSONable):
         else:
             return False
 
+    def iterate_steps_in_cycle(self, cycle_df, step_type):
+        """
+        For a given cycle df, return an inteable (or yield)
+        individual dfs corresponding to step indices and charge step.
+
+        For the simplest and easiest use, this means that within a
+        single charge cycle, there will be one discharge and one charge
+        step, each with an equal number of interpolated points.
+
+        Args:
+            cycle_df (pd.Dataframe): The dataframe corresponding to an
+                entire cycle.
+
+        Returns:
+            (pd.Dataframe): The dataframe corresponding to a particular
+                charge/discharge step. Used downstream for interpolation.
+
+        """
+
+        if step_type == "discharge":
+            step_filter = step_is_dchg
+        elif step_type == "charge":
+            step_filter = step_is_chg
+        else:
+            raise ValueError("{} is not a recognized step type")
+
+        return [cycle_df.groupby("step_index").filter(step_filter)]
+
     def _cast_dtypes(self, result, structure_dtypes_key):
         """Cast data types of a result dataframe to those specified by the structuring config.
 
@@ -1400,7 +1410,6 @@ def interpolate_df(
     # Merge interpolated and uninterpolated DFs to use pandas interpolation
     interpolated_df = interpolated_df.merge(df, how="outer", on=field_name, sort=True)
     interpolated_df = interpolated_df.set_index(field_name)
-
     interpolated_df = interpolated_df.interpolate("slinear")
 
     # Filter for only interpolated values
@@ -1420,7 +1429,7 @@ def interpolate_df(
 def step_is_chg_state(step_df, chg):
     """
     Helper function to determine whether a given dataframe corresponding
-    to a single cycle_index/step is charging or discharging, only intended
+    to a single cycle_index's step is charging or discharging, only intended
     to be used with a dataframe for single step/cycle
 
     Args:

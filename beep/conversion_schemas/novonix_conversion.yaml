@@ -1,0 +1,55 @@
+file_pattern: ".*CH.*\\.csv"
+data_columns:
+  Date and Time:
+    beep_name: date_time
+    data_type: str
+  Cycle Number:
+    beep_name: cycle_index
+    data_type: int
+  Step Type:
+    beep_name: step_type_num
+    data_type: int
+  Run Time (h):
+    beep_name: test_time
+    data_type: float
+  Step Time (h):
+    beep_name: step_time
+    data_type: float
+  Current (A):
+    beep_name: current
+    data_type: float
+  Potential (V):
+    beep_name: voltage
+    data_type: float
+  Capacity (Ah):
+    beep_name: capacity
+    data_type: float
+  Energy (Wh):
+    beep_name: energy
+    data_type: float
+  dIdt (V/h):
+    beep_name: di/dt
+    data_type: float
+  dVdt (I/h):
+    beep_name: dv/dt
+    data_type: float
+  Step Number:
+    beep_name: step_index
+    data_type: int
+  Step position:
+    beep_name: step_position
+    data_type: int
+#  Temperature (°C):
+#    beep_name: temperature
+#    data_type: float
+#  Circuit Temperature (°C):
+#    beep_name: circuit_temperature
+#    data_type: float
+step_names:
+  0: rest
+  1: cc_charge
+  2: cc_discharge
+  7: cccv_charge
+  8: cv_hold_discharge
+  9: cccv_discharge
+  10: cccv_hold_discharge

@@ -1,3 +1,13 @@
+v2022.7.1.18
+------------
+* Update Novonix file ingestion #611 and #630
+
+v2022.7.1.11
+------------
+* Update readme
+* All Novonix files to structure
+* Add ExclusionCriteria and Datasplitter functions
+
 v2022.5.2.14
 ------------
 * Update beep contribution guideline
@@ -13,8 +23,6 @@ v2022.2.1.19
 ------------
 * Setup featurizers and tests
 * Added initial files for intracell analysis update
-
-
 
 v2022.1.24.16
 -------------

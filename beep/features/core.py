@@ -6,6 +6,8 @@ from scipy.interpolate import interp1d
 from beep import PROTOCOL_PARAMETERS_DIR
 from beep.features import featurizer_helpers
 from beep.features.base import BEEPFeaturizer, BEEPFeaturizationError
+from beep.utils.parameters_lookup import get_protocol_parameters
+from beep.structure.base import get_CV_segment_from_charge
 
 
 class HPPCResistanceVoltageFeatures(BEEPFeaturizer):
@@ -877,6 +879,9 @@ class DiagnosticProperties(BEEPFeaturizer):
 
         x_to_threshold = []
         for indx, x_linspace in enumerate(x_linspaces):
+            print(f_axis[indx])
+            print(x_linspace)
+
             crossing_array = abs(f_axis[indx](x_linspace) - threshold)
             x_to_threshold.append(x_linspace[np.argmin(crossing_array)])
 
@@ -907,3 +912,319 @@ class DiagnosticProperties(BEEPFeaturizer):
                 x_to_threshold[indx]]
 
         return pd.DataFrame(threshold_dict)
+
+
+class ExclusionCriteria(BEEPFeaturizer):
+    """
+    This class calculates unusual behaviour criteria for whether a cell should be excluded
+    from usage in EoL analysis
+
+        name (str): predictor object name.
+        X (pandas.DataFrame): features in DataFrame format.
+        metadata (dict): information about the conditions, data
+            and code used to produce features
+
+    Hyperparameters:
+        parameters_dir (str): Full path to directory of charging protocol parameters
+        EOL_conditions (dict): conditions defining EOL for a cell, should contain cycle type, quantity, and fractional 
+        degradation threshold
+        throughput_first_n_cycles (dict): Exclude cells with charge throughput in first n cycles below a cutoff. dict 
+        containing number of cycles and cutoff
+        equivalent_full_cycles_cutoff (int): Exclude cells which have undergone fewer than (int) EFCs
+        discharge_capacity_fractional_decrease_at_EOL_cutoff (float): Exclude cells whose discharge capacity has not 
+        degraded below a given fraction of initial value.
+        early_CV_cutoff (float): Fraction of cycle time at which CV onset is considered early
+    """
+    DEFAULT_HYPERPARAMETERS = {
+        "parameters_dir": PROTOCOL_PARAMETERS_DIR,
+        "EOL_conditions": {"cycle_type": "rpt_0.2C", "threshold": 0.8, "quantity": "discharge_capacity"},
+        "throughput_first_n_cycles": {"n": 30, "cutoff": 20},
+        "equivalent_full_cycles_cutoff": 30,
+        "early_CV_cutoff": 0.3
+    }
+
+    def validate(self):
+        """
+        This function determines if the input data has the necessary attributes for
+        creation of this feature class. It should test for all of the possible reasons
+        that feature generation would fail for this particular input data.
+
+        Args:
+            processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
+            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
+            gets featurized. These could be filters for column or row operations
+        Returns:
+            bool: True/False indication of ability to proceed with feature generation
+        """
+        if not ('raw' in self.datapath.paths.keys() or 'structured' in self.datapath.paths.keys()):
+            message = "datapath paths not set, unable to fetch charging protocol"
+            return False, message
+        else:
+            return featurizer_helpers.check_diagnostic_validation(self.datapath)
+
+    def create_features(self):
+
+        features = pd.DataFrame()
+
+        # Throughput_first_n_cycles criteria
+        n = self.hyperparameters["throughput_first_n_cycles"]["n"]
+        first_n_cycles_throughput = self.datapath.structured_summary[self.datapath.structured_summary.index == n]
+        first_n_cycles_throughput = first_n_cycles_throughput.fillna(0)
+        first_n_cycles_throughput = first_n_cycles_throughput["charge_throughput"]
+
+        cutoff = self.hyperparameters["throughput_first_n_cycles"]["cutoff"]
+        first_n_cycles_throughput_criteria = first_n_cycles_throughput.map(lambda x: x > cutoff)
+
+        features["first_n_cycles_throughput"] = first_n_cycles_throughput.reset_index(drop=True)
+        features["is_above_first_n_cycles_throughput"] = first_n_cycles_throughput_criteria.reset_index(drop=True)
+
+        # EOL reached criteria
+        diag_fractional_quantity_remaining = featurizer_helpers.get_fractional_quantity_remaining_nx(
+            self.datapath,
+            self.hyperparameters["EOL_conditions"]["quantity"],
+            self.hyperparameters["EOL_conditions"]["cycle_type"],
+            parameters_path=self.hyperparameters["parameters_dir"])
+        fractional_capacity_at_EOT = diag_fractional_quantity_remaining["fractional_metric"].fillna(
+            method='ffill').iloc[-1:]
+
+        if fractional_capacity_at_EOT.iloc[0] > 1:
+            fractional_capacity_at_EOT = diag_fractional_quantity_remaining["fractional_metric"].fillna(
+                method='ffill').iloc[-2:]
+
+        threshold = self.hyperparameters["EOL_conditions"]["threshold"]
+        fractional_capacity_at_EOT_criteria = fractional_capacity_at_EOT.map(lambda x: x < threshold)
+
+        features["fractional_capacity_at_EOT"] = fractional_capacity_at_EOT.reset_index(drop=True)
+        features["is_below_fractional_capacity_at_EOT"] = fractional_capacity_at_EOT_criteria.reset_index(drop=True)
+
+        # EFC at EOL condition
+        # First ensure EOL is reached
+        if features["is_below_fractional_capacity_at_EOT"].iloc[0]:
+            is_below_threshold = diag_fractional_quantity_remaining["fractional_metric"] < threshold
+            cutoff_cycle_index = diag_fractional_quantity_remaining[is_below_threshold].iloc[0]["cycle_index"]
+        else:
+            # If EOL is not reached take last diagnostic
+            cutoff_cycle_index = diag_fractional_quantity_remaining.iloc[-1]["cycle_index"]
+
+        cutoff_cycle_index = int(cutoff_cycle_index)
+
+        # Find nomimal capacity, either from structuring_parameters or looking up paramaters file
+        nominal_capacity = self.datapath.structuring_parameters.get("nominal_capacity", None)
+        if nominal_capacity is None:
+            parameters_path = self.hyperparameters["parameters_dir"]
+            file_path = self.datapath.paths['raw'] if 'raw' in self.datapath.paths.keys(
+            ) else self.datapath.paths['structured']
+
+            parameters, _ = get_protocol_parameters(file_path, parameters_path)
+            nominal_capacity = float(parameters["capacity_nominal"].iloc[0])
+
+        is_before_last_cycle = self.datapath.structured_summary['cycle_index'] <= cutoff_cycle_index
+        last_regular_cycle_before_EOL = self.datapath.structured_summary[is_before_last_cycle]['cycle_index'].max()
+        equivalent_full_cycles_at_EOL = self.datapath.structured_summary.fillna(
+            method='ffill')[
+            self.datapath.structured_summary['cycle_index'] == last_regular_cycle_before_EOL]["charge_throughput"].map(
+            lambda x: x/nominal_capacity)
+
+        cutoff = self.hyperparameters["equivalent_full_cycles_cutoff"]
+        equivalent_full_cycles_at_EOL_criteria = equivalent_full_cycles_at_EOL.map(lambda x: x > cutoff)
+
+        features["equivalent_full_cycles_at_EOL"] = equivalent_full_cycles_at_EOL.reset_index(drop=True)
+        features["is_above_equivalent_full_cycles_at_EOL"] = equivalent_full_cycles_at_EOL_criteria.reset_index(
+            drop=True)
+
+        # Check if CC1 > CC2 and CV onsets before 30% of test time
+        parameters_path = self.hyperparameters["parameters_dir"]
+        file_path = self.datapath.paths['raw'] if 'raw' in self.datapath.paths.keys(
+        ) else self.datapath.paths['structured']
+
+        parameters, _ = get_protocol_parameters(file_path, parameters_path)
+        CC1 = float(parameters["charge_constant_current_1"].iloc[0])
+        CC2 = float(parameters["charge_constant_current_2"].iloc[0])
+
+        if CC1 <= CC2:
+            features["is_not_early_CV"] = True
+        else:
+            is_not_early_CV = True
+            regular_cycles_pre_EOL = self.datapath.structured_summary[
+                self.datapath.structured_summary["cycle_index"] <= cutoff_cycle_index] 
+            for cycle in regular_cycles_pre_EOL.cycle_index:
+                cycle_data = self.datapath.structured_data[(self.datapath.structured_data.cycle_index == cycle)]
+
+                charge_data = cycle_data[(self.datapath.structured_data.step_type == "charge")]
+
+                CV_segment = get_CV_segment_from_charge(charge_data)
+
+                CV_onset_time = float(CV_segment["test_time"].iloc[0])
+
+                cycle_start_time = float(cycle_data["test_time"].min())
+                cycle_end_time = float(cycle_data["test_time"].max())
+
+                CV_onset_frac = (CV_onset_time - cycle_start_time)/(cycle_end_time - cycle_start_time)
+
+                if CV_onset_frac < self.hyperparameters["early_CV_cutoff"]:
+                    is_not_early_CV = False
+                    break
+
+            features["is_not_early_CV"] = is_not_early_CV
+
+        # Set overall "to_include" column
+        exclusion_criteria_columns = [c for c in features.columns if c[:3] == "is_"]
+        features["to_include"] = features.apply(lambda row: all([row[c] for c in exclusion_criteria_columns]), axis=1)
+        self.features = features
+
+
+class RawInterpolatedData(BEEPFeaturizer):
+    """
+    This class returns the raw interpolated data structured as a numpy array
+
+        name (str): predictor object name.
+        X (pandas.DataFrame): features in DataFrame format.
+        metadata (dict): information about the conditions, data
+            and code used to produce features
+
+    Hyperparameters:
+        metrics (list): list of metrics to be structured
+        cycle_types (list): list of rpt cycle types
+        diag_positions (list): list of diagnostic positions to be used in shaping the images
+        impute (bool): whether or not to impute NaNs.
+    """
+    DEFAULT_HYPERPARAMETERS = {
+          "metrics": ['capacity', 'dQdV', 'test_time'],
+          "cycle_types": ['rpt_0.2C', 'rpt_1C', 'rpt_2C'],
+          "diag_positions": [0, 1],
+          "impute": True,
+    }
+
+    def validate(self):
+        """
+        This function determines if the input data has the necessary attributes for
+        creation of this feature class. It should test for all of the possible reasons
+        that feature generation would fail for this particular input data.
+
+        Args:
+            processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
+            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
+            gets featurized. These could be filters for column or row operations
+        Returns:
+            bool: True/False indication of ability to proceed with feature generation
+        """
+        return featurizer_helpers.check_diagnostic_validation(self.datapath)
+
+    def create_features(self):
+        """
+        Fetches charging protocol features
+        """
+
+        df = self.datapath.diagnostic_data
+
+        # Store a vector of arrays which will then be shaped into a multi-channel image
+        y_val_list = []
+
+        # list of tuples to store information about each channel in an image
+        image_list = []
+
+        for cycle_type in self.hyperparameters["cycle_types"]:
+            df_sub = df.loc[df.cycle_type == cycle_type]
+    #         exit(1)
+            cycle_indices = df_sub.cycle_index.unique()
+
+            n_steps = df_sub.loc[df_sub.cycle_index == cycle_indices[0]].step_index.nunique()
+            if n_steps != 2:
+                continue
+            for metric in self.hyperparameters["metrics"]:
+                for i_step in range(n_steps):
+                    # image_list is appended with a tuple storing channel metadata.
+                    for diag_pos in self.hyperparameters["diag_positions"]:
+                        image_list.append("diag_cycle_{}_{}_{}_step_{}".format(diag_pos, cycle_type, metric, i_step))
+
+                        df1 = df_sub.loc[df_sub.cycle_index == cycle_indices[diag_pos]]
+                        df1 = df1.loc[df1.step_index == df1.step_index.unique()[i_step]]
+                        if metric in ['capacity', 'energy']:
+                            # combine charge and discharge capacity (energy) into a single quantity.
+                            series = pd.Series(np.minimum(df1['charge_' + metric],
+                                                          df1['charge_' + metric].max() - df1['discharge_' + metric]))
+                            if self.hyperparameters["impute"]:
+                                # Since energy and capacity vary monotonically with voltage for a given step,
+                                # a ffill followed by bfill works as interpolation.  This would change if the axis
+                                # is time.
+                                series.fillna(method='ffill', inplace=True)
+                                series.fillna(method='bfill', inplace=True)
+                            y_val_list.append(series.to_numpy())
+                        elif metric == 'test_time':
+                            # Reference test_time w.r.t start of the step.
+                            if self.hyperparameters["impute"]:
+                                y_val_list.append(np.nan_to_num(df1.test_time - df1.test_time.min()))
+                            else:
+                                y_val_list.append(df1.test_time - df1.test_time.min())
+                        elif metric == 'dQdV':
+                            # convert charge and discharge dQdV into a single quantity. Simple addition works here.
+                            if self.hyperparameters["impute"]:
+                                y_val_list.append(np.nan_to_num(df1['charge_'+metric] + df1['discharge_'+metric]))
+                            else:
+                                y_val_list.append(df1['charge_'+metric] + df1['discharge_'+metric])
+                        else:
+                            y_val_list.append(df1[metric])
+
+        features = pd.DataFrame(columns=image_list)
+        # It's pretty ugly to set each column to an array but ¯\_(ツ)_/¯
+        features.loc[0] = [y.tolist() for y in y_val_list]
+        self.features = features
+
+
+class ChargingProtocol(BEEPFeaturizer):
+    """
+    This class stores information about the charging protocol used
+
+        name (str): predictor object name.
+        X (pandas.DataFrame): features in DataFrame format.
+        metadata (dict): information about the conditions, data
+            and code used to produce features
+
+    Hyperparameters:
+        parameters_dir (str): Full path to directory of charging protocol parameters
+        quantities ([str]): list of parameters to return
+    """
+    DEFAULT_HYPERPARAMETERS = {
+        "parameters_dir": PROTOCOL_PARAMETERS_DIR,
+        "quantities": [
+            "charge_constant_current_1",
+            "charge_constant_current_2",
+            "charge_cutoff_voltage",
+            "charge_constant_voltage_time",
+            "discharge_constant_current",
+            "discharge_cutoff_voltage"],
+         }
+
+    def validate(self):
+        """
+        This function determines if the input data has the necessary attributes for
+        creation of this feature class. It should test for all of the possible reasons
+        that feature generation would fail for this particular input data.
+
+        Args:
+            processed_cycler_run (beep.structure.ProcessedCyclerRun): data from cycler run
+            params_dict (dict): dictionary of parameters governing how the ProcessedCyclerRun object
+            gets featurized. These could be filters for column or row operations
+        Returns:
+            bool: True/False indication of ability to proceed with feature generation
+        """
+        if not ('raw' in self.datapath.paths.keys() or 'structured' in self.datapath.paths.keys()):
+            message = "datapath paths not set, unable to fetch charging protocol"
+            return False, message
+        else:
+            return featurizer_helpers.check_diagnostic_validation(self.datapath)
+
+    def create_features(self):
+        """
+        Fetches charging protocol features
+        """
+
+        parameters_path = self.hyperparameters["parameters_dir"]
+        file_path = self.datapath.paths['raw'] if 'raw' in self.datapath.paths.keys(
+        ) else self.datapath.paths['structured']
+
+        parameters, _ = get_protocol_parameters(file_path, parameters_path)
+
+        parameters = parameters[self.hyperparameters["quantities"]]
+
+        self.features = parameters

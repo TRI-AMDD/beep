@@ -22,7 +22,7 @@ description = "beep is a python package supporting Battery Estimation and Early 
 
 setup(name="beep",
       url="https://github.com/TRI-AMDD/beep",
-      version="2022.5.2.14",
+      version="2022.7.1.18",
       description=description,
       long_description=long_description,
       long_description_content_type='text/markdown',
@@ -49,13 +49,10 @@ setup(name="beep",
           "beep.validation_schemas": ["*.yaml"],
           # "beep.model": ["*.model"],
           # "beep.features": ["*.yaml"]
-
       },
       include_package_data=True,
-      author="AMDD - Toyota Research Institute",
-      author_email="patrick.herring@tri.global",
-      maintainer="Patrick Herring",
-      maintainer_email="patrick.herring@tri.global",
+      author="Energy and Materials - Toyota Research Institute",
+      maintainer="Energy and Materials - Toyota Research Institute",
       license="Apache",
       keywords=[
           "materials", "battery", "chemistry", "science",
