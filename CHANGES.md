@@ -1,3 +1,9 @@
+v2022.7.1.18
+------------
+* Update Novonix file ingestion #611 and #630 
+* Update datasplitter function #615 
+
+
 v2022.5.2.14
 ------------
 * Update beep contribution guideline
