@@ -13,6 +13,7 @@ via data objects reflecting cycling run data, experimental protocols,
 featurization, and modeling of cycle life with machine learning.  Currently BEEP supports:
 
 - [Arbin Instruments](https://www.arbin.com/) cyclers
+- [Novonix Group](https://novonixgroup.com/) cyclers
 - [MACCOR](http://www.maccor.com/) cyclers
 - [BioLogic](https://www.biologic.net/product_category/battery-cyclers/) cyclers
 - [Battery Archive](https://www.batteryarchive.org/) data
