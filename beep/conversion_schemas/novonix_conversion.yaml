@@ -53,3 +53,14 @@ step_names:
   8: cv_hold_discharge
   9: cccv_discharge
   10: cccv_hold_discharge
+metadata_fields:
+  channel: Channel
+  cell: Cell
+  barcode: Serial Number
+  description: Description
+  protocol: Protocol
+  mass: Mass
+  nominal_capacity: Capacity
+  area: Area
+  offset_voltage_dc: DC Offset Voltage
+  software_version: Version

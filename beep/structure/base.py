@@ -157,6 +157,12 @@ class BEEPDatapath(abc.ABC, MSONable):
             # Extra metadata will always be in .raw
             self.raw = metadata_dict
 
+        def __repr__(self):
+            return str(self.raw)
+
+        def __str__(self):
+            return self.__repr__()
+
     def __init__(self, raw_data, metadata, paths=None, schema=None, impute_missing=True):
         """
 
