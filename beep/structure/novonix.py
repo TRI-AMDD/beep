@@ -75,10 +75,6 @@ class NovonixDatapath(BEEPDatapath):
         data['Circuit Temperature (°C)'] = data['Circuit Temperature (°C)'].astype('float')
         name_map = {i: map[i]['beep_name'] for i in map}
         data.rename(name_map, axis="columns", inplace=True)
-        data.rename(
-            {'Temperature (°C)': 'temperature', 'Circuit Temperature (°C)': 'circuit_temperature'},
-            axis='columns'
-        )
 
         # format capacity and energy
         rest = data['step_type_num'] == 0
@@ -123,7 +119,7 @@ class NovonixDatapath(BEEPDatapath):
         if summary_path and os.path.exists(summary_path):
             summary = pd.read_csv(summary_path, index_col=0).to_dict("list")
         else:
-            logger.warning(f"No associated summary file for Novoinix: "
+            logger.warning(f"No associated summary file for Novonix: "
                            f"'{summary_path}': No external summary loaded.")
 
         # paths
