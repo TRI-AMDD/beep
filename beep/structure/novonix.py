@@ -72,6 +72,7 @@ class NovonixDatapath(BEEPDatapath):
             'energy'].astype('float')
         data['date_time_iso'] = data['date_time'].map(
             lambda x: datetime.strptime(x, '%Y-%m-%d %I:%M:%S %p').isoformat())
+
         # add step type #todo set schema
         step_map = {0: 'discharge',
                     1: 'charge',
@@ -82,6 +83,14 @@ class NovonixDatapath(BEEPDatapath):
                     10: 'discharge'}
         data['step_type'] = data['step_type_num'].replace(step_map)
         data.fillna(0)
+
+        # Correct discharge capacities and energies for convention
+        data["cycle_charge_max"] = data.groupby("cycle_index")["charge_capacity"].transform("max")
+
+        ix = data[(data["step_type"] == "discharge") & (data["step_type_num"] != 0)].index
+        cycle_chg_max = data["cycle_charge_max"].loc[ix]
+        discharge_capacities = data["discharge_capacity"].loc[ix]
+        data.loc[ix, "discharge_capacity"] = -1.0 * (cycle_chg_max - discharge_capacities)
 
         # paths
         metadata = {}
@@ -123,3 +132,16 @@ class NovonixDatapath(BEEPDatapath):
         for _, step_df in gb:
             if (step_df["step_type"] == step_type).all():
                 yield step_df
+
+
+if __name__ == "__main__":
+    pd.options.display.max_rows = None
+    pd.options.display.max_columns = None
+    pd.options.display.width = None
+    fname = "/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/raw/test_Nova_Form-CH01-01_short.csv"
+
+    dp = NovonixDatapath.from_file(fname)
+
+
+    print(dp.raw_data[["discharge_capacity", "step_type"]])
+
