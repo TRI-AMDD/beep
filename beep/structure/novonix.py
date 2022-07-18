@@ -164,3 +164,28 @@ class NovonixDatapath(BEEPDatapath):
         for _, step_df in gb:
             if (step_df["step_type"] == step_type).all():
                 yield step_df
+
+
+if __name__ == "__main__":
+    pd.options.display.max_rows = None
+    pd.options.display.max_columns = None
+    pd.options.display.width = None
+    fname = "/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/raw/test_Nova_Form-CH01-01_short.csv"
+    md_fname = "/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/raw/test_Nova_Form-CH01-01_short_metadata.csv"
+
+    dp = NovonixDatapath.from_file(fname, summary_path=md_fname)
+
+    print(dp.raw_data.columns)
+
+    print(dp.metadata)
+
+    print(dp.external_summary)
+
+    dp.structure(
+        charge_axis="test_time",
+        discharge_axis="test_time",
+        resolution=100
+    )
+
+
+    # print(dp.raw_data[["discharge_capacity", "step_type"]])
