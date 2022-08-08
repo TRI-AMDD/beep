@@ -24,7 +24,7 @@ class NovonixDatapath(BEEPDatapath):
         # format raw data
         with open(path, "rb") as f:
             i = 1
-            search_lines = 200
+            search_lines = 500
             header_starts_line = None
             while header_starts_line is None:
                 line = f.readline()
