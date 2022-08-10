@@ -122,7 +122,7 @@ class NovonixDatapath(BEEPDatapath):
         ]:
             cycle_metric_max = data[max_reference_column].loc[ix]
             discharge_data = data[target_column].loc[ix]
-            data.loc[ix, target_column] = max_reference_column - discharge_data
+            data.loc[ix, target_column] = cycle_metric_max - discharge_data
 
         summary = None
         if summary_path and os.path.exists(summary_path):
