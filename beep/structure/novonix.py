@@ -129,6 +129,8 @@ class NovonixDatapath(BEEPDatapath):
         summary = None
         if summary_path and os.path.exists(summary_path):
             summary = pd.read_csv(summary_path, index_col=0).to_dict("list")
+            if not summary:
+                logger.warning(f"Summary file was loaded but no data was found. Is it misformatted?")
         else:
             logger.warning(f"No associated summary file for Novonix: "
                            f"'{summary_path}': No external summary loaded.")
