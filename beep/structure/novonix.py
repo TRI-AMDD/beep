@@ -76,44 +76,47 @@ class NovonixDatapath(BEEPDatapath):
         name_map = {i: map[i]['beep_name'] for i in map}
         data.rename(name_map, axis="columns", inplace=True)
 
+
+        # ensure that there are not steps with step type numbers outside what is accounted
+        # for within the schema
+        STEP_NAME_IX_MAP = NOVONIX_CONFIG["step_names"]
+        available_step_type_nums = data["step_type_num"].unique().tolist()
+        unknown_step_types = []
+        for astn in available_step_type_nums:
+            if astn not in STEP_NAME_IX_MAP:
+                unknown_step_types.append(astn)
+        if unknown_step_types:
+            raise ValueError(
+                f"BEEP cannot process unknown Novonix step indices {unknown_step_types}. "
+                f"Known step types by index are {STEP_NAME_IX_MAP}")
+
         # format capacity and energy
-        rest = data['step_type_num'] == 0
-        cc_charge = data['step_type_num'] == 1
-        cc_discharge = data['step_type_num'] == 2
-        cccv_charge = data['step_type_num'] == 7
-        cv_hold_discharge = data['step_type_num'] == 8
-        cccv_discharge = data['step_type_num'] == 9
-        cccv_hold_discharge = data['step_type_num'] == 10
 
-        data['charge_capacity'] = data[cc_charge | cccv_charge]['capacity'].astype('float')
+        STEP_IS_CHG_MAP = NOVONIX_CONFIG["step_is_chg"]
 
-        data['discharge_capacity'] = \
-            data[rest | cc_discharge | cv_hold_discharge | cccv_discharge | cccv_hold_discharge][
-            'capacity'].astype('float')
-        data['charge_energy'] = data[cc_charge | cccv_charge]['energy'].astype('float')
-        data['discharge_energy'] = data[cc_discharge | cv_hold_discharge | cccv_discharge | cccv_hold_discharge][
-            'energy'].astype('float')
+        data["step_type_name"] = data["step_type_num"].replace(STEP_NAME_IX_MAP)
+        data["step_type"] = data["step_type_name"].\
+            replace(STEP_IS_CHG_MAP).\
+            replace({True: "charge", False: "discharge"})
+
+        chg_ix = data["step_type"] == "charge"
+        dchg_ix = data["step_type"] == "discharge"
+
+        data['charge_capacity'] = data[chg_ix]['capacity'].astype('float')
+        data['discharge_capacity'] = data[dchg_ix]['capacity'].astype('float')
+        data['charge_energy'] = data[chg_ix]['energy'].astype('float')
+        data['discharge_energy'] = data[dchg_ix]['energy'].astype('float')
         data['date_time_iso'] = data['date_time'].map(
             lambda x: datetime.strptime(x, '%Y-%m-%d %I:%M:%S %p').isoformat())
-
-        # add step type #todo set schema
-        step_map = {0: 'discharge',
-                    1: 'charge',
-                    2: 'discharge',
-                    7: 'charge',
-                    8: 'discharge',
-                    9: 'discharge',
-                    10: 'discharge'}
-        data['step_type'] = data['step_type_num'].replace(step_map)
         data.fillna(0)
 
         # Correct discharge capacities and energies for convention
         data["cycle_charge_max"] = data.groupby("cycle_index")["charge_capacity"].transform("max")
 
-        ix = data[(data["step_type"] == "discharge") & (data["step_type_num"] != 0)].index
+        ix = data[(data["step_type"] == "discharge") & (data["step_type_name"] != "rest")].index
         cycle_chg_max = data["cycle_charge_max"].loc[ix]
         discharge_capacities = data["discharge_capacity"].loc[ix]
-        data.loc[ix, "discharge_capacity"] = -1.0 * (cycle_chg_max - discharge_capacities)
+        data.loc[ix, "discharge_capacity"] = cycle_chg_max - discharge_capacities
 
         summary = None
         if summary_path and os.path.exists(summary_path):
@@ -144,7 +147,6 @@ class NovonixDatapath(BEEPDatapath):
         by whether they are charge or discharge, they are separated by
         the KIND of charge/discharge.
 
-
         For example, a cycle with step type numbers 0, 7, and 8 would be
         broken up into three dataframes. If we are interested in the
         charge cycles, only the 7 data is returned. If we are interested
@@ -164,3 +166,5 @@ class NovonixDatapath(BEEPDatapath):
         for _, step_df in gb:
             if (step_df["step_type"] == step_type).all():
                 yield step_df
+
+
