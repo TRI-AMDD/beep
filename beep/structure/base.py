@@ -1563,7 +1563,7 @@ def get_CV_segment_from_charge(charge, dt_tol=1, dVdt_tol=1e-5, dIdt_tol=1e-4):
 
     """
     if charge.empty:
-        return(charge)
+        return charge
     else:
         # Compute dI and dV
         dI = np.diff(charge.current)
@@ -1576,7 +1576,7 @@ def get_CV_segment_from_charge(charge, dt_tol=1, dVdt_tol=1e-5, dIdt_tol=1e-4):
             i = i+1
 
         # Filter for CV phase
-        return(charge.loc[charge.test_time >= charge.test_time.iat[i-1]])
+        return charge.loc[charge.test_time >= charge.test_time.iat[i-1]]
 
 
 def get_CV_time(CV):
@@ -1591,7 +1591,7 @@ def get_CV_time(CV):
 
     """
     if not CV.empty:
-        return(CV.test_time.iat[-1] - CV.test_time.iat[0])
+        return CV.test_time.iat[-1] - CV.test_time.iat[0]
 
 
 def get_CV_current(CV):
@@ -1606,7 +1606,7 @@ def get_CV_current(CV):
 
     """
     if not CV.empty:
-        return(CV.current.iat[-1])
+        return CV.current.iat[-1]
 
 
 def get_CV_capacity(CV):
@@ -1621,4 +1621,4 @@ def get_CV_capacity(CV):
 
     """
     if not CV.empty:
-        return(CV.charge_capacity.iat[-1] - CV.charge_capacity.iat[0])
+        return CV.charge_capacity.iat[-1] - CV.charge_capacity.iat[0]

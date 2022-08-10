@@ -1,9 +1,11 @@
-import pandas as pd
 import os
+from datetime import datetime
+
+import pandas as pd
+
 from beep.structure.base import BEEPDatapath
 from beep.conversion_schemas import NOVONIX_CONFIG
 from beep import VALIDATION_SCHEMA_DIR, logger
-from datetime import datetime
 
 
 class NovonixDatapath(BEEPDatapath):
@@ -54,12 +56,15 @@ class NovonixDatapath(BEEPDatapath):
                     for conversion_phrase in metadata_conversion:
                         if conversion_phrase in l:
                             k = metadata_conversion[conversion_phrase]
-                            metadata_value = l.split(":")[-1].strip().replace("\\n", "").replace("'", "")
+                            metadata_value = \
+                                l.split(":")[-1].strip(). \
+                                replace("\\n", "").replace("'", "")
                             metadata[k] = metadata_value if metadata_value else None
                             break
                 i += 1
                 if i > search_lines:
-                    raise LookupError("Unable to find the header line in first {} lines of file".format(search_lines))
+                    raise LookupError("Unable to find the header line in first "
+                                      "{} lines of file".format(search_lines))
         raw = pd.read_csv(path, sep='\t', header=None)
         raw.dropna(axis=0, how='all', inplace=True)
         data = raw.iloc[header_starts_line - 1:]
@@ -72,10 +77,10 @@ class NovonixDatapath(BEEPDatapath):
         type_map = {j: map[j]['data_type'] for j in map}
         data = data.astype(type_map)
         data['Temperature (°C)'] = data['Temperature (°C)'].astype('float')
-        data['Circuit Temperature (°C)'] = data['Circuit Temperature (°C)'].astype('float')
+        data['Circuit Temperature (°C)'] = data[
+            'Circuit Temperature (°C)'].astype('float')
         name_map = {i: map[i]['beep_name'] for i in map}
         data.rename(name_map, axis="columns", inplace=True)
-
 
         # ensure that there are not steps with step type numbers outside what is accounted
         # for within the schema
@@ -95,8 +100,8 @@ class NovonixDatapath(BEEPDatapath):
         STEP_IS_CHG_MAP = NOVONIX_CONFIG["step_is_chg"]
 
         data["step_type_name"] = data["step_type_num"].replace(STEP_NAME_IX_MAP)
-        data["step_type"] = data["step_type_name"].\
-            replace(STEP_IS_CHG_MAP).\
+        data["step_type"] = data["step_type_name"]. \
+            replace(STEP_IS_CHG_MAP). \
             replace({True: "charge", False: "discharge"})
 
         chg_ix = data["step_type"] == "charge"
@@ -111,10 +116,13 @@ class NovonixDatapath(BEEPDatapath):
         data.fillna(0)
 
         # Correct discharge capacities and energies for convention
-        data["cycle_chg_max_cap"] = data.groupby("cycle_index")["charge_capacity"].transform("max")
-        data["cycle_chg_max_energy"] = data.groupby("cycle_index")["charge_energy"].transform("max")
+        data["cycle_chg_max_cap"] = \
+            data.groupby("cycle_index")["charge_capacity"].transform("max")
+        data["cycle_chg_max_energy"] = \
+            data.groupby("cycle_index")["charge_energy"].transform("max")
 
-        ix = data[(data["step_type"] == "discharge") & (data["step_type_name"] != "rest")].index
+        ix = data[(data["step_type"] == "discharge") &
+                  (data["step_type_name"] != "rest")].index
 
         for target_column, max_reference_column in [
             ("discharge_capacity", "cycle_chg_max_cap"),
@@ -123,14 +131,17 @@ class NovonixDatapath(BEEPDatapath):
             cycle_metric_max = data[max_reference_column].loc[ix]
             discharge_data = data[target_column].loc[ix]
             data.loc[ix, target_column] = cycle_metric_max - discharge_data
-            
-        data.drop(columns=["cycle_chg_max_cap", "cycle_chg_max_energy"], inplace=True)
+
+        data.drop(columns=["cycle_chg_max_cap", "cycle_chg_max_energy"],
+                  inplace=True)
 
         summary = None
         if summary_path and os.path.exists(summary_path):
             summary = pd.read_csv(summary_path, index_col=0).to_dict("list")
             if not summary:
-                logger.warning(f"Summary file was loaded but no data was found. Is it misformatted?")
+                logger.warning(
+                    f"Summary file was loaded but no data was found. "
+                    f"Is it misformatted?")
         else:
             logger.warning(f"No associated summary file for Novonix: "
                            f"'{summary_path}': No external summary loaded.")
