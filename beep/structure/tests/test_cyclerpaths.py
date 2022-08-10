@@ -488,7 +488,7 @@ class TestNovonixDatapath(unittest.TestCase):
             TEST_FILE_DIR, "raw", "test_Nova_Form-CH01-01_short.csv"
         )
         self.file_short_summary = os.path.join(
-            TEST_FILE_DIR, "raw", "test_Nova_Form-CH01-01_short.csv"
+            TEST_FILE_DIR, "raw", "test_Nova_Form-CH01-01_short_metadata.csv"
         )
         self.file_long = os.path.join(
             TEST_FILE_DIR, "raw", "XC_Formation_Test_040722.csv"
@@ -524,6 +524,9 @@ class TestNovonixDatapath(unittest.TestCase):
         self.assertTrue(isinstance(dp.external_summary, dict))
         self.assertTrue("AverageDischargeVoltage" in dp.external_summary)
 
+        is_valid, reason = dp.validate()
+        self.assertTrue(is_valid)
+
     def test_from_file_long(self):
         dp = NovonixDatapath.from_file(self.file_long)
         self.assertEqual(dp.paths.get("raw"), self.file_long)
@@ -553,6 +556,9 @@ class TestNovonixDatapath(unittest.TestCase):
                 self.assertTrue((step_df["step_type"] == "discharge").all())
             else:
                 self.assertTrue((step_df["step_type"] == "charge").all())
+
+        is_valid, reason = dp.validate()
+        self.assertTrue(is_valid)
 
     def test_structure_novonix(self):
         dp = NovonixDatapath.from_file(self.file_long)
