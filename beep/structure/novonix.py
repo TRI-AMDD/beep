@@ -111,12 +111,18 @@ class NovonixDatapath(BEEPDatapath):
         data.fillna(0)
 
         # Correct discharge capacities and energies for convention
-        data["cycle_charge_max"] = data.groupby("cycle_index")["charge_capacity"].transform("max")
+        data["cycle_charge_max_cap"] = data.groupby("cycle_index")["charge_capacity"].transform("max")
+        data["cycle_chg_max_energy"] = data.groupby("cycle_index")["charge_energy"].transform("max")
 
         ix = data[(data["step_type"] == "discharge") & (data["step_type_name"] != "rest")].index
-        cycle_chg_max = data["cycle_charge_max"].loc[ix]
-        discharge_capacities = data["discharge_capacity"].loc[ix]
-        data.loc[ix, "discharge_capacity"] = cycle_chg_max - discharge_capacities
+
+        for target_column, max_reference_column in [
+            ("discharge_capacity", "cycle_charge_max_cap"),
+            ("discharge_energy", "cycle_charge_max_energy")
+        ]:
+            cycle_metric_max = data[max_reference_column].loc[ix]
+            discharge_data = data[target_column].loc[ix]
+            data.loc[ix, target_column] = max_reference_column - discharge_data
 
         summary = None
         if summary_path and os.path.exists(summary_path):
