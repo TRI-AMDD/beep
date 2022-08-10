@@ -495,7 +495,6 @@ class TestNovonixDatapath(unittest.TestCase):
         )
 
     def test_from_file_w_metadata_and_summary(self):
-
         dp = NovonixDatapath.from_file(self.file_short, summary_path=self.file_short_summary)
         self.assertEqual(dp.paths.get("raw"), self.file_short)
         self.assertTupleEqual(dp.raw_data.shape, (3942, 23))
@@ -522,19 +521,16 @@ class TestNovonixDatapath(unittest.TestCase):
         self.assertTrue("channel" in dp.metadata.raw)
         self.assertTrue("software_version" in dp.metadata.raw)
 
-        self.assertTrue(isinstance(dp.external_summary, pd.DataFrame))
-
-
+        self.assertTrue(isinstance(dp.external_summary, dict))
+        self.assertTrue("AverageDischargeVoltage" in dp.external_summary)
 
     def test_from_file_long(self):
         dp = NovonixDatapath.from_file(self.file_long)
         self.assertEqual(dp.paths.get("raw"), self.file_long)
         self.assertTupleEqual(dp.raw_data.shape, (83402, 23))
 
-
         # Ensure both charge and discharge capacities and energies
         # are monotonically increasing
-
         rd = dp.raw_data
         cyc2 = rd[rd["cycle_index"] == 2]
 
@@ -558,10 +554,8 @@ class TestNovonixDatapath(unittest.TestCase):
             else:
                 self.assertTrue((step_df["step_type"] == "charge").all())
 
-
     def test_structure_novonix(self):
-
-        dp = NovonixDatapath.from_file(self.file)
+        dp = NovonixDatapath.from_file(self.file_long)
         dp.structure(
             charge_axis="test_time",
             discharge_axis="test_time",
@@ -570,8 +564,9 @@ class TestNovonixDatapath(unittest.TestCase):
 
         self.assertFalse(dp.structured_summary.empty)
 
-        # The number of rows is 400 since there are 4 step type numbers
-        self.assertTupleEqual(dp.structured_data.shape, (400, 11))
+        # The number of rows is 1100 since there are 11 total step type numbers
+        # spread across all step types
+        self.assertTupleEqual(dp.structured_data.shape, (1100, 11))
 
 
 
