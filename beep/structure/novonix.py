@@ -65,7 +65,7 @@ class NovonixDatapath(BEEPDatapath):
                 if i > search_lines:
                     raise LookupError("Unable to find the header line in first "
                                       "{} lines of file".format(search_lines))
-        raw = pd.read_csv(path, sep='\t', header=None)
+        raw = pd.read_csv(path, sep='\t', header=None, encoding="utf-8")
         raw.dropna(axis=0, how='all', inplace=True)
         data = raw.iloc[header_starts_line - 1:]
         data = data[0].str.split(',', expand=True)
@@ -96,7 +96,6 @@ class NovonixDatapath(BEEPDatapath):
                 f"Known step types by index are {STEP_NAME_IX_MAP}")
 
         # format capacity and energy
-
         STEP_IS_CHG_MAP = NOVONIX_CONFIG["step_is_chg"]
 
         data["step_type_name"] = data["step_type_num"].replace(STEP_NAME_IX_MAP)
@@ -137,7 +136,11 @@ class NovonixDatapath(BEEPDatapath):
 
         summary = None
         if summary_path and os.path.exists(summary_path):
-            summary = pd.read_csv(summary_path, index_col=0).to_dict("list")
+            summary = pd.read_csv(
+                summary_path,
+                index_col=0,
+                encoding="utf-8"
+            ).to_dict("list")
             if not summary:
                 logger.warning(
                     "Summary file was loaded but no data was found. "
