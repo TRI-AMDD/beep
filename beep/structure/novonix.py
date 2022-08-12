@@ -76,11 +76,21 @@ class NovonixDatapath(BEEPDatapath):
         map = cls.conversion_config['data_columns']
         type_map = {j: map[j]['data_type'] for j in map}
         data = data.astype(type_map)
+        name_map = {i: map[i]['beep_name'] for i in map}
+        data.rename(name_map, axis="columns", inplace=True)
+
+        # Temperatures with unicode symbol do not work on windows with mapping
         data['Temperature (°C)'] = data['Temperature (°C)'].astype('float')
         data['Circuit Temperature (°C)'] = data[
             'Circuit Temperature (°C)'].astype('float')
-        name_map = {i: map[i]['beep_name'] for i in map}
-        data.rename(name_map, axis="columns", inplace=True)
+        data.rename(
+            {
+                "Temperature (°C)": "temperature",
+                "Circuit Temperature (°C)": "circuit_temperature"
+            },
+            axis="columns",
+            inplace=True
+        )
 
         # ensure that there are not steps with step type numbers outside what is accounted
         # for within the schema
