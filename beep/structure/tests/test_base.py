@@ -662,6 +662,20 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertEqual("reset", self.datapath_diag_normal.diagnostic_summary.cycle_type.iloc[0])
         self.assertEqual(4.711819, np.round(self.datapath_diag_normal.diagnostic_summary.discharge_capacity.iloc[0], 6))
 
+    def test_structure_w_cycle_exclusion(self):
+        EXCLUDED_CYCLES = [0, 1, 99]
+        cycles = self.datapath_nodiag.raw_data["cycle_index"].unique()
+        self.datapath_nodiag.structure(exclude_cycles=EXCLUDED_CYCLES, resolution=100)
+
+        sd = self.datapath_nodiag.structured_data
+        for cycle in cycles:
+            cycle_data = sd[sd["cycle_index"] == cycle]
+            if cycle in EXCLUDED_CYCLES:
+                self.assertEqual(len(cycle_data), 0)
+            else:
+                # 100 charge, 100 discharge
+                self.assertEqual(len(cycle_data), 200)
+
     # based on PCRT.test_get_cycle_life
     def test_get_cycle_life(self):
         datapath = self.BEEPDatapathChildTest.from_json_file(self.cycle_run_file)

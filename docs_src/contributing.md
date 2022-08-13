@@ -32,7 +32,7 @@ Example 1:
 # Bad - incomprehensible at a glance
 x = [t for t in {yi: yj for yi, yj in y_dict.items() if yi in yset}.values() if (t != 42 and t is not None)]
 
-# Better - can at leas tunderstand each line at a glance
+# Better - can at least understand each line at a glance
 y = {}
 for yi, yj in y_dict.items():
     if yi in yset:
