@@ -484,13 +484,19 @@ class TestBatteryArchiveDatapath(unittest.TestCase):
 
 class TestNovonixDatapath(unittest.TestCase):
     def setUp(self) -> None:
-        self.file = os.path.join(
+        self.file_short = os.path.join(
             TEST_FILE_DIR, "raw", "test_Nova_Form-CH01-01_short.csv"
         )
+        self.file_short_summary = os.path.join(
+            TEST_FILE_DIR, "raw", "test_Nova_Form-CH01-01_short_metadata.csv"
+        )
+        self.file_long = os.path.join(
+            TEST_FILE_DIR, "raw", "XC_Formation_Test_040722.csv"
+        )
 
-    def test_from_file(self):
-        dp = NovonixDatapath.from_file(self.file)
-        self.assertEqual(dp.paths.get("raw"), self.file)
+    def test_from_file_w_metadata_and_summary(self):
+        dp = NovonixDatapath.from_file(self.file_short, summary_path=self.file_short_summary)
+        self.assertEqual(dp.paths.get("raw"), self.file_short)
         self.assertTupleEqual(dp.raw_data.shape, (3942, 23))
         self.assertTrue(
             {
@@ -511,9 +517,51 @@ class TestNovonixDatapath(unittest.TestCase):
         self.assertTrue(dp.raw_data["test_time"].is_monotonic_increasing)
         self.assertListEqual(list(dp.raw_data["step_type_num"].unique()), [0, 7, 8, 1])
 
-    def test_structure_novonix(self):
+        self.assertTrue("protocol" in dp.metadata.raw)
+        self.assertTrue("channel" in dp.metadata.raw)
+        self.assertTrue("software_version" in dp.metadata.raw)
 
-        dp = NovonixDatapath.from_file(self.file)
+        self.assertTrue(isinstance(dp.external_summary, dict))
+        self.assertTrue("AverageDischargeVoltage" in dp.external_summary)
+
+        is_valid, reason = dp.validate()
+        self.assertTrue(is_valid)
+
+    def test_from_file_long(self):
+        dp = NovonixDatapath.from_file(self.file_long)
+        self.assertEqual(dp.paths.get("raw"), self.file_long)
+        self.assertTupleEqual(dp.raw_data.shape, (83402, 23))
+
+        # Ensure both charge and discharge capacities and energies
+        # are monotonically increasing
+        rd = dp.raw_data
+        cyc2 = rd[rd["cycle_index"] == 2]
+
+        # the steps in this cycle are
+        # cccv_charge
+        # cc_charge
+        # cv_hold_charge
+        # cc_discharge
+
+        for step_name in ("cccv_charge", "cc_charge", "cv_hold_charge", "cc_discharge"):
+            step_df = cyc2[cyc2["step_type_name"] == step_name]
+
+            metric_cap = "discharge_capacity" if step_name == "cc_discharge" else "charge_capacity"
+            metric_eng = "discharge_energy" if step_name == "cc_discharge" else "charge_energy"
+
+            self.assertTrue(step_df[metric_cap].is_monotonic_increasing)
+            self.assertTrue(step_df[metric_eng].is_monotonic_increasing)
+
+            if step_name == "cc_discharge":
+                self.assertTrue((step_df["step_type"] == "discharge").all())
+            else:
+                self.assertTrue((step_df["step_type"] == "charge").all())
+
+        is_valid, reason = dp.validate()
+        self.assertTrue(is_valid)
+
+    def test_structure_novonix(self):
+        dp = NovonixDatapath.from_file(self.file_long)
         dp.structure(
             charge_axis="test_time",
             discharge_axis="test_time",
@@ -522,8 +570,9 @@ class TestNovonixDatapath(unittest.TestCase):
 
         self.assertFalse(dp.structured_summary.empty)
 
-        # The number of rows is 400 since there are 4 step type numbers
-        self.assertTupleEqual(dp.structured_data.shape, (400, 11))
+        # The number of rows is 1100 since there are 11 total step type numbers
+        # spread across all step types
+        self.assertTupleEqual(dp.structured_data.shape, (1100, 11))
 
 
 

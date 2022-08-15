@@ -157,6 +157,12 @@ class BEEPDatapath(abc.ABC, MSONable):
             # Extra metadata will always be in .raw
             self.raw = metadata_dict
 
+        def __repr__(self):
+            return str(self.raw)
+
+        def __str__(self):
+            return self.__repr__()
+
     def __init__(self, raw_data, metadata, paths=None, schema=None, impute_missing=True):
         """
 
@@ -469,6 +475,7 @@ class BEEPDatapath(abc.ABC, MSONable):
                   diagnostic_available=False,
                   charge_axis='charge_capacity',
                   discharge_axis='voltage',
+                  exclude_cycles=None
                   ):
         """
 
@@ -483,6 +490,8 @@ class BEEPDatapath(abc.ABC, MSONable):
                 diagnostic cycles correctly.
             charge_axis (str): Column to interpolate charge step
             discharge_axis (str): Column to interpolate discharge step
+            exclude_cycles ([int]): List of cycle indices to exclude
+
         """
         logger.info(f"Beginning structuring along charge axis '{charge_axis}' and discharge axis '{discharge_axis}'.")
 
@@ -499,7 +508,8 @@ class BEEPDatapath(abc.ABC, MSONable):
             resolution=resolution,
             diagnostic_available=diagnostic_available,
             charge_axis=charge_axis,
-            discharge_axis=discharge_axis
+            discharge_axis=discharge_axis,
+            exclude_cycles=exclude_cycles
         )
 
         self.structured_summary = self.summarize_cycles(
@@ -579,7 +589,8 @@ class BEEPDatapath(abc.ABC, MSONable):
             step_type="discharge",
             reg_cycles=None,
             axis="voltage",
-            desc=None
+            desc=None,
+            exclude_cycles=None
     ):
         """
         Gets interpolated cycles for the step specified, charge or discharge.
@@ -592,10 +603,14 @@ class BEEPDatapath(abc.ABC, MSONable):
             reg_cycles (list): list containing cycle indicies of regular cycles
             axis (str): which column to use for interpolation
             desc (str): Description to print to tqdm column.
+            exclude_cycles ([int]): List of cycle indices to exclude
 
         Returns:
             pandas.DataFrame: DataFrame corresponding to interpolated values.
         """
+
+        if not exclude_cycles:
+            exclude_cycles = []
 
         if not desc:
             desc = \
@@ -615,7 +630,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         ]
         all_dfs = []
         cycle_indices = self.raw_data.cycle_index.unique()
-        cycle_indices = sorted([c for c in cycle_indices if c in reg_cycles])
+        cycle_indices = sorted([c for c in cycle_indices if c in reg_cycles and c not in exclude_cycles])
 
         for cycle_index in tqdm(cycle_indices, desc=desc):
             cycle_df = self.raw_data.loc[self.raw_data["cycle_index"] == cycle_index]
@@ -665,7 +680,8 @@ class BEEPDatapath(abc.ABC, MSONable):
             resolution=1000,
             diagnostic_available=None,
             charge_axis='charge_capacity',
-            discharge_axis='voltage'
+            discharge_axis='voltage',
+            exclude_cycles=None,
     ):
         """
         Gets interpolated cycles for both charge and discharge steps.
@@ -678,6 +694,8 @@ class BEEPDatapath(abc.ABC, MSONable):
                 location of diagnostic cycles
             charge_axis (str): column to use for interpolation for charge
             discharge_axis (str): column to use for interpolation for discharge
+            exclude_cycles ([int]): List of cycle indices to exclude
+
 
         Returns:
             (pandas.DataFrame): DataFrame corresponding to interpolated values.
@@ -718,6 +736,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             step_type="discharge",
             reg_cycles=reg_cycles,
             axis=discharge_axis,
+            exclude_cycles=exclude_cycles
         )
         interpolated_charge = self.interpolate_step(
             v_range,
@@ -725,6 +744,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             step_type="charge",
             reg_cycles=reg_cycles,
             axis=charge_axis,
+            exclude_cycles=exclude_cycles
         )
         result = pd.concat(
             [interpolated_discharge, interpolated_charge], ignore_index=True
@@ -1543,7 +1563,7 @@ def get_CV_segment_from_charge(charge, dt_tol=1, dVdt_tol=1e-5, dIdt_tol=1e-4):
 
     """
     if charge.empty:
-        return(charge)
+        return charge
     else:
         # Compute dI and dV
         dI = np.diff(charge.current)
@@ -1556,7 +1576,7 @@ def get_CV_segment_from_charge(charge, dt_tol=1, dVdt_tol=1e-5, dIdt_tol=1e-4):
             i = i+1
 
         # Filter for CV phase
-        return(charge.loc[charge.test_time >= charge.test_time.iat[i-1]])
+        return charge.loc[charge.test_time >= charge.test_time.iat[i-1]]
 
 
 def get_CV_time(CV):
@@ -1571,7 +1591,7 @@ def get_CV_time(CV):
 
     """
     if not CV.empty:
-        return(CV.test_time.iat[-1] - CV.test_time.iat[0])
+        return CV.test_time.iat[-1] - CV.test_time.iat[0]
 
 
 def get_CV_current(CV):
@@ -1586,7 +1606,7 @@ def get_CV_current(CV):
 
     """
     if not CV.empty:
-        return(CV.current.iat[-1])
+        return CV.current.iat[-1]
 
 
 def get_CV_capacity(CV):
@@ -1601,4 +1621,4 @@ def get_CV_capacity(CV):
 
     """
     if not CV.empty:
-        return(CV.charge_capacity.iat[-1] - CV.charge_capacity.iat[0])
+        return CV.charge_capacity.iat[-1] - CV.charge_capacity.iat[0]

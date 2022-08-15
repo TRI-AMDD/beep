@@ -50,6 +50,25 @@ step_names:
   1: cc_charge
   2: cc_discharge
   7: cccv_charge
-  8: cv_hold_discharge
+  8: cv_hold_charge
   9: cccv_discharge
-  10: cccv_hold_discharge
+  10: cv_hold_discharge
+step_is_chg:
+  rest: false
+  cc_charge: true
+  cc_discharge: false
+  cccv_charge: true
+  cv_hold_charge: true
+  cccv_discharge: false
+  cv_hold_discharge: false
+metadata_fields:
+  channel: Channel
+  cell: Cell
+  barcode: Serial Number
+  description: Description
+  protocol: Protocol
+  mass: Mass
+  nominal_capacity: Capacity
+  area: Area
+  offset_voltage_dc: DC Offset Voltage
+  software_version: Version
