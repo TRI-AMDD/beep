@@ -35,7 +35,7 @@ class NovonixDatapath(BEEPDatapath):
 
         with open(path, "rb") as f:
             i = 1
-            search_lines = 200
+            search_lines = 500
             header_starts_line = None
 
             begin_summary = False
