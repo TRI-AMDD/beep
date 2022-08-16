@@ -1,3 +1,5 @@
+
+
 v2022.8.15.20
 -------------
 * Allow Novonix external summary to parse  
@@ -11,7 +13,7 @@ v2022.7.1.18
 v2022.7.1.11
 ------------
 * Update readme
-* All Novonix files to structure
+* Allow Novonix files to structure
 * Add ExclusionCriteria and Datasplitter functions
 
 v2022.5.2.14

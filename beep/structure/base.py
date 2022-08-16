@@ -612,10 +612,12 @@ class BEEPDatapath(abc.ABC, MSONable):
         if not exclude_cycles:
             exclude_cycles = []
 
-        if not desc:
+        if not desc and axis == "voltage":
             desc = \
                 f"Interpolating {step_type} ({v_range[0]} - {v_range[1]})V " \
                 f"({resolution} points)"
+        elif not desc:
+            desc = f"Interpolating {step_type} on axis {axis} ({resolution} points)"
 
         incl_columns = [
             "test_time",

@@ -557,6 +557,20 @@ class TestNovonixDatapath(unittest.TestCase):
             else:
                 self.assertTrue((step_df["step_type"] == "charge").all())
 
+        # Ensure no cycles have all nan dchg cap or chg cap
+        for i, cyc_df in rd.groupby("cycle_index"):
+            df_dchg = cyc_df[cyc_df["step_type"] == "discharge"]
+            if not df_dchg.empty:
+                for convention in ("capacity", "energy"):
+                    print(f"Checking cycle {i} for discharge {convention}.")
+                    self.assertFalse(df_dchg[f"discharge_{convention}"].isna().all())
+
+        # Explicitly ensure there is discharge capacity for cycle 4
+        cyc4 = rd[rd["cycle_index"] == 4]
+        self.assertFalse(cyc4["discharge_capacity"].isna().all())
+        self.assertAlmostEqual(cyc4["discharge_capacity"].iloc[0], 0.0, places=5)
+        self.assertAlmostEqual(cyc4["discharge_capacity"].iloc[127], 0.014467, places=5)
+
         is_valid, reason = dp.validate()
         self.assertTrue(is_valid)
 
