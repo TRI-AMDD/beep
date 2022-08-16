@@ -1,3 +1,9 @@
+v2022.8.15.20
+-------------
+* Allow Novonix external summary to parse  
+* Update the support for Novonix ingestion and structuring   
+* Update documentation
+
 v2022.7.1.18
 ------------
 * Update Novonix file ingestion #611 and #630
