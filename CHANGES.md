@@ -1,4 +1,6 @@
-
+v2022.8.16.16
+-------------
+* Bugfix novnoix ingestion for cycles with no charge step (#659)
 
 v2022.8.15.20
 -------------
