@@ -4,6 +4,7 @@ BEEP automatically parses and structures data based on specific outputs from var
 battery cyclers. The following column headers marked "required" are required for downstream processing of each 
 cycler. BEEP currently supports five brands of battery cyclers:
 
+- [Novonix](#novonix)
 - [Arbin](#arbin)
 - [Maccor](#maccor)
 - [Indigo](#indigo)
@@ -12,7 +13,59 @@ cycler. BEEP currently supports five brands of battery cyclers:
 
 
 ---
- 
+
+
+## Novonix
+
+Novonix data files are of the form `name_of_file_CHXX.csv` containing both tabular cycler data and metadata/protocol steps. 
+
+There may also be a tabular cycler-produced summary file `.csv` which can also be ingested and processed with beep.
+
+#### Cycler Data
+
+| Column name (case insensitive) | Required |   Explanation  | Unit |  Data Type |
+|-------------|----------|-------------|------|------------|
+| `Date and Time` | ✓ | date time string in `'%Y-%m-%d %I:%M:%S %p'` format |   |  `str` |
+| `Cycle Number` |  ✓ | index of the cycle |  | `int32` |
+| `Step Type` | ✓  |  integer correspondent to the charge/discharge type of this step |  | `int32` | 
+| `Run Time (h)` | ✓ | total time of the cycler run | hours | `float64` |   |
+| `Step Time (h)` | ✓  |  current run time since the beginning of the current step |  hours | `float64` |
+| `Current (A)` | ✓ | measured value of the present channel current |  Amp | `float64` |
+| `Potential (V)` |  ✓ | measured value of the present channel voltage | Volt | `float64` |
+| `Capacity (Ah)` | ✓  | value of the channel capacity | Amp-hr | `float64` |
+| `Temperature (°C)` |   | temperature of channel | °Celsius| `float64` |
+| `Circuit Temperature (°C)` |   | temperature of circuit | °Celsius | `float64` | 
+| `Energy (Wh)` | ✓ |  computed present energy of cell  | Watt-hr | `float64` | 
+| `dVdt (I/h)` |   | first order change rate of voltage |  | `float64`  |
+| `dIdt (V/h)` |   | first order change rate of current |  | `float64` | 
+| `Step Number` |  ✓ | step number within cycle |   |  `int32` | 
+| `Step position` |   |     |   | `int32` | 
+
+
+#### Metadata
+
+Metadata for Novonix files is contained within the raw data itself.
+
+
+| Field name | Required |
+|------------|-------------|
+| `Channel` |  |
+| `Cell` |  |
+| `Serial Number` |  |
+| `Description`|   |
+| `Protocol` |   |
+| `Mass (g)` |   |
+| `Capacity (Ah)` |   |
+| `Area (cm2)` |   |
+| `DC Offset Voltage (V)` |   |
+| `Started` |   |
+| `Version` |   |
+
+
+#### Summary file
+
+The summary file is a csv with one row corresponding to the summary of one cycle. No particular column names are required for ingestion. 
+
 ## Arbin
 
 Arbin data files are of the form `name_of_file_CHXX.csv` with an associated metadata file `name_of_file_CHXX_Metadata.csv`
