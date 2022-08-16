@@ -125,23 +125,36 @@ class NovonixDatapath(BEEPDatapath):
         data.fillna(0)
 
         # Correct discharge capacities and energies for convention
-        data["cycle_chg_max_cap"] = \
-            data.groupby("cycle_index")["charge_capacity"].transform("max")
-        data["cycle_chg_max_energy"] = \
-            data.groupby("cycle_index")["charge_energy"].transform("max")
+        for convention in ("capacity", "energy"):
+            data[f"cycle_chg_max_{convention}"] = \
+                data.groupby("cycle_index")[f"charge_{convention}"].transform("max")
+
+        # Correct convention for cycles without any charge step
+        dchg_only_cycle_ix = []
+        for cyc_ix in data["cycle_index"].unique():
+            cyc_df = data[data["cycle_index"] == cyc_ix]
+            if (cyc_df["step_type"] == "discharge").all():
+                ix_range = data[data["cycle_index"] == cyc_ix].index
+                dchg_only_cycle_ix.append(cyc_ix)
+                for convention in ("capacity", "energy"):
+                    data.loc[ix_range, f"cycle_chg_max_{convention}"] = cyc_df["capacity"].max()
+        logger.warning(
+            f"No charge steps found in cycles {dchg_only_cycle_ix}! "
+            f"Using highest capacity reading to determine convention."
+        )
 
         ix = data[(data["step_type"] == "discharge") &
                   (data["step_type_name"] != "rest")].index
 
         for target_column, max_reference_column in [
-            ("discharge_capacity", "cycle_chg_max_cap"),
+            ("discharge_capacity", "cycle_chg_max_capacity"),
             ("discharge_energy", "cycle_chg_max_energy")
         ]:
             cycle_metric_max = data[max_reference_column].loc[ix]
             discharge_data = data[target_column].loc[ix]
             data.loc[ix, target_column] = cycle_metric_max - discharge_data
 
-        data.drop(columns=["cycle_chg_max_cap", "cycle_chg_max_energy"],
+        data.drop(columns=["cycle_chg_max_capacity", "cycle_chg_max_energy"],
                   inplace=True)
 
         summary = None
