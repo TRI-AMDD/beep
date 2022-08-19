@@ -1,3 +1,13 @@
+v2022.8.16.16
+-------------
+* Bugfix novnoix ingestion for cycles with no charge step (#659)
+
+v2022.8.15.20
+-------------
+* Allow Novonix external summary to parse  
+* Update the support for Novonix ingestion and structuring   
+* Update documentation
+
 v2022.7.1.18
 ------------
 * Update Novonix file ingestion #611 and #630
@@ -5,7 +15,7 @@ v2022.7.1.18
 v2022.7.1.11
 ------------
 * Update readme
-* All Novonix files to structure
+* Allow Novonix files to structure
 * Add ExclusionCriteria and Datasplitter functions
 
 v2022.5.2.14
