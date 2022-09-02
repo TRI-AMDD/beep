@@ -1,0 +1,5 @@
+﻿,,,TEST REPORT,,,,,,,,,,,
+,, Test Name, LFP95_thick_08162022_wab35, Serial Number,, C:\Users\Arbin\OneDrive - Northwestern University\Documents\G\Arbin_Data\LFP95_thick_08162022_wab35_2022_08_16_164427,,,,,,,,
+,,Export Time,09/02/2022 10:59:23,222223,,,,,,,,,,
+Channel,Start DateTime,Schedule File Name,Creator,Comments,Software Version,Schedule Version,MASS(g),Specific Capacity(Ah/g),Capacity(Ah),BarCode,Has Aux,Has Specail,Log Aux Data Flag,Log Special Flag
+2,08/16/2022 16:44:28,Willa\Aug22\LFP95_thick_08162022_wab35.sdx,admin,,Mits8 PV Build: 202110,Schedule Version 8.00.11,2,0.25,0.5,,512,0,False,False
