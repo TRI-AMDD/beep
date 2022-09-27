@@ -493,6 +493,9 @@ class TestNovonixDatapath(unittest.TestCase):
         self.file_long = os.path.join(
             TEST_FILE_DIR, "raw", "XC_Formation_Test_040722.csv"
         )
+        self.file_alternative = os.path.join(
+            TEST_FILE_DIR, "raw", "Nova_Formation_138.csv"
+        )
 
     def test_from_file_w_metadata_and_summary(self):
         dp = NovonixDatapath.from_file(self.file_short, summary_path=self.file_short_summary)
@@ -573,6 +576,14 @@ class TestNovonixDatapath(unittest.TestCase):
 
         is_valid, reason = dp.validate()
         self.assertTrue(is_valid)
+
+    def test_from_file_alternate_format(self):
+        # Test with alternate format for date-time in the source file.
+        dp = NovonixDatapath.from_file(self.file_alternative)
+        self.assertEqual(dp.paths.get("raw"), self.file_alternative)
+        self.assertTupleEqual(dp.raw_data.shape, (32331, 24))
+        self.assertEqual(dp.raw_data["date_time"].iloc[100], "9/21/2022 7:31:43 PM")
+        self.assertEqual(dp.raw_data["date_time_iso"].iloc[100], "2022-09-21T19:31:43")
 
     def test_structure_novonix(self):
         dp = NovonixDatapath.from_file(self.file_long)
