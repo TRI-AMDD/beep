@@ -39,6 +39,9 @@ data_columns:
   Step position:
     beep_name: step_position
     data_type: int
+
+# These two variables need to be accounted for in the loading python file
+# As windows can't handle parts of the unicode deg symbol
 #  Temperature (°C):
 #    beep_name: temperature
 #    data_type: float

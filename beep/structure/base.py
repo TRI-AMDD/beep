@@ -887,9 +887,13 @@ class BEEPDatapath(abc.ABC, MSONable):
             CV = get_CV_segment_from_charge(charge)
             if CV.empty:
                 logger.debug(f"Failed to extract CV segment for cycle {cycle}!")
-            CV_time.append(get_CV_time(CV))
-            CV_current.append(get_CV_current(CV))
-            CV_capacity.append(get_CV_capacity(CV))
+                CV_time.append(np.nan)
+                CV_current.append(np.nan)
+                CV_capacity.append(np.nan)
+            else:
+                CV_time.append(get_CV_time(CV))
+                CV_current.append(get_CV_current(CV))
+                CV_capacity.append(get_CV_capacity(CV))
         summary["CV_time"] = CV_time
         summary["CV_current"] = CV_current
         summary["CV_capacity"] = CV_capacity

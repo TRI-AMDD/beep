@@ -74,7 +74,7 @@ class NovonixDatapath(BEEPDatapath):
 
         # format columns
         map = cls.conversion_config['data_columns']
-        type_map = {j: map[j]['data_type'] for j in map}
+        type_map = {j: map[j]['data_type'] for j in map if j in data.columns}
         data = data.astype(type_map)
         name_map = {i: map[i]['beep_name'] for i in map}
         data.rename(name_map, axis="columns", inplace=True)
@@ -120,8 +120,23 @@ class NovonixDatapath(BEEPDatapath):
         data['discharge_capacity'] = data[dchg_ix]['capacity'].astype('float')
         data['charge_energy'] = data[chg_ix]['energy'].astype('float')
         data['discharge_energy'] = data[dchg_ix]['energy'].astype('float')
-        data['date_time_iso'] = data['date_time'].map(
-            lambda x: datetime.strptime(x, '%Y-%m-%d %I:%M:%S %p').isoformat())
+
+        # account for multiple novonix datetime formats
+        converted = False
+        for fmt in (
+                '%Y-%m-%d %I:%M:%S %p',
+                '%m/%d/%Y %I:%M:%S %p',
+        ):
+            try:
+                data['date_time_iso'] = data['date_time'].map(
+                    lambda x: datetime.strptime(x, fmt).isoformat())
+                converted = True
+            except ValueError:
+                logger.warning(f"{cls.__name__} could not load date-time in format '{fmt}'! Trying alternative...")
+
+        if not converted:
+            raise ValueError("Date-time was not parsable, aborting.")
+
         data.fillna(0)
 
         # Correct discharge capacities and energies for convention
