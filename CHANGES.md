@@ -1,3 +1,8 @@
+v2022.10.3.16
+-------------
+* Update NovonixDatapath with improved parsing capability (#687)
+
+
 v2022.8.16.16
 -------------
 * Bugfix novnoix ingestion for cycles with no charge step (#659)
