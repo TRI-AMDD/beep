@@ -107,12 +107,11 @@ class MaccorDatapath(BEEPDatapathWithEIS):
 
         try:
             _, channel_number = os.path.splitext(path)
+            metadata["channel_id"] = int(channel_number.replace(".", ""))
         except ValueError:
             logger.warning("Could not infer channel number from path name!")
-            channel_number = None
+            metadata["channnel_id"] = None
 
-
-        metadata["channel_id"] = int(channel_number.replace(".", ""))
         metadata.rename(str.lower, axis="columns", inplace=True)
         metadata.rename(MACCOR_CONFIG["metadata_fields"], axis="columns", inplace=True)
         # Note the to_dict, which scrubs numpy typing
