@@ -961,38 +961,39 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         """
         # Get the project name and the parameter file for the diagnostic
-        project_name_list = parameters_lookup.get_project_sequence(self.paths["raw"])
-        diag_path = os.path.join(MODULE_DIR, "procedure_templates")
-        v_range = parameters_lookup.get_diagnostic_parameters(
-            diagnostic_available, diag_path, project_name_list[0]
-        )
+        # project_name_list = parameters_lookup.get_project_sequence(self.paths["raw"])
+        # diag_path = os.path.join(MODULE_DIR, "procedure_templates")
+        # v_range = parameters_lookup.get_diagnostic_parameters(
+        #     diagnostic_available, diag_path, project_name_list[0]
+        # )
+        #
+        # # Determine the cycles and types of the diagnostic cycles
+        # max_cycle = self.raw_data.cycle_index.max()
+        # starts_at = [
+        #     i for i in diagnostic_available["diagnostic_starts_at"] if i <= max_cycle
+        # ]
+        # diag_cycles_at = list(
+        #     itertools.chain.from_iterable(
+        #         [range(i, i + diagnostic_available["length"]) for i in starts_at]
+        #     )
+        # )
+        # # Duplicate cycle type list end to end for each starting index
+        # diag_cycle_type = diagnostic_available["cycle_type"] * len(starts_at)
+        # if not len(diag_cycles_at) == len(diag_cycle_type):
+        #     errmsg = (
+        #         "Diagnostic cycles, {}, and diagnostic cycle types, "
+        #         "{}, are unequal lengths".format(diag_cycles_at, diag_cycle_type)
+        #     )
+        #     raise ValueError(errmsg)
 
-        # Determine the cycles and types of the diagnostic cycles
-        max_cycle = self.raw_data.cycle_index.max()
-        starts_at = [
-            i for i in diagnostic_available["diagnostic_starts_at"] if i <= max_cycle
-        ]
-        diag_cycles_at = list(
-            itertools.chain.from_iterable(
-                [range(i, i + diagnostic_available["length"]) for i in starts_at]
-            )
-        )
-        # Duplicate cycle type list end to end for each starting index
-        diag_cycle_type = diagnostic_available["cycle_type"] * len(starts_at)
-        if not len(diag_cycles_at) == len(diag_cycle_type):
-            errmsg = (
-                "Diagnostic cycles, {}, and diagnostic cycle types, "
-                "{}, are unequal lengths".format(diag_cycles_at, diag_cycle_type)
-            )
-            raise ValueError(errmsg)
-
-        diag_data = self.raw_data[self.raw_data["cycle_index"].isin(diag_cycles_at)]
+        diag_data = self.raw_data[self.raw_data["cycle_index"].isin(self.diagnostic.all_ix)]
+        diag_types = [self.diagnostic.cycle_to_type[cix] for cix in diag_data.cycle_index.unique()]
 
         # Counter to ensure non-contiguous repeats of step_index
         # within same cycle_index are grouped separately
         diag_data.loc[:, "step_index_counter"] = 0
 
-        for cycle_index in diag_cycles_at:
+        for cycle_index in self.diagnostic.all_ix:
             indices = diag_data.loc[diag_data.cycle_index == cycle_index].index
             step_index_list = diag_data.step_index.loc[indices]
             diag_data.loc[indices, "step_index_counter"] = step_index_list.ne(
@@ -1022,20 +1023,20 @@ class BEEPDatapath(abc.ABC, MSONable):
         for (cycle_index, step_index, step_index_counter), df in tqdm(group):
             if len(df) < 2:
                 continue
-            step_voltage_delta = df.voltage.max() - df.voltage.min()
-            if diag_cycle_type[diag_cycles_at.index(cycle_index)] == "hppc" and step_voltage_delta >= v_delta_min:
-                v_hppc_step = [df.voltage.min(), df.voltage.max()]
+            step_dv = df.voltage.max() - df.voltage.min()
+            dv = [df.voltage.min(), df.voltage.max()]
+            if cycle_index in self.diagnostic.hppc_ix and step_dv >= v_delta_min:
                 hppc_resolution = int(
                     (df.voltage.max() - df.voltage.min()) / v_resolution
                 )
                 new_df = interpolate_df(
                     df,
                     field_name="voltage",
-                    field_range=v_hppc_step,
+                    field_range=dv,
                     columns=incl_columns,
                     resolution=hppc_resolution,
                 )
-            elif step_voltage_delta < v_delta_min:
+            elif step_dv < v_delta_min:
                 t_range_step = [df.test_time.min(), df.test_time.max()]
                 new_df = interpolate_df(
                     df,
@@ -1045,6 +1046,10 @@ class BEEPDatapath(abc.ABC, MSONable):
                     resolution=resolution,
                 )
             else:
+                if self.diagnostic.dv_fallback:
+                    v_range = self.diagnostic.dv_fallback
+                else:
+                    v_range = dv
                 new_df = interpolate_df(
                     df,
                     field_name="voltage",
@@ -1052,9 +1057,8 @@ class BEEPDatapath(abc.ABC, MSONable):
                     columns=incl_columns,
                     resolution=resolution,
                 )
-
             new_df["cycle_index"] = cycle_index
-            new_df["cycle_type"] = diag_cycle_type[diag_cycles_at.index(cycle_index)]
+            new_df["cycle_type"] = diag_types
             new_df["step_index"] = step_index
             new_df["step_index_counter"] = step_index_counter
             new_df["step_type"] = diag_dict[cycle_index].index(step_index)

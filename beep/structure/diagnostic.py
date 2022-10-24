@@ -1,5 +1,5 @@
 
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Tuple
 from itertools import chain
 
 import pandas as pd
@@ -19,17 +19,21 @@ class DiagnosticConfigBasic(MSONable):
 
     All other indices are assumed to be normal.
     """
+    HPPC = "hppc"
+    RPT = "rpt"
+    RESET = "reset"
 
     def __init__(
             self,
             hppc_ix: Iterable,
             rpt_ix: Iterable,
             reset_ix: Iterable,
-
+            fallback_v_range: Optional[Tuple[float, float]] = None
     ):
         self.hppc_ix = frozenset(hppc_ix)
         self.rpt_ix = frozenset(rpt_ix)
         self.reset_ix = frozenset(reset_ix)
+        self.dv_fallback = fallback_v_range
 
         all_ix = []
         for ix in chain(self.hppc_ix, self.rpt_ix, self.reset_ix):
@@ -42,6 +46,14 @@ class DiagnosticConfigBasic(MSONable):
                 "HPPC/RPT/Reset cycles! Each cycle must "
                 "have exactly one diagnostic type."
             )
+        self.cycle_to_type = {}
+        for ctype, ix_list in {
+                self.HPPC: self.hppc_ix,
+                self.RPT: self.rpt_ix,
+                self.RESET: self.reset_ix
+        }.items():
+            for ix in ix_list:
+                self.cycle_to_type[ctype] = ix
 
     @classmethod
     def from_step_numbers(
@@ -104,3 +116,17 @@ class DiagnosticConfigBasic(MSONable):
 
     def from_dict(cls, d):
         pass
+
+
+def legacy_conversion(diagnostic_available):
+    """
+    Converts a legacy "diagnostic available" dictionary to a new
+    DiagnosticConfig object.
+
+    Args:
+        diagnostic_available:
+
+    Returns:
+
+    """
+    pass
