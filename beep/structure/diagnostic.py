@@ -1,6 +1,6 @@
 
 from typing import Iterable, Optional
-
+from itertools import chain
 
 import pandas as pd
 from monty.json import MSONable
@@ -27,9 +27,21 @@ class DiagnosticConfigBasic(MSONable):
             reset_ix: Iterable,
 
     ):
-        self.hppc_ix = set(hppc_ix)
-        self.rpt_ix = set(rpt_ix)
-        self.reset_ix = set(reset_ix)
+        self.hppc_ix = frozenset(hppc_ix)
+        self.rpt_ix = frozenset(rpt_ix)
+        self.reset_ix = frozenset(reset_ix)
+
+        all_ix = []
+        for ix in chain(self.hppc_ix, self.rpt_ix, self.reset_ix):
+            all_ix.append(ix)
+        self.all_ix = frozenset(all_ix)
+
+        if len(all_ix) != len(self.all_ix):
+            raise ValueError(
+                "There is overlap between cycles in the"
+                "HPPC/RPT/Reset cycles! Each cycle must "
+                "have exactly one diagnostic type."
+            )
 
     @classmethod
     def from_step_numbers(
@@ -66,31 +78,23 @@ class DiagnosticConfigBasic(MSONable):
 
         match_types = (hppc_match_type, rpt_match_type, reset_match_type)
         match_step_patterns = (hppc_match, rpt_match, reset_match)
-        match_step_names = ("hppc", "rpt", "reset")
-
         target_column = "step_index"
         if target_column not in df_raw.columns:
             raise ValueError(f"Required column '{target_column}' not found in raw data!")
 
-        all_diag_ix = [[], [], []]
+        all_diag_ix = ([], [], [])
         for cix in df_raw["cycle_index"].unique():
             df_cycle = df_raw[df_raw["cycle_index"] == cix]
 
             for i, cyc_match_list in enumerate(match_step_patterns):
                 if cyc_match_list:
                     for cyc_match in cyc_match_list:
-
-                        print(f"doing cycle match for {match_step_names[i]} on {cyc_match}")
                         unique = df_cycle[target_column].unique()
                         all_present = all([sn in unique for sn in cyc_match])
-                        print(f"unique/present: {unique}, {all_present}")
-
                         if match_types[i] == "contains" and all_present:
-                            print(f"Found match for contains on cycle {cix} for {match_step_names[i]}")
                             all_diag_ix[i].append(cix)
                             break
                         elif all_present and len(unique) == len(set(cyc_match)):
-                            print(f"Found match for exact on cycle {cix} for {match_step_names[i]}")
                             all_diag_ix[i].append(cix)
                             break
         return cls(*all_diag_ix)

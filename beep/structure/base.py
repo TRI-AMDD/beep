@@ -509,13 +509,19 @@ class BEEPDatapath(abc.ABC, MSONable):
         """
         logger.info(f"Beginning structuring along charge axis '{charge_axis}' and discharge axis '{discharge_axis}'.")
 
-        if diagnostic_available:
-            self.diagnostic_summary = self.summarize_diagnostic(
-                diagnostic_available
-            )
+
+        if self.diagnostic:
+            self.diagnostic_summary = self.summarize_diagnostic()
             self.diagnostic_data = self.interpolate_diagnostic_cycles(
-                diagnostic_available, diagnostic_resolution
+                resolution=diagnostic_resolution
             )
+        # if diagnostic_available:
+        #     self.diagnostic_summary = self.summarize_diagnostic(
+        #         diagnostic_available
+        #     )
+        #     self.diagnostic_data = self.interpolate_diagnostic_cycles(
+        #         diagnostic_available, diagnostic_resolution
+        #     )
 
         self.structured_data = self.interpolate_cycles(
             v_range=v_range,
@@ -936,16 +942,16 @@ class BEEPDatapath(abc.ABC, MSONable):
 
     # equivalent of get_interpolated_diagnostic_cycles
     def interpolate_diagnostic_cycles(
-            self, diagnostic_available, resolution=1000, v_resolution=0.0005, v_delta_min=0.001
+            self,
+            resolution=1000,
+            v_resolution=0.0005,
+            v_delta_min=0.001
     ):
         """
         Interpolates data according to location and type of diagnostic
         cycles in the data
 
         Args:
-            diagnostic_available (dict): dictionary with diagnostic_types
-                as list, 'length' of the diagnostic in cycles and location
-                of the diagnostic
             resolution (int): resolution of interpolation
             v_resolution (float): voltage delta to set for range based interpolation
             v_delta_min (float): minimum voltage delta for voltage based interpolation
