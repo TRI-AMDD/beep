@@ -59,6 +59,8 @@ class BEEPDatapath(abc.ABC, MSONable):
             - diagnostic_data (pd.DataFrame): The interpolated diagnostic cycles
             - diagnostic_summary (pd.DataFrame): A summary of diagnostic cycles
             - raw_data (pd.DataFrame): All raw data from the raw input file.
+            - diagnostic (beep.structure.diagnostic.DiagnosticConfigBasic): A basic diagnostic configuration
+                indicating where the diagnostic cycles are located.
 
         Less important attributes:
             - structuring_parameters: A dictionary of the structuring parameters used to structure
@@ -163,7 +165,15 @@ class BEEPDatapath(abc.ABC, MSONable):
         def __str__(self):
             return self.__repr__()
 
-    def __init__(self, raw_data, metadata, paths=None, schema=None, impute_missing=True):
+    def __init__(
+            self,
+            raw_data,
+            metadata,
+            paths=None,
+            diagnostic=None,
+            schema=None,
+            impute_missing=True
+    ):
         """
 
         Args:
@@ -173,6 +183,8 @@ class BEEPDatapath(abc.ABC, MSONable):
                 have to.
             paths ({str: str, Pathlike}): Should contain "raw" and "metadata" keys, even if they are the same
                 filepath.
+            diagnostic (beep.structure.diagnostic.DiagnosticConfigBasic): The basic diagnostic configuration denoting
+                where HPPC/RPT cycles are located in the raw data frame, by cycle index.
             schema (str): the name of the validation schema file to use. Should be located in the
                 VALIDATION_SCHEMA_DIR directory, or can alternatively be an absolute filepath.
             impute_missing (bool): Impute missing columns such as temperature and internal_resistance if they
@@ -212,10 +224,12 @@ class BEEPDatapath(abc.ABC, MSONable):
             else:
                 raise FileNotFoundError(f"The schema file specified for validation could not be found: {schema}.")
 
-        self.structured_summary = None     # equivalent of PCR.summary
-        self.structured_data = None        # equivalent of PCR.cycles_interpolated
-        self.diagnostic_data = None        # equivalent of PCR.diagnostic_interpolated
-        self.diagnostic_summary = None     # same name as in PCR
+        self.structured_summary = None
+        self.structured_data = None
+        self.diagnostic_data = None
+        self.diagnostic_summary = None
+
+        self.diagnostic = diagnostic
 
         self.metadata = self.CyclerRunMetadata(metadata)
 
