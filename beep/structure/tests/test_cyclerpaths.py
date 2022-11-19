@@ -77,7 +77,7 @@ class TestArbinDatapath(unittest.TestCase):
         vrange, num_points, nominal_capacity, fast_charge, diag = rcycler_run.determine_structuring_parameters()
         # print(diag['parameter_set'])
         self.assertEqual(diag['parameter_set'], 'NCR18650-618')
-        diag_interp = rcycler_run.interpolate_diagnostic_cycles(diag, resolution=1000, v_resolution=0.0005)
+        diag_interp = rcycler_run.interpolate_diagnostic_cycles(diag, resolution=1000, hppc_v_resolution=0.0005)
         self.assertAlmostEqual(diag_interp[(diag_interp.cycle_index == 1) &
                                            (diag_interp.step_index == 5)].charge_capacity.max(),
                                3.39608899, 3)
@@ -282,7 +282,7 @@ class TestMaccorDatapath(unittest.TestCase):
         md = MaccorDatapath.from_file(self.broken_file)
         vrange, num_points, nominal_capacity, fast_charge, diag = md.determine_structuring_parameters()
         self.assertEqual(diag['parameter_set'], 'Tesla21700')
-        diag_interp = md.interpolate_diagnostic_cycles(diag, resolution=1000, v_resolution=0.0005)
+        diag_interp = md.interpolate_diagnostic_cycles(diag, resolution=1000, hppc_v_resolution=0.0005)
         self.assertEqual(np.around(diag_interp[diag_interp.cycle_index == 1].charge_capacity.median(), 3),
                          np.around(0.6371558214610992, 3))
 

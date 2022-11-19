@@ -944,7 +944,7 @@ class BEEPDatapath(abc.ABC, MSONable):
     def interpolate_diagnostic_cycles(
             self,
             resolution=1000,
-            v_resolution=0.0005,
+            # hppc_v_resolution=0.0005,
             v_delta_min=0.001
     ):
         """
@@ -953,7 +953,7 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         Args:
             resolution (int): resolution of interpolation
-            v_resolution (float): voltage delta to set for range based interpolation
+            hppc_v_resolution (float): voltage delta to set for range based interpolation
             v_delta_min (float): minimum voltage delta for voltage based interpolation
 
         Returns:
@@ -987,7 +987,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         #     raise ValueError(errmsg)
 
         diag_data = self.raw_data[self.raw_data["cycle_index"].isin(self.diagnostic.all_ix)]
-        diag_types = [self.diagnostic.cycle_to_type[cix] for cix in diag_data.cycle_index.unique()]
+        # diag_types = [self.diagnostic.cycle_to_type[cix] for cix in diag_data.cycle_index.unique()]
 
         # Counter to ensure non-contiguous repeats of step_index
         # within same cycle_index are grouped separately
@@ -1026,15 +1026,15 @@ class BEEPDatapath(abc.ABC, MSONable):
             step_dv = df.voltage.max() - df.voltage.min()
             dv = [df.voltage.min(), df.voltage.max()]
             if cycle_index in self.diagnostic.hppc_ix and step_dv >= v_delta_min:
-                hppc_resolution = int(
-                    (df.voltage.max() - df.voltage.min()) / v_resolution
-                )
+                # hppc_resolution = int(
+                #     (df.voltage.max() - df.voltage.min()) / hppc_v_resolution
+                # )
                 new_df = interpolate_df(
                     df,
                     field_name="voltage",
                     field_range=dv,
                     columns=incl_columns,
-                    resolution=hppc_resolution,
+                    resolution=resolution,
                 )
             elif step_dv < v_delta_min:
                 t_range_step = [df.test_time.min(), df.test_time.max()]
@@ -1058,7 +1058,7 @@ class BEEPDatapath(abc.ABC, MSONable):
                     resolution=resolution,
                 )
             new_df["cycle_index"] = cycle_index
-            new_df["cycle_type"] = diag_types
+            new_df["cycle_type"] = self.diagnostic.cycle_to_type[cycle_index]
             new_df["step_index"] = step_index
             new_df["step_index_counter"] = step_index_counter
             new_df["step_type"] = diag_dict[cycle_index].index(step_index)
