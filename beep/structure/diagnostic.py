@@ -53,7 +53,7 @@ class DiagnosticConfigBasic(MSONable):
                 self.RESET: self.reset_ix
         }.items():
             for ix in ix_list:
-                self.cycle_to_type[ctype] = ix
+                self.cycle_to_type[ix] = ctype
 
     @classmethod
     def from_step_numbers(

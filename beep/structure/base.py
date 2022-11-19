@@ -1020,7 +1020,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             diag_dict[cycle] = list(steps)
 
         all_dfs = []
-        for (cycle_index, step_index, step_index_counter), df in tqdm(group):
+        for (cycle_index, step_index, step_index_counter), df in tqdm(group, desc="Interpolating diagnostic by step"):
             if len(df) < 2:
                 continue
             step_dv = df.voltage.max() - df.voltage.min()
