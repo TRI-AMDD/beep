@@ -986,19 +986,21 @@ class BEEPDatapath(abc.ABC, MSONable):
         #     )
         #     raise ValueError(errmsg)
 
-        diag_data = self.raw_data[self.raw_data["cycle_index"].isin(self.diagnostic.all_ix)]
+        diag_data = self.raw_data.loc[self.raw_data["cycle_index"].isin(self.diagnostic.all_ix)]
         # diag_types = [self.diagnostic.cycle_to_type[cix] for cix in diag_data.cycle_index.unique()]
 
         # Counter to ensure non-contiguous repeats of step_index
         # within same cycle_index are grouped separately
-        diag_data.loc[:, "step_index_counter"] = 0
+        diag_data["step_index_counter"] = 0
 
         for cycle_index in self.diagnostic.all_ix:
             indices = diag_data.loc[diag_data.cycle_index == cycle_index].index
             step_index_list = diag_data.step_index.loc[indices]
-            diag_data.loc[indices, "step_index_counter"] = step_index_list.ne(
+            shifted = step_index_list.ne(
                 step_index_list.shift()
-            ).cumsum()
+            )
+            shifted.iloc[0] = 0
+            diag_data.loc[indices, "step_index_counter"] = shifted.cumsum()
 
         group = diag_data.groupby(["cycle_index", "step_index", "step_index_counter"])
         incl_columns = [
@@ -1086,6 +1088,9 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         # Ignore the index to avoid issues with overlapping voltages
         result = pd.concat(all_dfs, ignore_index=True)
+
+        print("sorting...")
+        result.sort_values(by=["cycle_index", "step_index_counter", "test_time"], axis=0, inplace=True)
         # Cycle_index gets a little weird about typing, so round it here
         result.cycle_index = result.cycle_index.round()
         result = self._cast_dtypes(result, "diagnostic_interpolated")
