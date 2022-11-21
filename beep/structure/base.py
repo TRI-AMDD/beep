@@ -1114,19 +1114,19 @@ class BEEPDatapath(abc.ABC, MSONable):
         """
 
         max_cycle = self.raw_data.cycle_index.max()
-        starts_at = [
-            i for i in diagnostic_available["diagnostic_starts_at"] if i <= max_cycle
-        ]
-        diag_cycles_at = list(
-            itertools.chain.from_iterable(
-                [list(range(i, i + diagnostic_available["length"])) for i in starts_at]
-            )
-        )
+        # starts_at = [
+        #     i for i in diagnostic_available["diagnostic_starts_at"] if i <= max_cycle
+        # ]
+        # diag_cycles_at = list(
+        #     itertools.chain.from_iterable(
+        #         [list(range(i, i + diagnostic_available["length"])) for i in starts_at]
+        #     )
+        # )
         diag_summary = self.raw_data.groupby("cycle_index").agg(self._diag_aggregation)
 
         diag_summary.columns = self._diag_summary_cols
 
-        diag_summary = diag_summary[diag_summary.index.isin(diag_cycles_at)]
+        diag_summary = diag_summary[diag_summary.index.isin(self.diagnostic.all_ix)]
 
         diag_summary["coulombic_efficiency"] = (
             diag_summary["discharge_capacity"] / diag_summary["charge_capacity"]
@@ -1137,9 +1137,7 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         diag_summary.reset_index(drop=True, inplace=True)
 
-        diag_summary["cycle_type"] = pd.Series(
-            diagnostic_available["cycle_type"] * len(starts_at)
-        )
+        diag_summary["cycle_type"] = [self.diagnostic.cycle_to_type[cix] for cix in diag_summary["cycle_index"]]
 
         # Add CV_time, CV_current, and CV_capacity summary stats
         CV_time = []
