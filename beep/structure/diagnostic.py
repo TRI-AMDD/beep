@@ -69,6 +69,7 @@ class DiagnosticConfigBasic(MSONable):
             rpt_match_type: str = "contains",
             reset_match: Optional[Iterable[Iterable]] = None,
             reset_match_type: str = "exact",
+            **kwargs
     ):
         """
         A method to automatically determine diagnostic cycle
@@ -150,7 +151,7 @@ class DiagnosticConfigBasic(MSONable):
                         elif all_present and len(unique) == len(set(cyc_match)):
                             all_diag_ix[i].append(cix)
                             break
-        return cls(*all_diag_ix)
+        return cls(*all_diag_ix, **kwargs)
 
     def as_dict(self) -> dict:
         pass

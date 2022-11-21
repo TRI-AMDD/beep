@@ -990,7 +990,6 @@ class BEEPDatapath(abc.ABC, MSONable):
             indices = diag_data.loc[diag_data.cycle_index == cycle_index].index
             step_index_list = diag_data.step_index.loc[indices]
             shifted = step_index_list.ne(step_index_list.shift()).cumsum()
-            shifted.iloc[0] = 0
             diag_data.loc[indices, "step_index_counter"] = shifted
 
         group = diag_data.groupby(["cycle_index", "step_index", "step_index_counter"])
@@ -1006,6 +1005,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             "test_time",
         ]
 
+        # todo: not sure this diag_dict thing is needed - alex
         diag_dict = {}
         for cycle in diag_data.cycle_index.unique():
             diag_dict.update({cycle: None})
@@ -1032,7 +1032,6 @@ class BEEPDatapath(abc.ABC, MSONable):
                     resolution=voltage_resolution,
                 )
             elif step_dv < v_delta_min:
-
                 t_range_step = [df.test_time.min(), df.test_time.max()]
                 new_df = interpolate_df(
                     df,
@@ -1051,7 +1050,7 @@ class BEEPDatapath(abc.ABC, MSONable):
                     field_name="voltage",
                     field_range=v_range,
                     columns=incl_columns,
-                    resolution=time_resolution,
+                    resolution=voltage_resolution,
                 )
             new_df["cycle_index"] = cycle_index
             new_df["cycle_type"] = self.diagnostic.cycle_to_type[cycle_index]
