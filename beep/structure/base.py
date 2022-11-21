@@ -943,8 +943,8 @@ class BEEPDatapath(abc.ABC, MSONable):
     # equivalent of get_interpolated_diagnostic_cycles
     def interpolate_diagnostic_cycles(
             self,
-            resolution=1000,
-            # hppc_v_resolution=0.0005,
+            time_resolution=1000,
+            voltage_resolution=1000,
             v_delta_min=0.001
     ):
         """
@@ -1029,23 +1029,28 @@ class BEEPDatapath(abc.ABC, MSONable):
                 # hppc_resolution = int(
                 #     (df.voltage.max() - df.voltage.min()) / hppc_v_resolution
                 # )
+
+                print(f"Interpolated {cycle_index}, {step_index}, {step_index_counter} by voltage-based")
                 new_df = interpolate_df(
                     df,
                     field_name="voltage",
                     field_range=dv,
                     columns=incl_columns,
-                    resolution=resolution,
+                    resolution=voltage_resolution,
                 )
             elif step_dv < v_delta_min:
+
+                print( f"Interpolated {cycle_index}, {step_index}, {step_index_counter} by time-based vmin")
                 t_range_step = [df.test_time.min(), df.test_time.max()]
                 new_df = interpolate_df(
                     df,
                     field_name="test_time",
                     field_range=t_range_step,
                     columns=incl_columns,
-                    resolution=resolution,
+                    resolution=time_resolution,
                 )
             else:
+                print( f"Interpolated {cycle_index}, {step_index}, {step_index_counter} by time-based")
                 if self.diagnostic.dv_fallback:
                     v_range = self.diagnostic.dv_fallback
                 else:
@@ -1055,7 +1060,7 @@ class BEEPDatapath(abc.ABC, MSONable):
                     field_name="voltage",
                     field_range=v_range,
                     columns=incl_columns,
-                    resolution=resolution,
+                    resolution=time_resolution,
                 )
             new_df["cycle_index"] = cycle_index
             new_df["cycle_type"] = self.diagnostic.cycle_to_type[cycle_index]
