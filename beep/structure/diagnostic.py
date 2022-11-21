@@ -15,7 +15,11 @@ class DiagnosticConfigBasic(MSONable):
     their steps.
 
     Is basic because it only accounts for three kinds of cycles,
-    HPPC, RPT, and Reset, and lumps all cycles into these catagories.
+    HPPC, RPT, and Reset, and lumps all cycles into these categories.
+
+    - HPPC: hybrid power-pulse characterization
+    - RPT: reference performance test
+    - RESET: cycler-specific reset cycles
 
     All other indices are assumed to be normal.
     """
@@ -68,24 +72,61 @@ class DiagnosticConfigBasic(MSONable):
     ):
         """
         A method to automatically determine diagnostic cycle
-        types by providing only step numbers unique to particular
-        diagnostic cycles.
+        types and indices by providing only step numbers unique to
+        particular diagnostic cycles.
 
         For example, if step number "7" is always ONLY in HPPC cycles,
         we may assume all cycles containing step number 7.
 
+        Specify how to match via one of two methods: "exact" or "contains".
+        In either of these methods, you also pass sets of step numbers
+        which can be used to identify particular diagnostic cycle types.
 
-        Similarly, we can match based on ex
+        "Contains" will match if at least one set of step numbers
+        passed is entirely found in a cycle. "Exact" will match if at least
+        one set of step numbers passed is entirely found in a cycle
+        with no other step types present.
 
+        Sets of step numbers are assumed to all be matched based on OR,
+        not AND. This method is not assumed to work for ALL potential
+        cycler runs, but may be useful for many.
+
+        Example 1:
+            rpt_match=[(12, 13), (15, 16)],
+            rpt_match_type="exact"
+
+            Cycles are identified with RPT if they contain
+            EXACTLY (only) step numbers 12 and 13 OR
+            EXACTLY (only) step numbers 15 and 16.
+
+        Example 2:
+            hppc_match =[(1, 2, 3, 4, 6, 8)]
+            hppc_match_type="contains"
+
+            Cycles are identified as HPPC if they contain
+            the full set of step numbers 1, 2, 3, 4, 6, and 8.
+            Matching cycles may also contain other step numbers.
 
         Args:
-            df_raw:
-            hppc_step_numbers:
-            rpt_step_numbers:
-            reset_step_numbers:
+            df_raw (pd.Dataframe): The raw data from a datapath.
+            hppc_match: An iterable of sets of step numbers
+                which can be used to match against potential HPPC cycles
+                in order to automatically identify them.
+            hppc_match_type (str): "contains" or "exact". "Contains" will
+                match cycles containing at least one of the hppc_step_numbers
+                sets entirely. "Exact" will match cycles only if at least
+                one of the hppc_step_numbers sets is found entirely in a
+                cycle with NO other step types.
+            rpt_match: Iterable of sets of step numbers for matching
+                on RPT cycles.
+            rpt_match_type: Same syntax as hppc_match_type.
+            reset_match: Iterable of the sets of step numbers for
+                matching on reset cycles.
+            reset_match_type: Same syntax as hppc_match_type and
+                rpt_match_type.
 
         Returns:
-
+            (DiagnosticConfigBasic)
         """
 
         match_types = (hppc_match_type, rpt_match_type, reset_match_type)

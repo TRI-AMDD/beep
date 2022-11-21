@@ -509,19 +509,12 @@ class BEEPDatapath(abc.ABC, MSONable):
         """
         logger.info(f"Beginning structuring along charge axis '{charge_axis}' and discharge axis '{discharge_axis}'.")
 
-
         if self.diagnostic:
             self.diagnostic_summary = self.summarize_diagnostic()
             self.diagnostic_data = self.interpolate_diagnostic_cycles(
-                resolution=diagnostic_resolution
+                time_resolution=diagnostic_resolution,
+                voltage_resolution=diagnostic_resolution
             )
-        # if diagnostic_available:
-        #     self.diagnostic_summary = self.summarize_diagnostic(
-        #         diagnostic_available
-        #     )
-        #     self.diagnostic_data = self.interpolate_diagnostic_cycles(
-        #         diagnostic_available, diagnostic_resolution
-        #     )
 
         self.structured_data = self.interpolate_cycles(
             v_range=v_range,
@@ -1031,7 +1024,6 @@ class BEEPDatapath(abc.ABC, MSONable):
                 #     (df.voltage.max() - df.voltage.min()) / hppc_v_resolution
                 # )
 
-                print(f"Interpolated {cycle_index}, {step_index}, {step_index_counter} by voltage-based")
                 new_df = interpolate_df(
                     df,
                     field_name="voltage",
@@ -1041,7 +1033,6 @@ class BEEPDatapath(abc.ABC, MSONable):
                 )
             elif step_dv < v_delta_min:
 
-                print( f"Interpolated {cycle_index}, {step_index}, {step_index_counter} by time-based vmin")
                 t_range_step = [df.test_time.min(), df.test_time.max()]
                 new_df = interpolate_df(
                     df,
@@ -1051,7 +1042,6 @@ class BEEPDatapath(abc.ABC, MSONable):
                     resolution=time_resolution,
                 )
             else:
-                print( f"Interpolated {cycle_index}, {step_index}, {step_index_counter} by time-based")
                 if self.diagnostic.dv_fallback:
                     v_range = self.diagnostic.dv_fallback
                 else:
@@ -1113,7 +1103,7 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         """
 
-        max_cycle = self.raw_data.cycle_index.max()
+        # max_cycle = self.raw_data.cycle_index.max()
         # starts_at = [
         #     i for i in diagnostic_available["diagnostic_starts_at"] if i <= max_cycle
         # ]
@@ -1137,7 +1127,9 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         diag_summary.reset_index(drop=True, inplace=True)
 
-        diag_summary["cycle_type"] = [self.diagnostic.cycle_to_type[cix] for cix in diag_summary["cycle_index"]]
+        diag_summary["cycle_type"] = [
+            self.diagnostic.cycle_to_type[cix] for cix in diag_summary["cycle_index"]
+        ]
 
         # Add CV_time, CV_current, and CV_capacity summary stats
         CV_time = []
