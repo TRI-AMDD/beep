@@ -996,11 +996,9 @@ class BEEPDatapath(abc.ABC, MSONable):
         for cycle_index in self.diagnostic.all_ix:
             indices = diag_data.loc[diag_data.cycle_index == cycle_index].index
             step_index_list = diag_data.step_index.loc[indices]
-            shifted = step_index_list.ne(
-                step_index_list.shift()
-            )
+            shifted = step_index_list.ne(step_index_list.shift()).cumsum()
             shifted.iloc[0] = 0
-            diag_data.loc[indices, "step_index_counter"] = shifted.cumsum()
+            diag_data.loc[indices, "step_index_counter"] = shifted
 
         group = diag_data.groupby(["cycle_index", "step_index", "step_index_counter"])
         incl_columns = [
@@ -1088,9 +1086,11 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         # Ignore the index to avoid issues with overlapping voltages
         result = pd.concat(all_dfs, ignore_index=True)
-
-        print("sorting...")
-        result.sort_values(by=["cycle_index", "step_index_counter", "test_time"], axis=0, inplace=True)
+        result.sort_values(
+            by=["cycle_index", "step_index_counter", "test_time"],
+            axis=0,
+            inplace=True
+        )
         # Cycle_index gets a little weird about typing, so round it here
         result.cycle_index = result.cycle_index.round()
         result = self._cast_dtypes(result, "diagnostic_interpolated")
