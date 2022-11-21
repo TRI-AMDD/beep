@@ -1021,8 +1021,9 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         all_dfs = []
         for (cycle_index, step_index, step_index_counter), df in tqdm(group, desc="Interpolating diagnostic by step"):
-            if len(df) < 2:
-                continue
+            if len(df.index) < 2:
+                logger.debug(f"Skipping cycle: {cycle_index}, step: {step_index_counter} with step "
+                             f"type: {step_index} as there were < 2 data points.")
             step_dv = df.voltage.max() - df.voltage.min()
             dv = [df.voltage.min(), df.voltage.max()]
             if cycle_index in self.diagnostic.hppc_ix and step_dv >= v_delta_min:
@@ -1097,7 +1098,7 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         return result
 
-    def summarize_diagnostic(self, diagnostic_available):
+    def summarize_diagnostic(self):
         """
         Gets summary statistics for data according to location of
         diagnostic cycles in the data
