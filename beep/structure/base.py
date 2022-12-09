@@ -486,7 +486,6 @@ class BEEPDatapath(abc.ABC, MSONable):
                   diagnostic_resolution=500,
                   nominal_capacity=1.1,
                   full_fast_charge=0.8,
-                  diagnostic_available=False,
                   charge_axis='charge_capacity',
                   discharge_axis='voltage',
                   exclude_cycles=None
@@ -519,7 +518,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         self.structured_data = self.interpolate_cycles(
             v_range=v_range,
             resolution=resolution,
-            diagnostic_available=diagnostic_available,
+            # diagnostic_available=diagnostic_available,
             charge_axis=charge_axis,
             discharge_axis=discharge_axis,
             exclude_cycles=exclude_cycles
@@ -528,7 +527,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         self.structured_summary = self.summarize_cycles(
             nominal_capacity=nominal_capacity,
             full_fast_charge=full_fast_charge,
-            diagnostic_available=diagnostic_available
+            # diagnostic_available=diagnostic_available
         )
 
         self.structuring_parameters = {
@@ -537,7 +536,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             "diagnostic_resolution": diagnostic_resolution,
             "nominal_capacity": nominal_capacity,
             "full_fast_charge": full_fast_charge,
-            "diagnostic_available": diagnostic_available,
+            # "diagnostic_available": diagnostic_available,
             "charge_axis": charge_axis,
             "discharge_axis": discharge_axis
         }
@@ -569,13 +568,14 @@ class BEEPDatapath(abc.ABC, MSONable):
                     f"resolution={resolution}, "
                     f"nominal_capacity={nominal_capacity}, "
                     f"full_fast_charge={full_fast_charge}, "
-                    f"diagnostic_available={diagnostic_available}")
+                    # f"diagnostic_available={diagnostic_available}"
+                    )
         return self.structure(
             v_range=v_range,
             resolution=resolution,
             nominal_capacity=nominal_capacity,
             full_fast_charge=full_fast_charge,
-            diagnostic_available=diagnostic_available,
+            # diagnostic_available=diagnostic_available,
             charge_axis=charge_axis,
             discharge_axis=discharge_axis
         )
@@ -715,32 +715,35 @@ class BEEPDatapath(abc.ABC, MSONable):
         Returns:
             (pandas.DataFrame): DataFrame corresponding to interpolated values.
         """
-        if diagnostic_available:
-            diag_cycles = list(
-                itertools.chain.from_iterable(
-                    [
-                        list(range(i, i + diagnostic_available["length"]))
-                        for i in diagnostic_available["diagnostic_starts_at"]
-                        if i <= self.raw_data.cycle_index.max()
-                    ]
-                )
-            )
-            reg_cycles = [
-                i for i in self.raw_data.cycle_index.unique() if
-                i not in diag_cycles
-            ]
-        else:
-            reg_cycles = [i for i in self.raw_data.cycle_index.unique()]
+        # if diagnostic_available:
+        #     diag_cycles = list(
+        #         itertools.chain.from_iterable(
+        #             [
+        #                 list(range(i, i + diagnostic_available["length"]))
+        #                 for i in diagnostic_available["diagnostic_starts_at"]
+        #                 if i <= self.raw_data.cycle_index.max()
+        #             ]
+        #         )
+        #     )
+        #     reg_cycles = [
+        #         i for i in self.raw_data.cycle_index.unique() if
+        #         i not in diag_cycles
+        #     ]
+        # else:
+        #     reg_cycles = [i for i in self.raw_data.cycle_index.unique()]
+
+        diag_mask = self.raw_data.cycle_index.isin(self.diagnostic.all_ix)
+        reg_mask = ~diag_mask
 
         v_range = v_range or [2.8, 3.5]
 
         # If any regular cycle contains a waveform step, interpolate on test_time.
-        if self.raw_data[self.raw_data.cycle_index.isin(reg_cycles)]. \
+        if self.raw_data[reg_mask]. \
                 groupby(["cycle_index", "step_index"]). \
                 apply(step_is_waveform_dchg).any():
             discharge_axis = 'test_time'
 
-        if self.raw_data[self.raw_data.cycle_index.isin(reg_cycles)]. \
+        if self.raw_data[reg_mask]. \
                 groupby(["cycle_index", "step_index"]). \
                 apply(step_is_waveform_chg).any():
             charge_axis = 'test_time'
@@ -749,7 +752,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             v_range,
             resolution,
             step_type="discharge",
-            reg_cycles=reg_cycles,
+            reg_cycles=reg_mask.unique(),
             axis=discharge_axis,
             exclude_cycles=exclude_cycles
         )
@@ -757,7 +760,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             v_range,
             resolution,
             step_type="charge",
-            reg_cycles=reg_cycles,
+            reg_cycles=reg_mask.unique(),
             axis=charge_axis,
             exclude_cycles=exclude_cycles
         )
@@ -770,7 +773,7 @@ class BEEPDatapath(abc.ABC, MSONable):
     # equivalent of legacy get_summary
     def summarize_cycles(
             self,
-            diagnostic_available=False,
+            # diagnostic_available=False,
             nominal_capacity=1.1,
             full_fast_charge=0.8,
             cycle_complete_discharge_ratio=0.97,
@@ -801,27 +804,30 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         """
         # Filter out only regular cycles for summary stats. Diagnostic summary computed separately
-        if diagnostic_available:
-            diag_cycles = list(
-                itertools.chain.from_iterable(
-                    [
-                        list(range(i, i + diagnostic_available["length"]))
-                        for i in diagnostic_available["diagnostic_starts_at"]
-                        if i <= self.raw_data.cycle_index.max()
-                    ]
-                )
-            )
-            reg_cycles_at = [
-                i for i in self.raw_data.cycle_index.unique() if
-                i not in diag_cycles
-            ]
-        else:
-            reg_cycles_at = [i for i in self.raw_data.cycle_index.unique()]
+        # if diagnostic_available:
+        #     diag_cycles = list(
+        #         itertools.chain.from_iterable(
+        #             [
+        #                 list(range(i, i + diagnostic_available["length"]))
+        #                 for i in diagnostic_available["diagnostic_starts_at"]
+        #                 if i <= self.raw_data.cycle_index.max()
+        #             ]
+        #         )
+        #     )
+        #     reg_cycles_at = [
+        #         i for i in self.raw_data.cycle_index.unique() if
+        #         i not in diag_cycles
+        #     ]
+        # else:
+        #     reg_cycles_at = [i for i in self.raw_data.cycle_index.unique()]
+
+        diag_mask = self.raw_data.cycle_index.isin(self.diagnostic.all_ix)
+        reg_cycles = self.raw_data[~diag_mask].cycle_index.unique()
 
         summary = self.raw_data.groupby("cycle_index").agg(self._aggregation)
         summary.columns = self._summary_cols
 
-        summary = summary[summary.index.isin(reg_cycles_at)]
+        summary = summary[summary.index.isin(reg_cycles)]
         summary["energy_efficiency"] = (
                 summary["discharge_energy"] / summary["charge_energy"]
         )
