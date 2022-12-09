@@ -734,6 +734,7 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         diag_mask = self.raw_data.cycle_index.isin(self.diagnostic.all_ix)
         reg_mask = ~diag_mask
+        reg_cycles = self.raw_data[reg_mask].cycle_index.unique()
 
         v_range = v_range or [2.8, 3.5]
 
@@ -752,7 +753,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             v_range,
             resolution,
             step_type="discharge",
-            reg_cycles=reg_mask.unique(),
+            reg_cycles=reg_cycles,
             axis=discharge_axis,
             exclude_cycles=exclude_cycles
         )
@@ -760,7 +761,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             v_range,
             resolution,
             step_type="charge",
-            reg_cycles=reg_mask.unique(),
+            reg_cycles=reg_cycles,
             axis=charge_axis,
             exclude_cycles=exclude_cycles
         )
