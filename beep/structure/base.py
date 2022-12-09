@@ -693,7 +693,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             self,
             v_range=None,
             resolution=1000,
-            diagnostic_available=None,
+            # diagnostic_available=None,
             charge_axis='charge_capacity',
             discharge_axis='voltage',
             exclude_cycles=None,
