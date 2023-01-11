@@ -585,6 +585,9 @@ class TestNovonixDatapath(unittest.TestCase):
         self.assertEqual(dp.raw_data["date_time"].iloc[100], "9/21/2022 7:31:43 PM")
         self.assertEqual(dp.raw_data["date_time_iso"].iloc[100], "2022-09-21T19:31:43")
 
+        is_valid, reason = dp.validate()
+        self.assertTrue(is_valid)
+
     def test_structure_novonix(self):
         dp = NovonixDatapath.from_file(self.file_long)
         dp.structure(
