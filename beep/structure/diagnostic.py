@@ -93,6 +93,104 @@ class DiagnosticConfig(MSONable):
         )
         self.params = kwargs
 
+
+    @classmethod
+    def from_step_numbers(
+            cls,
+            df_raw: pd.DataFrame,
+            matching_criteria: Dict[str, Tuple[str, Iterable[Iterable[int]]]],
+            **kwargs
+    ):
+        """
+        Automatically determine diagnostic cycle types and indices by
+        providing only step numbers unique to particular diagnostic cycles.
+
+        For example, if step number "7" is always ONLY in HPPC cycles,
+        we may assume all cycles containing step number 7.
+
+        Specify how to match via one of two methods: "exact" or "contains".
+        In either of these methods, you also pass sets of step numbers
+        which can be used to identify particular diagnostic cycle types.
+
+        "Contains" will match if at least one set of step numbers
+        passed is entirely found in a cycle. "Exact" will match if at least
+        one set of step numbers passed is entirely found in a cycle
+        with no other step types present. Sets of step numbers are assumed
+        to all be matched based on OR, not AND.
+
+        Example 1:
+
+        Our HPPC cycles always at least contain step numbers 1,2,4,6,8.
+        Our low-rate RPT cycles are EXACTLY step numbers 12 and 13.
+        Our high-rate RPT cycles are EXACTLY step numbers 15 and 16.
+
+        dc = DiagnosticConfig.from_step_numbers(
+            df,
+            matching_criteria={
+                "hppc": ("contains", [(1, 2, 4, 6, 8)]),
+                "rpt_lowrate": ("exact", [(12, 13)]),
+                "rpt_highrate": ("exact", [(15, 16)])
+            }
+        )
+
+
+        Example 2:
+
+        We have the same example as above but are grouping all RPT
+        cycles together. So we'll have cycles labelled RPT which are
+        either EXACTLY matching step numbers 12,13 or EXACTLY matching
+        step numbers 15,16.
+
+
+        dc = DiagnosticConfig.from_step_numbers(
+            df,
+            matching_criteria={
+                "hppc": ("contains", [(1, 2, 4, 6, 8)]),
+                "rpt_lowrate": ("exact", [(12, 13)]),
+                "rpt_highrate": ("exact", [(15, 16)])
+            }
+        )
+
+        Args:
+            df_raw (pd.Dataframe): The raw data from a datapath.
+            matching_criteria (dict): Keys are the names of the
+                diagnostic cycle types. Values are 2-tuples of the form
+                (rule_string, iterables) where rule_string is either
+                "contains" or "exact" and the iterable contains one or
+                more iterables of integers (cycle indices).
+
+        Returns:
+            (DiagnosticConfig)
+
+        """
+        target_column = "step_index"
+        if target_column not in df_raw.columns:
+            raise ValueError(
+                f"Required column '{target_column}' not found in raw data!"
+            )
+
+        for matching_rule_pair in matching_criteria.values():
+            if matching_rule_pair[0] not in ("contains", "exact"):
+                raise ValueError(
+                    f"Matching rule {matching_rule_pair[0]} not a valid rule."
+                )
+
+        all_diag_ix = {cycle_type: set() for cycle_type in matching_criteria.keys()}
+        for cix in df_raw["cycle_index"].unique():
+            df_cycle = df_raw[df_raw["cycle_index"] == cix]
+            for cycle_type, (match_type, match_step_pattern) in matching_criteria.items():
+                if match_step_pattern:
+                    for step_pattern in match_step_pattern:
+                        unique = df_cycle[target_column].unique()
+                        all_present = all([sn in unique for sn in step_pattern])
+                        if match_type == "contains" and all_present:
+                            all_diag_ix[cycle_type].add(cix)
+                            break
+                        elif all_present and len(unique) == len(set(step_pattern)):
+                            all_diag_ix[cycle_type].add(cix)
+                            break
+        return cls(all_diag_ix, **kwargs)
+
     @classmethod
     def from_dict(cls, d):
         """
@@ -122,132 +220,6 @@ class DiagnosticConfig(MSONable):
             "cycle_type_to_ix": self.cycle_type_to_ix,
             "ix_to_cycle_type": self.ix_to_cycle_type
         }
-
-
-class DiagnosticConfigBasic(DiagnosticConfig):
-    """
-    A class for representing diagnostic cycle configurations,
-    their locations in cycle files, and information regarding
-    their steps.
-
-    Is basic because it only accounts for three kinds of cycles,
-    HPPC, RPT, and Reset, and lumps all cycles into these categories.
-
-    - HPPC: hybrid power-pulse characterization
-    - RPT: reference performance test
-    - RESET: cycler-specific reset cycles
-
-    All other indices are assumed to be normal.
-    """
-    def __init__(
-            self,
-            hppc_ix: Iterable = tuple(),
-            rpt_ix: Iterable = tuple(),
-            reset_ix: Iterable = tuple(),
-            fallback_v_range: Optional[Tuple[float, float]] = None
-    ):
-        super().__init__(
-            diagnostic_config={
-                "hppc": hppc_ix,
-                "rpt": rpt_ix,
-                "reset": reset_ix
-            },
-            fallback_v_range=fallback_v_range
-        )
-
-    @classmethod
-    def from_step_numbers(
-            cls,
-            df_raw,
-            hppc_match: Optional[Iterable[Iterable]] = None,
-            hppc_match_type: str = "contains",
-            rpt_match: Optional[Iterable[Iterable]] = None,
-            rpt_match_type: str = "contains",
-            reset_match: Optional[Iterable[Iterable]] = None,
-            reset_match_type: str = "exact",
-            **kwargs
-    ):
-        """
-        A method to automatically determine diagnostic cycle
-        types and indices by providing only step numbers unique to
-        particular diagnostic cycles.
-
-        For example, if step number "7" is always ONLY in HPPC cycles,
-        we may assume all cycles containing step number 7.
-
-        Specify how to match via one of two methods: "exact" or "contains".
-        In either of these methods, you also pass sets of step numbers
-        which can be used to identify particular diagnostic cycle types.
-
-        "Contains" will match if at least one set of step numbers
-        passed is entirely found in a cycle. "Exact" will match if at least
-        one set of step numbers passed is entirely found in a cycle
-        with no other step types present.
-
-        Sets of step numbers are assumed to all be matched based on OR,
-        not AND. This method is not assumed to work for ALL potential
-        cycler runs, but may be useful for many.
-
-        Example 1:
-            rpt_match=[(12, 13), (15, 16)],
-            rpt_match_type="exact"
-
-            Cycles are identified with RPT if they contain
-            EXACTLY (only) step numbers 12 and 13 OR
-            EXACTLY (only) step numbers 15 and 16.
-
-        Example 2:
-            hppc_match =[(1, 2, 3, 4, 6, 8)]
-            hppc_match_type="contains"
-
-            Cycles are identified as HPPC if they contain
-            the full set of step numbers 1, 2, 3, 4, 6, and 8.
-            Matching cycles may also contain other step numbers.
-
-        Args:
-            df_raw (pd.Dataframe): The raw data from a datapath.
-            hppc_match: An iterable of sets of step numbers
-                which can be used to match against potential HPPC cycles
-                in order to automatically identify them.
-            hppc_match_type (str): "contains" or "exact". "Contains" will
-                match cycles containing at least one of the hppc_step_numbers
-                sets entirely. "Exact" will match cycles only if at least
-                one of the hppc_step_numbers sets is found entirely in a
-                cycle with NO other step types.
-            rpt_match: Iterable of sets of step numbers for matching
-                on RPT cycles.
-            rpt_match_type: Same syntax as hppc_match_type.
-            reset_match: Iterable of the sets of step numbers for
-                matching on reset cycles.
-            reset_match_type: Same syntax as hppc_match_type and
-                rpt_match_type.
-
-        Returns:
-            (DiagnosticConfigBasic)
-        """
-
-        match_types = (hppc_match_type, rpt_match_type, reset_match_type)
-        match_step_patterns = (hppc_match, rpt_match, reset_match)
-        target_column = "step_index"
-        if target_column not in df_raw.columns:
-            raise ValueError(f"Required column '{target_column}' not found in raw data!")
-
-        all_diag_ix = ([], [], [])
-        for cix in df_raw["cycle_index"].unique():
-            df_cycle = df_raw[df_raw["cycle_index"] == cix]
-
-            for i, cyc_match_list in enumerate(match_step_patterns):
-                if cyc_match_list:
-                    for cyc_match in cyc_match_list:
-                        unique = df_cycle[target_column].unique()
-                        all_present = all([sn in unique for sn in cyc_match])
-                        if match_types[i] == "contains" and all_present:
-                            all_diag_ix[i].append(cix)
-                            break
-                        elif all_present and len(unique) == len(set(cyc_match)):
-                            all_diag_ix[i].append(cix)
-                            break
-        return cls(*all_diag_ix, **kwargs)
 
 
 def legacy_conversion(diagnostic_available):
