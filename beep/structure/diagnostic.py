@@ -1,11 +1,79 @@
 
-from typing import Iterable, Optional, Tuple
+from typing import Iterable, Optional, Tuple, Dict
 from itertools import chain
+from dataclasses import dataclass
 
 import pandas as pd
 from monty.json import MSONable
 
 from beep import logger
+
+
+class DiagnosticConfig(MSONable):
+
+
+    """
+    Advanced configuration of diagnostic cycles.
+
+    Simply holds and represents a dict; the keys in the dict
+    are the diagnostic cycle types (e.g., RPT0.5), and the values
+    are iterables (list/set/tuples) of cycle indices.
+
+    Example:
+        {
+        "rpt0.5": {1,3,5,9,110...},
+        "rpt1.0": {2,4,6,10,122...},
+        "hppc": {20,40,60},
+        "my_custom_cycle": {101,1048},
+        }
+
+    Cycles present but not in the diagnostic config will
+    be assumed as regular (aging) cycles.
+
+    Args:
+        diagnostic_config (dict): Dict mapping cycle types (strings) to
+            iterables of cycle indices (integers). Each cycle index
+            should correspond with exactly one cycle type.
+        **kwargs: Keyword arguments to be used in child classes.
+
+    Attributes:
+        cycle_type_to_ix (dict):
+        ix_to_cycle_type (dict): Map of each cycle index (int) to
+    """
+
+    def __init__(
+            self,
+            diagnostic_config: Dict[str, Iterable[int]],
+            **kwargs
+    ):
+
+        self.cycle_type_to_ix = \
+            {c: frozenset(ix) for c, ix in diagnostic_config.items()}
+
+        ix_non_unique = list(self.cycle_type_to_ix.values())
+        ix_unique = frozenset.union(*ix_non_unique)
+
+        if len(ix_non_unique) != len(ix_unique):
+            raise ValueError(
+                "There is overlap between cycles!"
+                "Each cycle must have exactly one diagnostic type."
+            )
+        self.ix_to_cycle_type = {}
+        for ctype, ixs in self.cycle_type_to_ix.items():
+            for ix in ixs:
+                self.ix_to_cycle_type[ix] = ctype
+        self.kwargs = kwargs
+
+    def from_dict(cls, d):
+        return cls.__init__(diagnostic_config=d["cycle_type_to_ix"])
+
+    def as_dict(self) -> dict:
+        return {
+            "@module": self.__class__.__module__,
+            "@class": self.__class__.__name__,
+            "cycle_type_to_ix": self.cycle_type_to_ix,
+            "ix_to_cycle_type": self.ix_to_cycle_type
+        }
 
 
 class DiagnosticConfigBasic(MSONable):
@@ -155,7 +223,7 @@ class DiagnosticConfigBasic(MSONable):
 
     def as_dict(self) -> dict:
         pass
-
+        ```````
     def from_dict(cls, d):
         pass
 
