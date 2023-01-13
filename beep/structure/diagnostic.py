@@ -10,8 +10,6 @@ from beep import logger
 
 
 class DiagnosticConfig(MSONable):
-
-
     """
     Advanced configuration of diagnostic cycles.
 
@@ -30,15 +28,30 @@ class DiagnosticConfig(MSONable):
     Cycles present but not in the diagnostic config will
     be assumed as regular (aging) cycles.
 
+    Cycle types containing "rpt", "hppc", or "reset" strings will
+    be considered RPT, HPPC, and RESET cycles respectively. This
+    only affects the downstream structuring parameters, not the
+    labelling of the individual cycles.
+
     Args:
         diagnostic_config (dict): Dict mapping cycle types (strings) to
             iterables of cycle indices (integers). Each cycle index
             should correspond with exactly one cycle type.
-        **kwargs: Keyword arguments to be used in child classes.
+        **kwargs: Parameters that can be used by downstream structuring methods.
 
     Attributes:
-        cycle_type_to_ix (dict):
-        ix_to_cycle_type (dict): Map of each cycle index (int) to
+        cycle_type_to_ix (dict): Map of the diagnostic cycle type (str)
+            to a list of cycle indices (set of ints).
+        ix_to_cycle_type (dict): Map of each cycle index (int) to the diagnostic
+            cycle type (str).
+        hppc_ix: indices of cycles that could be considered HPPC. Determined
+            automatically if "hppc" is found in the name of a cycle type.
+        rpt_ix: indices of cycles that could be considered RPT. Determined
+            automatically if "rpt" is found in the name of a cycle type.
+        reset_ix: indices of cycles that could be considered RESET. Determined
+            automatically if "reset" is found in the name of a cycle type.
+        params (dict): Parameters that can be used by downstream structuring
+            methods.
     """
 
     def __init__(
@@ -53,21 +66,56 @@ class DiagnosticConfig(MSONable):
         ix_non_unique = list(self.cycle_type_to_ix.values())
         ix_unique = frozenset.union(*ix_non_unique)
 
-        if len(ix_non_unique) != len(ix_unique):
+        if sum([len(ix) for ix in ix_non_unique]) != len(ix_unique):
             raise ValueError(
                 "There is overlap between cycles!"
                 "Each cycle must have exactly one diagnostic type."
             )
         self.ix_to_cycle_type = {}
-        for ctype, ixs in self.cycle_type_to_ix.items():
+        for cycle_type, ixs in self.cycle_type_to_ix.items():
             for ix in ixs:
-                self.ix_to_cycle_type[ix] = ctype
-        self.kwargs = kwargs
+                self.ix_to_cycle_type[ix] = cycle_type
 
+        hppc_cycle_types = {ct for ct in self.cycle_type_to_ix if "hppc" in ct.lower()}
+        rpt_cycle_types = {ct for ct in self.cycle_type_to_ix if "rpt" in ct.lower()}
+        reset_cycle_types = {ct for ct in self.cycle_type_to_ix if "reset" in ct.lower()}
+        self.hppc_ix = frozenset.union(
+            *[self.cycle_type_to_ix[hppc] for hppc in hppc_cycle_types] +
+             [frozenset()]
+        )
+        self.rpt_ix = frozenset.union(
+            *[self.cycle_type_to_ix[rpt] for rpt in rpt_cycle_types] +
+             [frozenset()]
+        )
+        self.reset_ix = frozenset.union(
+            *[self.cycle_type_to_ix[reset] for reset in reset_cycle_types] +
+             [frozenset()]
+        )
+        self.params = kwargs
+
+    @classmethod
     def from_dict(cls, d):
-        return cls.__init__(diagnostic_config=d["cycle_type_to_ix"])
+        """
+        Create a DiagnosticConfig object from a dictionary.
+
+        Args:
+            d (dict): Dictionary to use to create diagnostic config.
+
+        Returns:
+            (DiagnosticConfig)
+
+        """
+        return cls(diagnostic_config=d["cycle_type_to_ix"])
 
     def as_dict(self) -> dict:
+        """
+        Convert a DiagnosticConfig object into a dictionary, e.g. for
+        serialization purpose with monty.
+
+        Returns:
+            (dict)
+
+        """
         return {
             "@module": self.__class__.__module__,
             "@class": self.__class__.__name__,
@@ -76,7 +124,7 @@ class DiagnosticConfig(MSONable):
         }
 
 
-class DiagnosticConfigBasic(MSONable):
+class DiagnosticConfigBasic(DiagnosticConfig):
     """
     A class for representing diagnostic cycle configurations,
     their locations in cycle files, and information regarding
@@ -91,41 +139,21 @@ class DiagnosticConfigBasic(MSONable):
 
     All other indices are assumed to be normal.
     """
-    HPPC = "hppc"
-    RPT = "rpt"
-    RESET = "reset"
-
     def __init__(
             self,
-            hppc_ix: Iterable,
-            rpt_ix: Iterable,
-            reset_ix: Iterable,
+            hppc_ix: Iterable = tuple(),
+            rpt_ix: Iterable = tuple(),
+            reset_ix: Iterable = tuple(),
             fallback_v_range: Optional[Tuple[float, float]] = None
     ):
-        self.hppc_ix = frozenset(hppc_ix)
-        self.rpt_ix = frozenset(rpt_ix)
-        self.reset_ix = frozenset(reset_ix)
-        self.dv_fallback = fallback_v_range
-
-        all_ix = []
-        for ix in chain(self.hppc_ix, self.rpt_ix, self.reset_ix):
-            all_ix.append(ix)
-        self.all_ix = frozenset(all_ix)
-
-        if len(all_ix) != len(self.all_ix):
-            raise ValueError(
-                "There is overlap between cycles in the"
-                "HPPC/RPT/Reset cycles! Each cycle must "
-                "have exactly one diagnostic type."
-            )
-        self.cycle_to_type = {}
-        for ctype, ix_list in {
-                self.HPPC: self.hppc_ix,
-                self.RPT: self.rpt_ix,
-                self.RESET: self.reset_ix
-        }.items():
-            for ix in ix_list:
-                self.cycle_to_type[ix] = ctype
+        super().__init__(
+            diagnostic_config={
+                "hppc": hppc_ix,
+                "rpt": rpt_ix,
+                "reset": reset_ix
+            },
+            fallback_v_range=fallback_v_range
+        )
 
     @classmethod
     def from_step_numbers(
@@ -221,12 +249,6 @@ class DiagnosticConfigBasic(MSONable):
                             break
         return cls(*all_diag_ix, **kwargs)
 
-    def as_dict(self) -> dict:
-        pass
-        ```````
-    def from_dict(cls, d):
-        pass
-
 
 def legacy_conversion(diagnostic_available):
     """
@@ -240,3 +262,23 @@ def legacy_conversion(diagnostic_available):
 
     """
     pass
+
+
+
+if __name__ == "__main__":
+
+    configdict = {
+        "rpt2.0": [1,11,21,31],
+        "rpt5.0": [2,12,22,32],
+        "hppc":[0,104],
+    }
+
+    dc = DiagnosticConfig(configdict)
+
+
+    print(dc.rpt_ix)
+    print(dc.ix_to_cycle_type[104])
+    print(dc.ix_to_cycle_type[12])
+
+
+
