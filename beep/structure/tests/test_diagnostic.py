@@ -89,3 +89,20 @@ class TestDiagnosticConfig(unittest.TestCase):
                 }
             )
 
+    def test_serialization(self):
+        rpt_ix = {1, 2, 3}
+        hppc_ix = {0, 101, 1999}
+
+        dc = DiagnosticConfig(
+            {
+                "rpt": rpt_ix,
+                "hppc": hppc_ix
+            }
+        )
+
+        d = dc.as_dict()
+        dc2 = DiagnosticConfig.from_dict(d)
+        self.assertSetEqual(dc2.rpt_ix, dc.rpt_ix)
+        self.assertSetEqual(dc2.hppc_ix, dc.hppc_ix)
+        self.assertSetEqual(dc2.all_ix, dc.all_ix)
+
