@@ -693,7 +693,6 @@ class BEEPDatapath(abc.ABC, MSONable):
             self,
             v_range=None,
             resolution=1000,
-            # diagnostic_available=None,
             charge_axis='charge_capacity',
             discharge_axis='voltage',
             exclude_cycles=None,
@@ -703,10 +702,8 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         Args:
             v_range ([float, float]): list of two floats that define
-                the voltage interpolation range endpoints.
+                the voltage interpolation range endpoints. Defaults to 2.8-3.5V.
             resolution (int): resolution of interpolated data.
-            diagnostic_available (dict): dictionary containing information about
-                location of diagnostic cycles
             charge_axis (str): column to use for interpolation for charge
             discharge_axis (str): column to use for interpolation for discharge
             exclude_cycles ([int]): List of cycle indices to exclude
@@ -787,7 +784,6 @@ class BEEPDatapath(abc.ABC, MSONable):
         must be float or int type for compatibility with other methods
 
         Args:
-            diagnostic_available (dict): dictionary with diagnostic_types
             nominal_capacity (float): nominal capacity for summary stats
             full_fast_charge (float): full fast charge for summary stats
             cycle_complete_discharge_ratio (float): expected ratio
@@ -1667,3 +1663,87 @@ def get_CV_capacity(CV):
     """
     if not CV.empty:
         return CV.charge_capacity.iat[-1] - CV.charge_capacity.iat[0]
+
+
+def get_r_cycle(hppc_df, steps, loop):
+    """
+    This function takes in raw data and one HPPC cycle index and find resistances at different SOCs
+    and different time scales for that HPPC cycle.
+
+    Args:
+    sample(dataframe): cycling data for this cell.
+    hppc_cycle(int): cycle number for this HPPC cycle.
+    steps(list): a list of step numbers (int) indicating rests, charge, discharge pulses.
+    lopp (string): loop in this raw data.
+
+    Returns:
+    dataframe: resistances at different SOCs for this cell at this hppc_cycle.
+
+    """
+
+    df_r_cycle = pd.DataFrame()
+    # find the different steps
+    long_rest = hppc_df[hppc_df.step_index == steps[0]]
+    time = long_rest.test_time.iloc[0]
+    hppc_df = hppc_df[hppc_df.test_time >= time]
+    long_rest = hppc_df[hppc_df.step_index == steps[0]]
+    short_rest = hppc_df[hppc_df.step_index == steps[2]]
+    charge = hppc_df[hppc_df.step_index == steps[3]]
+    discharge = hppc_df[hppc_df.step_index == steps[1]]
+    step_pos_all = long_rest[loop].unique()
+
+    # get resistance for all the SOCs
+    for i in range(len(step_pos_all)):
+        step_pos = step_pos_all[i]
+        long_rest_end = long_rest[long_rest[loop] == step_pos]['voltage'].iloc[-1]
+        short_rest_end = \
+        short_rest[short_rest[loop] == step_pos]['voltage'].iloc[-1]
+        charge_soc = charge[charge[loop] == step_pos]
+        discharge_soc = discharge[discharge[loop] == step_pos]
+
+        # resistances at 0s, 3s, 10s and end of pulse (30s)
+        for idx in [0, 3, 10, 30]:
+            charge_chosen = charge_soc[
+                charge_soc.test_time - charge_soc.test_time.min() <= idx]
+            discharge_chosen = discharge_soc[
+                discharge_soc.test_time - discharge_soc.test_time.min() <= idx]
+            charge_end = charge_chosen.iloc[-1]
+            discharge_end = discharge_chosen.iloc[-1]
+            r_ch = (charge_end.voltage - short_rest_end) / charge.current.mean()
+            r_disch = (
+                                  discharge_end.voltage - long_rest_end) / discharge.current.mean()
+            # we want to make sure we have carried out the full pulse time
+            if charge_end.test_time - charge_chosen.test_time.min() < idx - 1:
+                r_ch = None
+            if discharge_end.test_time - discharge_chosen.test_time.min() < idx - 1:
+                r_disch = None
+
+            df_r_cycle['r_c_' + str(i) + '_' + str(idx) + 's'] = [r_ch]
+            df_r_cycle['r_d_' + str(i) + '_' + str(idx) + 's'] = [r_disch]
+
+    return df_r_cycle
+
+
+def get_df_r(sample):
+    """
+    This function takes in the data path and returns a datadframe of resistances at different SOCs, timescales
+    and for both charge and discharge at all of the available HPPC cycles.
+
+    sample(dataframe): raw cycling data for this cell.
+    """
+
+    # this step index is hard coded and can only work for the formation regular files
+    long_rest_step = 4
+    loop = 'loop1'
+    # cycles that contains this long rest step are HPPC cycles
+    hppc_cycles = sample[
+        sample.step_index.isin([long_rest_step])].cycle_index.unique()
+    df_r = pd.DataFrame()
+    for hppc_cycle in hppc_cycles:
+        # for one HPPC cycle
+        df_r_cycle = get_r_cycle(sample, hppc_cycle,
+                                 range(long_rest_step, long_rest_step + 4),
+                                 loop)
+        df_r = pd.concat([df_r, df_r_cycle], ignore_index=True)
+
+    return df_r
