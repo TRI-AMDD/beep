@@ -24,6 +24,7 @@ from beep.conversion_schemas import (
 from beep.utils import parameters_lookup
 from beep import logger, VALIDATION_SCHEMA_DIR, PROTOCOL_PARAMETERS_DIR
 from beep.structure.validate import SimpleValidator
+from beep.structure.diagnostic import DiagnosticConfig
 
 
 class BEEPDatapath(abc.ABC, MSONable):
@@ -404,6 +405,9 @@ class BEEPDatapath(abc.ABC, MSONable):
             "diagnostic_summary": diagnostic_summary,
             "diagnostic_interpolated": diagnostic_interpolated,
 
+            # New diagnostic configuration
+            "diagnostic": self.diagnostic.as_dict() if self.diagnostic else None,
+
             # Structuring parameters (mostly for provenance)
             "structuring_parameters": self.structuring_parameters,
 
@@ -455,6 +459,11 @@ class BEEPDatapath(abc.ABC, MSONable):
         datapath.diagnostic_data = diagnostic_data if diagnostic_data is None else pd.DataFrame(diagnostic_data)
 
         datapath.structuring_parameters = d.get("structuring_parameters", {})
+
+        diag = d.get("diagnostic", None)
+        if diag:
+            datapath.diagnostic = DiagnosticConfig.from_dict(diag)
+
         return datapath
 
     @property

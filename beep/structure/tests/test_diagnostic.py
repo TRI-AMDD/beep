@@ -106,3 +106,6 @@ class TestDiagnosticConfig(unittest.TestCase):
         self.assertSetEqual(dc2.hppc_ix, dc.hppc_ix)
         self.assertSetEqual(dc2.all_ix, dc.all_ix)
 
+    def test_from_step_numbers(self):
+        pass
+
