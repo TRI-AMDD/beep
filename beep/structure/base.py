@@ -1083,7 +1083,11 @@ class BEEPDatapath(abc.ABC, MSONable):
             new_df["charge_dQdV"] = (
                 new_df.charge_capacity.diff() / new_df.voltage.diff()
             )
-            all_dfs.append(new_df)
+            if new_df.shape[0] < 2:
+                logger.debug(f"Step number {step_index_counter} with step type {step_index} has less than "
+                             f"2 interpolated points; refusing to append to interpolated data.")
+            else:
+                all_dfs.append(new_df)
 
         # Ignore the index to avoid issues with overlapping voltages
         result = pd.concat(all_dfs, ignore_index=True)
@@ -1138,7 +1142,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         diag_summary.reset_index(drop=True, inplace=True)
 
         diag_summary["cycle_type"] = [
-            self.diagnostic.cycle_to_type[cix] for cix in diag_summary["cycle_index"]
+            self.diagnostic.type_by_ix[cix] for cix in diag_summary["cycle_index"]
         ]
 
         # Add CV_time, CV_current, and CV_capacity summary stats
