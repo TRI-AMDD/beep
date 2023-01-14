@@ -226,11 +226,13 @@ class DiagnosticConfig(MSONable):
             (dict)
 
         """
+        json_compatible_type2cix = {
+            k: list(v) for k, v in self.cycle_type_to_cycle_ix.items()
+        }
         return {
             "@module": self.__class__.__module__,
             "@class": self.__class__.__name__,
-            "cycle_type_to_ix": self.cycle_type_to_cycle_ix,
-            "ix_to_cycle_type": self.cycle_ix_to_cycle_type
+            "cycle_type_to_ix": json_compatible_type2cix,
         }
 
 
