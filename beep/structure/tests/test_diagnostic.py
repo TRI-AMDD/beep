@@ -2,6 +2,7 @@ import os
 import unittest
 
 from monty.serialization import loadfn, dumpfn
+from monty.tempfile import ScratchDir
 
 from beep.structure.diagnostic import DiagnosticConfig
 from beep.tests.constants import TEST_FILE_DIR
@@ -108,13 +109,15 @@ class TestDiagnosticConfig(unittest.TestCase):
         self.assertSetEqual(dc2.hppc_ix, dc.hppc_ix)
         self.assertSetEqual(dc2.all_ix, dc.all_ix)
 
-        fname = "test_serialization_DiagnosticConfig.json"
-        dumpfn(dc, fname)
-        
-        dc3 = loadfn(fname)
-        self.assertSetEqual(dc3.rpt_ix, dc.rpt_ix)
-        self.assertSetEqual(dc3.hppc_ix, dc.hppc_ix)
-        self.assertSetEqual(dc3.all_ix, dc.all_ix)
+
+        with ScratchDir("."):
+            fname = "test_serialization_DiagnosticConfig.json"
+            dumpfn(dc, fname)
+
+            dc3 = loadfn(fname)
+            self.assertSetEqual(dc3.rpt_ix, dc.rpt_ix)
+            self.assertSetEqual(dc3.hppc_ix, dc.hppc_ix)
+            self.assertSetEqual(dc3.all_ix, dc.all_ix)
         
         
     def test_from_step_numbers(self):
