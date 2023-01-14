@@ -1,13 +1,11 @@
 import os
 import unittest
 
-
-
 from beep.structure.diagnostic import DiagnosticConfig
 from beep.tests.constants import TEST_FILE_DIR
 
-class TestDiagnosticConfig(unittest.TestCase):
 
+class TestDiagnosticConfig(unittest.TestCase):
     def test_DiagnosticConfig(self):
         # empty test case
         with self.assertRaises(ValueError):
@@ -74,9 +72,9 @@ class TestDiagnosticConfig(unittest.TestCase):
         self.assertSetEqual(dc.reset_ix, reset_ix)
 
         # Test access by cycle index
-        self.assertEqual(dc.by_ix[2], "rpt2")
-        self.assertEqual(dc.by_ix[1000], "reset_")
-        self.assertEqual(dc.by_ix[355], "abnormal")
+        self.assertEqual(dc.type_by_ix[2], "rpt2")
+        self.assertEqual(dc.type_by_ix[1000], "reset_")
+        self.assertEqual(dc.type_by_ix[355], "abnormal")
 
 
         # test error of overlapping cycle types on a single cycle index

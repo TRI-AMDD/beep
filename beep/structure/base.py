@@ -945,16 +945,20 @@ class BEEPDatapath(abc.ABC, MSONable):
             self,
             time_resolution=1000,
             voltage_resolution=1000,
-            v_delta_min=0.001
+            v_delta_min=0.001,
+            dv_fallback=None
     ):
         """
-        Interpolates data according to location and type of diagnostic
-        cycles in the data
+        Interpolates data by step (rather than basic chg/dchg) according to location and type of
+        diagnostic cycles in the data
 
         Args:
-            resolution (int): resolution of interpolation
-            hppc_v_resolution (float): voltage delta to set for range based interpolation
+            time_resolution (int): resolution of time-based interpolation
+            voltage_resolution (float): voltage delta to set for range based interpolation
             v_delta_min (float): minimum voltage delta for voltage based interpolation
+            dv_fallback ((float, float)): Default fallback range for voltage-based interpolation
+                if initial time/voltage interpolation is not within valid range. If not set,
+                uses total voltage range of the step for interpolation.
 
         Returns:
             (pd.DataFrame) of interpolated diagnostic steps by step and cycle
@@ -1048,8 +1052,8 @@ class BEEPDatapath(abc.ABC, MSONable):
                     resolution=time_resolution,
                 )
             else:
-                if self.diagnostic.dv_fallback:
-                    v_range = self.diagnostic.dv_fallback
+                if dv_fallback:
+                    v_range = dv_fallback
                 else:
                     v_range = dv
                 new_df = interpolate_df(
@@ -1060,7 +1064,7 @@ class BEEPDatapath(abc.ABC, MSONable):
                     resolution=voltage_resolution,
                 )
             new_df["cycle_index"] = cycle_index
-            new_df["cycle_type"] = self.diagnostic.cycle_to_type[cycle_index]
+            new_df["cycle_type"] = self.diagnostic.type_by_ix[cycle_index]
             new_df["step_index"] = step_index
             new_df["step_index_counter"] = step_index_counter
             new_df["step_type"] = diag_dict[cycle_index].index(step_index)

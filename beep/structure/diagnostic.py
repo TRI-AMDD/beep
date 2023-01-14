@@ -102,7 +102,7 @@ class DiagnosticConfig(MSONable):
 
         # Nice to have shorthand
         self.cycles = self.cycle_type_to_cycle_ix
-        self.by_ix = self.cycle_ix_to_cycle_type
+        self.type_by_ix = self.cycle_ix_to_cycle_type
 
 
 
