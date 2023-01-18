@@ -171,7 +171,6 @@ class BEEPDatapath(abc.ABC, MSONable):
             raw_data,
             metadata,
             paths=None,
-            diagnostic=None,
             schema=None,
             impute_missing=True
     ):
@@ -184,8 +183,6 @@ class BEEPDatapath(abc.ABC, MSONable):
                 have to.
             paths ({str: str, Pathlike}): Should contain "raw" and "metadata" keys, even if they are the same
                 filepath.
-            diagnostic (beep.structure.diagnostic.DiagnosticConfigBasic): The basic diagnostic configuration denoting
-                where HPPC/RPT cycles are located in the raw data frame, by cycle index.
             schema (str): the name of the validation schema file to use. Should be located in the
                 VALIDATION_SCHEMA_DIR directory, or can alternatively be an absolute filepath.
             impute_missing (bool): Impute missing columns such as temperature and internal_resistance if they
@@ -230,7 +227,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         self.diagnostic_data = None
         self.diagnostic_summary = None
 
-        self.diagnostic = diagnostic
+        self._diagnostic = None
 
         self.metadata = self.CyclerRunMetadata(metadata)
 
@@ -487,6 +484,21 @@ class BEEPDatapath(abc.ABC, MSONable):
         structured = self.paths.get("structured", None)
         s += f"-raw_path:{raw}-structured_path:{structured}"
         return s
+
+    @property
+    def diagnostic(self):
+        return self._diagnostic
+
+    @diagnostic.setter
+    def diagnostic(self, diagnostic):
+        if not isinstance(diagnostic, DiagnosticConfig):
+            raise TypeError("Diagnostic configuration must be "
+                            "a DiagnosticConfig object.")
+        self._diagnostic = diagnostic
+
+    @diagnostic.deleter
+    def diagnostic(self):
+        del self._diagnostic
 
     @StructuringDecorators.must_not_be_legacy
     def structure(self,
@@ -1000,7 +1012,7 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         # Counter to ensure non-contiguous repeats of step_index
         # within same cycle_index are grouped separately
-        diag_data["step_index_counter"] = 0
+        diag_data.loc[:, "step_index_counter"] = 0
 
         for cycle_index in self.diagnostic.all_ix:
             indices = diag_data.loc[diag_data.cycle_index == cycle_index].index

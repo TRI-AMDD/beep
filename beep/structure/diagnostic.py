@@ -104,8 +104,6 @@ class DiagnosticConfig(MSONable):
         self.cycles = self.cycle_type_to_cycle_ix
         self.type_by_ix = self.cycle_ix_to_cycle_type
 
-
-
     @classmethod
     def from_step_numbers(
             cls,
@@ -204,7 +202,7 @@ class DiagnosticConfig(MSONable):
         return cls(all_diag_ix, **kwargs)
 
     @classmethod
-    def from_dict(cls, d):
+    def from_dict(cls, d: dict):
         """
         Create a DiagnosticConfig object from a dictionary.
 
