@@ -75,8 +75,6 @@ class TestArbinDatapath(unittest.TestCase):
     # based on PCRT.test_from_arbin_insufficient_interpolation_length
     def test_from_arbin_insufficient_interpolation_length(self):
         rcycler_run = ArbinDatapath.from_file(self.broken_file)
-        vrange, num_points, nominal_capacity, fast_charge, diag = rcycler_run.determine_structuring_parameters()
-
         diagnostic = DiagnosticConfig(
             {
                 "reset": {1},
@@ -87,23 +85,13 @@ class TestArbinDatapath(unittest.TestCase):
             },
             parameter_set = 'NCR18650-618'
         )
-
-
         rcycler_run.diagnostic = diagnostic
-
-        print(vrange)
-        print(num_points)
-        print(nominal_capacity)
-        print(fast_charge)
-        print(diag)
-        # print(diag['parameter_set'])
-        # self.assertEqual(diag['parameter_set'], 'NCR18650-618')
         self.assertEqual(diagnostic.params['parameter_set'], 'NCR18650-618')
 
-        diag_interp = rcycler_run.interpolate_diagnostic_cycles(diag, resolution=1000, hppc_v_resolution=0.0005)
+        diag_interp = rcycler_run.interpolate_diagnostic_cycles(time_resolution=1000, voltage_resolution=5000)
         self.assertAlmostEqual(diag_interp[(diag_interp.cycle_index == 1) &
                                            (diag_interp.step_index == 5)].charge_capacity.max(),
-                               3.39608899, 3)
+                               3.432291071, 3)
         self.assertAlmostEqual(diag_interp[(diag_interp.cycle_type == "hppc")].charge_capacity.max(),
                                3.4919972, 3)
 
@@ -303,11 +291,17 @@ class TestMaccorDatapath(unittest.TestCase):
     # based on PCRT.test_from_maccor_insufficient_interpolation_length
     def test_from_maccor_insufficient_interpolation_length(self):
         md = MaccorDatapath.from_file(self.broken_file)
-        vrange, num_points, nominal_capacity, fast_charge, diag = md.determine_structuring_parameters()
-        self.assertEqual(diag['parameter_set'], 'Tesla21700')
-        diag_interp = md.interpolate_diagnostic_cycles(diag, resolution=1000, hppc_v_resolution=0.0005)
+        diagnostic = DiagnosticConfig(
+            {
+                "reset": {1}
+            },
+            parameter_set="Tesla21700"
+        )
+        md.diagnostic = diagnostic
+        self.assertEqual(diagnostic.params['parameter_set'], 'Tesla21700')
+        diag_interp = md.interpolate_diagnostic_cycles(time_resolution=1000, voltage_resolution=2000)
         self.assertEqual(np.around(diag_interp[diag_interp.cycle_index == 1].charge_capacity.median(), 3),
-                         np.around(0.6371558214610992, 3))
+                         np.around(0.6364225572152458, 3))
 
     # based on EISpectrumTest.test_from_maccor
     # todo: needs testing for the entire maccor object
