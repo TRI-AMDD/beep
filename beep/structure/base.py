@@ -535,8 +535,6 @@ class BEEPDatapath(abc.ABC, MSONable):
                 time_resolution=diagnostic_resolution,
                 voltage_resolution=diagnostic_resolution
             )
-        else:
-            logger.info("Diagnostic not set; interpolating aging cycles only.")
 
         self.structured_data = self.interpolate_cycles(
             v_range=v_range,

@@ -213,7 +213,7 @@ class DiagnosticConfig(MSONable):
             (DiagnosticConfig)
 
         """
-        return cls(diagnostic_config=d["cycle_type_to_ix"])
+        return cls(diagnostic_config=d["cycle_type_to_ix"], **d["params"])
 
     def as_dict(self) -> dict:
         """
@@ -231,6 +231,7 @@ class DiagnosticConfig(MSONable):
             "@module": self.__class__.__module__,
             "@class": self.__class__.__name__,
             "cycle_type_to_ix": json_compatible_type2cix,
+            "params": self.params
         }
 
 

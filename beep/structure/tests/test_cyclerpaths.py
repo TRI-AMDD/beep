@@ -75,6 +75,13 @@ class TestArbinDatapath(unittest.TestCase):
     def test_from_arbin_insufficient_interpolation_length(self):
         rcycler_run = ArbinDatapath.from_file(self.broken_file)
         vrange, num_points, nominal_capacity, fast_charge, diag = rcycler_run.determine_structuring_parameters()
+
+
+        print(vrange)
+        print(num_points)
+        print(nominal_capacity)
+        print(fast_charge)
+        print(diag)
         # print(diag['parameter_set'])
         self.assertEqual(diag['parameter_set'], 'NCR18650-618')
         diag_interp = rcycler_run.interpolate_diagnostic_cycles(diag, resolution=1000, hppc_v_resolution=0.0005)
