@@ -16,7 +16,6 @@ from monty.io import zopen
 from monty.serialization import dumpfn
 
 from beep import tqdm
-from beep import MODULE_DIR
 from beep.conversion_schemas import (
     STRUCTURE_DTYPES,
 )
@@ -517,17 +516,16 @@ class BEEPDatapath(abc.ABC, MSONable):
             v_range ([int, int]): range of voltages for cycle interpolation.
             resolution (int): resolution for cycle interpolation.
             diagnostic_resolution (int): number of datapoints per step for
-                interpolating diagnostic cycles.
+                interpolating diagnostic cycles. For more granularity
+                of diagnostic structuring, use the interpolate_diagnostic
+                method.
             nominal_capacity (float): nominal capacity for summary stats.
             full_fast_charge (float): full fast charge for summary stats.
-            diagnostic_available (dict): project metadata for processing
-                diagnostic cycles correctly.
             charge_axis (str): Column to interpolate charge step
             discharge_axis (str): Column to interpolate discharge step
             exclude_cycles ([int]): List of cycle indices to exclude
 
         """
-        logger.info(f"Beginning structuring along charge axis '{charge_axis}' and discharge axis '{discharge_axis}'.")
 
         if self.diagnostic:
             self.diagnostic_summary = self.summarize_diagnostic()
@@ -535,11 +533,16 @@ class BEEPDatapath(abc.ABC, MSONable):
                 time_resolution=diagnostic_resolution,
                 voltage_resolution=diagnostic_resolution
             )
+        else:
+            logger.info("Diagnostic not set; interpolating aging cycles only.")
 
+        logger.info(
+            f"Beginning structuring along charge axis '{charge_axis}' and discharge "
+            f"axis '{discharge_axis}'."
+        )
         self.structured_data = self.interpolate_cycles(
             v_range=v_range,
             resolution=resolution,
-            # diagnostic_available=diagnostic_available,
             charge_axis=charge_axis,
             discharge_axis=discharge_axis,
             exclude_cycles=exclude_cycles
@@ -548,7 +551,6 @@ class BEEPDatapath(abc.ABC, MSONable):
         self.structured_summary = self.summarize_cycles(
             nominal_capacity=nominal_capacity,
             full_fast_charge=full_fast_charge,
-            # diagnostic_available=diagnostic_available
         )
 
         self.structuring_parameters = {
@@ -557,49 +559,9 @@ class BEEPDatapath(abc.ABC, MSONable):
             "diagnostic_resolution": diagnostic_resolution,
             "nominal_capacity": nominal_capacity,
             "full_fast_charge": full_fast_charge,
-            # "diagnostic_available": diagnostic_available,
             "charge_axis": charge_axis,
             "discharge_axis": discharge_axis
         }
-
-    def autostructure(
-            self,
-            charge_axis='charge_capacity',
-            discharge_axis='voltage',
-            parameters_path=None,
-    ):
-        """
-        Automatically run structuring based on automatically determined structuring parameters.
-        The parameters are determined from the raw input file, so ensure the raw input file paths
-        are in the 'paths' attribute.
-
-        Args:
-            charge_axis (str): Column to interpolate charge step
-            discharge_axis (str): Column to interpolate discharge step
-            parameters_path (str) Path to directory of protocol parameters files.
-
-        Returns:
-            None
-        """
-        parameters_path = parameters_path if parameters_path else PROTOCOL_PARAMETERS_DIR
-        self.paths["protocol_parameters"] = parameters_path
-        v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available = \
-            self.determine_structuring_parameters(parameters_path=parameters_path)
-        logger.info(f"Autostructuring determined parameters of v_range={v_range}, "
-                    f"resolution={resolution}, "
-                    f"nominal_capacity={nominal_capacity}, "
-                    f"full_fast_charge={full_fast_charge}, "
-                    # f"diagnostic_available={diagnostic_available}"
-                    )
-        return self.structure(
-            v_range=v_range,
-            resolution=resolution,
-            nominal_capacity=nominal_capacity,
-            full_fast_charge=full_fast_charge,
-            # diagnostic_available=diagnostic_available,
-            charge_axis=charge_axis,
-            discharge_axis=discharge_axis
-        )
 
     @StructuringDecorators.must_not_be_legacy
     def unstructure(self):
@@ -614,7 +576,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         self.structured_summary = None
         self.diagnostic_summary = None
         self.structuring_parameters = {}
-        logger.debug("Structure has been reset.")
+        logger.debug("Datapath structuring has been reset.")
 
     def interpolate_step(
             self,
@@ -733,23 +695,6 @@ class BEEPDatapath(abc.ABC, MSONable):
         Returns:
             (pandas.DataFrame): DataFrame corresponding to interpolated values.
         """
-        # if diagnostic_available:
-        #     diag_cycles = list(
-        #         itertools.chain.from_iterable(
-        #             [
-        #                 list(range(i, i + diagnostic_available["length"]))
-        #                 for i in diagnostic_available["diagnostic_starts_at"]
-        #                 if i <= self.raw_data.cycle_index.max()
-        #             ]
-        #         )
-        #     )
-        #     reg_cycles = [
-        #         i for i in self.raw_data.cycle_index.unique() if
-        #         i not in diag_cycles
-        #     ]
-        # else:
-        #     reg_cycles = [i for i in self.raw_data.cycle_index.unique()]
-
         diag_mask = self.raw_data.cycle_index.isin(self.diagnostic.all_ix)
         reg_mask = ~diag_mask
         reg_cycles = self.raw_data[reg_mask].cycle_index.unique()
@@ -792,7 +737,6 @@ class BEEPDatapath(abc.ABC, MSONable):
     # equivalent of legacy get_summary
     def summarize_cycles(
             self,
-            # diagnostic_available=False,
             nominal_capacity=1.1,
             full_fast_charge=0.8,
             cycle_complete_discharge_ratio=0.97,
@@ -821,24 +765,6 @@ class BEEPDatapath(abc.ABC, MSONable):
             (pandas.DataFrame): summary statistics by cycle.
 
         """
-        # Filter out only regular cycles for summary stats. Diagnostic summary computed separately
-        # if diagnostic_available:
-        #     diag_cycles = list(
-        #         itertools.chain.from_iterable(
-        #             [
-        #                 list(range(i, i + diagnostic_available["length"]))
-        #                 for i in diagnostic_available["diagnostic_starts_at"]
-        #                 if i <= self.raw_data.cycle_index.max()
-        #             ]
-        #         )
-        #     )
-        #     reg_cycles_at = [
-        #         i for i in self.raw_data.cycle_index.unique() if
-        #         i not in diag_cycles
-        #     ]
-        # else:
-        #     reg_cycles_at = [i for i in self.raw_data.cycle_index.unique()]
-
         diag_mask = self.raw_data.cycle_index.isin(self.diagnostic.all_ix)
         reg_cycles = self.raw_data[~diag_mask].cycle_index.unique()
 
@@ -971,7 +897,7 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         Args:
             time_resolution (int): resolution of time-based interpolation
-            voltage_resolution (float): voltage delta to set for range based interpolation
+            voltage_resolution (int): resolution of voltage-based interpolation
             v_delta_min (float): minimum voltage delta for voltage based interpolation
             dv_fallback ((float, float)): Default fallback range for voltage-based interpolation
                 if initial time/voltage interpolation is not within valid range. If not set,
@@ -981,32 +907,6 @@ class BEEPDatapath(abc.ABC, MSONable):
             (pd.DataFrame) of interpolated diagnostic steps by step and cycle
 
         """
-        # Get the project name and the parameter file for the diagnostic
-        # project_name_list = parameters_lookup.get_project_sequence(self.paths["raw"])
-        # diag_path = os.path.join(MODULE_DIR, "procedure_templates")
-        # v_range = parameters_lookup.get_diagnostic_parameters(
-        #     diagnostic_available, diag_path, project_name_list[0]
-        # )
-        #
-        # # Determine the cycles and types of the diagnostic cycles
-        # max_cycle = self.raw_data.cycle_index.max()
-        # starts_at = [
-        #     i for i in diagnostic_available["diagnostic_starts_at"] if i <= max_cycle
-        # ]
-        # diag_cycles_at = list(
-        #     itertools.chain.from_iterable(
-        #         [range(i, i + diagnostic_available["length"]) for i in starts_at]
-        #     )
-        # )
-        # # Duplicate cycle type list end to end for each starting index
-        # diag_cycle_type = diagnostic_available["cycle_type"] * len(starts_at)
-        # if not len(diag_cycles_at) == len(diag_cycle_type):
-        #     errmsg = (
-        #         "Diagnostic cycles, {}, and diagnostic cycle types, "
-        #         "{}, are unequal lengths".format(diag_cycles_at, diag_cycle_type)
-        #     )
-        #     raise ValueError(errmsg)
-
         diag_data = self.raw_data.loc[self.raw_data["cycle_index"].isin(self.diagnostic.all_ix)]
         # diag_types = [self.diagnostic.cycle_to_type[cix] for cix in diag_data.cycle_index.unique()]
 
@@ -1048,10 +948,10 @@ class BEEPDatapath(abc.ABC, MSONable):
             step_dv = df.voltage.max() - df.voltage.min()
             dv = [df.voltage.min(), df.voltage.max()]
             if cycle_index in self.diagnostic.hppc_ix and step_dv >= v_delta_min:
-                # hppc_resolution = int(
+                # Old way of using voltage resolution as an actual value of volts; default was 0.0005V
+                # voltage_res = int(
                 #     (df.voltage.max() - df.voltage.min()) / hppc_v_resolution
                 # )
-
                 new_df = interpolate_df(
                     df,
                     field_name="voltage",
@@ -1124,25 +1024,10 @@ class BEEPDatapath(abc.ABC, MSONable):
         Gets summary statistics for data according to location of
         diagnostic cycles in the data
 
-        Args:
-            diagnostic_available (dict): dictionary with diagnostic_types
-                as list, 'length' of the diagnostic in cycles and location
-                of the diagnostic by cycle index
-
         Returns:
             (DataFrame) of summary statistics by cycle
 
         """
-
-        # max_cycle = self.raw_data.cycle_index.max()
-        # starts_at = [
-        #     i for i in diagnostic_available["diagnostic_starts_at"] if i <= max_cycle
-        # ]
-        # diag_cycles_at = list(
-        #     itertools.chain.from_iterable(
-        #         [list(range(i, i + diagnostic_available["length"])) for i in starts_at]
-        #     )
-        # )
         diag_summary = self.raw_data.groupby("cycle_index").agg(self._diag_aggregation)
 
         diag_summary.columns = self._diag_summary_cols
@@ -1215,8 +1100,6 @@ class BEEPDatapath(abc.ABC, MSONable):
             resolution (int): resolution for interpolation
             nominal_capacity (float): nominal capacity for summary stats
             full_fast_charge (float): full fast charge for summary stats
-            diagnostic_available (dict): dictionary of values to use for
-                finding and using the diagnostic cycles
 
         """
         if not parameters_path or not os.path.exists(parameters_path):

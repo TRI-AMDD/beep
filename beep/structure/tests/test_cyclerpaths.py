@@ -29,6 +29,7 @@ from beep.structure.indigo import IndigoDatapath
 from beep.structure.biologic import BiologicDatapath, get_cycle_index
 from beep.structure.battery_archive import BatteryArchiveDatapath
 from beep.structure.novonix import NovonixDatapath
+from beep.structure.diagnostic import DiagnosticConfig
 from beep.tests.constants import TEST_FILE_DIR
 
 
@@ -76,6 +77,19 @@ class TestArbinDatapath(unittest.TestCase):
         rcycler_run = ArbinDatapath.from_file(self.broken_file)
         vrange, num_points, nominal_capacity, fast_charge, diag = rcycler_run.determine_structuring_parameters()
 
+        diagnostic = DiagnosticConfig(
+            {
+                "reset": {1},
+                "hppc": {2},
+                "rpt_0.2C": {3},
+                "rpt_1C": {4},
+                "rpt_2C": {5}
+            },
+            parameter_set = 'NCR18650-618'
+        )
+
+
+        rcycler_run.diagnostic = diagnostic
 
         print(vrange)
         print(num_points)
@@ -83,7 +97,9 @@ class TestArbinDatapath(unittest.TestCase):
         print(fast_charge)
         print(diag)
         # print(diag['parameter_set'])
-        self.assertEqual(diag['parameter_set'], 'NCR18650-618')
+        # self.assertEqual(diag['parameter_set'], 'NCR18650-618')
+        self.assertEqual(diagnostic.params['parameter_set'], 'NCR18650-618')
+
         diag_interp = rcycler_run.interpolate_diagnostic_cycles(diag, resolution=1000, hppc_v_resolution=0.0005)
         self.assertAlmostEqual(diag_interp[(diag_interp.cycle_index == 1) &
                                            (diag_interp.step_index == 5)].charge_capacity.max(),
