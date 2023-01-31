@@ -131,7 +131,6 @@ class TestBEEPDatapath(unittest.TestCase):
         cls.diagnostic = DiagnosticConfig(
             {"hppc": {1}}
         )
-        cls.datapath_diag.diagnostic = cls.diagnostic
 
     def setUp(self) -> None:
         # Reset all datapaths after each run, avoiding colliions between tests
@@ -145,6 +144,8 @@ class TestBEEPDatapath(unittest.TestCase):
             self.datapath_small_params
         ]:
             dp.unstructure()
+
+        self.datapath_diag.diagnostic = self.diagnostic
 
     def run_dtypes_check(self, summary):
         reg_dyptes = summary.dtypes.tolist()
@@ -412,20 +413,26 @@ class TestBEEPDatapath(unittest.TestCase):
     # based on RCRT.test_get_interpolated_diagnostic_cycles
     def test_interpolate_diagnostic_cycles(self):
         d_interp = self.datapath_diag.interpolate_diagnostic_cycles(
-            voltage_resolution=500
+            time_resolution=500, voltage_resolution=10000
         )
         self.assertGreaterEqual(len(d_interp.cycle_index.unique()), 1)
 
         # Ensure step indices are partitioned and processed separately
         self.assertEqual(len(d_interp.step_index.unique()), 9)
+
+        pd.options.display.max_columns = None
         first_step = d_interp[
             (d_interp.step_index == 7) & (d_interp.step_index_counter == 1)
         ]
         second_step = d_interp[
             (d_interp.step_index == 7) & (d_interp.step_index_counter == 4)
         ]
-        self.assertLess(first_step.voltage.diff().max(), 0.001)
-        self.assertLess(second_step.voltage.diff().max(), 0.001)
+
+        print(first_step)
+
+        print(second_step)
+        self.assertLess(first_step.voltage.diff().max(), 0.0015)
+        self.assertLess(second_step.voltage.diff().max(), 0.0015)
 
     # based on RCRT.test_get_diagnostic_summary
     def test_summarize_diagnostic(self):

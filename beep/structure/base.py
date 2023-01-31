@@ -490,7 +490,7 @@ class BEEPDatapath(abc.ABC, MSONable):
 
     @diagnostic.setter
     def diagnostic(self, diagnostic):
-        if not isinstance(diagnostic, (DiagnosticConfig, None)):
+        if not isinstance(diagnostic, (DiagnosticConfig, type(None))):
             raise TypeError("Diagnostic configuration must be "
                             "a DiagnosticConfig object.")
         self._diagnostic = diagnostic
@@ -915,6 +915,9 @@ class BEEPDatapath(abc.ABC, MSONable):
             (pd.DataFrame) of interpolated diagnostic steps by step and cycle
 
         """
+
+        if not self.diagnostic:
+            raise ValueError("No DiagnosticConfig is set. Cannot interpolate diagnostic cycles.")
         diag_data = self.raw_data.loc[self.raw_data["cycle_index"].isin(self.diagnostic.all_ix)]
         # diag_types = [self.diagnostic.cycle_to_type[cix] for cix in diag_data.cycle_index.unique()]
 
