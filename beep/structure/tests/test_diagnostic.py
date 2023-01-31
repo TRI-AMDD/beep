@@ -92,6 +92,30 @@ class TestDiagnosticConfig(unittest.TestCase):
                 }
             )
 
+    def test_kwargs(self):
+        dc = DiagnosticConfig(
+            {
+                "rpt": (1, 2, 12)
+            },
+            kw1=True,
+            kw2=43,
+            kw3="something"
+        )
+
+        self.assertTrue(dc.params["kw1"])
+        self.assertEqual(dc.params["kw2"], 43)
+        self.assertEqual(dc.params["kw3"], "something")
+
+        with self.assertRaises(TypeError):
+            DiagnosticConfig(
+                {
+                    "rpt": (1, 2, 12)
+                },
+                kw1=True,
+                kw2=[1, 15, 92]
+            )
+
+
     def test_serialization(self):
         rpt_ix = {1, 2, 3}
         hppc_ix = {0, 101, 1999}
@@ -100,7 +124,9 @@ class TestDiagnosticConfig(unittest.TestCase):
             {
                 "rpt": rpt_ix,
                 "hppc": hppc_ix
-            }
+            },
+            parameter_set="SomeMadeUp_Paramset",
+            extra_var=123
         )
 
         d = dc.as_dict()
