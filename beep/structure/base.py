@@ -695,8 +695,12 @@ class BEEPDatapath(abc.ABC, MSONable):
         Returns:
             (pandas.DataFrame): DataFrame corresponding to interpolated values.
         """
-        diag_mask = self.raw_data.cycle_index.isin(self.diagnostic.all_ix)
-        reg_mask = ~diag_mask
+        if self.diagnostic:
+            diag_mask = self.raw_data.cycle_index.isin(self.diagnostic.all_ix)
+            reg_mask = ~diag_mask
+        else:
+            reg_mask = pd.Series([True] * self.raw_data.shape[0])
+
         reg_cycles = self.raw_data[reg_mask].cycle_index.unique()
 
         v_range = v_range or [2.8, 3.5]
@@ -765,8 +769,11 @@ class BEEPDatapath(abc.ABC, MSONable):
             (pandas.DataFrame): summary statistics by cycle.
 
         """
-        diag_mask = self.raw_data.cycle_index.isin(self.diagnostic.all_ix)
-        reg_cycles = self.raw_data[~diag_mask].cycle_index.unique()
+        if self.diagnostic:
+            diag_mask = self.raw_data.cycle_index.isin(self.diagnostic.all_ix)
+            reg_cycles = self.raw_data[~diag_mask].cycle_index.unique()
+        else:
+            reg_cycles = self.raw_data.cycle_index.unique()
 
         summary = self.raw_data.groupby("cycle_index").agg(self._aggregation)
         summary.columns = self._summary_cols
