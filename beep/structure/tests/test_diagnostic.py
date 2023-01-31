@@ -1,6 +1,7 @@
 import os
 import unittest
 
+import pandas as pd
 from monty.serialization import loadfn, dumpfn
 from monty.tempfile import ScratchDir
 
@@ -16,7 +17,7 @@ class TestDiagnosticConfig(unittest.TestCase):
 
         # only one type of rpt cycle
         rpt_ix = {1, 2, 3}
-        dc  = DiagnosticConfig(
+        dc = DiagnosticConfig(
             diagnostic_config={
                 "rpt": rpt_ix
             }
@@ -25,7 +26,6 @@ class TestDiagnosticConfig(unittest.TestCase):
         self.assertSetEqual(dc.all_ix, rpt_ix)
         self.assertSetEqual(dc.hppc_ix, set())
         self.assertSetEqual(dc.reset_ix, set())
-
 
         # only one type of hppc_cycle
         hppc_ix = {12, 14, 1}
@@ -68,7 +68,8 @@ class TestDiagnosticConfig(unittest.TestCase):
         # Test access via std. type names
         all_rpt_ix = rpt1_ix.union(rpt2_ix)
         all_hppc_ix = hppc1_ix.union(hppc2_ix)
-        all_diag_ix = set().union(all_rpt_ix, all_hppc_ix, reset_ix, abnormal_ix)
+        all_diag_ix = set().union(all_rpt_ix, all_hppc_ix, reset_ix,
+                                  abnormal_ix)
         self.assertSetEqual(dc.rpt_ix, all_rpt_ix)
         self.assertSetEqual(dc.hppc_ix, all_hppc_ix)
         self.assertSetEqual(dc.all_ix, all_diag_ix)
@@ -78,7 +79,6 @@ class TestDiagnosticConfig(unittest.TestCase):
         self.assertEqual(dc.type_by_ix[2], "rpt2")
         self.assertEqual(dc.type_by_ix[1000], "reset_")
         self.assertEqual(dc.type_by_ix[355], "abnormal")
-
 
         # test error of overlapping cycle types on a single cycle index
         rpt_ix = {1, 2, 3}
@@ -146,8 +146,23 @@ class TestDiagnosticConfig(unittest.TestCase):
             self.assertSetEqual(dc3.all_ix, dc.all_ix)
             self.assertEqual(dc3.params["parameter_set"], "SomeMadeUp_Paramset")
             self.assertEqual(dc3.params["extra_var"], 123)
-        
-        
-    def test_from_step_numbers(self):
-        pass
 
+    def test_from_step_numbers(self):
+        # read data written directly to CSV to avoid any future conflicts with
+        # ingestion or changes in .from_file in BEEPDatapath
+        fpath = os.path.join(TEST_FILE_DIR, "Nova_Regular_115_df_raw.csv")
+        df_memsaved = pd.read_csv(fpath, index_col=0)
+
+        dc = DiagnosticConfig.from_step_numbers(
+            df_memsaved,
+            matching_criteria={
+                "hppc": ("contains", [(1, 2, 4, 6, 8)]),
+                "rpt_lowrate": ("exact", [(12, 13)]),
+                "rpt_highrate": ("exact", [(15, 16)])
+            }
+        )
+        self.assertSetEqual(dc.cycle_type_to_cycle_ix["rpt_lowrate"],
+                            {1, 25, 128})
+        self.assertSetEqual(dc.cycle_type_to_cycle_ix["rpt_highrate"], {2, 26})
+        self.assertSetEqual(dc.hppc_ix, {0, 8, 24, 127})
+        self.assertSetEqual(dc.rpt_ix, {1, 2, 25, 26, 128})
