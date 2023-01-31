@@ -1,12 +1,12 @@
-
 from typing import Iterable, Optional, Tuple, Dict
-from itertools import chain
-from dataclasses import dataclass
 
 import pandas as pd
 from monty.json import MSONable
 
-from beep import logger
+"""
+Classes defining diagnostic (e.g., RPT, HPPC) cycles
+and their locations in cycler runs (Datapaths).
+"""
 
 
 class DiagnosticConfig(MSONable):
