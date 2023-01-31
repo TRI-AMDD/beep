@@ -115,7 +115,6 @@ class TestDiagnosticConfig(unittest.TestCase):
                 kw2=[1, 15, 92]
             )
 
-
     def test_serialization(self):
         rpt_ix = {1, 2, 3}
         hppc_ix = {0, 101, 1999}
@@ -134,7 +133,8 @@ class TestDiagnosticConfig(unittest.TestCase):
         self.assertSetEqual(dc2.rpt_ix, dc.rpt_ix)
         self.assertSetEqual(dc2.hppc_ix, dc.hppc_ix)
         self.assertSetEqual(dc2.all_ix, dc.all_ix)
-
+        self.assertEqual(dc2.params["parameter_set"], "SomeMadeUp_Paramset")
+        self.assertEqual(dc2.params["extra_var"], 123)
 
         with ScratchDir("."):
             fname = "test_serialization_DiagnosticConfig.json"
@@ -144,6 +144,8 @@ class TestDiagnosticConfig(unittest.TestCase):
             self.assertSetEqual(dc3.rpt_ix, dc.rpt_ix)
             self.assertSetEqual(dc3.hppc_ix, dc.hppc_ix)
             self.assertSetEqual(dc3.all_ix, dc.all_ix)
+            self.assertEqual(dc3.params["parameter_set"], "SomeMadeUp_Paramset")
+            self.assertEqual(dc3.params["extra_var"], 123)
         
         
     def test_from_step_numbers(self):
