@@ -101,11 +101,7 @@ class DiagnosticConfig(MSONable):
 
         allowed_kwarg_types = (int, str, float, bool)
         for kw, arg in kwargs.items():
-
-            for json_safe_dtype in allowed_kwarg_types:
-                if isinstance(arg, json_safe_dtype):
-                    break
-            else:
+            if not isinstance(arg, allowed_kwarg_types):
                 raise TypeError(f"Kwarg {kw} is type {type(arg)}; "
                                 f"allowed types are {allowed_kwarg_types}")
         self.params = kwargs

@@ -28,6 +28,7 @@ from beep.utils.s3 import download_s3_object
 from beep.structure.base import BEEPDatapath
 from beep.structure.base_eis import EIS, BEEPDatapathWithEIS
 from beep.structure.maccor import MaccorDatapath
+from beep.structure.diagnostic import DiagnosticConfig
 from beep.tests.constants import TEST_FILE_DIR, BIG_FILE_TESTS, SKIP_MSG
 from beep.structure.cli import auto_load_processed
 from beep import VALIDATION_SCHEMA_DIR
@@ -127,12 +128,10 @@ class TestBEEPDatapath(unittest.TestCase):
             TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_processed.json"
         )
 
-        cls.diagnostic_available = {
-            "type": "HPPC",
-            "cycle_type": ["hppc"],
-            "length": 1,
-            "diagnostic_starts_at": [1],
-        }
+        cls.diagnostic = DiagnosticConfig(
+            {"hppc": {1}}
+        )
+        cls.datapath_diag.diagnostic = cls.diagnostic
 
     def setUp(self) -> None:
         # Reset all datapaths after each run, avoiding colliions between tests
@@ -413,7 +412,7 @@ class TestBEEPDatapath(unittest.TestCase):
     # based on RCRT.test_get_interpolated_diagnostic_cycles
     def test_interpolate_diagnostic_cycles(self):
         d_interp = self.datapath_diag.interpolate_diagnostic_cycles(
-            self.diagnostic_available, resolution=500
+            voltage_resolution=500
         )
         self.assertGreaterEqual(len(d_interp.cycle_index.unique()), 1)
 
@@ -430,7 +429,7 @@ class TestBEEPDatapath(unittest.TestCase):
 
     # based on RCRT.test_get_diagnostic_summary
     def test_summarize_diagnostic(self):
-        diag_summary = self.datapath_diag.summarize_diagnostic(self.diagnostic_available)
+        diag_summary = self.datapath_diag.summarize_diagnostic()
         self.assertEqual(diag_summary["paused"].max(), 0)
         self.assertEqual(diag_summary["CV_time"][0], np.float32(125502.578125))
         self.assertEqual(diag_summary["CV_current"][0], np.float32(2.3499656))

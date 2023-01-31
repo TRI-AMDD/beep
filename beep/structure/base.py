@@ -490,7 +490,7 @@ class BEEPDatapath(abc.ABC, MSONable):
 
     @diagnostic.setter
     def diagnostic(self, diagnostic):
-        if not isinstance(diagnostic, DiagnosticConfig):
+        if not isinstance(diagnostic, (DiagnosticConfig, None)):
             raise TypeError("Diagnostic configuration must be "
                             "a DiagnosticConfig object.")
         self._diagnostic = diagnostic
@@ -576,6 +576,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         self.structured_summary = None
         self.diagnostic_summary = None
         self.structuring_parameters = {}
+        self.diagnostic = None
         logger.debug("Datapath structuring has been reset.")
 
     def interpolate_step(
