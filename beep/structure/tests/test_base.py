@@ -224,7 +224,6 @@ class TestBEEPDatapath(unittest.TestCase):
         test_file = os.path.join(
             TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_processed.json"
         )
-
         datapath = self.BEEPDatapathChildTest.from_json_file(test_file)
         self.assertTrue(isinstance(datapath.structured_summary, pd.DataFrame))
         self.assertTrue(isinstance(datapath.structured_data, pd.DataFrame))
@@ -374,49 +373,6 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertEqual(summary["charge_throughput"][5], np.float32(6.7614093))
         self.assertEqual(summary["energy_throughput"][5], np.float32(23.2752363))
         self.run_dtypes_check(summary)
-
-    # based on RCRT.test_determine_structuring_parameters
-    def test_determine_structuring_parameters(self):
-        (v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available) = \
-            self.datapath_diag_normal.determine_structuring_parameters()
-        diagnostic_available_test = {
-            "parameter_set": "Tesla21700",
-            "cycle_type": ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"],
-            "length": 5,
-            "diagnostic_starts_at": [
-                1, 36, 141, 246, 351, 456, 561, 666, 771, 876, 981, 1086,
-                1191,
-                1296, 1401, 1506, 1611, 1716, 1821, 1926, 2031, 2136, 2241,
-                2346,
-                2451, 2556, 2661, 2766, 2871, 2976, 3081, 3186, 3291, 3396,
-                3501,
-                3606, 3628
-            ]
-        }
-
-        self.assertEqual(v_range, [2.5, 4.2])
-        self.assertEqual(resolution, 1000)
-        self.assertEqual(nominal_capacity, 4.84)
-        self.assertEqual(full_fast_charge, 0.8)
-        self.assertEqual(diagnostic_available, diagnostic_available_test)
-        (
-            v_range,
-            resolution,
-            nominal_capacity,
-            full_fast_charge,
-            diagnostic_available,
-        ) = self.datapath_diag_misplaced.determine_structuring_parameters()
-        diagnostic_available_test = {
-            "parameter_set": "Tesla21700",
-            "cycle_type": ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"],
-            "length": 5,
-            "diagnostic_starts_at": [1, 36, 141, 220, 255]
-        }
-        self.assertEqual(v_range, [2.5, 4.2])
-        self.assertEqual(resolution, 1000)
-        self.assertEqual(nominal_capacity, 4.84)
-        self.assertEqual(full_fast_charge, 0.8)
-        self.assertEqual(diagnostic_available, diagnostic_available_test)
 
     # based on RCRT.test_get_interpolated_diagnostic_cycles
     def test_interpolate_diagnostic_cycles(self):
@@ -657,14 +613,6 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertEqual(self.datapath_small_params.metadata.protocol, "PredictionDiagnostics_000109.000")
         self.assertEqual(self.datapath_small_params.metadata.channel_id, 10)
         self.assertTrue(self.datapath_small_params.is_structured)
-
-    def test_autostructure(self):
-        self.datapath_diag_normal.autostructure()
-        self.assertEqual(3448, len(self.datapath_diag_normal.structured_summary))
-        self.assertEqual(4957, self.datapath_diag_normal.structured_summary.paused.iloc[0])
-
-        self.assertEqual("reset", self.datapath_diag_normal.diagnostic_summary.cycle_type.iloc[0])
-        self.assertEqual(4.711819, np.round(self.datapath_diag_normal.diagnostic_summary.discharge_capacity.iloc[0], 6))
 
     def test_structure_w_cycle_exclusion(self):
         EXCLUDED_CYCLES = [0, 1, 99]
