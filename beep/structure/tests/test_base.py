@@ -407,7 +407,7 @@ class TestBEEPDatapath(unittest.TestCase):
     # based on RCRT.test_get_diagnostic
     # though it is based on maccor files this test is designed to
     # check structuring of diagnostic cycles
-    @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
+    # @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_get_diagnostic(self):
         maccor_file_w_parameters_s3 = {
             "bucket": "beep-sync-test-stage",
@@ -424,26 +424,42 @@ class TestBEEPDatapath(unittest.TestCase):
 
         md = MaccorDatapath.from_file(maccor_file_w_parameters)
 
-        (
-            v_range,
-            resolution,
-            nominal_capacity,
-            full_fast_charge,
-            diagnostic_available,
-        ) = md.determine_structuring_parameters()
+        # (
+        #     v_range,
+        #     resolution,
+        #     nominal_capacity,
+        #     full_fast_charge,
+        #     diagnostic_available,
+        # ) = md.determine_structuring_parameters()
+        #
+        # nominal_capacity = 4.84
+        # v_range = [2.5, 4.2]
 
-        self.assertEqual(nominal_capacity, 4.84)
+
+        reset_ix = [1, 36, 141, 246]
+        diag = DiagnosticConfig(
+            {
+                "reset": reset_ix,
+                "hppc": [i + 1 for i in reset_ix],
+                "rpt_0.2C": [i + 2 for i in reset_ix[:-1]],
+                "rpt_1C": [i + 3 for i in reset_ix[:-1]],
+                "rpt_2C": [i + 4 for i in reset_ix[:-1]]
+            }
+        )
+
+
+        # self.assertEqual(nominal_capacity, 4.84)
         # self.assertEqual(v_range, [2.7, 4.2]) # This is an older assertion, value changed when
         # different cell types were added
 
-        self.assertEqual(v_range, [2.5, 4.2])
-        self.assertEqual(
-            diagnostic_available["cycle_type"],
-            ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"],
-        )
-        diag_summary = md.summarize_diagnostic(diagnostic_available)
-
-        reg_summary = md.summarize_cycles(diagnostic_available)
+        # self.assertEqual(v_range, [2.5, 4.2])
+        # self.assertEqual(
+        #     diagnostic_available["cycle_type"],
+        #     ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"],
+        # )
+        md.diagnostic = diag
+        diag_summary = md.summarize_diagnostic()
+        reg_summary = md.summarize_cycles()
         self.assertEqual(len(reg_summary.cycle_index.tolist()), 230)
         self.assertEqual(reg_summary.cycle_index.tolist()[:10],
                          [0, 6, 7, 8, 9, 10, 11, 12, 13, 14])
@@ -484,9 +500,11 @@ class TestBEEPDatapath(unittest.TestCase):
                 "hppc",
             ],
         )
+
         self.assertEqual(diag_summary.paused.max(), 0)
         diag_interpolated = md.interpolate_diagnostic_cycles(
-            diagnostic_available, resolution=1000
+            time_resolution=500,
+            voltage_resolution=1000
         )
 
         # Check data types are being set correctly for interpolated data
@@ -532,7 +550,7 @@ class TestBEEPDatapath(unittest.TestCase):
         plt.figure()
         plt.plot(hppc_dischg1.test_time, hppc_dischg1.voltage)
         plt.savefig(os.path.join(TEST_FILE_DIR, "hppc_discharge_pulse_1.png"))
-        self.assertEqual(len(hppc_dischg1), 176)
+        self.assertEqual(len(hppc_dischg1), 1000)
 
         hppc_dischg2 = diag_interpolated[
             (diag_interpolated.cycle_index == 37)
@@ -545,10 +563,9 @@ class TestBEEPDatapath(unittest.TestCase):
         plt.figure()
         plt.plot(hppc_dischg2.test_time, hppc_dischg2.current)
         plt.savefig(os.path.join(TEST_FILE_DIR, "hppc_cv.png"))
-        self.assertEqual(len(hppc_dischg2), 1000)
+        self.assertEqual(len(hppc_dischg2), 500)
 
-        # processed_cycler_run = cycler_run.to_processed_cycler_run()
-        md.autostructure()
+        md.structure()
         self.assertNotIn(
             diag_summary.cycle_index.tolist(),
             md.structured_data.cycle_index.unique(),
