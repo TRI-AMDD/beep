@@ -98,7 +98,6 @@ class TestBEEPDatapath(unittest.TestCase):
         )
 
         # Maccor with various diagnostics from memory
-        # For testing determine_structuring_parameters
         maccor_diag_normal_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_diagnostic_normal_memloaded.csv")
         maccor_diag_normal_meta_fname = os.path.join(TEST_FILE_DIR,
                                                      "BEEPDatapath_maccor_diagnostic_normal_metadata_memloaded.json")
@@ -407,7 +406,7 @@ class TestBEEPDatapath(unittest.TestCase):
     # based on RCRT.test_get_diagnostic
     # though it is based on maccor files this test is designed to
     # check structuring of diagnostic cycles
-    # @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
+    @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
     def test_get_diagnostic(self):
         maccor_file_w_parameters_s3 = {
             "bucket": "beep-sync-test-stage",
@@ -424,18 +423,6 @@ class TestBEEPDatapath(unittest.TestCase):
 
         md = MaccorDatapath.from_file(maccor_file_w_parameters)
 
-        # (
-        #     v_range,
-        #     resolution,
-        #     nominal_capacity,
-        #     full_fast_charge,
-        #     diagnostic_available,
-        # ) = md.determine_structuring_parameters()
-        #
-        # nominal_capacity = 4.84
-        # v_range = [2.5, 4.2]
-
-
         reset_ix = [1, 36, 141, 246]
         diag = DiagnosticConfig(
             {
@@ -447,16 +434,6 @@ class TestBEEPDatapath(unittest.TestCase):
             }
         )
 
-
-        # self.assertEqual(nominal_capacity, 4.84)
-        # self.assertEqual(v_range, [2.7, 4.2]) # This is an older assertion, value changed when
-        # different cell types were added
-
-        # self.assertEqual(v_range, [2.5, 4.2])
-        # self.assertEqual(
-        #     diagnostic_available["cycle_type"],
-        #     ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"],
-        # )
         md.diagnostic = diag
         diag_summary = md.summarize_diagnostic()
         reg_summary = md.summarize_cycles()
