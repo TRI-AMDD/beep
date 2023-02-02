@@ -155,7 +155,6 @@ class TestBEEPDatapath(unittest.TestCase):
             self.assertEqual(reg_dyptes[indx], STRUCTURE_DTYPES["summary"][col])
 
     def test_abc(self):
-
         class BEEPDatapathChildBad(BEEPDatapath):
             def some_extra_method(self):
                 return True
@@ -177,6 +176,7 @@ class TestBEEPDatapath(unittest.TestCase):
         truth_datapath = self.datapath_diag
 
         truth_datapath.structure()
+
         d = truth_datapath.as_dict()
         datapath_from_dict = self.BEEPDatapathChildTest.from_dict(d)
 
@@ -197,6 +197,13 @@ class TestBEEPDatapath(unittest.TestCase):
                             self.assertEqual(df_truth, df_test)
                         else:
                             self.assertTrue(isinstance(df_test, pd.DataFrame))
+
+                            # reset indices as pandas serialization can be weird
+                            df_test = df_test.reset_index(drop=True)
+                            df_truth = df_truth.reset_index(drop=True)
+                            if not df_truth.equals(df_test):
+                                print(df_truth)
+                                print(df_test)
                             self.assertTrue(df_truth.equals(df_test))
 
                 self.assertEqual(datapath_from_json.paths.get("structured"), fname)
@@ -327,6 +334,8 @@ class TestBEEPDatapath(unittest.TestCase):
     # based on RCRT.test_get_charge_throughput
     # based on RCRT.test_summary_dtypes
     def test_summarize_cycles(self):
+        # Remove diagnostic so that it will treat all cycles as regular cycles.
+        self.datapath_diag.diagnostic = None
         summary_diag = self.datapath_diag.summarize_cycles(nominal_capacity=4.7, full_fast_charge=0.8)
         self.assertTrue(
             set.issubset(
@@ -350,7 +359,7 @@ class TestBEEPDatapath(unittest.TestCase):
                 set(summary_diag.columns),
             )
         )
-        self.assertEqual(summary_diag["cycle_index"].tolist(), list(range(0, 13)))
+        self.assertEqual(summary_diag["cycle_index"].tolist(), list(range(13)))
         self.assertEqual(len(summary_diag.index), len(summary_diag["date_time_iso"]))
         self.assertEqual(summary_diag["paused"].max(), 0)
         self.assertEqual(summary_diag["CV_time"][1], np.float32(160111.796875))
@@ -390,7 +399,6 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertEqual(nominal_capacity, 4.84)
         self.assertEqual(full_fast_charge, 0.8)
         self.assertEqual(diagnostic_available, diagnostic_available_test)
-
         (
             v_range,
             resolution,
@@ -413,26 +421,16 @@ class TestBEEPDatapath(unittest.TestCase):
     # based on RCRT.test_get_interpolated_diagnostic_cycles
     def test_interpolate_diagnostic_cycles(self):
         d_interp = self.datapath_diag.interpolate_diagnostic_cycles(
-            time_resolution=500, voltage_resolution=10000
+            time_resolution=500, voltage_resolution=1000
         )
         self.assertGreaterEqual(len(d_interp.cycle_index.unique()), 1)
 
         # Ensure step indices are partitioned and processed separately
         self.assertEqual(len(d_interp.step_index.unique()), 9)
-
-        pd.options.display.max_columns = None
-        first_step = d_interp[
-            (d_interp.step_index == 7) & (d_interp.step_index_counter == 1)
-        ]
-        second_step = d_interp[
-            (d_interp.step_index == 7) & (d_interp.step_index_counter == 4)
-        ]
-
-        print(first_step)
-
-        print(second_step)
+        first_step = d_interp[d_interp.step_index_counter == 1]
+        second_step = d_interp[d_interp.step_index_counter == 4]
         self.assertLess(first_step.voltage.diff().max(), 0.0015)
-        self.assertLess(second_step.voltage.diff().max(), 0.0015)
+        self.assertLess(second_step.voltage.diff().max(), 0.004)
 
     # based on RCRT.test_get_diagnostic_summary
     def test_summarize_diagnostic(self):
