@@ -534,7 +534,7 @@ class TestNovonixDatapath(unittest.TestCase):
         )
 
         self.assertTrue(dp.raw_data["test_time"].is_monotonic_increasing)
-        self.assertListEqual(list(dp.raw_data["step_type_num"].unique()), [0, 7, 8, 1])
+        self.assertListEqual(list(dp.raw_data["step_index"].unique()), [0, 7, 8, 1])
 
         self.assertTrue("protocol" in dp.metadata.raw)
         self.assertTrue("channel" in dp.metadata.raw)
