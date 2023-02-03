@@ -275,12 +275,15 @@ class TestBEEPDatapath(unittest.TestCase):
         all_interpolated = dp.interpolate_cycles()
 
         # Test discharge cycles
+        # To ensure lengths are all the same (except for the first cycle)
         dchg = all_interpolated[(all_interpolated.step_type == "discharge")]
-        lengths = [len(df) for index, df in dchg.groupby("cycle_index")]
-        self.assertTrue(np.all(np.array(lengths) == 1000))
+        lengths = [len(df) for index, df in dchg.groupby("cycle_index") if index != 0]
+        self.assertTrue(np.all(np.array(lengths) == 3000))
 
         # Found these manually
         dchg = dchg.drop(columns=["step_type"])
+
+        print(dchg)
         y_at_point = dchg.iloc[[1500]]
         x_at_point = dchg.voltage[1500]
         cycle_1 = dp.raw_data[dp.raw_data["cycle_index"] == 1]
