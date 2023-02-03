@@ -1365,6 +1365,7 @@ def step_is_chg_state(step_df, chg):
     else:
         return chg == is_charging
 
+
 def step_is_dchg(step_df):
     return step_is_chg_state(step_df, False)
 
