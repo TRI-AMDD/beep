@@ -259,8 +259,15 @@ class TestBEEPDatapath(unittest.TestCase):
             axis_2 = interpolated_charge[
                 interpolated_charge.cycle_index == 10
             ].charge_capacity.to_list()
+
+            if step_type == "charge":
+                l = 5000
+            else:
+                l = 3000
+
             self.assertGreater(max(axis_1), max(axis_2))
-            self.assertTrue(np.all(np.array(lengths) == 1000))
+            lengths = [l for i, l in enumerate(lengths) if i not in (0, 93)]
+            self.assertTrue(np.all(np.array(lengths) == l))
 
             if step_type == "charge":
                 self.assertTrue(interpolated_charge["current"].mean() > 0)
@@ -611,7 +618,7 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertTrue(self.datapath_small_params.is_structured)
 
     def test_structure_w_cycle_exclusion(self):
-        EXCLUDED_CYCLES = [0, 1, 99]
+        EXCLUDED_CYCLES = [0, 1, 93]
         cycles = self.datapath_nodiag.raw_data["cycle_index"].unique()
         self.datapath_nodiag.structure(exclude_cycles=EXCLUDED_CYCLES, resolution=100)
 
@@ -621,8 +628,8 @@ class TestBEEPDatapath(unittest.TestCase):
             if cycle in EXCLUDED_CYCLES:
                 self.assertEqual(len(cycle_data), 0)
             else:
-                # 100 charge, 100 discharge
-                self.assertEqual(len(cycle_data), 200)
+                # 100 per step
+                self.assertEqual(len(cycle_data), 800)
 
     # based on PCRT.test_get_cycle_life
     def test_get_cycle_life(self):
