@@ -616,7 +616,7 @@ class TestNovonixDatapath(unittest.TestCase):
 
         # The number of rows is 1100 since there are 11 total step type numbers
         # spread across all step types
-        self.assertTupleEqual(dp.structured_data.shape, (1100, 11))
+        self.assertTupleEqual(dp.structured_data.shape, (1100, 12))
 
 
 

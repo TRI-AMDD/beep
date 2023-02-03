@@ -95,9 +95,9 @@ class NovonixDatapath(BEEPDatapath):
         # ensure that there are not steps with step type numbers outside what is accounted
         # for within the schema
         STEP_NAME_IX_MAP = NOVONIX_CONFIG["step_names"]
-        available_step_type_nums = data["step_type_num"].unique().tolist()
+        available_step_indexs = data["step_index"].unique().tolist()
         unknown_step_types = []
-        for astn in available_step_type_nums:
+        for astn in available_step_indexs:
             if astn not in STEP_NAME_IX_MAP:
                 unknown_step_types.append(astn)
         if unknown_step_types:
@@ -108,7 +108,7 @@ class NovonixDatapath(BEEPDatapath):
         # format capacity and energy
         STEP_IS_CHG_MAP = NOVONIX_CONFIG["step_is_chg"]
 
-        data["step_type_name"] = data["step_type_num"].replace(STEP_NAME_IX_MAP)
+        data["step_type_name"] = data["step_index"].replace(STEP_NAME_IX_MAP)
         data["step_type"] = data["step_type_name"]. \
             replace(STEP_IS_CHG_MAP). \
             replace({True: "charge", False: "discharge"})
@@ -199,32 +199,32 @@ class NovonixDatapath(BEEPDatapath):
         obj.external_summary = summary
         return obj
 
-    def iterate_steps_in_cycle(self, cycle_df, step_type):
-        """
-        A Novonix-specific method of filtering steps for interpolation
-        since the charge/discharge changes are known via the step_type_num
-        specification.
-
-        For example, steps within a single cycle are not separated JUST
-        by whether they are charge or discharge, they are separated by
-        the KIND of charge/discharge.
-
-        For example, a cycle with step type numbers 0, 7, and 8 would be
-        broken up into three dataframes. If we are interested in the
-        charge cycles, only the 7 data is returned. If we are interested
-        in the discharge cycles, the 0 and 8 data is returned separately.
-
-        Args:
-            cycle_df (pd.Dataframe): The dataframe for a specific cycle
-            step_type (str): "charge" or "discharge"
-
-        Returns:
-            (pd.Dataframe): Yields Novonix data as a dataframe
-                for a particular step_type num if that step type num
-                is the correct step type (chg/discharge)
-        """
-        gb = cycle_df.groupby("step_type_num")
-
-        for _, step_df in gb:
-            if (step_df["step_type"] == step_type).all():
-                yield step_df
+    # def iterate_steps_in_cycle(self, cycle_df, step_type):
+    #     """
+    #     A Novonix-specific method of filtering steps for interpolation
+    #     since the charge/discharge changes are known via the step_index
+    #     specification.
+    #
+    #     For example, steps within a single cycle are not separated JUST
+    #     by whether they are charge or discharge, they are separated by
+    #     the KIND of charge/discharge.
+    #
+    #     For example, a cycle with step type numbers 0, 7, and 8 would be
+    #     broken up into three dataframes. If we are interested in the
+    #     charge cycles, only the 7 data is returned. If we are interested
+    #     in the discharge cycles, the 0 and 8 data is returned separately.
+    #
+    #     Args:
+    #         cycle_df (pd.Dataframe): The dataframe for a specific cycle
+    #         step_type (str): "charge" or "discharge"
+    #
+    #     Returns:
+    #         (pd.Dataframe): Yields Novonix data as a dataframe
+    #             for a particular step_type num if that step type num
+    #             is the correct step type (chg/discharge)
+    #     """
+    #     gb = cycle_df.groupby("step_index")
+    #
+    #     for _, step_df in gb:
+    #         if (step_df["step_type"] == step_type).all():
+    #             yield step_df

@@ -1198,7 +1198,8 @@ class BEEPDatapath(abc.ABC, MSONable):
         else:
             return False
 
-    def iterate_steps_in_cycle(self, cycle_df, step_type):
+    @staticmethod
+    def iterate_steps_in_cycle(cycle_df, step_type):
         """
         For a given cycle df, return an inteable (or yield)
         individual dfs corresponding to step indices and charge step.
@@ -1216,24 +1217,18 @@ class BEEPDatapath(abc.ABC, MSONable):
                 charge/discharge step. Used downstream for interpolation.
 
         """
-
         if step_type == "discharge":
             step_filter = step_is_dchg
         elif step_type == "charge":
             step_filter = step_is_chg
         else:
             raise ValueError(f"'{step_type}' is not a recognized step type")
-
-        only = cycle_df.groupby("step_index").filter(step_filter)
-        for _, step_df in only.groupby("step_index"):
+        dfs_chgstate = cycle_df.groupby("step_index").filter(step_filter)
+        for _, step_df in dfs_chgstate.groupby("step_index"):
             yield step_df
 
-        # for _, df in :
-        #     yield
-        #
-        # return cycle_df.groupby("step_index").filter(step_filter)
-
-    def _cast_dtypes(self, result, structure_dtypes_key):
+    @staticmethod
+    def _cast_dtypes(result, structure_dtypes_key):
         """Cast data types of a result dataframe to those specified by the structuring config.
 
         Args:
