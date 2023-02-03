@@ -254,5 +254,3 @@ def legacy_conversion(diagnostic_available):
 
     """
     pass
-
-

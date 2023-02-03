@@ -1365,21 +1365,6 @@ def step_is_chg_state(step_df, chg):
     else:
         return chg == is_charging
 
-
-    # avg_cap_diffs = cap.diff(axis=0).mean(axis=0).diff()
-    # avg_chg_delta = avg_cap_diffs["charge_capacity"]
-    # avg_dchg_delta = avg_cap_diffs["discharge_capacity"]
-    #
-    # if avg_chg_delta
-    #
-    #
-    #
-    # if chg:  # Charging
-    #     return cap < 0
-    # else:  # Discharging
-    #     return cap > 0
-
-
 def step_is_dchg(step_df):
     return step_is_chg_state(step_df, False)
 

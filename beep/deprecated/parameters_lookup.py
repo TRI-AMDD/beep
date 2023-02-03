@@ -46,7 +46,7 @@ def get_protocol_parameters(filepath, parameters_path):
     path = os.path.abspath(parameters_path)
     project_parameter_files = glob(os.path.join(path, project_name + "*"))
     assert len(project_parameter_files) <= 1, (
-        "Found too many parameter files for: " + project_name
+            "Found too many parameter files for: " + project_name
     )
 
     if len(project_parameter_files) == 1:
@@ -63,7 +63,7 @@ def get_protocol_parameters(filepath, parameters_path):
 
 
 def get_diagnostic_parameters(
-    diagnostic_available, diagnostic_parameter_path, project_name
+        diagnostic_available, diagnostic_parameter_path, project_name
 ):
     """
     Interpolates data according to location and type of diagnostic
@@ -85,7 +85,7 @@ def get_diagnostic_parameters(
         os.path.join(diagnostic_parameter_path, project_name + "*")
     )
     assert len(project_diag_files) <= 1, (
-        "Found too many diagnostic parameter files for: " + project_name
+            "Found too many diagnostic parameter files for: " + project_name
     )
 
     # Find the voltage range for the diagnostic cycles
@@ -93,7 +93,7 @@ def get_diagnostic_parameters(
         df = pd.read_csv(project_diag_files[0])
         diag_row = df[
             df.diagnostic_parameter_set == diagnostic_available["parameter_set"]
-        ]
+            ]
         v_range = [
             diag_row["diagnostic_discharge_cutoff_voltage"].iloc[0],
             diag_row["diagnostic_charge_cutoff_voltage"].iloc[0],
@@ -102,8 +102,6 @@ def get_diagnostic_parameters(
         v_range = [2.7, 4.2]
 
     return v_range
-
-
 
 
 def determine_structuring_parameters(
@@ -136,7 +134,7 @@ def determine_structuring_parameters(
         raise FileNotFoundError(
             f"Parameters path {parameters_path} does not exist!")
 
-    run_parameter, all_parameters = parameters_lookup.get_protocol_parameters(
+    run_parameter, all_parameters = get_protocol_parameters(
         self.paths["raw"], parameters_path
     )
 
