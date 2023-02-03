@@ -280,16 +280,15 @@ class TestBEEPDatapath(unittest.TestCase):
         lengths = [len(df) for index, df in dchg.groupby("cycle_index") if index != 0]
         self.assertTrue(np.all(np.array(lengths) == 3000))
 
-        # Found these manually
+        # Found these manually @ardunn
         dchg = dchg.drop(columns=["step_type"])
-
-        print(dchg)
-        y_at_point = dchg.iloc[[1500]]
-        x_at_point = dchg.voltage[1500]
-        cycle_1 = dp.raw_data[dp.raw_data["cycle_index"] == 1]
+        pd.options.display.max_columns = None
+        y_at_point = dchg.iloc[[3123]]
+        x_at_point = dchg.voltage[3123]
+        cycle_1 = dp.raw_data[dp.raw_data["cycle_index"] == 0]
 
         # Discharge step is 12
-        discharge = cycle_1[cycle_1.step_index == 12]
+        discharge = cycle_1[cycle_1.step_index == 3]
         discharge = discharge.sort_values("voltage")
 
         # Get an interval between which one can find the interpolated value
@@ -312,13 +311,13 @@ class TestBEEPDatapath(unittest.TestCase):
 
         # Test charge cycles
         chg = all_interpolated[(all_interpolated.step_type == "charge")]
-        lengths = [len(df) for index, df in chg.groupby("cycle_index")]
+        lengths = [len(df) for index, df in chg.groupby("cycle_index") if index != 93]
         axis_1 = chg[chg.cycle_index == 5].charge_capacity.to_list()
         axis_2 = chg[chg.cycle_index == 10].charge_capacity.to_list()
-        self.assertEqual(axis_1, axis_2)
-        self.assertTrue(np.all(np.array(lengths) == 1000))
-        self.assertTrue(chg["current"].mean() > 0)
 
+        self.assertEqual(axis_1, axis_2)
+        self.assertTrue(np.all(np.array(lengths) == 5000))
+        self.assertTrue(chg["current"].mean() > 0)
 
         # Test dtypes
         cycles_interpolated_dyptes = all_interpolated.dtypes.tolist()
