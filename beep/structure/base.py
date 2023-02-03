@@ -6,7 +6,6 @@ import abc
 import json
 import copy
 import time
-import itertools
 
 import pandas as pd
 import numpy as np
