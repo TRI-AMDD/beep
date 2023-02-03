@@ -16,7 +16,7 @@ from scipy.stats import skew, kurtosis
 
 
 from beep import PROTOCOL_PARAMETERS_DIR
-from beep.utils import parameters_lookup
+from beep.deprecated import parameters_lookup
 
 
 def list_minus(list1, list2):

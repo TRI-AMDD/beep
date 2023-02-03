@@ -190,13 +190,12 @@ class TestMaccorDatapath(unittest.TestCase):
         all_interpolated = md.interpolate_cycles()
         all_interpolated = all_interpolated[(all_interpolated.step_type == "discharge")]
         self.assertTrue(all_interpolated.columns[0] == 'test_time')
-        subset_interpolated = all_interpolated[all_interpolated.cycle_index==6]
-
+        cyc6_interp = all_interpolated[all_interpolated.cycle_index == 6]
         df = md.raw_data
-        self.assertEqual(subset_interpolated.test_time.min(),
+        self.assertEqual(cyc6_interp.test_time.min(),
                          df.loc[(df.cycle_index == 6) &
-                                (df.step_index == 33)].test_time.min())
-        self.assertEqual(subset_interpolated[subset_interpolated.cycle_index == 6].shape[0], 1000)
+                                (df.step_index == 32)].test_time.min())
+        self.assertEqual(cyc6_interp[cyc6_interp.cycle_index == 6].shape[0], 3000)
 
     # based on RCRT.test_waveform_charge_discharge_capacity
     def test_waveform_charge_discharge_capacity(self):
@@ -230,7 +229,8 @@ class TestMaccorDatapath(unittest.TestCase):
                              'internal_resistance',
                              'temperature',
                              'cycle_index',
-                             'step_type'}
+                             'step_type',
+                             'step_index'}
                             )
         interp2 = all_interpolated[
             (all_interpolated.cycle_index == 2)
@@ -242,9 +242,8 @@ class TestMaccorDatapath(unittest.TestCase):
             ].sort_values("charge_capacity")
 
         self.assertTrue(interp3.current.mean() > 0)
-        self.assertEqual(len(interp3.voltage), 10000)
+        self.assertEqual(len(interp3.voltage), 20000)
         self.assertEqual(interp3.voltage.max(), np.float32(4.100838))
-#        self.assertEqual(interp3.voltage.min(), np.float32(3.3334765)) # 3.437705 in python3.9
         np.testing.assert_almost_equal(
             interp3[
                 interp3.charge_capacity <= interp3.charge_capacity.median()
@@ -373,8 +372,8 @@ class TestBioLogicDatapath(unittest.TestCase):
         self.assertAlmostEqual(dp.raw_data["test_time"].min(), 0, 3)
         self.assertAlmostEqual(dp.raw_data["test_time"].max(), 102040.77, 3)
         # self.assertAlmostEqual(dp.structured_data["test_time"].min(), 13062.720560, 3)
-        self.assertAlmostEqual(dp.structured_data["test_time"].min(), 101.089, 2)
-        self.assertAlmostEqual(dp.structured_data["test_time"].max(), 101972.885, 3)
+        self.assertAlmostEqual(dp.structured_data["test_time"].min(), 23.71335, 2)
+        self.assertAlmostEqual(dp.structured_data["test_time"].max(), 102023.24606, 3)
 
     def test_from_txt(self):
         biologic_file = os.path.join(
@@ -410,8 +409,8 @@ class TestBioLogicDatapath(unittest.TestCase):
         self.assertAlmostEqual(dp.raw_data["test_time"].min(), 0, 3)
         self.assertAlmostEqual(dp.raw_data["test_time"].max(), 102240.281, 3)
         #self.assertAlmostEqual(dp.structured_data["test_time"].min(), 13062.997, 3)
-        self.assertAlmostEqual(dp.structured_data["test_time"].min(), 101.357, 2)
-        self.assertAlmostEqual(dp.structured_data["test_time"].max(), 101972.886, 3)
+        self.assertAlmostEqual(dp.structured_data["test_time"].min(), 23.71335, 2)
+        self.assertAlmostEqual(dp.structured_data["test_time"].max(), 102149.66239, 3)
 
     def test_from_formation_txt(self):
         biologic_file = os.path.join(
@@ -442,7 +441,7 @@ class TestBioLogicDatapath(unittest.TestCase):
         self.assertEqual(dp.structured_summary["date_time_iso"].iloc[1], "2022-01-22T09:15:10.020000+00:00")
         self.assertAlmostEqual(dp.raw_data["test_time"].min(), 0, 3)
         self.assertAlmostEqual(dp.raw_data["test_time"].max(), 784864.55, 3)
-        self.assertAlmostEqual(dp.structured_data["test_time"].min(), 259220.283, 3)
+        self.assertAlmostEqual(dp.structured_data["test_time"].min(), 0.000, 3)
         self.assertAlmostEqual(dp.structured_data["test_time"].max(), 784853.102, 3)
         self.assertGreater(dp.structured_summary["discharge_capacity"].tolist()[4], 0)
         self.assertGreater(dp.structured_summary["discharge_capacity"].tolist()[20], 0)

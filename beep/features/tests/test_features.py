@@ -33,7 +33,7 @@ from beep.features.base import BEEPFeaturizationError
 from beep.structure.maccor import MaccorDatapath
 from beep.structure.cli import auto_load_processed, auto_load
 from beep.features import featurizer_helpers
-from beep.utils import parameters_lookup
+from beep.deprecated import parameters_lookup
 from monty.serialization import dumpfn, loadfn
 from monty.tempfile import ScratchDir
 from beep.utils.s3 import download_s3_object

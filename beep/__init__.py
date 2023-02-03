@@ -49,7 +49,7 @@ MODULE_DIR = os.path.abspath(os.path.dirname(__file__))
 CONVERSION_SCHEMA_DIR = os.path.join(MODULE_DIR, "conversion_schemas")
 FEATURES_DIR = os.path.join(MODULE_DIR, "features")
 VALIDATION_SCHEMA_DIR = os.path.join(MODULE_DIR, "validation_schemas")
-PROTOCOL_PARAMETERS_DIR = os.path.join(MODULE_DIR, "protocol_parameters")
+PROTOCOL_PARAMETERS_DIR = os.path.join(MODULE_DIR, "deprecated", "protocol_parameters")
 MODEL_DIR = os.path.join(MODULE_DIR, "models")
 
 

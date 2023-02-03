@@ -20,7 +20,6 @@ from beep.conversion_schemas import (
     STRUCTURE_DTYPES,
 )
 
-from beep.utils import parameters_lookup
 from beep import logger, VALIDATION_SCHEMA_DIR
 from beep.structure.validate import SimpleValidator
 from beep.structure.diagnostic import DiagnosticConfig
