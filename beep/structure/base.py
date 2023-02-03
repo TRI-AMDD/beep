@@ -638,7 +638,6 @@ class BEEPDatapath(abc.ABC, MSONable):
 
             for step_df in step_dfs:
 
-                print("Step df is ", step_df)
                 if step_df.size == 0 or step_df.shape[0] < 2:
                     continue
                 if axis in ["charge_capacity", "discharge_capacity"]:
@@ -651,9 +650,10 @@ class BEEPDatapath(abc.ABC, MSONable):
                 else:
                     raise ValueError(f"Axis {axis} not a valid step interpolation axis.")
 
-                step_index = step_df.step_index.iloc[0]
+                if len(step_df.step_index.unique()) > 1:
+                    raise ValueError("Step DF has multiple step indices present!")
 
-                print(f"Step indices in this step df are {step_df.step_index.unique()}")
+                step_index = step_df.step_index.iloc[0]
 
                 step_df = interpolate_df(
                     step_df,
