@@ -83,21 +83,15 @@ class DiagnosticConfig(MSONable):
             for ix in ixs:
                 self.cycle_ix_to_cycle_type[ix] = cycle_type
 
-        hppc_cycle_types = {ct for ct in self.cycle_type_to_cycle_ix if "hppc" in ct.lower()}
-        rpt_cycle_types = {ct for ct in self.cycle_type_to_cycle_ix if "rpt" in ct.lower()}
-        reset_cycle_types = {ct for ct in self.cycle_type_to_cycle_ix if "reset" in ct.lower()}
-        self.hppc_ix = frozenset.union(
-            *[self.cycle_type_to_cycle_ix[hppc] for hppc in hppc_cycle_types] +
-             [frozenset()]
-        )
-        self.rpt_ix = frozenset.union(
-            *[self.cycle_type_to_cycle_ix[rpt] for rpt in rpt_cycle_types] +
-             [frozenset()]
-        )
-        self.reset_ix = frozenset.union(
-            *[self.cycle_type_to_cycle_ix[reset] for reset in reset_cycle_types] +
-             [frozenset()]
-        )
+        # Setting hppc_ix, rpt_ix, and reset_ix based on string recognition
+        for ix_attr_name in ("hppc", "rpt", "reset"):
+            cycle_types = {ct for ct in self.cycle_type_to_cycle_ix
+                           if ix_attr_name in ct.lower()}
+            frozen = frozenset.union(
+                *[self.cycle_type_to_cycle_ix[cyc_typ] for cyc_typ in cycle_types] +
+                [frozenset()]
+            )
+            setattr(self, f"{ix_attr_name}_ix", frozen)
 
         allowed_kwarg_types = (int, str, float, bool)
         for kw, arg in kwargs.items():
@@ -240,17 +234,3 @@ class DiagnosticConfig(MSONable):
             "cycle_type_to_ix": json_compatible_type2cix,
             "params": self.params
         }
-
-
-def legacy_conversion(diagnostic_available):
-    """
-    Converts a legacy "diagnostic available" dictionary to a new
-    DiagnosticConfig object.
-
-    Args:
-        diagnostic_available:
-
-    Returns:
-
-    """
-    pass
