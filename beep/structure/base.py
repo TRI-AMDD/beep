@@ -274,6 +274,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         self._diag_summary_cols = copy.deepcopy(self._summary_cols)
         self._diag_summary_cols.pop(5)  # internal_resistance
         self.structuring_parameters = {}
+        self.indeterminate_step_default_charge = True
 
     @classmethod
     @abc.abstractmethod
@@ -1090,6 +1091,41 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         return diag_summary
 
+    def iterate_steps_in_cycle(self, cycle_df, step_type):
+        """
+        For a given cycle df, return an iterable (or yield)
+        individual dfs corresponding to step indices and charge step.
+
+        For the simplest and easiest use, this means that within a
+        single charge cycle, there will be one discharge and one charge
+        step, each with an equal number of interpolated points.
+
+        Args:
+            cycle_df (pd.Dataframe): The dataframe corresponding to an
+                entire cycle.
+            step_type (str): "charge" or "discharge"
+
+        Returns:
+            (pd.Dataframe): The dataframe corresponding to a particular
+                charge/discharge step. Used downstream for interpolation.
+
+        """
+        if step_type == "discharge":
+            step_filter = step_is_dchg
+        elif step_type == "charge":
+            step_filter = step_is_chg
+        else:
+            raise ValueError(f"'{step_type}' is not a recognized step type")
+        dfs_chgstate = cycle_df.groupby("step_index").filter(
+            lambda ldf: step_filter(
+                ldf,
+                indeterminate_step_charge=self.indeterminate_step_default_charge
+            )
+        )
+        for _, step_df in dfs_chgstate.groupby("step_index"):
+            yield step_df
+
+
     @StructuringDecorators.must_be_structured
     def get_cycle_life(self, n_cycles_cutoff=40, threshold=0.8):
         """
@@ -1199,35 +1235,6 @@ class BEEPDatapath(abc.ABC, MSONable):
             return False
 
     @staticmethod
-    def iterate_steps_in_cycle(cycle_df, step_type):
-        """
-        For a given cycle df, return an inteable (or yield)
-        individual dfs corresponding to step indices and charge step.
-
-        For the simplest and easiest use, this means that within a
-        single charge cycle, there will be one discharge and one charge
-        step, each with an equal number of interpolated points.
-
-        Args:
-            cycle_df (pd.Dataframe): The dataframe corresponding to an
-                entire cycle.
-
-        Returns:
-            (pd.Dataframe): The dataframe corresponding to a particular
-                charge/discharge step. Used downstream for interpolation.
-
-        """
-        if step_type == "discharge":
-            step_filter = step_is_dchg
-        elif step_type == "charge":
-            step_filter = step_is_chg
-        else:
-            raise ValueError(f"'{step_type}' is not a recognized step type")
-        dfs_chgstate = cycle_df.groupby("step_index").filter(step_filter)
-        for _, step_df in dfs_chgstate.groupby("step_index"):
-            yield step_df
-
-    @staticmethod
     def _cast_dtypes(result, structure_dtypes_key):
         """Cast data types of a result dataframe to those specified by the structuring config.
 
@@ -1314,7 +1321,7 @@ def interpolate_df(
     return interpolated_df
 
 
-def step_is_chg_state(step_df, chg):
+def step_is_chg_state(step_df, chg, indeterminate_step_charge=True):
     """
     Helper function to determine whether a given dataframe corresponding
     to a single cycle_index's step is charging or discharging, only intended
@@ -1323,10 +1330,16 @@ def step_is_chg_state(step_df, chg):
     Args:
          step_df (pandas.DataFrame): dataframe to determine whether
             charging or discharging
-         chg (bool): Charge state; True if charging
+         chg (bool): Charge state; True if charging, False if discharging
+         indeterminate_step_charge (bool): Default to "charge" indication
+            for steps where charge/discharge cannot be determined
+            confidently. If false, indeterminate steps are considered
+            discharge.
 
     Returns:
-        (bool): True if step is the charge state specified.
+        (bool, None): True if step is the charge state specified,
+            False if it is confidently not, or None if the
+            charge state is indeterminate.
     """
     cap = step_df[["charge_capacity", "discharge_capacity"]]
     total_cap_diffs = cap.max() - cap.min()
@@ -1355,17 +1368,17 @@ def step_is_chg_state(step_df, chg):
     # If the is_charging cannot be determined, return false
     # regardless.
     if is_charging is None:
-        return True
+        return chg == indeterminate_step_charge
     else:
         return chg == is_charging
 
 
-def step_is_dchg(step_df):
-    return step_is_chg_state(step_df, False)
+def step_is_dchg(step_df, **kwargs):
+    return step_is_chg_state(step_df, False, **kwargs)
 
 
-def step_is_chg(step_df):
-    return step_is_chg_state(step_df, True)
+def step_is_chg(step_df, **kwargs):
+    return step_is_chg_state(step_df, True, **kwargs)
 
 
 def step_is_waveform(step_df, chg_filter):
