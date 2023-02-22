@@ -1125,7 +1125,6 @@ class BEEPDatapath(abc.ABC, MSONable):
         for _, step_df in dfs_chgstate.groupby("step_index"):
             yield step_df
 
-
     @StructuringDecorators.must_be_structured
     def get_cycle_life(self, n_cycles_cutoff=40, threshold=0.8):
         """
