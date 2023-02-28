@@ -187,6 +187,7 @@ class TestMaccorDatapath(unittest.TestCase):
     # based on RCRT.test_get_interpolated_waveform_discharge_cycles
     def test_interpolate_waveform_discharge_cycles(self):
         md = MaccorDatapath.from_file(self.waveform_file)
+        md.indeterminate_step_default_charge = False
         all_interpolated = md.interpolate_cycles()
         all_interpolated = all_interpolated[(all_interpolated.step_type == "discharge")]
         self.assertTrue(all_interpolated.columns[0] == 'test_time')
@@ -342,6 +343,7 @@ class TestBioLogicDatapath(unittest.TestCase):
             TEST_FILE_DIR, "raw", "test_loopsnewoutput_MB_CE1_short10k.csv"
         )
         dp = BiologicDatapath.from_file(biologic_file)
+        dp.indeterminate_step_default_charge = False
 
         self.assertTrue(
             {
@@ -380,6 +382,7 @@ class TestBioLogicDatapath(unittest.TestCase):
             TEST_FILE_DIR, "raw", "test_loopsnewoutput_MB_CE1_short10k.txt"
         )
         dp = BiologicDatapath.from_file(biologic_file)
+        dp.indeterminate_step_default_charge = False
 
         self.assertTrue(
             {
