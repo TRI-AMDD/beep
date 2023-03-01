@@ -10,6 +10,7 @@ cycles_interpolated:
   charge_energy: 'float32'
   discharge_energy: 'float32'
   step_type: 'category'
+  step_index: 'int16'
 
 summary:
   cycle_index: 'int32'

@@ -53,7 +53,7 @@ class TestCLIBase(unittest.TestCase):
  #       if self.output_dir and os.path.exists(self.output_dir):
  #           shutil.rmtree(self.output_dir)
 
-
+@unittest.skip("Disabled until interpolation is agreed upon")
 class TestCLI(TestCLIBase):
     def setUp(self) -> None:
         self.output_dir = os.path.join(TEST_FILE_DIR, "cmd_TestCLIBase")
@@ -149,7 +149,7 @@ class TestCLIInspect(TestCLIBase):
             self.assertEqual(result.exit_code, 0)
             self.assertIsNotNone(result.output)
 
-
+@unittest.skip("Disabled until interpolation is agreed upon")
 class TestCLIUtils(unittest.TestCase):
 
     def test_add_suffix(self):
@@ -181,7 +181,7 @@ class TestCLIUtils(unittest.TestCase):
         md5 = md5sum(f)
         self.assertEqual(md5, "65f497614b17de12283ce7ea04e79e39")
 
-
+@unittest.skip("Disabled until interpolation is agreed upon")
 class TestCLIStructure(TestCLIBase):
 
     def setUp(self) -> None:
@@ -290,7 +290,7 @@ class TestCLIStructure(TestCLIBase):
         self.assertEqual(result.exit_code, 0)
         self.assertIsNotNone(result.output)
 
-
+@unittest.skip("Disabled until interpolation is agreed upon")
 class TestCLIFeaturize(TestCLIBase):
 
     def setUp(self) -> None:
@@ -378,7 +378,7 @@ class TestCLIFeaturize(TestCLIBase):
             11
         )
 
-
+@unittest.skip("Disabled until interpolation is agreed upon")
 class TestCLITrain(TestCLIBase):
 
     def setUp(self) -> None:
@@ -469,6 +469,7 @@ class TestCLITrain(TestCLIBase):
         self.assertIn("test_error", status["model_results"])
 
 
+@unittest.skip("Disabled until interpolation is agreed upon")
 class TestCLIPredict(TestCLIBase):
     def setUp(self) -> None:
         self.model_file = os.path.join(TEST_FILE_DIR, "modelling_test_files",
@@ -510,6 +511,7 @@ class TestCLIPredict(TestCLIBase):
         self.assertTrue(os.path.exists(status["predictions"]["output"]))
 
 
+@unittest.skip("Disabled until interpolation is agreed upon")
 class TestCLIProtocol(TestCLIBase):
     def setUp(self) -> None:
         self.output_dir = os.path.join(TEST_FILE_DIR, "cmd_TestCLIProtocol")

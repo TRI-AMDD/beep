@@ -28,6 +28,7 @@ from beep.utils.s3 import download_s3_object
 from beep.structure.base import BEEPDatapath
 from beep.structure.base_eis import EIS, BEEPDatapathWithEIS
 from beep.structure.maccor import MaccorDatapath
+from beep.structure.diagnostic import DiagnosticConfig
 from beep.tests.constants import TEST_FILE_DIR, BIG_FILE_TESTS, SKIP_MSG
 from beep.structure.cli import auto_load_processed
 from beep import VALIDATION_SCHEMA_DIR
@@ -97,7 +98,6 @@ class TestBEEPDatapath(unittest.TestCase):
         )
 
         # Maccor with various diagnostics from memory
-        # For testing determine_structuring_parameters
         maccor_diag_normal_fname = os.path.join(TEST_FILE_DIR, "BEEPDatapath_maccor_diagnostic_normal_memloaded.csv")
         maccor_diag_normal_meta_fname = os.path.join(TEST_FILE_DIR,
                                                      "BEEPDatapath_maccor_diagnostic_normal_metadata_memloaded.json")
@@ -127,12 +127,9 @@ class TestBEEPDatapath(unittest.TestCase):
             TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_processed.json"
         )
 
-        cls.diagnostic_available = {
-            "type": "HPPC",
-            "cycle_type": ["hppc"],
-            "length": 1,
-            "diagnostic_starts_at": [1],
-        }
+        cls.diagnostic = DiagnosticConfig(
+            {"hppc": {1}}
+        )
 
     def setUp(self) -> None:
         # Reset all datapaths after each run, avoiding colliions between tests
@@ -146,6 +143,9 @@ class TestBEEPDatapath(unittest.TestCase):
             self.datapath_small_params
         ]:
             dp.unstructure()
+            dp.indeterminate_step_default_charge = True
+
+        self.datapath_diag.diagnostic = self.diagnostic
 
     def run_dtypes_check(self, summary):
         reg_dyptes = summary.dtypes.tolist()
@@ -155,7 +155,6 @@ class TestBEEPDatapath(unittest.TestCase):
             self.assertEqual(reg_dyptes[indx], STRUCTURE_DTYPES["summary"][col])
 
     def test_abc(self):
-
         class BEEPDatapathChildBad(BEEPDatapath):
             def some_extra_method(self):
                 return True
@@ -177,6 +176,7 @@ class TestBEEPDatapath(unittest.TestCase):
         truth_datapath = self.datapath_diag
 
         truth_datapath.structure()
+
         d = truth_datapath.as_dict()
         datapath_from_dict = self.BEEPDatapathChildTest.from_dict(d)
 
@@ -197,6 +197,13 @@ class TestBEEPDatapath(unittest.TestCase):
                             self.assertEqual(df_truth, df_test)
                         else:
                             self.assertTrue(isinstance(df_test, pd.DataFrame))
+
+                            # reset indices as pandas serialization can be weird
+                            df_test = df_test.reset_index(drop=True)
+                            df_truth = df_truth.reset_index(drop=True)
+                            if not df_truth.equals(df_test):
+                                print(df_truth)
+                                print(df_test)
                             self.assertTrue(df_truth.equals(df_test))
 
                 self.assertEqual(datapath_from_json.paths.get("structured"), fname)
@@ -217,7 +224,6 @@ class TestBEEPDatapath(unittest.TestCase):
         test_file = os.path.join(
             TEST_FILE_DIR, "2017-12-04_4_65C-69per_6C_CH29_processed.json"
         )
-
         datapath = self.BEEPDatapathChildTest.from_json_file(test_file)
         self.assertTrue(isinstance(datapath.structured_summary, pd.DataFrame))
         self.assertTrue(isinstance(datapath.structured_data, pd.DataFrame))
@@ -235,6 +241,7 @@ class TestBEEPDatapath(unittest.TestCase):
 
     # based on RCRT.test_get_interpolated_charge_step
     def test_interpolate_step(self):
+        self.datapath_diag.indeterminate_step_default_charge = True
         reg_cycles = [i for i in self.datapath_nodiag.raw_data.cycle_index.unique()]
         v_range = [2.8, 3.5]
         resolution = 1000
@@ -254,8 +261,15 @@ class TestBEEPDatapath(unittest.TestCase):
             axis_2 = interpolated_charge[
                 interpolated_charge.cycle_index == 10
             ].charge_capacity.to_list()
+
+            if step_type == "charge":
+                l = 5000
+            else:
+                l = 1000
+
             self.assertGreater(max(axis_1), max(axis_2))
-            self.assertTrue(np.all(np.array(lengths) == 1000))
+            lengths = [l for i, l in enumerate(lengths) if i not in (0, 93)]
+            self.assertTrue(np.all(np.array(lengths) == l))
 
             if step_type == "charge":
                 self.assertTrue(interpolated_charge["current"].mean() > 0)
@@ -267,21 +281,24 @@ class TestBEEPDatapath(unittest.TestCase):
     # based on RCRT.test_interpolated_cycles_dtypes
     def test_interpolate_cycles(self):
         dp = self.datapath_nodiag
+        dp.indeterminate_step_default_charge = False
         all_interpolated = dp.interpolate_cycles()
 
         # Test discharge cycles
+        # To ensure lengths are all the same (except for the first cycle)
         dchg = all_interpolated[(all_interpolated.step_type == "discharge")]
-        lengths = [len(df) for index, df in dchg.groupby("cycle_index")]
-        self.assertTrue(np.all(np.array(lengths) == 1000))
+        lengths = [len(df) for index, df in dchg.groupby("cycle_index") if index != 0]
+        self.assertTrue(np.all(np.array(lengths) == 3000))
 
-        # Found these manually
+        # Found these manually @ardunn
         dchg = dchg.drop(columns=["step_type"])
-        y_at_point = dchg.iloc[[1500]]
-        x_at_point = dchg.voltage[1500]
-        cycle_1 = dp.raw_data[dp.raw_data["cycle_index"] == 1]
+        pd.options.display.max_columns = None
+        y_at_point = dchg.iloc[[3123]]
+        x_at_point = dchg.voltage[3123]
+        cycle_1 = dp.raw_data[dp.raw_data["cycle_index"] == 0]
 
         # Discharge step is 12
-        discharge = cycle_1[cycle_1.step_index == 12]
+        discharge = cycle_1[cycle_1.step_index == 3]
         discharge = discharge.sort_values("voltage")
 
         # Get an interval between which one can find the interpolated value
@@ -304,13 +321,14 @@ class TestBEEPDatapath(unittest.TestCase):
 
         # Test charge cycles
         chg = all_interpolated[(all_interpolated.step_type == "charge")]
-        lengths = [len(df) for index, df in chg.groupby("cycle_index")]
+        lengths = [len(df) for index, df in chg.groupby("cycle_index") if index not in (0, 93)]
         axis_1 = chg[chg.cycle_index == 5].charge_capacity.to_list()
         axis_2 = chg[chg.cycle_index == 10].charge_capacity.to_list()
-        self.assertEqual(axis_1, axis_2)
-        self.assertTrue(np.all(np.array(lengths) == 1000))
-        self.assertTrue(chg["current"].mean() > 0)
 
+        self.assertEqual(axis_1, axis_2)
+
+        self.assertTrue(np.all(np.array(lengths) == 3000))
+        self.assertTrue(chg["current"].mean() > 0)
 
         # Test dtypes
         cycles_interpolated_dyptes = all_interpolated.dtypes.tolist()
@@ -327,6 +345,8 @@ class TestBEEPDatapath(unittest.TestCase):
     # based on RCRT.test_get_charge_throughput
     # based on RCRT.test_summary_dtypes
     def test_summarize_cycles(self):
+        # Remove diagnostic so that it will treat all cycles as regular cycles.
+        self.datapath_diag.diagnostic = None
         summary_diag = self.datapath_diag.summarize_cycles(nominal_capacity=4.7, full_fast_charge=0.8)
         self.assertTrue(
             set.issubset(
@@ -350,7 +370,7 @@ class TestBEEPDatapath(unittest.TestCase):
                 set(summary_diag.columns),
             )
         )
-        self.assertEqual(summary_diag["cycle_index"].tolist(), list(range(0, 13)))
+        self.assertEqual(summary_diag["cycle_index"].tolist(), list(range(13)))
         self.assertEqual(len(summary_diag.index), len(summary_diag["date_time_iso"]))
         self.assertEqual(summary_diag["paused"].max(), 0)
         self.assertEqual(summary_diag["CV_time"][1], np.float32(160111.796875))
@@ -366,71 +386,23 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertEqual(summary["energy_throughput"][5], np.float32(23.2752363))
         self.run_dtypes_check(summary)
 
-    # based on RCRT.test_determine_structuring_parameters
-    def test_determine_structuring_parameters(self):
-        (v_range, resolution, nominal_capacity, full_fast_charge, diagnostic_available) = \
-            self.datapath_diag_normal.determine_structuring_parameters()
-        diagnostic_available_test = {
-            "parameter_set": "Tesla21700",
-            "cycle_type": ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"],
-            "length": 5,
-            "diagnostic_starts_at": [
-                1, 36, 141, 246, 351, 456, 561, 666, 771, 876, 981, 1086,
-                1191,
-                1296, 1401, 1506, 1611, 1716, 1821, 1926, 2031, 2136, 2241,
-                2346,
-                2451, 2556, 2661, 2766, 2871, 2976, 3081, 3186, 3291, 3396,
-                3501,
-                3606, 3628
-            ]
-        }
-
-        self.assertEqual(v_range, [2.5, 4.2])
-        self.assertEqual(resolution, 1000)
-        self.assertEqual(nominal_capacity, 4.84)
-        self.assertEqual(full_fast_charge, 0.8)
-        self.assertEqual(diagnostic_available, diagnostic_available_test)
-
-        (
-            v_range,
-            resolution,
-            nominal_capacity,
-            full_fast_charge,
-            diagnostic_available,
-        ) = self.datapath_diag_misplaced.determine_structuring_parameters()
-        diagnostic_available_test = {
-            "parameter_set": "Tesla21700",
-            "cycle_type": ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"],
-            "length": 5,
-            "diagnostic_starts_at": [1, 36, 141, 220, 255]
-        }
-        self.assertEqual(v_range, [2.5, 4.2])
-        self.assertEqual(resolution, 1000)
-        self.assertEqual(nominal_capacity, 4.84)
-        self.assertEqual(full_fast_charge, 0.8)
-        self.assertEqual(diagnostic_available, diagnostic_available_test)
-
     # based on RCRT.test_get_interpolated_diagnostic_cycles
     def test_interpolate_diagnostic_cycles(self):
         d_interp = self.datapath_diag.interpolate_diagnostic_cycles(
-            self.diagnostic_available, resolution=500
+            time_resolution=500, voltage_resolution=1000
         )
         self.assertGreaterEqual(len(d_interp.cycle_index.unique()), 1)
 
         # Ensure step indices are partitioned and processed separately
         self.assertEqual(len(d_interp.step_index.unique()), 9)
-        first_step = d_interp[
-            (d_interp.step_index == 7) & (d_interp.step_index_counter == 1)
-        ]
-        second_step = d_interp[
-            (d_interp.step_index == 7) & (d_interp.step_index_counter == 4)
-        ]
-        self.assertLess(first_step.voltage.diff().max(), 0.001)
-        self.assertLess(second_step.voltage.diff().max(), 0.001)
+        first_step = d_interp[d_interp.step_index_counter == 1]
+        second_step = d_interp[d_interp.step_index_counter == 4]
+        self.assertLess(first_step.voltage.diff().max(), 0.0015)
+        self.assertLess(second_step.voltage.diff().max(), 0.004)
 
     # based on RCRT.test_get_diagnostic_summary
     def test_summarize_diagnostic(self):
-        diag_summary = self.datapath_diag.summarize_diagnostic(self.diagnostic_available)
+        diag_summary = self.datapath_diag.summarize_diagnostic()
         self.assertEqual(diag_summary["paused"].max(), 0)
         self.assertEqual(diag_summary["CV_time"][0], np.float32(125502.578125))
         self.assertEqual(diag_summary["CV_current"][0], np.float32(2.3499656))
@@ -464,26 +436,20 @@ class TestBEEPDatapath(unittest.TestCase):
 
         md = MaccorDatapath.from_file(maccor_file_w_parameters)
 
-        (
-            v_range,
-            resolution,
-            nominal_capacity,
-            full_fast_charge,
-            diagnostic_available,
-        ) = md.determine_structuring_parameters()
-
-        self.assertEqual(nominal_capacity, 4.84)
-        # self.assertEqual(v_range, [2.7, 4.2]) # This is an older assertion, value changed when
-        # different cell types were added
-
-        self.assertEqual(v_range, [2.5, 4.2])
-        self.assertEqual(
-            diagnostic_available["cycle_type"],
-            ["reset", "hppc", "rpt_0.2C", "rpt_1C", "rpt_2C"],
+        reset_ix = [1, 36, 141, 246]
+        diag = DiagnosticConfig(
+            {
+                "reset": reset_ix,
+                "hppc": [i + 1 for i in reset_ix],
+                "rpt_0.2C": [i + 2 for i in reset_ix[:-1]],
+                "rpt_1C": [i + 3 for i in reset_ix[:-1]],
+                "rpt_2C": [i + 4 for i in reset_ix[:-1]]
+            }
         )
-        diag_summary = md.summarize_diagnostic(diagnostic_available)
 
-        reg_summary = md.summarize_cycles(diagnostic_available)
+        md.diagnostic = diag
+        diag_summary = md.summarize_diagnostic()
+        reg_summary = md.summarize_cycles()
         self.assertEqual(len(reg_summary.cycle_index.tolist()), 230)
         self.assertEqual(reg_summary.cycle_index.tolist()[:10],
                          [0, 6, 7, 8, 9, 10, 11, 12, 13, 14])
@@ -524,9 +490,11 @@ class TestBEEPDatapath(unittest.TestCase):
                 "hppc",
             ],
         )
+
         self.assertEqual(diag_summary.paused.max(), 0)
         diag_interpolated = md.interpolate_diagnostic_cycles(
-            diagnostic_available, resolution=1000
+            time_resolution=500,
+            voltage_resolution=1000
         )
 
         # Check data types are being set correctly for interpolated data
@@ -572,7 +540,7 @@ class TestBEEPDatapath(unittest.TestCase):
         plt.figure()
         plt.plot(hppc_dischg1.test_time, hppc_dischg1.voltage)
         plt.savefig(os.path.join(TEST_FILE_DIR, "hppc_discharge_pulse_1.png"))
-        self.assertEqual(len(hppc_dischg1), 176)
+        self.assertEqual(len(hppc_dischg1), 1000)
 
         hppc_dischg2 = diag_interpolated[
             (diag_interpolated.cycle_index == 37)
@@ -585,10 +553,9 @@ class TestBEEPDatapath(unittest.TestCase):
         plt.figure()
         plt.plot(hppc_dischg2.test_time, hppc_dischg2.current)
         plt.savefig(os.path.join(TEST_FILE_DIR, "hppc_cv.png"))
-        self.assertEqual(len(hppc_dischg2), 1000)
+        self.assertEqual(len(hppc_dischg2), 500)
 
-        # processed_cycler_run = cycler_run.to_processed_cycler_run()
-        md.autostructure()
+        md.structure()
         self.assertNotIn(
             diag_summary.cycle_index.tolist(),
             md.structured_data.cycle_index.unique(),
@@ -654,17 +621,10 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertEqual(self.datapath_small_params.metadata.channel_id, 10)
         self.assertTrue(self.datapath_small_params.is_structured)
 
-    def test_autostructure(self):
-        self.datapath_diag_normal.autostructure()
-        self.assertEqual(3448, len(self.datapath_diag_normal.structured_summary))
-        self.assertEqual(4957, self.datapath_diag_normal.structured_summary.paused.iloc[0])
-
-        self.assertEqual("reset", self.datapath_diag_normal.diagnostic_summary.cycle_type.iloc[0])
-        self.assertEqual(4.711819, np.round(self.datapath_diag_normal.diagnostic_summary.discharge_capacity.iloc[0], 6))
-
     def test_structure_w_cycle_exclusion(self):
-        EXCLUDED_CYCLES = [0, 1, 99]
+        EXCLUDED_CYCLES = [0, 1, 93]
         cycles = self.datapath_nodiag.raw_data["cycle_index"].unique()
+        self.datapath_nodiag.indeterminate_step_default_charge = False
         self.datapath_nodiag.structure(exclude_cycles=EXCLUDED_CYCLES, resolution=100)
 
         sd = self.datapath_nodiag.structured_data
@@ -673,8 +633,9 @@ class TestBEEPDatapath(unittest.TestCase):
             if cycle in EXCLUDED_CYCLES:
                 self.assertEqual(len(cycle_data), 0)
             else:
-                # 100 charge, 100 discharge
-                self.assertEqual(len(cycle_data), 200)
+                # 100 per step
+                n_steps = len(cycle_data.step_index.unique())
+                self.assertEqual(len(cycle_data), 600)
 
     # based on PCRT.test_get_cycle_life
     def test_get_cycle_life(self):

@@ -9,7 +9,7 @@ import numpy as np
 import pytz
 from monty.serialization import loadfn
 
-from beep import tqdm, StringIO, VALIDATION_SCHEMA_DIR
+from beep import tqdm, StringIO, VALIDATION_SCHEMA_DIR, logger
 from beep.conversion_schemas import MACCOR_CONFIG
 from beep.structure.base_eis import BEEPDatapathWithEIS, EIS
 from beep.structure.validate import PROJECT_SCHEMA
@@ -104,8 +104,14 @@ class MaccorDatapath(BEEPDatapathWithEIS):
         # Parse metadata - kinda hackish way to do it, but it works
         metadata = cls.parse_metadata(metadata_line)
         metadata = pd.DataFrame(metadata)
-        _, channel_number = os.path.splitext(path)
-        metadata["channel_id"] = int(channel_number.replace(".", ""))
+
+        try:
+            _, channel_number = os.path.splitext(path)
+            metadata["channel_id"] = int(channel_number.replace(".", ""))
+        except ValueError:
+            logger.warning("Could not infer channel number from path name!")
+            metadata["channnel_id"] = None
+
         metadata.rename(str.lower, axis="columns", inplace=True)
         metadata.rename(MACCOR_CONFIG["metadata_fields"], axis="columns", inplace=True)
         # Note the to_dict, which scrubs numpy typing

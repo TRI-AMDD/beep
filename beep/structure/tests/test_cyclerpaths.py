@@ -29,6 +29,7 @@ from beep.structure.indigo import IndigoDatapath
 from beep.structure.biologic import BiologicDatapath, get_cycle_index
 from beep.structure.battery_archive import BatteryArchiveDatapath
 from beep.structure.novonix import NovonixDatapath
+from beep.structure.diagnostic import DiagnosticConfig
 from beep.tests.constants import TEST_FILE_DIR
 
 
@@ -74,13 +75,23 @@ class TestArbinDatapath(unittest.TestCase):
     # based on PCRT.test_from_arbin_insufficient_interpolation_length
     def test_from_arbin_insufficient_interpolation_length(self):
         rcycler_run = ArbinDatapath.from_file(self.broken_file)
-        vrange, num_points, nominal_capacity, fast_charge, diag = rcycler_run.determine_structuring_parameters()
-        # print(diag['parameter_set'])
-        self.assertEqual(diag['parameter_set'], 'NCR18650-618')
-        diag_interp = rcycler_run.interpolate_diagnostic_cycles(diag, resolution=1000, v_resolution=0.0005)
+        diagnostic = DiagnosticConfig(
+            {
+                "reset": {1},
+                "hppc": {2},
+                "rpt_0.2C": {3},
+                "rpt_1C": {4},
+                "rpt_2C": {5}
+            },
+            parameter_set = 'NCR18650-618'
+        )
+        rcycler_run.diagnostic = diagnostic
+        self.assertEqual(diagnostic.params['parameter_set'], 'NCR18650-618')
+
+        diag_interp = rcycler_run.interpolate_diagnostic_cycles(time_resolution=1000, voltage_resolution=5000)
         self.assertAlmostEqual(diag_interp[(diag_interp.cycle_index == 1) &
                                            (diag_interp.step_index == 5)].charge_capacity.max(),
-                               3.39608899, 3)
+                               3.432291071, 3)
         self.assertAlmostEqual(diag_interp[(diag_interp.cycle_type == "hppc")].charge_capacity.max(),
                                3.4919972, 3)
 
@@ -176,16 +187,16 @@ class TestMaccorDatapath(unittest.TestCase):
     # based on RCRT.test_get_interpolated_waveform_discharge_cycles
     def test_interpolate_waveform_discharge_cycles(self):
         md = MaccorDatapath.from_file(self.waveform_file)
+        md.indeterminate_step_default_charge = False
         all_interpolated = md.interpolate_cycles()
         all_interpolated = all_interpolated[(all_interpolated.step_type == "discharge")]
         self.assertTrue(all_interpolated.columns[0] == 'test_time')
-        subset_interpolated = all_interpolated[all_interpolated.cycle_index==6]
-
+        cyc6_interp = all_interpolated[all_interpolated.cycle_index == 6]
         df = md.raw_data
-        self.assertEqual(subset_interpolated.test_time.min(),
+        self.assertEqual(cyc6_interp.test_time.min(),
                          df.loc[(df.cycle_index == 6) &
-                                (df.step_index == 33)].test_time.min())
-        self.assertEqual(subset_interpolated[subset_interpolated.cycle_index == 6].shape[0], 1000)
+                                (df.step_index == 32)].test_time.min())
+        self.assertEqual(cyc6_interp[cyc6_interp.cycle_index == 6].shape[0], 3000)
 
     # based on RCRT.test_waveform_charge_discharge_capacity
     def test_waveform_charge_discharge_capacity(self):
@@ -219,7 +230,8 @@ class TestMaccorDatapath(unittest.TestCase):
                              'internal_resistance',
                              'temperature',
                              'cycle_index',
-                             'step_type'}
+                             'step_type',
+                             'step_index'}
                             )
         interp2 = all_interpolated[
             (all_interpolated.cycle_index == 2)
@@ -231,9 +243,8 @@ class TestMaccorDatapath(unittest.TestCase):
             ].sort_values("charge_capacity")
 
         self.assertTrue(interp3.current.mean() > 0)
-        self.assertEqual(len(interp3.voltage), 10000)
+        self.assertEqual(len(interp3.voltage), 20000)
         self.assertEqual(interp3.voltage.max(), np.float32(4.100838))
-#        self.assertEqual(interp3.voltage.min(), np.float32(3.3334765)) # 3.437705 in python3.9
         np.testing.assert_almost_equal(
             interp3[
                 interp3.charge_capacity <= interp3.charge_capacity.median()
@@ -280,11 +291,17 @@ class TestMaccorDatapath(unittest.TestCase):
     # based on PCRT.test_from_maccor_insufficient_interpolation_length
     def test_from_maccor_insufficient_interpolation_length(self):
         md = MaccorDatapath.from_file(self.broken_file)
-        vrange, num_points, nominal_capacity, fast_charge, diag = md.determine_structuring_parameters()
-        self.assertEqual(diag['parameter_set'], 'Tesla21700')
-        diag_interp = md.interpolate_diagnostic_cycles(diag, resolution=1000, v_resolution=0.0005)
+        diagnostic = DiagnosticConfig(
+            {
+                "reset": {1}
+            },
+            parameter_set="Tesla21700"
+        )
+        md.diagnostic = diagnostic
+        self.assertEqual(diagnostic.params['parameter_set'], 'Tesla21700')
+        diag_interp = md.interpolate_diagnostic_cycles(time_resolution=1000, voltage_resolution=2000)
         self.assertEqual(np.around(diag_interp[diag_interp.cycle_index == 1].charge_capacity.median(), 3),
-                         np.around(0.6371558214610992, 3))
+                         np.around(0.6364225572152458, 3))
 
     # based on EISpectrumTest.test_from_maccor
     # todo: needs testing for the entire maccor object
@@ -326,6 +343,7 @@ class TestBioLogicDatapath(unittest.TestCase):
             TEST_FILE_DIR, "raw", "test_loopsnewoutput_MB_CE1_short10k.csv"
         )
         dp = BiologicDatapath.from_file(biologic_file)
+        dp.indeterminate_step_default_charge = False
 
         self.assertTrue(
             {
@@ -356,14 +374,15 @@ class TestBioLogicDatapath(unittest.TestCase):
         self.assertAlmostEqual(dp.raw_data["test_time"].min(), 0, 3)
         self.assertAlmostEqual(dp.raw_data["test_time"].max(), 102040.77, 3)
         # self.assertAlmostEqual(dp.structured_data["test_time"].min(), 13062.720560, 3)
-        self.assertAlmostEqual(dp.structured_data["test_time"].min(), 101.089, 2)
-        self.assertAlmostEqual(dp.structured_data["test_time"].max(), 101972.885, 3)
+        self.assertAlmostEqual(dp.structured_data["test_time"].min(), 23.71335, 2)
+        self.assertAlmostEqual(dp.structured_data["test_time"].max(), 102023.24606, 3)
 
     def test_from_txt(self):
         biologic_file = os.path.join(
             TEST_FILE_DIR, "raw", "test_loopsnewoutput_MB_CE1_short10k.txt"
         )
         dp = BiologicDatapath.from_file(biologic_file)
+        dp.indeterminate_step_default_charge = False
 
         self.assertTrue(
             {
@@ -393,8 +412,8 @@ class TestBioLogicDatapath(unittest.TestCase):
         self.assertAlmostEqual(dp.raw_data["test_time"].min(), 0, 3)
         self.assertAlmostEqual(dp.raw_data["test_time"].max(), 102240.281, 3)
         #self.assertAlmostEqual(dp.structured_data["test_time"].min(), 13062.997, 3)
-        self.assertAlmostEqual(dp.structured_data["test_time"].min(), 101.357, 2)
-        self.assertAlmostEqual(dp.structured_data["test_time"].max(), 101972.886, 3)
+        self.assertAlmostEqual(dp.structured_data["test_time"].min(), 23.71335, 2)
+        self.assertAlmostEqual(dp.structured_data["test_time"].max(), 102149.66239, 3)
 
     def test_from_formation_txt(self):
         biologic_file = os.path.join(
@@ -425,7 +444,7 @@ class TestBioLogicDatapath(unittest.TestCase):
         self.assertEqual(dp.structured_summary["date_time_iso"].iloc[1], "2022-01-22T09:15:10.020000+00:00")
         self.assertAlmostEqual(dp.raw_data["test_time"].min(), 0, 3)
         self.assertAlmostEqual(dp.raw_data["test_time"].max(), 784864.55, 3)
-        self.assertAlmostEqual(dp.structured_data["test_time"].min(), 259220.283, 3)
+        self.assertAlmostEqual(dp.structured_data["test_time"].min(), 0.000, 3)
         self.assertAlmostEqual(dp.structured_data["test_time"].max(), 784853.102, 3)
         self.assertGreater(dp.structured_summary["discharge_capacity"].tolist()[4], 0)
         self.assertGreater(dp.structured_summary["discharge_capacity"].tolist()[20], 0)
@@ -518,7 +537,7 @@ class TestNovonixDatapath(unittest.TestCase):
         )
 
         self.assertTrue(dp.raw_data["test_time"].is_monotonic_increasing)
-        self.assertListEqual(list(dp.raw_data["step_type_num"].unique()), [0, 7, 8, 1])
+        self.assertListEqual(list(dp.raw_data["step_index"].unique()), [0, 7, 8, 1])
 
         self.assertTrue("protocol" in dp.metadata.raw)
         self.assertTrue("channel" in dp.metadata.raw)
@@ -600,7 +619,7 @@ class TestNovonixDatapath(unittest.TestCase):
 
         # The number of rows is 1100 since there are 11 total step type numbers
         # spread across all step types
-        self.assertTupleEqual(dp.structured_data.shape, (1100, 11))
+        self.assertTupleEqual(dp.structured_data.shape, (1100, 12))
 
 
 

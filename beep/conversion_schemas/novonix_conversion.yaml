@@ -7,7 +7,7 @@ data_columns:
     beep_name: cycle_index
     data_type: int
   Step Type:
-    beep_name: step_type_num
+    beep_name: step_index
     data_type: int
   Run Time (h):
     beep_name: test_time
@@ -34,7 +34,7 @@ data_columns:
     beep_name: dv/dt
     data_type: float
   Step Number:
-    beep_name: step_index
+    beep_name: step_num
     data_type: int
   Step position:
     beep_name: step_position
