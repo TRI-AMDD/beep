@@ -691,6 +691,7 @@ class TestRawToFeatures(unittest.TestCase):
                            destination_path=self.maccor_file_w_parameters)
 
         dp = MaccorDatapath.from_file(self.maccor_file_w_parameters)
+        # dp.autostructure()
         dp.structure()
         processed_run_path = os.path.join(
             TEST_FILE_DIR, "processed_diagnostic.json"
