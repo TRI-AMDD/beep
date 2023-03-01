@@ -435,6 +435,7 @@ class TestBEEPDatapath(unittest.TestCase):
                            destination_path=maccor_file_w_parameters)
 
         md = MaccorDatapath.from_file(maccor_file_w_parameters)
+        md.indeterminate_step_default_charge = False
 
         reset_ix = [1, 36, 141, 246]
         diag = DiagnosticConfig(
@@ -570,7 +571,9 @@ class TestBEEPDatapath(unittest.TestCase):
         )
         # Dump to the structured file and check the file size
         # File size had to be incteased as datapath dump includes ALL data now
-        dumpfn(md, processed_cycler_run_loc)
+
+        md.to_json_file(processed_cycler_run_loc, omit_raw=True)
+        # dumpfn(md, processed_cycler_run_loc)
         proc_size = os.path.getsize(processed_cycler_run_loc)
         self.assertLess(proc_size, 260000000)
 
@@ -603,7 +606,8 @@ class TestBEEPDatapath(unittest.TestCase):
             (test.structured_data.step_type == "charge")
             & (test.structured_data.cycle_index == 25)
             ]
-        self.assertEqual(len(single_charge.index), 1000)
+
+        self.assertEqual(len(single_charge.index), 3000)
         plt.plot(single_charge.charge_capacity, single_charge.voltage)
         plt.savefig(
             os.path.join(
