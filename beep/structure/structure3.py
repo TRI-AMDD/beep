@@ -14,6 +14,11 @@ import numpy as np
 import dask
 import tqdm
 
+from dask.diagnostics import ProgressBar
+
+
+
+
 """
 # ASSUMPTIONS
 
@@ -31,6 +36,10 @@ STEPS/CYCLES ARE FORMED FROM THE BIG DF, BUT EDITING THE CYCLES/STEPS DOES NOT A
 RAW STEPS/CYCLES ARE USED TO FORM THE STRUCTURED BIG DF, BUT AFTER IT IS COLLATED, THEY ARE CONVERTED ONE WAY BACK TO STEPS/CYCLES
 
 """
+
+
+# todo: step_index and other constant columns still get interpolated when using constant_n_points_per_step_label
+
 TQDM_STYLE_ARGS = {
     "ascii": ' ='
 }
@@ -113,10 +122,11 @@ class DFSelectorAggregator:
         return len(self.items)
 
     def __getattr__(self, attr):
-        if all([isinstance(item, Cycle) for item in
-                self.items]) and attr == "steps":
+        if attr == "steps" and all([isinstance(item, Cycle) for item in self]):
+            # If we are trying to get steps for a selection of cycles,
+            # We need to get all those steps' data and aggregate them
             steps = []
-            for c in self.items:
+            for c in self:
                 for s in c.steps:
                     steps.append(s)
             return DFSelectorAggregator(
@@ -126,18 +136,23 @@ class DFSelectorAggregator:
                 tuple_field="step_index",
                 label_field="step_label"
             )
-        elif attr == "config":
-            raise NotImplementedError
         else:
             # default behavior
             return self.__getattribute__(attr)
+
+    def __setattr__(self, key, value):
+        if key == "config":
+            for item in self.items:
+                item.config = value
+        else:
+            super().__setattr__(key, value)
 
     def __repr__(self):
         return self.items.__repr__()
 
     @property
     def data(self):
-        return pd.concat([obj.data for obj in self.items])
+        return aggregate_nicely([obj.data for obj in self.items])
 
 
 class Step:
@@ -155,22 +170,28 @@ class Step:
         self.cycle_index = None
         self.config = {}
 
-        if lenient:
-            chklist = ("cycle_index",)
-        else:
-            chklist = ("step_counter_absolute", "step_counter", "step_index",
-                       "cycle_index", "step_label")
+        chklist = ("step_counter_absolute", "step_counter", "step_index", "cycle_index", "step_label")
 
         for chk in chklist:
             unique = self.data[chk].unique()
             if len(unique) != 1:
-                raise ValueError(
-                    f"Step check failed; '{chk}' has more than one unique value (lenient={lenient})!\n{unique}")
+                if lenient:
+                    warnings.warn(f"Unique values for {chk} of {self.__class__.__name__} were {unique}! Assigning {self.__class__.__name__} attribute '{chk}' to None.")
+                    setattr(self, chk, None)
+                else:
+                    raise ValueError(
+                        f"Step check failed; '{chk}' has more than one unique value (lenient={lenient})!\n{unique}"
+                    )
             else:
                 setattr(self, chk, unique[0])
 
     def __repr__(self):
-        return f"{self.__class__.__name__}(step_counter={self.step_counter}, step_index={self.step_index}, step_label={self.step_label}, {self.data.shape[0]} points)"
+        return f"{self.__class__.__name__}" \
+               f"cycle_index={self.cycle_index}, "\
+               f"(step_counter={self.step_counter}, " \
+               f"step_index={self.step_index}, " \
+               f"step_label={self.step_label}, " \
+               f"{self.data.shape[0]} points)"
 
 
 class Cycle:
@@ -198,11 +219,11 @@ class Cycle:
             self.cycle_index = unique
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({len(self.steps)} steps, {self.data.shape[0]} points)"
+        return f"{self.__class__.__name__} {self.cycle_index}({len(self.steps)} steps, {self.data.shape[0]} points)"
 
     @property
     def data(self):
-        return pd.concat([s.data for s in self.steps])
+        return aggregate_nicely([s.data for s in self.steps])
 
 
 class Run:
@@ -210,13 +231,15 @@ class Run:
     An entire cycler run.
     A persistent object to replace BEEPDatapath.
     """
-
     class CyclesContainer:
         def __init__(self, df, tqdm_desc_suffix=None, lenient=True):
             cycles = [Cycle(dfc, lenient=lenient) for _, dfc in
                       tqdm.tqdm(df.groupby("cycle_index"),
                                 desc=f"Organizing cycles and steps {tqdm_desc_suffix}",
                                 **TQDM_STYLE_ARGS)]
+            # groups = df.groupby("cycle_index")
+            # cycle_bag = db.from_sequence(groups, npartitions=len(groups))
+            # cycles = db.map(Cycle.__init__, cycle_bag).compute()
             self.cycles = DFSelectorAggregator(
                 items=cycles,
                 index_field="cycle_index",
@@ -224,13 +247,9 @@ class Run:
                 tuple_field="cycle_index",
                 label_field="cycle_label",
             )
-            # self.steps = []
-            # for c in self.cycles:
-            #     self.steps += c.steps
-
         @property
         def data(self):
-            return pd.concat([c.data for c in self.cycles])
+            return aggregate_nicely([c.data for c in self.cycles])
 
     def __init__(self, df):
         df2 = copy.deepcopy(df)
@@ -262,27 +281,23 @@ class Run:
                 df2.loc[indices, "step_label"] = label_chg_state(df_sca)
 
         # Assign cycle label
-        self.raw = self.CyclesContainer(df2, tqdm_desc_suffix="(raw)",
-                                        lenient=False)
+        self.raw = self.CyclesContainer(df2, tqdm_desc_suffix="(raw)", lenient=False)
         self.structured = None
 
     def structure(self):
-        cycle_bag = db.from_sequence(self.raw.cycles,
-                                     npartitions=len(self.raw.cycles))
-        dfs = db.map(interpolate_df, cycle_bag).compute()
+        ProgressBar().register()
+        cycle_bag = db.from_sequence(self.raw.cycles, npartitions=len(self.raw.cycles))
+        dfs = db.map(interpolate_cycle, cycle_bag).compute()
         dfs = [df for df in dfs if not df.empty]
         self.structured = self.CyclesContainer(pd.concat(dfs),
-                                               tqdm_desc_suffix="(structured)",
-                                               lenient=True)
+                                               tqdm_desc_suffix="(structured)")
 
 
-def interpolate_df(cycle):
+def interpolate_cycle(cycle):
     config = update_nested(
         copy.deepcopy(CONFIG_CYCLE_DEFAULT),
         cycle.config
     )
-
-    pprint.pprint(config)
 
     if sum([config["constant_n_points_per_step"],
             config["constant_n_points_per_step_label"]]) != 1:
@@ -303,14 +318,13 @@ def interpolate_df(cycle):
         steps = []
         for step_label, df in cycle.data.groupby("step_label"):
             step = Step(df, lenient=True)
-            step.config = config["config_per_step_label"].get(step_label,
-                                                              {"exclude": True})
-
-            print(step_label, step.config)
+            step.config = config["config_per_step_label"].get(step_label, {"exclude": True})
 
             if step_label not in config["config_per_step_label"]:
                 warnings.warn(
-                    f"Step label '{step_label}' for step-label based interpolation was not found in the config! Excluding from interpolation. Config was:\n{config}")
+                    f"Step label '{step_label}' for step-label based interpolation was "
+                    f"not found in the config! Excluding from interpolation. Config was:\n{config}"
+                )
 
             steps.append(step)
         constant_columns = ["cycle_index", "step_label", "cycle_label"]
@@ -339,8 +353,7 @@ def interpolate_df(cycle):
             continue
 
         # TODO: Fix this unneeded dropping when actually merging in
-        droppables = [c for c in dataframe.columns if c.startswith("_")] + [
-            "date_time", "date_time_iso"]
+        droppables = [c for c in dataframe.columns if c.startswith("_")] + ["date_time", "date_time_iso"]
         dataframe = dataframe.drop(columns=droppables)
 
         # at this point we assume all the values are unique
@@ -386,8 +399,7 @@ def interpolate_df(cycle):
         interpolated_df = interpolated_df.reset_index()
 
         # Remove duplicates
-        interpolated_df = interpolated_df[
-            ~interpolated_df[field_name].duplicated()]
+        interpolated_df = interpolated_df[~interpolated_df[field_name].duplicated()]
         for k, v in constant_column_vals.items():
             interpolated_df[k] = v
         interpolated_dfs.append(interpolated_df)
@@ -454,13 +466,18 @@ def label_chg_state(step_df, indeterminate_label="unknown"):
     return {True: "charge", False: "discharge", None: indeterminate_label}[is_charging]
 
 
+def aggregate_nicely(iterable):
+    return pd.concat(iterable).sort_values(by="test_time").reset_index()
+
+
 if __name__ == "__main__":
     from beep.structure import MaccorDatapath
     from beep.structure.structure3 import Run
     filename = "/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/PreDiag_000287_000128.092"
     md = MaccorDatapath.from_file(filename)
 
-
     run = Run(md.raw_data)
+
+    run.structure()
 
 
