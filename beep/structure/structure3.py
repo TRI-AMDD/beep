@@ -17,8 +17,6 @@ import tqdm
 from dask.diagnostics import ProgressBar
 
 
-
-
 """
 # ASSUMPTIONS
 
@@ -74,7 +72,6 @@ class DFSelectorAggregator:
 
     ... into either a list of items (to be iterated) or a data frame (which is aggregated)
     """
-
     def __init__(
             self,
             items,
@@ -91,18 +88,14 @@ class DFSelectorAggregator:
 
     def __getitem__(self, indexer):
         if isinstance(indexer, int):
-            item_selection = [i for i in self.items if
-                              getattr(i, self.index_field) == indexer]
+            item_selection = [i for i in self.items if getattr(i, self.index_field) == indexer]
         elif isinstance(indexer, tuple):
-            item_selection = [i for i in self.items if
-                              getattr(i, self.tuple_field) in indexer]
+            item_selection = [i for i in self.items if getattr(i, self.tuple_field) in indexer]
         elif isinstance(indexer, slice):
             indexer = tuple(range(*indexer.indices(len(self.items))))
-            item_selection = [i for i in self.items if
-                              getattr(i, self.slice_field) in indexer]
+            item_selection = [i for i in self.items if getattr(i, self.slice_field) in indexer]
         elif isinstance(indexer, str):
-            item_selection = [i for i in self.items if
-                              getattr(i, self.label_field) == indexer]
+            item_selection = [i for i in self.items if getattr(i, self.label_field) == indexer]
         else:
             raise TypeError(
                 f"No indexing scheme for {self.__class__.__name__} available for type {type(indexer)}")
@@ -467,7 +460,10 @@ def label_chg_state(step_df, indeterminate_label="unknown"):
 
 
 def aggregate_nicely(iterable):
-    return pd.concat(iterable).sort_values(by="test_time").reset_index()
+    if iterable:
+        return pd.concat(iterable).sort_values(by="test_time").reset_index()
+    else:
+        return pd.DataFrame()
 
 
 if __name__ == "__main__":
@@ -477,6 +473,21 @@ if __name__ == "__main__":
     md = MaccorDatapath.from_file(filename)
 
     run = Run(md.raw_data)
+
+    run.structure()
+
+
+    # Now structure based on a constant number of points for each charge/discharge cycle
+    for cyc in run.raw.cycles:
+        cyc.config = {
+            "constant_n_points_per_step": False,
+            "constant_n_points_per_step_label": True,
+            "config_per_step_label": {
+                "charge": {"resolution": 1000},
+                "discharge": {"resolution": 1000},
+                "unknown": {"exclude": True}
+            }
+        }
 
     run.structure()
 
