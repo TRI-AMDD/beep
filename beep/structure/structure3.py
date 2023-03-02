@@ -14,6 +14,26 @@ import numpy as np
 import dask
 import tqdm
 
+"""
+# ASSUMPTIONS
+
+ASSUMES:
+- there is a step_type column
+- there is a cycle_label column
+- also should REALLY include step_counter
+- input field is monotonic??1
+
+This is why we *need to use the structured data to instantiate it later on*! But in implementation it should be put into the `__init__` when determining each of these things.
+
+
+DATA IS ONLY UPDATED IN ONE DIRECTION
+STEPS/CYCLES ARE FORMED FROM THE BIG DF, BUT EDITING THE CYCLES/STEPS DOES NOT AFFECT THE BIG DF
+RAW STEPS/CYCLES ARE USED TO FORM THE STRUCTURED BIG DF, BUT AFTER IT IS COLLATED, THEY ARE CONVERTED ONE WAY BACK TO STEPS/CYCLES
+
+"""
+TQDM_STYLE_ARGS = {
+    "ascii": ' ='
+}
 
 CONFIG_STEP_DEFAULT = {
     "field_name": "voltage",
@@ -35,64 +55,225 @@ CONFIG_CYCLE_DEFAULT = {
 }
 
 
-def update_nested(d, u):
+class DFSelectorAggregator:
     """
-    Graciously taken from
-    https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
+    Class for aggregating the following from lists of Cycles/Steps:
+        - individual indices
+        - tuples of indices
+        - slices of indices
+        - labels on pre-defined dataframe fields
+
+    ... into either a list of items (to be iterated) or a data frame (which is aggregated)
     """
-    for k, v in u.items():
-        if isinstance(v, collections.abc.Mapping):
-            d[k] = update_nested(d.get(k, {}), v)
+
+    def __init__(
+            self,
+            items,
+            index_field,
+            tuple_field,
+            slice_field,
+            label_field
+    ):
+        self.index_field = index_field
+        self.tuple_field = tuple_field
+        self.label_field = label_field
+        self.slice_field = slice_field
+        self.items = items
+
+    def __getitem__(self, indexer):
+        if isinstance(indexer, int):
+            item_selection = [i for i in self.items if
+                              getattr(i, self.index_field) == indexer]
+        elif isinstance(indexer, tuple):
+            item_selection = [i for i in self.items if
+                              getattr(i, self.tuple_field) in indexer]
+        elif isinstance(indexer, slice):
+            indexer = tuple(range(*indexer.indices(len(self.items))))
+            item_selection = [i for i in self.items if
+                              getattr(i, self.slice_field) in indexer]
+        elif isinstance(indexer, str):
+            item_selection = [i for i in self.items if
+                              getattr(i, self.label_field) == indexer]
         else:
-            d[k] = v
-    return d
+            raise TypeError(
+                f"No indexing scheme for {self.__class__.__name__} available for type {type(indexer)}")
+        return DFSelectorAggregator(
+            item_selection,
+            self.index_field,
+            self.tuple_field,
+            self.slice_field,
+            self.label_field
+        )
 
+    def __iter__(self):
+        for item in self.items:
+            yield item
 
-def label_chg_state(step_df, indeterminate_label="unknown"):
-    """
-    Helper function to determine whether a given dataframe corresponding
-    to a single cycle_index's step is charging or discharging, only intended
-    to be used with a dataframe for single step/cycle
+    def __len__(self):
+        return len(self.items)
 
-    Args:
-         step_df (pandas.DataFrame): dataframe to determine whether
-            charging or discharging
-         indeterminate_step_charge (bool): Default to "charge" indication
-            for steps where charge/discharge cannot be determined
-            confidently. If false, indeterminate steps are considered
-            discharge.
-
-    Returns:
-        (bool, None): True if step is the charge state specified,
-            False if it is confidently not, or None if the
-            charge state is indeterminate.
-    """
-    cap = step_df[["charge_capacity", "discharge_capacity"]]
-    total_cap_diffs = cap.max() - cap.min()
-
-    cdiff = cap.diff(axis=0)
-    c_points_flagged = (cdiff / total_cap_diffs) > 0.99
-    cdiff = cdiff[~c_points_flagged]
-
-    avg_chg_delta = cdiff.mean(axis=0)["charge_capacity"]
-    avg_dchg_delta = cdiff.mean(axis=0)["discharge_capacity"]
-
-    if np.isnan(avg_chg_delta) and np.isnan(avg_dchg_delta):
-        is_charging = None
-    elif np.isnan(avg_chg_delta):
-        is_charging = avg_dchg_delta > 0
-    elif np.isnan(avg_dchg_delta):
-        is_charging = avg_chg_delta > 0
-    else:
-        if avg_chg_delta > avg_dchg_delta and avg_chg_delta > 0:
-            is_charging = True
-        elif avg_chg_delta < avg_dchg_delta and avg_dchg_delta > 0:
-            is_charging = False
+    def __getattr__(self, attr):
+        if all([isinstance(item, Cycle) for item in
+                self.items]) and attr == "steps":
+            steps = []
+            for c in self.items:
+                for s in c.steps:
+                    steps.append(s)
+            return DFSelectorAggregator(
+                steps,
+                index_field="step_index",
+                slice_field="step_index",
+                tuple_field="step_index",
+                label_field="step_label"
+            )
+        elif attr == "config":
+            raise NotImplementedError
         else:
-            is_charging = None
+            # default behavior
+            return self.__getattribute__(attr)
 
-    return {True: "charge", False: "discharge", None: indeterminate_label}[
-        is_charging]
+    def __repr__(self):
+        return self.items.__repr__()
+
+    @property
+    def data(self):
+        return pd.concat([obj.data for obj in self.items])
+
+
+class Step:
+    """
+    A persistent step object.
+    This is where all ground truth data is kept.
+    """
+
+    def __init__(self, df_step, lenient=True):
+        self.data = df_step
+        self.step_counter_absolute = None
+        self.step_counter = None
+        self.step_index = None
+        self.step_label = None
+        self.cycle_index = None
+        self.config = {}
+
+        if lenient:
+            chklist = ("cycle_index",)
+        else:
+            chklist = ("step_counter_absolute", "step_counter", "step_index",
+                       "cycle_index", "step_label")
+
+        for chk in chklist:
+            unique = self.data[chk].unique()
+            if len(unique) != 1:
+                raise ValueError(
+                    f"Step check failed; '{chk}' has more than one unique value (lenient={lenient})!\n{unique}")
+            else:
+                setattr(self, chk, unique[0])
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(step_counter={self.step_counter}, step_index={self.step_index}, step_label={self.step_label}, {self.data.shape[0]} points)"
+
+
+class Cycle:
+    """
+    A persistent cycle object.
+    """
+
+    def __init__(self, df_cyc, lenient=True):
+        steps = [Step(scdf, lenient=lenient) for _, scdf in df_cyc.groupby("step_counter")]
+        self.steps = DFSelectorAggregator(
+            items=steps,
+            index_field="step_index",
+            slice_field="step_index",
+            tuple_field="step_index",
+            label_field="step_label",
+        )
+        self.config = {}
+
+        unique = self.data.cycle_index.unique()
+        if len(unique) != 1:
+            raise ValueError(
+                f"Cycle check failed; 'cycle_index' has more than one unique value!\n{unique}"
+            )
+        else:
+            self.cycle_index = unique
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({len(self.steps)} steps, {self.data.shape[0]} points)"
+
+    @property
+    def data(self):
+        return pd.concat([s.data for s in self.steps])
+
+
+class Run:
+    """
+    An entire cycler run.
+    A persistent object to replace BEEPDatapath.
+    """
+
+    class CyclesContainer:
+        def __init__(self, df, tqdm_desc_suffix=None, lenient=True):
+            cycles = [Cycle(dfc, lenient=lenient) for _, dfc in
+                      tqdm.tqdm(df.groupby("cycle_index"),
+                                desc=f"Organizing cycles and steps {tqdm_desc_suffix}",
+                                **TQDM_STYLE_ARGS)]
+            self.cycles = DFSelectorAggregator(
+                items=cycles,
+                index_field="cycle_index",
+                slice_field="cycle_index",
+                tuple_field="cycle_index",
+                label_field="cycle_label",
+            )
+            # self.steps = []
+            # for c in self.cycles:
+            #     self.steps += c.steps
+
+        @property
+        def data(self):
+            return pd.concat([c.data for c in self.cycles])
+
+    def __init__(self, df):
+        df2 = copy.deepcopy(df)
+
+        # Assign a per-cycle step index counter
+        df2.loc[:, "step_counter"] = 0
+        for cycle_index in tqdm.tqdm(df2.cycle_index.unique(),
+                                     desc="Assigning step counter",
+                                     **TQDM_STYLE_ARGS):
+            indices = df2.loc[df2.cycle_index == cycle_index].index
+            step_index_list = df2.step_index.loc[indices]
+            shifted = step_index_list.ne(step_index_list.shift()).cumsum()
+            df2.loc[indices, "step_counter"] = shifted - 1
+
+        # Assign an absolute step index counter
+        compounded_counter = df2.step_counter.astype(
+            str) + df2.cycle_index.astype(str)
+        absolute_shifted = compounded_counter.ne(
+            compounded_counter.shift()).cumsum()
+        df2["step_counter_absolute"] = absolute_shifted - 1
+
+        # Assign step label if not known
+        if "step_label" not in df2.columns:
+            df2["step_label"] = None
+            for sca, df_sca in tqdm.tqdm(df2.groupby("step_counter_absolute"),
+                                         desc="Determining charge/discharge steps",
+                                         **TQDM_STYLE_ARGS):
+                indices = df_sca.index
+                df2.loc[indices, "step_label"] = label_chg_state(df_sca)
+
+        # Assign cycle label
+        self.raw = self.CyclesContainer(df2, tqdm_desc_suffix="(raw)",
+                                        lenient=False)
+        self.structured = None
+
+    def structure(self):
+        cycle_bag = db.from_sequence(self.raw.cycles,
+                                     npartitions=len(self.raw.cycles))
+        dfs = db.map(interpolate_df, cycle_bag).compute()
+        dfs = [df for df in dfs if not df.empty]
+        self.structured = self.CyclesContainer(pd.concat(dfs),
+                                               tqdm_desc_suffix="(structured)",
+                                               lenient=True)
 
 
 def interpolate_df(cycle):
@@ -214,120 +395,72 @@ def interpolate_df(cycle):
     return pd.concat(interpolated_dfs) if interpolated_dfs else pd.DataFrame()
 
 
-class Run(CyclerDataView):
+def update_nested(d, u):
     """
-    An entire cycler run.
-    A persistent object to replace BEEPDatapath.
+    Graciously taken from
+    https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
     """
-
-    class CyclesContainer:
-        def __init__(self, df, tqdm_desc_suffix=None, lenient=True):
-            self.cycles = [Cycle(dfc, lenient=lenient) for _, dfc in
-                           tqdm.tqdm(df.groupby("cycle_index"),
-                                     desc=f"Organizing cycles and steps {tqdm_desc_suffix}",
-                                     ascii=' =')]
-            self.steps = []
-            for c in self.cycles:
-                self.steps += c.steps
-
-        @property
-        def data(self):
-            return pd.concat([c.data for c in self.cycles])
-
-    def __init__(self, df):
-        df2 = copy.deepcopy(df)
-
-        # Assign a per-cycle step index counter
-        df2.loc[:, "step_counter"] = 0
-        for cycle_index in tqdm.tqdm(df2.cycle_index.unique(),
-                                     desc="Assigning step counter"):
-            indices = df2.loc[df2.cycle_index == cycle_index].index
-            step_index_list = df2.step_index.loc[indices]
-            shifted = step_index_list.ne(step_index_list.shift()).cumsum()
-            df2.loc[indices, "step_counter"] = shifted - 1
-
-        # Assign an absolute step index counter
-        compounded_counter = df2.step_counter.astype(
-            str) + df2.cycle_index.astype(str)
-        absolute_shifted = compounded_counter.ne(
-            compounded_counter.shift()).cumsum()
-        df2["step_counter_absolute"] = absolute_shifted - 1
-
-        # Assign step label if not known
-        if "step_label" not in df2.columns:
-            df2["step_label"] = None
-            for sca, df_sca in tqdm.tqdm(df2.groupby("step_counter_absolute"),
-                                         desc="Determining charge/discharge steps"):
-                indices = df_sca.index
-                df2.loc[indices, "step_label"] = label_chg_state(df_sca)
-
-        # Assign cycle label
-        self.raw = self.CyclesContainer(df2, tqdm_desc_suffix="(raw)",
-                                        lenient=False)
-        self.structured = None
-
-    def structure(self):
-        cycle_bag = db.from_sequence(self.raw.cycles,
-                                     npartitions=len(self.raw.cycles))
-        dfs = db.map(interpolate_df, cycle_bag).compute()
-        dfs = [df for df in dfs if not df.empty]
-        self.structured = self.CyclesContainer(pd.concat(dfs),
-                                               tqdm_desc_suffix="(structured)",
-                                               lenient=True)
-
-
-class Cycle:
-    """
-    A persistent cycle object.
-    """
-
-    def __init__(self, df_cyc, lenient=True):
-        self.steps = [Step(scdf, lenient=lenient) for _, scdf in
-                      df_cyc.groupby("step_counter")]
-        self.config = {}
-
-        unique = self.data.cycle_index.unique()
-        if len(unique) != 1:
-            raise ValueError(
-                f"Cycle check failed; 'cycle_index' has more than one unique value!\n{unique}")
+    for k, v in u.items():
+        if isinstance(v, collections.abc.Mapping):
+            d[k] = update_nested(d.get(k, {}), v)
         else:
-            self.cycle_index = unique
-
-    @property
-    def data(self):
-        return pd.concat([s.data for s in self.steps])
+            d[k] = v
+    return d
 
 
-class Step:
+def label_chg_state(step_df, indeterminate_label="unknown"):
     """
-    A persistent step object.
-    This is where all ground truth data is kept.
+    Helper function to determine whether a given dataframe corresponding
+    to a single cycle_index's step is charging or discharging, only intended
+    to be used with a dataframe for single step/cycle
+
+    Args:
+         step_df (pandas.DataFrame): dataframe to determine whether
+            charging or discharging
+         indeterminate_step_charge (bool): Default to "charge" indication
+            for steps where charge/discharge cannot be determined
+            confidently. If false, indeterminate steps are considered
+            discharge.
+
+    Returns:
+        (bool, None): True if step is the charge state specified,
+            False if it is confidently not, or None if the
+            charge state is indeterminate.
     """
+    cap = step_df[["charge_capacity", "discharge_capacity"]]
+    total_cap_diffs = cap.max() - cap.min()
 
-    def __init__(self, df_step, lenient=True):
-        self.data = df_step
-        self.step_counter_absolute = None
-        self.step_counter = None
-        self.step_index = None
-        self.step_label = None
-        self.cycle_index = None
-        self.config = {}
+    cdiff = cap.diff(axis=0)
+    c_points_flagged = (cdiff / total_cap_diffs) > 0.99
+    cdiff = cdiff[~c_points_flagged]
 
-        if lenient:
-            chklist = ("cycle_index",)
+    avg_chg_delta = cdiff.mean(axis=0)["charge_capacity"]
+    avg_dchg_delta = cdiff.mean(axis=0)["discharge_capacity"]
+
+    if np.isnan(avg_chg_delta) and np.isnan(avg_dchg_delta):
+        is_charging = None
+    elif np.isnan(avg_chg_delta):
+        is_charging = avg_dchg_delta > 0
+    elif np.isnan(avg_dchg_delta):
+        is_charging = avg_chg_delta > 0
+    else:
+        if avg_chg_delta > avg_dchg_delta and avg_chg_delta > 0:
+            is_charging = True
+        elif avg_chg_delta < avg_dchg_delta and avg_dchg_delta > 0:
+            is_charging = False
         else:
-            chklist = ("step_counter_absolute", "step_counter", "step_index",
-                       "cycle_index", "step_label")
+            is_charging = None
 
-        for chk in chklist:
-            unique = self.data[chk].unique()
-            if len(unique) != 1:
-                raise ValueError(
-                    f"Step check failed; '{chk}' has more than one unique value (lenient={lenient})!\n{unique}")
-            else:
-                setattr(self, chk, unique[0])
+    return {True: "charge", False: "discharge", None: indeterminate_label}[is_charging]
 
 
 if __name__ == "__main__":
+    from beep.structure import MaccorDatapath
+    from beep.structure.structure3 import Run
     filename = "/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/PreDiag_000287_000128.092"
     md = MaccorDatapath.from_file(filename)
+
+
+    run = Run(md.raw_data)
+
+
