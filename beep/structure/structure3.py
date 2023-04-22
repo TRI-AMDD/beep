@@ -538,4 +538,3 @@ def aggregate_nicely(iterable):
         return pd.concat(iterable).sort_values(by="test_time").reset_index(drop=True)
     else:
         return pd.DataFrame()
-    
