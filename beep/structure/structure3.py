@@ -38,8 +38,6 @@ RAW STEPS/CYCLES ARE USED TO FORM THE STRUCTURED BIG DF, BUT AFTER IT IS COLLATE
 
 # todo: step_index and other constant columns still get interpolated when using constant_n_points_per_step_label
 
-ENABLED_FIELD = "enabled"
-
 DATA_COLUMN_DTYPES = {
     'test_time': 'float64',
     'cycle_index': 'int32',
@@ -74,23 +72,26 @@ CONFIG_STEP_DEFAULT = {
 }
 
 CONFIG_CYCLE_DEFAULT = {
-
     # Config mode 1: Constant n point per step within a cycle. 
     # k steps within a cycle will result in n*k points per cycle.
-    "per_step_counter": {
-        ENABLED_FIELD: True,
-        "all": copy.deepcopy(CONFIG_STEP_DEFAULT)
-    },
 
     # Config for mode 2: Constant n points per step label within a cycle, 
     # regardless of k steps in cycle.
     # for $i \in S$ step labels, $n_i$ points per step label, will result in $\sum_i n_i$ points per cycle.
     # Note: for temporally disparate steps with the same steps label, strange behavior can occur. 
-    "per_step_label":{
-        ENABLED_FIELD: False,
-        "charge": copy.deepcopy(CONFIG_STEP_DEFAULT),
-        "discharge": copy.deepcopy(CONFIG_STEP_DEFAULT)
-    },
+    "per": "step_counter",
+
+    # USED ONLY IF PER="STEP_COUNTER"
+    # 'all' is used only if per="step_counter"
+    "all": copy.deepcopy(CONFIG_STEP_DEFAULT),
+
+
+    # USED ONLY IF PER="STEP_LABEL"
+    # these are used as defaults ONLY if per="step_label"
+    # more can be added as other keys for other step labels.
+    "charge": copy.deepcopy(CONFIG_STEP_DEFAULT),
+    "discharge": copy.deepcopy(CONFIG_STEP_DEFAULT),
+
 }
 
 
@@ -229,7 +230,7 @@ class Step:
                f"step_index={self.step_index}, " \
                f"step_label={self.step_label}, " \
                f"{self.data.shape[0]} points)"
-
+    
 
 class Cycle:
     """
@@ -258,6 +259,27 @@ class Cycle:
     def __repr__(self):
         return f"{self.__class__.__name__} {self.cycle_index}({len(self.steps)} steps, {self.data.shape[0]} points)"
 
+    def __setattr__(self, key, value) -> None:
+        """
+        If a cycle config is set, set the config for all steps.
+
+        The caveat is that if you are using per-step-label interpolation,
+        the config will be set for each step according to the step label.
+        """
+        if key == "config":
+            overall_config = update_nested(CONFIG_CYCLE_DEFAULT, value)
+            for step in self.steps:
+                
+                # if interpolation per step counter,
+                # all steps will be set to the same per-step config
+                if overall_config["per"] == "step_counter":
+                    step.config = overall_config["all"]
+                # otherwise (interpolation per step label) 
+                # set the step config from the step label
+                else:
+                    step.config = overall_config[step.step_label]
+        super().__setattr__(key, value)
+
     @property
     def data(self):
         return aggregate_nicely([s.data for s in self.steps])
@@ -274,9 +296,6 @@ class Run:
                       tqdm.tqdm(df.groupby("cycle_index"),
                                 desc=f"Organizing cycles and steps {tqdm_desc_suffix}",
                                 **TQDM_STYLE_ARGS)]
-            # groups = df.groupby("cycle_index")
-            # cycle_bag = db.from_sequence(groups, npartitions=len(groups))
-            # cycles = db.map(Cycle.__init__, cycle_bag).compute()
             self.cycles = DFSelectorAggregator(
                 items=cycles,
                 index_field="cycle_index",
@@ -329,11 +348,15 @@ class Run:
     def structure(self):
         ProgressBar().register()
         cycle_bag = db.from_sequence(self.raw.cycles, npartitions=len(self.raw.cycles))
+
+
         dfs = db.map(interpolate_cycle, cycle_bag).compute()
         dfs = [df for df in dfs if not df.empty]
-        self.structured = self.CyclesContainer(pd.concat(dfs),
-                                               tqdm_desc_suffix="(structured)",
-                                               lenient=True)
+        self.structured = self.CyclesContainer(
+            pd.concat(dfs),
+            tqdm_desc_suffix="(structured)",
+            lenient=True
+        )
 
 
 def interpolate_cycle(cycle):
@@ -342,30 +365,24 @@ def interpolate_cycle(cycle):
         cycle.config
     )
 
-    if sum([config["config_step"],
-            config["config_step_label"]]) != 1:
-        raise ValueError(
-            f"A constant number of points must either be specified per step "
-            f"or per chgstate for a given cycle, but the following was passed\n{config}")
-
     # constant number of points per step
-    if config["constant_n_points_per_step"]:
+    if config["per"] == "step_counter":
         steps = cycle.steps
         constant_columns = ["step_index", "step_counter",
                             "step_counter_absolute", "cycle_index",
                             "step_label", "cycle_label"]
 
     # else, constant number of points per chgstate (step_label)
-    else:
+    elif config["per"] == "step_label":
         # Create new "Steps" based on multiple steps grouped by their step labels
         steps = []
         # warnings.warn("Steps are being coerced together to allow for chg/dchg interpolation. Step indices will be lost if there are multiple step ix for each charge/dchg.")
 
         for step_label, df in cycle.data.groupby("step_label"):
             step = Step(df, lenient=True)
-            step.config = config["config_per_step_label"].get(step_label, {"exclude": True})
+            step.config = config.get(step_label, {"exclude": True})
 
-            if step_label not in config["config_per_step_label"]:
+            if step_label not in config:
                 warnings.warn(
                     f"Step label '{step_label}' for step-label based interpolation was "
                     f"not found in the config! Excluding from interpolation. Config was:\n{config}"
@@ -373,6 +390,8 @@ def interpolate_cycle(cycle):
 
             steps.append(step)
         constant_columns = ["cycle_index", "step_label", "cycle_label"]
+    else:
+        raise ValueError(f"Invalid interpolation config for 'per': {config}")
 
     interpolated_dfs = []
     for step in steps:
@@ -519,31 +538,6 @@ def aggregate_nicely(iterable):
         return pd.concat(iterable).sort_values(by="test_time").reset_index(drop=True)
     else:
         return pd.DataFrame()
-
-
-if __name__ == "__main__":
-    from beep.structure import MaccorDatapath
-    # from beep.structure.structure3 import Run
-    filename = "/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/PreDiag_000287_000128.092"
-    md = MaccorDatapath.from_file(filename)
-
-    run = Run(md.raw_data)
-
-    run.structure()
-
-
-    # Now structure based on a constant number of points for each charge/discharge cycle
-    for cyc in run.raw.cycles:
-        cyc.config = {
-            "constant_n_points_per_step": False,
-            "constant_n_points_per_step_label": True,
-            "config_per_step_label": {
-                "charge": {"resolution": 1000},
-                "discharge": {"resolution": 1000},
-                "unknown": {"exclude": True}
-            }
-        }
-
-    run.structure()
+    
 
 
