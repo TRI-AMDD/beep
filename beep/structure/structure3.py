@@ -38,6 +38,28 @@ RAW STEPS/CYCLES ARE USED TO FORM THE STRUCTURED BIG DF, BUT AFTER IT IS COLLATE
 
 # todo: step_index and other constant columns still get interpolated when using constant_n_points_per_step_label
 
+ENABLED_FIELD = "enabled"
+
+DATA_COLUMN_DTYPES = {
+    'test_time': 'float64',
+    'cycle_index': 'int32',
+    'cycle_label': 'category',
+    'current': 'float32',
+    'voltage': 'float32',
+    'temperature': 'float32',
+    'internal_resistance': 'float32',
+    'charge_capacity': 'float32',
+    'discharge_capacity': 'float32',
+    'charge_energy': 'float32',
+    'discharge_energy': 'float32',
+    'step_index': 'int16',
+    'step_counter': 'int32',
+    'step_counter_absolute': 'int32',
+    'step_label': 'category',
+    'data_point': 'int32',
+    }
+
+
 TQDM_STYLE_ARGS = {
     "ascii": ' ='
 }
@@ -45,21 +67,33 @@ TQDM_STYLE_ARGS = {
 CONFIG_STEP_DEFAULT = {
     "field_name": "voltage",
     "field_range": None,
-    "columns": None,
+    "columns": list(DATA_COLUMN_DTYPES.keys()),
     "resolution": 1000,
     "exclude": False,
     "min_points": 2
 }
 
 CONFIG_CYCLE_DEFAULT = {
-    "constant_n_points_per_step": True,
-    "constant_n_points_per_step_label": False,
-    "config_per_step_label":
-        {
-            "charge": copy.deepcopy(CONFIG_STEP_DEFAULT),
-            "discharge": copy.deepcopy(CONFIG_STEP_DEFAULT)
-        }
+
+    # Config mode 1: Constant n point per step within a cycle. 
+    # k steps within a cycle will result in n*k points per cycle.
+    "per_step_counter": {
+        ENABLED_FIELD: True,
+        "all": copy.deepcopy(CONFIG_STEP_DEFAULT)
+    },
+
+    # Config for mode 2: Constant n points per step label within a cycle, 
+    # regardless of k steps in cycle.
+    # for $i \in S$ step labels, $n_i$ points per step label, will result in $\sum_i n_i$ points per cycle.
+    # Note: for temporally disparate steps with the same steps label, strange behavior can occur. 
+    "per_step_label":{
+        ENABLED_FIELD: False,
+        "charge": copy.deepcopy(CONFIG_STEP_DEFAULT),
+        "discharge": copy.deepcopy(CONFIG_STEP_DEFAULT)
+    },
 }
+
+
 
 
 class DFSelectorAggregator:
@@ -100,13 +134,16 @@ class DFSelectorAggregator:
             raise TypeError(
                 f"No indexing scheme for {self.__class__.__name__} available for type {type(indexer)}")
 
-        return DFSelectorAggregator(
-            item_selection,
-            self.index_field,
-            self.tuple_field,
-            self.slice_field,
-            self.label_field
-        )
+        if len(item_selection) == 1:
+            return item_selection[0]
+        else:
+            return DFSelectorAggregator(
+                item_selection,
+                self.index_field,
+                self.tuple_field,
+                self.slice_field,
+                self.label_field
+            )
 
     def __iter__(self):
         for item in self.items:
@@ -173,13 +210,15 @@ class Step:
         for chk in chklist:
             unique = self.data[chk].unique()
             if len(unique) != 1:
-                if lenient:
-                    warnings.warn(f"Unique values for {chk} of {self.__class__.__name__} were {unique}! Assigning {self.__class__.__name__} attribute '{chk}' to None.")
-                    setattr(self, chk, None)
-                else:
+                if not lenient:
                     raise ValueError(
                         f"Step check failed; '{chk}' has more than one unique value (lenient={lenient})!\n{unique}"
                     )
+                
+                # If lenient, we set the problematic columns not passing check to None.
+                # This should only really occur when we are creating a Step from interpolated
+                # data where the data is coerced together from a number of different steps.
+                setattr(self, chk, None)
             else:
                 setattr(self, chk, unique[0])
 
@@ -197,7 +236,7 @@ class Cycle:
     A persistent cycle object.
     """
 
-    def __init__(self, df_cyc, lenient=True):
+    def __init__(self, df_cyc, lenient=False):
         steps = [Step(scdf, lenient=lenient) for _, scdf in df_cyc.groupby("step_counter")]
         self.steps = DFSelectorAggregator(
             items=steps,
@@ -230,7 +269,7 @@ class Run:
     A persistent object to replace BEEPDatapath.
     """
     class CyclesContainer:
-        def __init__(self, df, tqdm_desc_suffix=None, lenient=True):
+        def __init__(self, df, tqdm_desc_suffix=None, lenient=False):
             cycles = [Cycle(dfc, lenient=lenient) for _, dfc in
                       tqdm.tqdm(df.groupby("cycle_index"),
                                 desc=f"Organizing cycles and steps {tqdm_desc_suffix}",
@@ -249,35 +288,42 @@ class Run:
         def data(self):
             return aggregate_nicely([c.data for c in self.cycles])
 
-    def __init__(self, df):
-        df2 = copy.deepcopy(df)
-
+    def __init__(self, df, diagnostic_config=None):
         # Assign a per-cycle step index counter
-        df2.loc[:, "step_counter"] = 0
-        for cycle_index in tqdm.tqdm(df2.cycle_index.unique(),
+        df.loc[:, "step_counter"] = 0
+        for cycle_index in tqdm.tqdm(df.cycle_index.unique(),
                                      desc="Assigning step counter",
                                      **TQDM_STYLE_ARGS):
-            indices = df2.loc[df2.cycle_index == cycle_index].index
-            step_index_list = df2.step_index.loc[indices]
+            indices = df.loc[df.cycle_index == cycle_index].index
+            step_index_list = df.step_index.loc[indices]
             shifted = step_index_list.ne(step_index_list.shift()).cumsum()
-            df2.loc[indices, "step_counter"] = shifted - 1
+            df.loc[indices, "step_counter"] = shifted - 1
 
         # Assign an absolute step index counter
-        compounded_counter = df2.step_counter.astype(str) + "-" + df2.cycle_index.astype(str)
+        compounded_counter = df.step_counter.astype(str) + "-" + df.cycle_index.astype(str)
         absolute_shifted = compounded_counter.ne(compounded_counter.shift()).cumsum()
-        df2["step_counter_absolute"] = absolute_shifted - 1
+        df["step_counter_absolute"] = absolute_shifted - 1
 
         # Assign step label if not known
-        if "step_label" not in df2.columns:
-            df2["step_label"] = None
-            for sca, df_sca in tqdm.tqdm(df2.groupby("step_counter_absolute"),
+        if "step_label" not in df.columns:
+            df["step_label"] = None
+            for sca, df_sca in tqdm.tqdm(df.groupby("step_counter_absolute"),
                                          desc="Determining charge/discharge steps",
                                          **TQDM_STYLE_ARGS):
                 indices = df_sca.index
-                df2.loc[indices, "step_label"] = label_chg_state(df_sca)
+                df.loc[indices, "step_label"] = label_chg_state(df_sca)
 
-        # Assign cycle label
-        self.raw = self.CyclesContainer(df2, tqdm_desc_suffix="(raw)", lenient=False)
+        # Assign cycle label from diagnostic config
+        if diagnostic_config is  None:
+            df["cycle_label"] = "regular"
+        else:
+            pass
+            # TODO: implement this
+
+
+        df = df.astype(DATA_COLUMN_DTYPES)
+
+        self.raw = self.CyclesContainer(df, tqdm_desc_suffix="(raw)", lenient=False)
         self.structured = None
 
     def structure(self):
@@ -286,7 +332,8 @@ class Run:
         dfs = db.map(interpolate_cycle, cycle_bag).compute()
         dfs = [df for df in dfs if not df.empty]
         self.structured = self.CyclesContainer(pd.concat(dfs),
-                                               tqdm_desc_suffix="(structured)")
+                                               tqdm_desc_suffix="(structured)",
+                                               lenient=True)
 
 
 def interpolate_cycle(cycle):
@@ -295,8 +342,8 @@ def interpolate_cycle(cycle):
         cycle.config
     )
 
-    if sum([config["constant_n_points_per_step"],
-            config["constant_n_points_per_step_label"]]) != 1:
+    if sum([config["config_step"],
+            config["config_step_label"]]) != 1:
         raise ValueError(
             f"A constant number of points must either be specified per step "
             f"or per chgstate for a given cycle, but the following was passed\n{config}")
@@ -312,6 +359,8 @@ def interpolate_cycle(cycle):
     else:
         # Create new "Steps" based on multiple steps grouped by their step labels
         steps = []
+        # warnings.warn("Steps are being coerced together to allow for chg/dchg interpolation. Step indices will be lost if there are multiple step ix for each charge/dchg.")
+
         for step_label, df in cycle.data.groupby("step_label"):
             step = Step(df, lenient=True)
             step.config = config["config_per_step_label"].get(step_label, {"exclude": True})
@@ -363,6 +412,7 @@ def interpolate_cycle(cycle):
         df = dataframe.loc[:, dataframe.columns.intersection(columns)]
         field_range = field_range or [df[field_name].iloc[0],
                                       df[field_name].iloc[-1]]
+        
         # If interpolating on datetime, change column to datetime series and
         # use date_range to create interpolating vector
         if field_name == "date_time_iso":
@@ -400,7 +450,9 @@ def interpolate_cycle(cycle):
             interpolated_df[k] = v
         interpolated_dfs.append(interpolated_df)
 
-    return pd.concat(interpolated_dfs) if interpolated_dfs else pd.DataFrame()
+    bigdf = pd.concat(interpolated_dfs) if interpolated_dfs else pd.DataFrame()
+    column_types = {k: v for k, v in DATA_COLUMN_DTYPES.items() if k in bigdf.columns}
+    return bigdf.astype(column_types)
 
 
 def update_nested(d, u):
@@ -464,7 +516,7 @@ def label_chg_state(step_df, indeterminate_label="unknown"):
 
 def aggregate_nicely(iterable):
     if iterable:
-        return pd.concat(iterable).sort_values(by="test_time").reset_index()
+        return pd.concat(iterable).sort_values(by="test_time").reset_index(drop=True)
     else:
         return pd.DataFrame()
 
