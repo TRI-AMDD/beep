@@ -38,23 +38,26 @@ RAW STEPS/CYCLES ARE USED TO FORM THE STRUCTURED BIG DF, BUT AFTER IT IS COLLATE
 
 # todo: step_index and other constant columns still get interpolated when using constant_n_points_per_step_label
 
+
+# Defining all common structured datatypes
+# This set of columns
 DATA_COLUMN_DTYPES = {
-    'test_time': 'float64',
-    'cycle_index': 'int32',
-    'cycle_label': 'category',
-    'current': 'float32',
-    'voltage': 'float32',
-    'temperature': 'float32',
-    'internal_resistance': 'float32',
-    'charge_capacity': 'float32',
-    'discharge_capacity': 'float32',
-    'charge_energy': 'float32',
+    'test_time': 'float64',              # Total time of the test
+    'cycle_index': 'int32',              # Index of the cycle
+    'cycle_label': 'category',           # Label of the cycle - default="regular"
+    'current': 'float32',                # Current
+    'voltage': 'float32',                # Voltage
+    'temperature': 'float32',            # Temperature of the cell
+    'internal_resistance': 'float32',    # Internal resistance of the cell
+    'charge_capacity': 'float32',        # Charge capacity of the cell
+    'discharge_capacity': 'float32',     # Discharge capacity of the cell
+    'charge_energy': 'float32',          # Charge energy of the cell
     'discharge_energy': 'float32',
     'step_index': 'int16',
     'step_counter': 'int32',
     'step_counter_absolute': 'int32',
     'step_label': 'category',
-    'data_point': 'int32',
+    'datum': 'int32',
     }
 
 
@@ -62,6 +65,7 @@ TQDM_STYLE_ARGS = {
     "ascii": ' ='
 }
 
+# Step level config ONLY
 CONFIG_STEP_DEFAULT = {
     "field_name": "voltage",
     "field_range": None,
@@ -71,6 +75,7 @@ CONFIG_STEP_DEFAULT = {
     "min_points": 2
 }
 
+# Cycle level config ONLY
 CONFIG_CYCLE_DEFAULT = {
     # Config mode 1: Constant n point per step within a cycle. 
     # k steps within a cycle will result in n*k points per cycle.
@@ -79,22 +84,8 @@ CONFIG_CYCLE_DEFAULT = {
     # regardless of k steps in cycle.
     # for $i \in S$ step labels, $n_i$ points per step label, will result in $\sum_i n_i$ points per cycle.
     # Note: for temporally disparate steps with the same steps label, strange behavior can occur. 
-    "per": "step_counter",
-
-    # USED ONLY IF PER="STEP_COUNTER"
-    # 'all' is used only if per="step_counter"
-    "all": copy.deepcopy(CONFIG_STEP_DEFAULT),
-
-
-    # USED ONLY IF PER="STEP_LABEL"
-    # these are used as defaults ONLY if per="step_label"
-    # more can be added as other keys for other step labels.
-    "charge": copy.deepcopy(CONFIG_STEP_DEFAULT),
-    "discharge": copy.deepcopy(CONFIG_STEP_DEFAULT),
-
+    "preaggregate_steps_by_step_label": False,
 }
-
-
 
 
 class DFSelectorAggregator:
@@ -193,35 +184,23 @@ class DFSelectorAggregator:
 
 class Step:
     """
-    A persistent step object.
+    A persistent step object, basically a wrapper around a step's dataframe.
+    Requires several columns to only have one unique value.
     This is where all ground truth data is kept.
     """
 
-    def __init__(self, df_step, lenient=True):
+    def __init__(self, df_step):
         self.data = df_step
-        self.step_counter_absolute = None
-        self.step_counter = None
-        self.step_index = None
-        self.step_label = None
-        self.cycle_index = None
         self.config = {}
 
-        chklist = ("step_counter_absolute", "step_counter", "step_index", "cycle_index", "step_label")
-
-        for chk in chklist:
-            unique = self.data[chk].unique()
-            if len(unique) != 1:
-                if not lenient:
-                    raise ValueError(
-                        f"Step check failed; '{chk}' has more than one unique value (lenient={lenient})!\n{unique}"
-                    )
-                
-                # If lenient, we set the problematic columns not passing check to None.
-                # This should only really occur when we are creating a Step from interpolated
-                # data where the data is coerced together from a number of different steps.
-                setattr(self, chk, None)
-            else:
-                setattr(self, chk, unique[0])
+        self.uniques = (
+            "step_counter_absolute", 
+            "step_counter", 
+            "step_index", 
+            "step_label",
+            "cycle_index",
+            "cycle_label"
+            )
 
     def __repr__(self):
         return f"{self.__class__.__name__} " \
@@ -231,14 +210,62 @@ class Step:
                f"step_label={self.step_label}, " \
                f"{self.data.shape[0]} points)"
     
+    def __getattr__(self, attr):
+        if attr in self.__getattribute__("uniques"):
+            uq = self.__getattribute__("data")[attr].unique()
+            if len(uq) == 1:
+                return uq[0]
+            else:
+                raise ValueError(f"Step check failed; '{attr}' has more than one unique value ({uq})!")
+        else:
+            return self.__getattribute__(attr)
+
+    def _checker(self, chk_attr):
+        if getattr(self, chk_attr) is None:
+            raise ValueError(f"Step check failed; '{chk_attr}' is None!")
+        else:
+            return True
+
+
+class MultiStep(Step):
+    """
+    A persistent object holding multiple steps, that should generally
+    act as a step, but can hold data containing multiple unique values
+    for columns that would generally only have one unique value.
+
+    However, a MultiStep still has some fields that must contain only one unique value, 
+    so it will throw an error if there are multiple values for these fields.
+    """
+
+    def __init__(self, df_multistep):
+        self.mandatory_uniques = (
+            "step_label",
+            "cycle_index",
+            "cycle_label"
+        )
+        super().__init__(df_multistep)
+
+    def __getattr__(self, attr):
+        if attr in self.__getattribute__("uniques"):
+            l = list(self.__getattribute__("data")[attr].unique())
+            if attr in self.__getattribute__("mandatory_uniques"):
+                if len(l) != 1:
+                    raise ValueError(f"MultiStep check failed; '{attr}' does not have unique value ({l})!")
+                else:
+                    return l[0]
+            else:
+                return l
+        else:
+            return super().__getattr__(attr)
+
 
 class Cycle:
     """
-    A persistent cycle object.
+    A persistent cycle object. A wrapper for many step objects.
     """
 
-    def __init__(self, df_cyc, lenient=False):
-        steps = [Step(scdf, lenient=lenient) for _, scdf in df_cyc.groupby("step_counter")]
+    def __init__(self, df_cyc):
+        steps = [Step(scdf) for _, scdf in df_cyc.groupby("step_counter")]
         self.steps = DFSelectorAggregator(
             items=steps,
             index_field="step_index",
@@ -248,42 +275,27 @@ class Cycle:
         )
         self.config = {}
 
-        unique = self.data.cycle_index.unique()
-        if len(unique) != 1:
-            raise ValueError(
-                f"Cycle check failed; 'cycle_index' has more than one unique value!\n{unique}"
-            )
-        else:
-            self.cycle_index = unique
+        self.uniques = (
+            "cycle_index",
+            "cycle_label"
+        )
 
     def __repr__(self):
-        return f"{self.__class__.__name__} {self.cycle_index}({len(self.steps)} steps, {self.data.shape[0]} points)"
+        return f"{self.__class__.__name__} {self.cycle_index} ({self.cycle_label} cycle, {len(self.steps)} steps incl. {set([s.step_label for s in self.steps])}, {self.data.shape[0]} points)"
 
-    def __setattr__(self, key, value) -> None:
-        """
-        If a cycle config is set, set the config for all steps.
-
-        The caveat is that if you are using per-step-label interpolation,
-        the config will be set for each step according to the step label.
-        """
-        if key == "config":
-            overall_config = update_nested(CONFIG_CYCLE_DEFAULT, value)
-            for step in self.steps:
-                
-                # if interpolation per step counter,
-                # all steps will be set to the same per-step config
-                if overall_config["per"] == "step_counter":
-                    step.config = overall_config["all"]
-                # otherwise (interpolation per step label) 
-                # set the step config from the step label
-                else:
-                    step.config = overall_config[step.step_label]
-        super().__setattr__(key, value)
+    def __getattr__(self, attr):
+        if attr in self.__getattribute__("uniques"):
+            uq = self.__getattribute__("data")[attr].unique()
+            if len(uq) == 1:
+                return uq[0]
+            else:
+                raise ValueError(f"Cycle check failed; '{attr}' has more than one unique value ({uq})!")
+        else:
+            return self.__getattribute__(attr)
 
     @property
     def data(self):
         return aggregate_nicely([s.data for s in self.steps])
-
 
 class Run:
     """
