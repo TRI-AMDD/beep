@@ -539,5 +539,3 @@ def aggregate_nicely(iterable):
     else:
         return pd.DataFrame()
     
-
-
