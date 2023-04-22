@@ -468,7 +468,7 @@ def aggregate_nicely(iterable):
 
 if __name__ == "__main__":
     from beep.structure import MaccorDatapath
-    from beep.structure.structure3 import Run
+    # from beep.structure.structure3 import Run
     filename = "/Users/ardunn/alex/tri/code/beep/beep/tests/test_files/PreDiag_000287_000128.092"
     md = MaccorDatapath.from_file(filename)
 
