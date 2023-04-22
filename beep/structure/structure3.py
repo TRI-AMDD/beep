@@ -99,6 +99,7 @@ class DFSelectorAggregator:
         else:
             raise TypeError(
                 f"No indexing scheme for {self.__class__.__name__} available for type {type(indexer)}")
+
         return DFSelectorAggregator(
             item_selection,
             self.index_field,
@@ -129,6 +130,10 @@ class DFSelectorAggregator:
                 tuple_field="step_index",
                 label_field="step_label"
             )
+        
+        # Return a single items attribute, e.g. a config for a single step or cycle.
+        elif len(self.__getattribute__("items")) == 1:
+            return getattr(self.__getattribute__("items")[0], attr)
         else:
             # default behavior
             return self.__getattribute__(attr)
@@ -179,9 +184,9 @@ class Step:
                 setattr(self, chk, unique[0])
 
     def __repr__(self):
-        return f"{self.__class__.__name__}" \
-               f"cycle_index={self.cycle_index}, "\
-               f"(step_counter={self.step_counter}, " \
+        return f"{self.__class__.__name__} " \
+               f"(cycle_index={self.cycle_index}, "\
+               f"step_counter={self.step_counter}, " \
                f"step_index={self.step_index}, " \
                f"step_label={self.step_label}, " \
                f"{self.data.shape[0]} points)"
@@ -258,10 +263,8 @@ class Run:
             df2.loc[indices, "step_counter"] = shifted - 1
 
         # Assign an absolute step index counter
-        compounded_counter = df2.step_counter.astype(
-            str) + df2.cycle_index.astype(str)
-        absolute_shifted = compounded_counter.ne(
-            compounded_counter.shift()).cumsum()
+        compounded_counter = df2.step_counter.astype(str) + "-" + df2.cycle_index.astype(str)
+        absolute_shifted = compounded_counter.ne(compounded_counter.shift()).cumsum()
         df2["step_counter_absolute"] = absolute_shifted - 1
 
         # Assign step label if not known
