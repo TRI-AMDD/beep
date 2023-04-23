@@ -260,7 +260,6 @@ class MultiStep(Step):
         # Ensure multistep cannot be instantiated while failing mandatory uniques
         for attr in self.mandatory_uniques:
             getattr(self, attr)
-        
 
     def __getattr__(self, attr):
         if attr in self.__getattribute__("uniques"):
@@ -339,7 +338,7 @@ class CyclesContainer:
     def __init__(
             self, 
             cycles: Iterable[Cycle],
-        ):
+    ):
         self.cycles = DFSelectorAggregator(
             items=cycles,
             index_field="cycle_index",
@@ -437,8 +436,9 @@ class Run:
         return cls(raw, diagnostic_config=diagnostic_config)
 
 
-def interpolate_cycle(cycle: Cycle) -> Cycle:
-    config = copy.deepcopy(CONFIG_CYCLE_DEFAULT).update(cycle.config)
+def interpolate_cycle(cycle: Cycle) -> Union[Cycle, None]:
+    config = copy.deepcopy(CONFIG_CYCLE_DEFAULT)
+    config.update(cycle.config)
 
     preaggregate = config["preaggregate_steps_by_step_label"]
 
@@ -446,13 +446,17 @@ def interpolate_cycle(cycle: Cycle) -> Cycle:
         # Create new "Steps" based on multiple steps grouped by their step labels
         steps = []
         for step_label, df in cycle.data.groupby("step_label"):
-            new_step = MultiStep(df)
 
-            # NOTE: we assume that if pre-aggregating, we can use the first matching
-            # step (acc. to label) to obtain the config for the multistep.
-            first_matching_step = [step for step in cycle.steps if step.step_label == step_label][0]
-            new_step.config = copy.deepcopy(first_matching_step.config)
-            steps.append(new_step)
+            if not df.empty:
+                new_step = MultiStep(df)
+
+                # NOTE: we assume that if pre-aggregating, we can use the first matching
+                # step (acc. to label) to obtain the config for the multistep.
+                first_matching_step = [
+                    step for step in cycle.steps if step.step_label == step_label
+                ][0]
+                new_step.config = copy.deepcopy(first_matching_step.config)
+                steps.append(new_step)
         constant_columns = ["cycle_index", "step_label", "cycle_label"]
         step_cls = MultiStep
 
@@ -472,7 +476,8 @@ def interpolate_cycle(cycle: Cycle) -> Cycle:
         # is really sneaky when some fields have no range (because it only looks at first and last, not min-max)
         # i.e., something like "Exclude bad interpolation" and then checks length of interpolated df
 
-        sconfig = copy.deepcopy(CONFIG_STEP_DEFAULT).update(step.config)
+        sconfig = copy.deepcopy(CONFIG_STEP_DEFAULT)
+        sconfig.update(step.config)
 
         resolution = sconfig["resolution"]
         field_name = sconfig["field_name"]
@@ -485,7 +490,8 @@ def interpolate_cycle(cycle: Cycle) -> Cycle:
             continue
 
         # TODO: Fix this unneeded dropping when actually merging in
-        droppables = [c for c in dataframe.columns if c.startswith("_")] + ["date_time", "date_time_iso"]
+        date_droppables = [f for f in ("date_time", "date_time_iso") if f != field_name]
+        droppables = [c for c in dataframe.columns if c.startswith("_")] + date_droppables
         dataframe = dataframe.drop(columns=droppables)
 
         # at this point we assume all the values are unique
