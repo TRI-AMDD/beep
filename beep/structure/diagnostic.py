@@ -43,7 +43,7 @@ class DiagnosticConfig(MSONable):
     Attributes:
         cycles (dict): Map of the diagnostic cycle type (str)
             to a list of cycle indices (set of ints).
-        by_ix (dict): Map of each cycle index (int) to the diagnostic
+        type_by_ix (dict): Map of each cycle index (int) to the diagnostic
             cycle type (str). Does not map regular cycles.
         all_ix: All diagnostic cycle indices, regardless of types.
         hppc_ix: indices of cycles that could be considered HPPC. Determined
@@ -52,14 +52,11 @@ class DiagnosticConfig(MSONable):
             automatically if "rpt" is found in the name of a cycle type.
         reset_ix: indices of cycles that could be considered RESET. Determined
             automatically if "reset" is found in the name of a cycle type.
-        params (dict): Parameters that can be used by downstream structuring
-            methods.
     """
 
     def __init__(
             self,
             diagnostic_config: Dict[str, Iterable[int]],
-            **kwargs
     ):
         if not diagnostic_config:
             raise ValueError(
@@ -110,7 +107,6 @@ class DiagnosticConfig(MSONable):
             cls,
             df_raw: pd.DataFrame,
             matching_criteria: Dict[str, Tuple[str, Iterable[Iterable[int]]]],
-            **kwargs
     ):
         """
         Automatically determine diagnostic cycle types and indices by
@@ -200,7 +196,7 @@ class DiagnosticConfig(MSONable):
                         elif all_present and len(unique) == len(set(step_pattern)):
                             all_diag_ix[cycle_type].add(cix)
                             break
-        return cls(all_diag_ix, **kwargs)
+        return cls(all_diag_ix)
 
     @classmethod
     def from_dict(cls, d: dict):
@@ -232,5 +228,4 @@ class DiagnosticConfig(MSONable):
             "@module": self.__class__.__module__,
             "@class": self.__class__.__name__,
             "cycle_type_to_ix": json_compatible_type2cix,
-            "params": self.params
         }
