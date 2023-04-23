@@ -400,9 +400,11 @@ class Run:
         """
         # Assign a per-cycle step index counter
         df.loc[:, "step_counter"] = 0
-        for cycle_index in tqdm.tqdm(df.cycle_index.unique(),
-                                     desc="Assigning step counter",
-                                     **TQDM_STYLE_ARGS):
+        for cycle_index in tqdm.tqdm(
+            df.cycle_index.unique(),
+            desc="Assigning step counter",
+            **TQDM_STYLE_ARGS
+            ):
             indices = df.loc[df.cycle_index == cycle_index].index
             step_index_list = df.step_index.loc[indices]
             shifted = step_index_list.ne(step_index_list.shift()).cumsum()
@@ -423,11 +425,12 @@ class Run:
                 df.loc[indices, "step_label"] = label_chg_state(df_sca)
 
         # Assign cycle label from diagnostic config
-        if diagnostic_config is None:
-            df["cycle_label"] = "regular"
-        else:
-            pass
-            # TODO: implement this
+        df["cycle_index"] = df["cycle_index"].astype(DATA_COLUMN_DTYPES["cycle_index"])
+        df["cycle_label"] = "regular"
+        if diagnostic_config:
+            df["cycle_label"] = df["cycle_index"].apply(
+                lambda cix: diagnostic_config.type_by_ix.get(cix, "regular")
+            )    
 
         df = df.astype(DATA_COLUMN_DTYPES)
         raw = CyclesContainer.from_dataframe(df, tqdm_desc_suffix="(raw)")
@@ -560,7 +563,7 @@ def interpolate_cycle(cycle: Cycle) -> Cycle:
         return cycle_interpolated
 
 
-def label_chg_state(step_df, indeterminate_label="unknown"):
+def label_chg_state(step_df: pd.DataFrame, indeterminate_label: str = "unknown") -> dict:
     """
     Helper function to determine whether a given dataframe corresponding
     to a single cycle_index's step is charging or discharging, only intended
@@ -605,7 +608,11 @@ def label_chg_state(step_df, indeterminate_label="unknown"):
     return {True: "charge", False: "discharge", None: indeterminate_label}[is_charging]
 
 
-def aggregate_nicely(iterable):
+def aggregate_nicely(iterable: Iterable[pd.DataFrame]) -> pd.DataFrame:
+    """
+    Aggregate a bunch of dataframes (i.e., from steps) into a single dataframe 
+    that looks presentable.
+    """
     if iterable:
         return pd.concat(iterable).sort_values(by="test_time").reset_index(drop=True)
     else:
