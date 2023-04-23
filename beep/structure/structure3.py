@@ -246,6 +246,8 @@ class MultiStep(Step):
     so it will throw an error if there are multiple values for these fields.
     """
 
+    # TODO: Step indexing does not work on multisteps!
+
     def __init__(self, df_multistep: pd.DataFrame):
         self.mandatory_uniques = (
             "step_label",
@@ -379,6 +381,14 @@ class Run:
         self.structured = structured_cycle_container
         self.diagnostic = diagnostic_config
 
+    def structure(self, num_workers: Optional[int] = None):
+        ProgressBar().register()
+        cycle_bag = db.from_sequence(self.raw.cycles, npartitions=len(self.raw.cycles))
+        cycles_interpolated = db.map(interpolate_cycle, cycle_bag).compute(num_workers=num_workers)
+        self.structured = CyclesContainer(
+            [c for c in cycles_interpolated if c is not None]
+        )
+
     @classmethod
     def from_dataframe(
         cls, 
@@ -423,20 +433,9 @@ class Run:
         raw = CyclesContainer.from_dataframe(df, tqdm_desc_suffix="(raw)")
         return cls(raw, diagnostic_config=diagnostic_config)
 
-    def structure(self):
-        ProgressBar().register()
-        cycle_bag = db.from_sequence(self.raw.cycles, npartitions=len(self.raw.cycles))
-        cycles_interpolated = db.map(interpolate_cycle, cycle_bag).compute()
-        self.structured = CyclesContainer(
-            [c for c in cycles_interpolated if c is not None]
-        )
-
 
 def interpolate_cycle(cycle: Cycle) -> Cycle:
-    config = update_nested(
-        copy.deepcopy(CONFIG_CYCLE_DEFAULT),
-        cycle.config
-    )
+    config = copy.deepcopy(CONFIG_CYCLE_DEFAULT).update(cycle.config)
 
     preaggregate = config["preaggregate_steps_by_step_label"]
 
@@ -445,6 +444,9 @@ def interpolate_cycle(cycle: Cycle) -> Cycle:
         steps = []
         for step_label, df in cycle.data.groupby("step_label"):
             new_step = MultiStep(df)
+
+            # NOTE: we assume that if pre-aggregating, we can use the first matching
+            # step (acc. to label) to obtain the config for the multistep.
             first_matching_step = [step for step in cycle.steps if step.step_label == step_label][0]
             new_step.config = copy.deepcopy(first_matching_step.config)
             steps.append(new_step)
@@ -467,10 +469,7 @@ def interpolate_cycle(cycle: Cycle) -> Cycle:
         # is really sneaky when some fields have no range (because it only looks at first and last, not min-max)
         # i.e., something like "Exclude bad interpolation" and then checks length of interpolated df
 
-        sconfig = update_nested(
-            copy.deepcopy(CONFIG_STEP_DEFAULT),
-            step.config
-        )
+        sconfig = copy.deepcopy(CONFIG_STEP_DEFAULT).update(step.config)
 
         resolution = sconfig["resolution"]
         field_name = sconfig["field_name"]
@@ -561,19 +560,6 @@ def interpolate_cycle(cycle: Cycle) -> Cycle:
         return cycle_interpolated
 
 
-def update_nested(d, u):
-    """
-    Graciously taken from
-    https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
-    """
-    for k, v in u.items():
-        if isinstance(v, collections.abc.Mapping):
-            d[k] = update_nested(d.get(k, {}), v)
-        else:
-            d[k] = v
-    return d
-
-
 def label_chg_state(step_df, indeterminate_label="unknown"):
     """
     Helper function to determine whether a given dataframe corresponding
@@ -616,7 +602,6 @@ def label_chg_state(step_df, indeterminate_label="unknown"):
             is_charging = False
         else:
             is_charging = None
-
     return {True: "charge", False: "discharge", None: indeterminate_label}[is_charging]
 
 
