@@ -441,7 +441,6 @@ def interpolate_cycle(cycle: Cycle) -> Union[Cycle, None]:
     config.update(cycle.config)
 
     preaggregate = config["preaggregate_steps_by_step_label"]
-
     if preaggregate:
         # Create new "Steps" based on multiple steps grouped by their step labels
         steps = []
