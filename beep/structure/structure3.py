@@ -1,3 +1,5 @@
+from typing import Optional, Iterable, Union
+
 import dask.bag as db
 import collections.abc
 import warnings
@@ -17,6 +19,8 @@ import tqdm
 from dask.diagnostics import ProgressBar
 
 
+from beep.structure.diagnostic import DiagnosticConfig
+
 """
 # ASSUMPTIONS
 
@@ -32,6 +36,13 @@ This is why we *need to use the structured data to instantiate it later on*! But
 DATA IS ONLY UPDATED IN ONE DIRECTION
 STEPS/CYCLES ARE FORMED FROM THE BIG DF, BUT EDITING THE CYCLES/STEPS DOES NOT AFFECT THE BIG DF
 RAW STEPS/CYCLES ARE USED TO FORM THE STRUCTURED BIG DF, BUT AFTER IT IS COLLATED, THEY ARE CONVERTED ONE WAY BACK TO STEPS/CYCLES
+
+
+
+Things assumed to make sure it all works correctly with checking:
+    1. All cycles have a unique cycle index, and no cycles have more than one cycle index.
+    2. All steps have a unique step index, and no steps have more than one step index.
+
 
 """
 
@@ -189,7 +200,7 @@ class Step:
     This is where all ground truth data is kept.
     """
 
-    def __init__(self, df_step):
+    def __init__(self, df_step: pd.DataFrame):
         self.data = df_step
         self.config = {}
 
@@ -201,6 +212,10 @@ class Step:
             "cycle_index",
             "cycle_label"
             )
+
+        # Ensure step cannot be instantiated while failing uniques check
+        for attr in self.uniques:
+            getattr(self, attr)
 
     def __repr__(self):
         return f"{self.__class__.__name__} " \
@@ -220,12 +235,6 @@ class Step:
         else:
             return self.__getattribute__(attr)
 
-    def _checker(self, chk_attr):
-        if getattr(self, chk_attr) is None:
-            raise ValueError(f"Step check failed; '{chk_attr}' is None!")
-        else:
-            return True
-
 
 class MultiStep(Step):
     """
@@ -237,13 +246,19 @@ class MultiStep(Step):
     so it will throw an error if there are multiple values for these fields.
     """
 
-    def __init__(self, df_multistep):
+    def __init__(self, df_multistep: pd.DataFrame):
         self.mandatory_uniques = (
             "step_label",
             "cycle_index",
             "cycle_label"
         )
+
         super().__init__(df_multistep)
+
+        # Ensure multistep cannot be instantiated while failing mandatory uniques
+        for attr in self.mandatory_uniques:
+            getattr(self, attr)
+        
 
     def __getattr__(self, attr):
         if attr in self.__getattribute__("uniques"):
@@ -263,9 +278,11 @@ class Cycle:
     """
     A persistent cycle object. A wrapper for many step objects.
     """
+    def __init__(
+            self, 
+            steps: Iterable[Union[Step, MultiStep]]
+        ):
 
-    def __init__(self, df_cyc):
-        steps = [Step(scdf) for _, scdf in df_cyc.groupby("step_counter")]
         self.steps = DFSelectorAggregator(
             items=steps,
             index_field="step_index",
@@ -273,12 +290,17 @@ class Cycle:
             tuple_field="step_index",
             label_field="step_label",
         )
+
         self.config = {}
 
         self.uniques = (
             "cycle_index",
             "cycle_label"
         )
+
+        # Ensure cycle cannot be instantiated failing unique check
+        for attr in self.uniques:
+            getattr(self, attr)
 
     def __repr__(self):
         return f"{self.__class__.__name__} {self.cycle_index} ({self.cycle_label} cycle, {len(self.steps)} steps incl. {set([s.step_label for s in self.steps])}, {self.data.shape[0]} points)"
@@ -293,33 +315,79 @@ class Cycle:
         else:
             return self.__getattribute__(attr)
 
+    @classmethod
+    def from_dataframe(cls, df, step_cls=Step):
+        """
+        Create a Cycle object from a dataframe of a cycle.
+        """
+        if step_cls is Step:
+            steps = [step_cls(scdf) for _, scdf in df.groupby("step_counter")]
+        elif step_cls is MultiStep:
+            steps = [step_cls(scdf) for _, scdf in df.groupby("step_label")]
+        else:
+            raise ValueError(f"{cls.__name__} not implemented for step class of {step_cls.__name__}!")
+        return cls(steps)
+
     @property
     def data(self):
         return aggregate_nicely([s.data for s in self.steps])
+
+
+class CyclesContainer:
+    def __init__(
+            self, 
+            cycles: Iterable[Cycle],
+        ):
+        self.cycles = DFSelectorAggregator(
+            items=cycles,
+            index_field="cycle_index",
+            slice_field="cycle_index",
+            tuple_field="cycle_index",
+            label_field="cycle_label",
+        )
+
+    @classmethod
+    def from_dataframe(cls, df, step_cls=Step, tqdm_desc_suffix: str = ""):
+        cycles = [
+            Cycle.from_dataframe(dfc, step_cls=step_cls) for _, dfc in
+            tqdm.tqdm(
+                df.groupby("cycle_index"),
+                desc=f"Organizing cycles and steps {tqdm_desc_suffix}",
+                **TQDM_STYLE_ARGS
+            )
+        ]
+        return cls(cycles)
+
+    @property
+    def data(self):
+        return aggregate_nicely([c.data for c in self.cycles])
+
 
 class Run:
     """
     An entire cycler run.
     A persistent object to replace BEEPDatapath.
     """
-    class CyclesContainer:
-        def __init__(self, df, tqdm_desc_suffix=None, lenient=False):
-            cycles = [Cycle(dfc, lenient=lenient) for _, dfc in
-                      tqdm.tqdm(df.groupby("cycle_index"),
-                                desc=f"Organizing cycles and steps {tqdm_desc_suffix}",
-                                **TQDM_STYLE_ARGS)]
-            self.cycles = DFSelectorAggregator(
-                items=cycles,
-                index_field="cycle_index",
-                slice_field="cycle_index",
-                tuple_field="cycle_index",
-                label_field="cycle_label",
-            )
-        @property
-        def data(self):
-            return aggregate_nicely([c.data for c in self.cycles])
 
-    def __init__(self, df, diagnostic_config=None):
+    def __init__(
+            self,
+            raw_cycle_container: CyclesContainer, 
+            structured_cycle_container: Optional[CyclesContainer] = None,
+            diagnostic_config: Optional[DiagnosticConfig] = None,
+        ):
+        self.raw = raw_cycle_container
+        self.structured = structured_cycle_container
+        self.diagnostic = diagnostic_config
+
+    @classmethod
+    def from_dataframe(
+        cls, 
+        df: pd.DataFrame, 
+        diagnostic_config: Optional[DiagnosticConfig] = None
+    ):
+        """
+        Convenience method to create a Run object from a dataframe.
+        """
         # Assign a per-cycle step index counter
         df.loc[:, "step_counter"] = 0
         for cycle_index in tqdm.tqdm(df.cycle_index.unique(),
@@ -345,67 +413,53 @@ class Run:
                 df.loc[indices, "step_label"] = label_chg_state(df_sca)
 
         # Assign cycle label from diagnostic config
-        if diagnostic_config is  None:
+        if diagnostic_config is None:
             df["cycle_label"] = "regular"
         else:
             pass
             # TODO: implement this
 
-
         df = df.astype(DATA_COLUMN_DTYPES)
-
-        self.raw = self.CyclesContainer(df, tqdm_desc_suffix="(raw)", lenient=False)
-        self.structured = None
+        raw = CyclesContainer.from_dataframe(df, tqdm_desc_suffix="(raw)")
+        return cls(raw, diagnostic_config=diagnostic_config)
 
     def structure(self):
         ProgressBar().register()
         cycle_bag = db.from_sequence(self.raw.cycles, npartitions=len(self.raw.cycles))
-
-
-        dfs = db.map(interpolate_cycle, cycle_bag).compute()
-        dfs = [df for df in dfs if not df.empty]
-        self.structured = self.CyclesContainer(
-            pd.concat(dfs),
-            tqdm_desc_suffix="(structured)",
-            lenient=True
+        cycles_interpolated = db.map(interpolate_cycle, cycle_bag).compute()
+        self.structured = CyclesContainer(
+            [c for c in cycles_interpolated if c is not None]
         )
 
 
-def interpolate_cycle(cycle):
+def interpolate_cycle(cycle: Cycle) -> Cycle:
     config = update_nested(
         copy.deepcopy(CONFIG_CYCLE_DEFAULT),
         cycle.config
     )
 
+    preaggregate = config["preaggregate_steps_by_step_label"]
+
+    if preaggregate:
+        # Create new "Steps" based on multiple steps grouped by their step labels
+        steps = []
+        for step_label, df in cycle.data.groupby("step_label"):
+            new_step = MultiStep(df)
+            first_matching_step = [step for step in cycle.steps if step.step_label == step_label][0]
+            new_step.config = copy.deepcopy(first_matching_step.config)
+            steps.append(new_step)
+        constant_columns = ["cycle_index", "step_label", "cycle_label"]
+        step_cls = MultiStep
+
     # constant number of points per step
-    if config["per"] == "step_counter":
+    else:
         steps = cycle.steps
         constant_columns = ["step_index", "step_counter",
                             "step_counter_absolute", "cycle_index",
                             "step_label", "cycle_label"]
+        step_cls = Step
 
-    # else, constant number of points per chgstate (step_label)
-    elif config["per"] == "step_label":
-        # Create new "Steps" based on multiple steps grouped by their step labels
-        steps = []
-        # warnings.warn("Steps are being coerced together to allow for chg/dchg interpolation. Step indices will be lost if there are multiple step ix for each charge/dchg.")
-
-        for step_label, df in cycle.data.groupby("step_label"):
-            step = Step(df, lenient=True)
-            step.config = config.get(step_label, {"exclude": True})
-
-            if step_label not in config:
-                warnings.warn(
-                    f"Step label '{step_label}' for step-label based interpolation was "
-                    f"not found in the config! Excluding from interpolation. Config was:\n{config}"
-                )
-
-            steps.append(step)
-        constant_columns = ["cycle_index", "step_label", "cycle_label"]
-    else:
-        raise ValueError(f"Invalid interpolation config for 'per': {config}")
-
-    interpolated_dfs = []
+    interpolated_steps = []
     for step in steps:
         dataframe = step.data
 
@@ -479,11 +533,32 @@ def interpolate_cycle(cycle):
         interpolated_df = interpolated_df[~interpolated_df[field_name].duplicated()]
         for k, v in constant_column_vals.items():
             interpolated_df[k] = v
-        interpolated_dfs.append(interpolated_df)
 
-    bigdf = pd.concat(interpolated_dfs) if interpolated_dfs else pd.DataFrame()
-    column_types = {k: v for k, v in DATA_COLUMN_DTYPES.items() if k in bigdf.columns}
-    return bigdf.astype(column_types)
+        column_types = {k: v for k, v in DATA_COLUMN_DTYPES.items() if k in interpolated_df.columns}
+        interpolated_df = interpolated_df.astype(column_types)
+
+
+        # Skip interpolated dfs that weren't actually interpolated
+        # in case min_points does not catch something where the resulting df is like 2 points
+        # or where the field is so narrow the interpolated points are the same as the original points
+        if interpolated_df.shape[0] < resolution:
+            continue
+
+        # Create step classes, incl. config
+        step_interpolated = step_cls(interpolated_df)
+        step_interpolated.config = copy.deepcopy(step.config)
+        interpolated_steps.append(step_interpolated)
+    
+    # cycdf = pd.concat(interpolated_dfs) if interpolated_dfs else pd.DataFrame()
+
+    # Create a new cycle instance, incl. config
+    # Ignore cycles where no steps were interpolated.
+    if not interpolated_steps:
+        return None
+    else:
+        cycle_interpolated = Cycle(interpolated_steps)
+        cycle_interpolated.config = copy.deepcopy(cycle.config)
+        return cycle_interpolated
 
 
 def update_nested(d, u):
