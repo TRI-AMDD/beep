@@ -64,7 +64,6 @@ class Run:
             output file.
 
     """
-
     # todo: should maybe go in cycle_container?
     CONFIG_DEFAULT = {
         "dtypes": {
@@ -109,7 +108,7 @@ class Run:
                 self.raw.cycles.items,
 
                 # remaining kwargs are broadcast to all calls
-                dtypes=
+                dtypes=?
             ).compute()
         )
         cycles_interpolated.repartition(npartitions=cycles_interpolated.count().compute())
