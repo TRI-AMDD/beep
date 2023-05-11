@@ -11,6 +11,7 @@ import pandas as pd
 from beep.structure.base import BEEPDatapath
 from beep import logger
 
+
 class ArbinRun(BEEPDatapath):
     """A datapath for Arbin cycler data.
 
