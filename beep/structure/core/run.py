@@ -1,0 +1,180 @@
+from typing import Optional, Iterable, Union
+
+import dask.bag as bag
+import pandas as pd
+import copy
+import tqdm
+
+from dask.diagnostics import ProgressBar
+
+from beep import logger
+from beep.structure.diagnostic import DiagnosticConfig
+from beep.structure.core.cycle_container import CyclesContainer
+from beep.structure.core.util import label_chg_state, TQDM_STYLE_ARGS
+from beep.structure.core.interpolate import interpolate_cycle
+
+"""
+# ASSUMPTIONS
+
+ASSUMES:
+- there is a step_type column
+- there is a cycle_label column
+- also should REALLY include step_counter
+- input field is monotonic??1
+
+This is why we *need to use the structured data to instantiate it later on*! But in implementation it should be put into the `__init__` when determining each of these things.
+
+
+DATA IS ONLY UPDATED IN ONE DIRECTION
+STEPS/CYCLES ARE FORMED FROM THE BIG DF, BUT EDITING THE CYCLES/STEPS DOES NOT AFFECT THE BIG DF
+RAW STEPS/CYCLES ARE USED TO FORM THE STRUCTURED BIG DF, BUT AFTER IT IS COLLATED, THEY ARE CONVERTED ONE WAY BACK TO STEPS/CYCLES
+
+
+Things assumed to make sure it all works correctly with checking:
+    1. All cycles have a unique cycle index, and no cycles have more than one cycle index.
+    2. All steps have a unique step index, and no steps have more than one step index.
+
+
+# THINGS A RUN MUST IMPLEMENT
+ - from_file (method)
+ - conversion schema
+    - must have 3 root keys: file_pattern, data_columns, data_types. 
+        Optionally, can have metadata_fields
+ - validation schema (class attribute)
+
+"""
+
+
+
+class Run:
+    """
+    A Run object represents an entire cycler run as well as it's structured (interpolated)
+    data. It is the top level object in the structured data hierarchy.
+
+    A run object has its own config. This config mainly determines what columns
+    will be kept and what data types they will possess.
+
+    Args:
+        raw_cycle_container (CyclesContainer): CyclesContainer object containing raw data
+        structured_cycle_container (Optional[CyclesContainer], optional): CyclesContainer object containing structured data. Defaults to None.
+        metadata (dict, optional): Dictionary of metadata. Defaults to None.
+        schema (dict, optional): Dictionary to perform validation.
+        paths (dict, optional): Dictionary of paths from which this object was derived. 
+            Useful for keeping track of what Run file corresponds with what cycler run
+            output file.
+
+    """
+
+    # todo: should maybe go in cycle_container?
+    CONFIG_DEFAULT = {
+        "dtypes": {
+            'test_time': 'float64',              # Total time of the test
+            'cycle_index': 'int32',              # Index of the cycle
+            'cycle_label': 'category',           # Label of the cycle - default="regular"
+            'current': 'float32',                # Current
+            'voltage': 'float32',                # Voltage
+            'temperature': 'float32',            # Temperature of the cell
+            'internal_resistance': 'float32',    # Internal resistance of the cell
+            'charge_capacity': 'float32',        # Charge capacity of the cell
+            'discharge_capacity': 'float32',     # Discharge capacity of the cell
+            'charge_energy': 'float32',          # Charge energy of the cell
+            'discharge_energy': 'float32',       # Discharge energy of the cell
+            'step_index': 'int16',               # Index of the step (i.e., type), according to the cycler output
+            'step_counter': 'int32',             # Counter of the step within cycle, according to the cycler
+            'step_counter_absolute': 'int32',    # BEEP-determined step counter across all cycles
+            'step_label': 'category',            # Label of the step - default is automatically determined
+            'datum': 'int32',                    # Data point, an index.
+        },
+        "retain": []
+    }
+
+    def __init__(
+            self,
+            raw_cycle_container: CyclesContainer, 
+            structured_cycle_container: Optional[CyclesContainer] = None,
+            diagnostic_config: Optional[DiagnosticConfig] = None,
+            metadata: Optional[dict] = None,
+            schema: Optional[dict] = None,
+            paths: Optional[dict] = None,
+        ):
+        self.raw = raw_cycle_container
+        self.structured = structured_cycle_container
+        self._diagnostic = diagnostic_config
+
+    def structure(self):
+        ProgressBar().register()
+        cycles_interpolated = bag.from_sequence(
+            bag.map(
+                interpolate_cycle, 
+                self.raw.cycles.items,
+
+                # remaining kwargs are broadcast to all calls
+                dtypes=
+            ).compute()
+        )
+        cycles_interpolated.repartition(npartitions=cycles_interpolated.count().compute())
+        cycles_interpolated.remove(lambda xdf: xdf is None)
+        self.structured = CyclesContainer(cycles_interpolated)
+
+    # Diagnostic config methods
+    @property
+    def diagnostic(self):
+        return self._diagnostic
+
+    @diagnostic.setter
+    def diagnostic_set(self, diagnostic_config: DiagnosticConfig):
+
+        if not isinstance(diagnostic_config, DiagnosticConfig):
+            logger.warning(
+                f"Diagnostic config passed does not inherit "
+                "DiagnosticConfig, can cause downstream errors."
+            )
+        self._diagnostic = diagnostic_config
+
+    @classmethod
+    def from_dataframe(
+        cls, 
+        df: pd.DataFrame, 
+        diagnostic_config: Optional[DiagnosticConfig] = None,
+        **kwargs
+    ):
+        """
+        Convenience method to create a Run object from a dataframe.
+        """
+        # Assign a per-cycle step index counter
+        df.loc[:, "step_counter"] = 0
+        for cycle_index in tqdm.tqdm(
+            df.cycle_index.unique(),
+            desc="Assigning step counter",
+            **TQDM_STYLE_ARGS
+            ):
+            indices = df.loc[df.cycle_index == cycle_index].index
+            step_index_list = df.step_index.loc[indices]
+            shifted = step_index_list.ne(step_index_list.shift()).cumsum()
+            df.loc[indices, "step_counter"] = shifted - 1
+
+        # Assign an absolute step index counter
+        compounded_counter = df.step_counter.astype(str) + "-" + df.cycle_index.astype(str)
+        absolute_shifted = compounded_counter.ne(compounded_counter.shift()).cumsum()
+        df["step_counter_absolute"] = absolute_shifted - 1
+
+        # Assign step label if not known
+        if "step_label" not in df.columns:
+            df["step_label"] = None
+            for sca, df_sca in tqdm.tqdm(df.groupby("step_counter_absolute"),
+                                         desc="Determining charge/discharge steps",
+                                         **TQDM_STYLE_ARGS):
+                indices = df_sca.index
+                df.loc[indices, "step_label"] = label_chg_state(df_sca)
+
+        # Assign cycle label from diagnostic config
+        df["cycle_index"] = df["cycle_index"].astype(cls.DATA_COLUMN_DTYPES["cycle_index"])
+        df["cycle_label"] = "regular"
+        if diagnostic_config:
+            df["cycle_label"] = df["cycle_index"].apply(
+                lambda cix: diagnostic_config.type_by_ix.get(cix, "regular")
+            )    
+
+        df = df.astype(cls.DATA_COLUMN_DTYPES)
+        raw = CyclesContainer.from_dataframe(df, tqdm_desc_suffix="(raw)")
+        return cls(raw, diagnostic_config=diagnostic_config, **kwargs)
