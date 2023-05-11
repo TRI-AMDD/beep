@@ -7,9 +7,7 @@ import pprint
 import dataclasses
 import abc
 import pandas as pd
-from beep.structure import MaccorDatapath
 import copy
-import matplotlib.pyplot as plt
 import pandas as pd
 import copy
 import numpy as np
@@ -18,7 +16,7 @@ import tqdm
 
 from dask.diagnostics import ProgressBar
 
-
+from beep import logger
 from beep.structure.diagnostic import DiagnosticConfig
 
 """
@@ -38,11 +36,17 @@ STEPS/CYCLES ARE FORMED FROM THE BIG DF, BUT EDITING THE CYCLES/STEPS DOES NOT A
 RAW STEPS/CYCLES ARE USED TO FORM THE STRUCTURED BIG DF, BUT AFTER IT IS COLLATED, THEY ARE CONVERTED ONE WAY BACK TO STEPS/CYCLES
 
 
-
 Things assumed to make sure it all works correctly with checking:
     1. All cycles have a unique cycle index, and no cycles have more than one cycle index.
     2. All steps have a unique step index, and no steps have more than one step index.
 
+
+# THINGS A RUN MUST IMPLEMENT
+ - from_file (method)
+ - conversion schema
+    - must have 3 root keys: file_pattern, data_columns, data_types. 
+        Optionally, can have metadata_fields
+ - validation schema (class attribute)
 
 """
 
@@ -123,13 +127,21 @@ class DFSelectorAggregator:
         self.slice_field = slice_field
         self.items = items
 
+
+        if isinstance(self.items, db.Bag):
+            self.items_length = self.items.count().compute()
+        else:
+            self.items_length = len(self.items)
+
     def __getitem__(self, indexer):
+
+
         if isinstance(indexer, int):
             item_selection = [i for i in self.items if getattr(i, self.index_field) == indexer]
         elif isinstance(indexer, tuple):
             item_selection = [i for i in self.items if getattr(i, self.tuple_field) in indexer]
         elif isinstance(indexer, slice):
-            indexer = tuple(range(*indexer.indices(len(self.items))))
+            indexer = tuple(range(*indexer.indices(self.items_length)))
             item_selection = [i for i in self.items if getattr(i, self.slice_field) in indexer]
         elif isinstance(indexer, str):
             item_selection = [i for i in self.items if getattr(i, self.label_field) == indexer]
@@ -172,8 +184,10 @@ class DFSelectorAggregator:
             )
         
         # Return a single items attribute, e.g. a config for a single step or cycle.
-        elif len(self.__getattribute__("items")) == 1:
-            return getattr(self.__getattribute__("items")[0], attr)
+        elif self.__getattribute__("items_length") == 1:
+            # allowing for dask bag to be the items requires goofy comprehension
+            it = [i for i in self.__getattribute__("items")]
+            return getattr(it[0], attr)
         else:
             # default behavior
             return self.__getattribute__(attr)
@@ -335,6 +349,9 @@ class Cycle:
 
 
 class CyclesContainer:
+    """
+    A container for many cycles. 
+    """
     def __init__(
             self, 
             cycles: Iterable[Cycle],
@@ -349,15 +366,18 @@ class CyclesContainer:
 
     @classmethod
     def from_dataframe(cls, df, step_cls=Step, tqdm_desc_suffix: str = ""):
-        cycles = [
+        groups = df.groupby("cycle_index")
+        # generator comprehension to avoid loading all cycles into memory
+        cycles = (
             Cycle.from_dataframe(dfc, step_cls=step_cls) for _, dfc in
             tqdm.tqdm(
-                df.groupby("cycle_index"),
+                groups,
                 desc=f"Organizing cycles and steps {tqdm_desc_suffix}",
                 **TQDM_STYLE_ARGS
             )
-        ]
-        return cls(cycles)
+        )
+        # return cls(cycles)
+        return cls(db.from_sequence(cycles, npartitions=len(groups)))
 
     @property
     def data(self):
@@ -378,15 +398,20 @@ class Run:
         ):
         self.raw = raw_cycle_container
         self.structured = structured_cycle_container
-        self.diagnostic = diagnostic_config
+        self._diagnostic = diagnostic_config
 
     def structure(self, num_workers: Optional[int] = None):
         ProgressBar().register()
-        cycle_bag = db.from_sequence(self.raw.cycles, npartitions=len(self.raw.cycles))
-        cycles_interpolated = db.map(interpolate_cycle, cycle_bag).compute(num_workers=num_workers)
-        self.structured = CyclesContainer(
-            [c for c in cycles_interpolated if c is not None]
+        # cycle_bag = db.from_sequence(self.raw.cycles, npartitions=len(self.raw.cycles))
+        # cycles_interpolated = db.map(interpolate_cycle, self.raw.cycles.items).compute(num_workers=num_workers)
+        cycles_interpolated = db.from_sequence(
+            db.map(interpolate_cycle, self.raw.cycles.items).compute()
         )
+        cycles_interpolated.repartition(npartitions=cycles_interpolated.count().compute())
+
+        # cycles_interpolated = db.from_sequence(cycles_interpolated, npartitions=len(cycles_interpolated))
+        cycles_interpolated.remove(lambda xdf: xdf is None)
+        self.structured = CyclesContainer(cycles_interpolated)
 
     @classmethod
     def from_dataframe(
@@ -434,6 +459,22 @@ class Run:
         df = df.astype(DATA_COLUMN_DTYPES)
         raw = CyclesContainer.from_dataframe(df, tqdm_desc_suffix="(raw)")
         return cls(raw, diagnostic_config=diagnostic_config)
+
+    # Diagnostic config methods
+    @property
+    def diagnostic(self):
+        return self._diagnostic
+
+    @diagnostic.setter
+    def diagnostic_set(self, diagnostic_config: DiagnosticConfig):
+
+        if not isinstance(diagnostic_config, DiagnosticConfig):
+            logger.warning(
+                f"Diagnostic config passed does not inherit "
+                "DiagnosticConfig, can cause downstream errors."
+            )
+        self._diagnostic = diagnostic_config
+
 
 
 def interpolate_cycle(cycle: Cycle) -> Union[Cycle, None]:
