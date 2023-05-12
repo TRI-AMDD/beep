@@ -45,8 +45,6 @@ Things assumed to make sure it all works correctly with checking:
 
 """
 
-
-
 class Run(MSONable):
     """
     A Run object represents an entire cycler run as well as it's structured (interpolated)
