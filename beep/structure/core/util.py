@@ -7,7 +7,7 @@ import pandas as pd
 
 # Common args for TQDM that will determine appearance.
 TQDM_STYLE_ARGS = {
-    "ascii": ' ='
+    "ascii": ' #'
 }
 
 class DFSelectorAggregator:
@@ -55,6 +55,8 @@ class DFSelectorAggregator:
 
         if len(item_selection) == 1:
             return item_selection[0]
+        elif len(item_selection) == 0:
+            raise IndexError(f"No items found for indexer: {indexer}")
         else:
             return DFSelectorAggregator(
                 item_selection,
@@ -92,6 +94,8 @@ class DFSelectorAggregator:
             # allowing for dask bag to be the items requires goofy comprehension
             it = [i for i in self.__getattribute__("items")]
             return getattr(it[0], attr)
+        elif self.__getattribute__("items_length") == 0:
+            return getattr([], attr)
         else:
             # default behavior
             return self.__getattribute__(attr)

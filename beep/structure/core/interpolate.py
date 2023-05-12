@@ -1,4 +1,4 @@
-"""Classes and functions for interpolating data.
+"""Classes, functions, and default configurations for interpolating data.
 """
 import copy
 from typing import Union, Dict
@@ -9,10 +9,69 @@ import numpy as np
 from beep.structure.core.step import Step, MultiStep
 from beep.structure.core.cycle import Cycle
 
+# currently not used, but should be
+MINIMAL_COLUMNS = [
+    "test_time",
+    "cycle_index",
+    "cycle_label",
+    "step_index",
+    "step_label",
+    "step_counter",
+    "step_counter_absolute",
+    "datum"
+]
+
+# CycleContainer level config ONLY
+CONTAINER_CONFIG_DEFAULT = {
+    "dtypes": {
+        'test_time': 'float64',              # Total time of the test
+        'cycle_index': 'int32',              # Index of the cycle
+        'cycle_label': 'category',           # Label of the cycle - default="regular"
+        'current': 'float32',                # Current
+        'voltage': 'float32',                # Voltage
+        'temperature': 'float32',            # Temperature of the cell
+        'internal_resistance': 'float32',    # Internal resistance of the cell
+        'charge_capacity': 'float32',        # Charge capacity of the cell
+        'discharge_capacity': 'float32',     # Discharge capacity of the cell
+        'charge_energy': 'float32',          # Charge energy of the cell
+        'discharge_energy': 'float32',       # Discharge energy of the cell
+        'step_index': 'int16',               # Index of the step (i.e., type), according to the cycler output
+        'step_counter': 'int32',             # Counter of the step within cycle, according to the cycler
+        'step_counter_absolute': 'int32',    # BEEP-determined step counter across all cycles
+        'step_label': 'category',            # Label of the step - default is automatically determined
+        'datum': 'int32',                    # Data point, an index.
+    },
+    # If retain is None, all columns are kept, including nonstandard
+    # columns. If retain is a list, only columns in the list are kept.
+    "retain": None 
+}
+
+# Cycle level config ONLY
+# Config mode 1: Constant n point per step within a cycle. 
+# k steps within a cycle will result in n*k points per cycle.
+# Config for mode 2: Constant n points per step label within a cycle, 
+# regardless of k steps in cycle.
+# for $i \in S$ step labels, $n_i$ points per step label, will result in $\sum_i n_i$ points per cycle.
+# Note: for temporally disparate steps with the same steps label, strange behavior can occur. 
+CYCLE_CONFIG_DEFAULT = {
+    "preaggregate_steps_by_step_label": False,
+}
+
+# Step level config ONLY
+# For a "columns" value of None, ALL columns will be interpolated except
+# for those known to be constant (e.g., cycle label)
+STEP_CONFIG_DEFAULT = {
+    "field_name": "voltage",
+    "field_range": None,
+    "columns": None,
+    "resolution": 1000,
+    "exclude": False,
+    "min_points": 2
+}
 
 def interpolate_cycle(
         cycle: Cycle,
-        dtypes: Dict[str, str]
+        cconfig: dict = None
     ) -> Union[Cycle, None]:
     """
     Interpolate a Cycle object and return it's interpolated version.
@@ -22,13 +81,18 @@ def interpolate_cycle(
 
     Args:
         cycle (Cycle): Cycle object to interpolate
-        dtypes (Dict[str, str]): Dictionary mapping column name to data type. The 
-            data types can be a subset of the columns actually contained in the dataframe.
+        cconfig (dict): Cycle container level config, including which columns
+            to keep. If None, default config is used.
     
     Returns:
         Union[Cycle, None]: Interpolated Cycle object, or None if interpolation failed.
     """
-    config = copy.deepcopy(Cycle.CONFIG_DEFAULT)
+    container_config = copy.deepcopy(CONTAINER_CONFIG_DEFAULT)
+    container_config.update(cconfig)
+    dtypes = container_config["dtypes"]
+    retain = container_config["retain"]
+
+    config = copy.deepcopy(CYCLE_CONFIG_DEFAULT)
     config.update(cycle.config)
 
     preaggregate = config["preaggregate_steps_by_step_label"]
@@ -62,11 +126,14 @@ def interpolate_cycle(
     for step in steps:
         dataframe = step.data
 
+        if retain:
+            dataframe = dataframe[retain]
+
         # todo: need to implement some sort of field range checking, as it
         # is really sneaky when some fields have no range (because it only looks at first and last, not min-max)
         # i.e., something like "Exclude bad interpolation" and then checks length of interpolated df
 
-        sconfig = copy.deepcopy(Step.CONFIG_DEFAULT)
+        sconfig = copy.deepcopy(STEP_CONFIG_DEFAULT)
         sconfig.update(step.config)
 
         resolution = sconfig["resolution"]
@@ -82,7 +149,8 @@ def interpolate_cycle(
         # TODO: Fix this unneeded dropping when actually merging in
         date_droppables = [f for f in ("date_time", "date_time_iso") if f != field_name]
         droppables = [c for c in dataframe.columns if c.startswith("_")] + date_droppables
-        dataframe = dataframe.drop(columns=droppables)
+        droppables += ["datum"]
+        dataframe = dataframe.drop(columns=[d for d in droppables if d in dataframe.columns])
 
         # at this point we assume all the values are unique
         cc = [c for c in constant_columns if c in dataframe.columns]

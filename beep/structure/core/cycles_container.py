@@ -4,12 +4,13 @@ from typing import Iterable
 
 from tqdm import tqdm
 import dask.bag as bag
+from monty.json import MSONable, MontyDecoder
 
 from beep.structure.core.util import DFSelectorAggregator, aggregate_nicely, TQDM_STYLE_ARGS
 from beep.structure.core.step import Step
 from beep.structure.core.cycle import Cycle
 
-class CyclesContainer:
+class CyclesContainer(MSONable):
     """
     A container for many cycles. 
 
@@ -19,7 +20,9 @@ class CyclesContainer:
     Attributes:
         data (pd.DataFrame): All data for this container, organized in presentable format.
         cycles (DFSelectorAggregator): An object that allows for easy selection of cycles.
+        config (dict): A dictionary of many-cycle level interpolation parameters.
     """
+
     def __init__(
             self, 
             cycles: Iterable[Cycle],
@@ -31,6 +34,13 @@ class CyclesContainer:
             tuple_field="cycle_index",
             label_field="cycle_label",
         )
+
+        self.config = {}
+
+    def __repr__(self):
+        n_items = self.cycles.items_length
+        return f"{self.__class__.__name__}" \
+            f"({n_items} cycles, {self.data.shape[0]} points)"
 
     @classmethod
     def from_dataframe(cls, df, step_cls=Step, tqdm_desc_suffix: str = ""):
@@ -50,3 +60,25 @@ class CyclesContainer:
     @property
     def data(self):
         return aggregate_nicely([c.data for c in self.cycles])
+    
+
+    # Serialization methods required by monty
+    # Note that using this will spike memory usage because we are 
+    # iterating over a dask Bag
+    def as_dict(self):
+        return {
+            "@module": self.__class__.__module__,
+            "@class": self.__class__.__name__,
+            "cycles": [c.as_dict() for c in self.cycles],
+            "config": self.config
+        }
+
+    @classmethod
+    def from_dict(cls, d):
+        cycles = bag.from_sequence(
+            (Cycle.from_dict(c) for c in d["cycles"]),
+            npartitions=len(d["cycles"])
+        )
+        c = cls(cycles)
+        c.config = d["config"]
+        return c

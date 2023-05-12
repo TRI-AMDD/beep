@@ -5,13 +5,14 @@ import pandas as pd
 import copy
 import tqdm
 
+from monty.json import MSONable
 from dask.diagnostics import ProgressBar
 
 from beep import logger
 from beep.structure.diagnostic import DiagnosticConfig
-from beep.structure.core.cycle_container import CyclesContainer
+from beep.structure.core.cycles_container import CyclesContainer
 from beep.structure.core.util import label_chg_state, TQDM_STYLE_ARGS
-from beep.structure.core.interpolate import interpolate_cycle
+from beep.structure.core.interpolate import interpolate_cycle, CONTAINER_CONFIG_DEFAULT
 
 """
 # ASSUMPTIONS
@@ -46,7 +47,7 @@ Things assumed to make sure it all works correctly with checking:
 
 
 
-class Run:
+class Run(MSONable):
     """
     A Run object represents an entire cycler run as well as it's structured (interpolated)
     data. It is the top level object in the structured data hierarchy.
@@ -62,30 +63,11 @@ class Run:
         paths (dict, optional): Dictionary of paths from which this object was derived. 
             Useful for keeping track of what Run file corresponds with what cycler run
             output file.
-
     """
-    # todo: should maybe go in cycle_container?
-    CONFIG_DEFAULT = {
-        "dtypes": {
-            'test_time': 'float64',              # Total time of the test
-            'cycle_index': 'int32',              # Index of the cycle
-            'cycle_label': 'category',           # Label of the cycle - default="regular"
-            'current': 'float32',                # Current
-            'voltage': 'float32',                # Voltage
-            'temperature': 'float32',            # Temperature of the cell
-            'internal_resistance': 'float32',    # Internal resistance of the cell
-            'charge_capacity': 'float32',        # Charge capacity of the cell
-            'discharge_capacity': 'float32',     # Discharge capacity of the cell
-            'charge_energy': 'float32',          # Charge energy of the cell
-            'discharge_energy': 'float32',       # Discharge energy of the cell
-            'step_index': 'int16',               # Index of the step (i.e., type), according to the cycler output
-            'step_counter': 'int32',             # Counter of the step within cycle, according to the cycler
-            'step_counter_absolute': 'int32',    # BEEP-determined step counter across all cycles
-            'step_label': 'category',            # Label of the step - default is automatically determined
-            'datum': 'int32',                    # Data point, an index.
-        },
-        "retain": []
-    }
+
+    # Set the default datatypes for ingestion and raw data
+    # to the same used for interpolated data (for simplicity)
+    DEFAULT_DTYPES = CONTAINER_CONFIG_DEFAULT["dtypes"]
 
     def __init__(
             self,
@@ -100,20 +82,44 @@ class Run:
         self.structured = structured_cycle_container
         self._diagnostic = diagnostic_config
 
+        self.paths = paths if paths else {}
+
+
+        # # paths may include "raw", "metadata", and "structured", as well as others.
+        # if paths:
+        #     for path_ref, path in paths.items():
+        #         if path and not os.path.isabs(path):
+        #             raise ValueError(f"{path_ref}: '{path}' is not absolute! All paths must be absolute.")
+        #     self.paths = paths
+        # else:
+        #     self.paths = {"raw": None}
+
+    
+    def __repr__(self) -> str:
+        has_raw = True if self.raw else False
+        has_structured = True if self.structured else False
+        has_diagnostic = True if self.diagnostic else False
+        from_path = self.paths.get("raw", "unknown")
+        return f"{self.__class__.__name__} (" \
+            f"raw={has_raw}, structured={has_structured}, diagnostic={has_diagnostic})"\
+            f" from {from_path}"
+
     def structure(self):
-        ProgressBar().register()
+        pbar = ProgressBar(dt=1, width=10)
+        pbar.register()
         cycles_interpolated = bag.from_sequence(
             bag.map(
                 interpolate_cycle, 
                 self.raw.cycles.items,
 
                 # remaining kwargs are broadcast to all calls
-                dtypes=?
+                cconfig=self.raw.config
             ).compute()
         )
         cycles_interpolated.repartition(npartitions=cycles_interpolated.count().compute())
         cycles_interpolated.remove(lambda xdf: xdf is None)
         self.structured = CyclesContainer(cycles_interpolated)
+        pbar.unregister()
 
     # Diagnostic config methods
     @property
@@ -129,6 +135,34 @@ class Run:
                 "DiagnosticConfig, can cause downstream errors."
             )
         self._diagnostic = diagnostic_config
+
+
+    # Serialization methods
+    # maybe do not need to do this for this class according to monty docstrings
+    @classmethod
+    def from_dict(cls, d: dict):
+        """
+        Create a Run object from a dictionary.
+        """
+        d.pop("@module")
+        d.pop("@class")
+        return cls(**d)
+
+    def as_dict(self):
+        """
+        Convert a Run object to a dictionary.
+        """
+
+        #todo: need to incorportate:
+        # paths
+        # 
+        return {
+            "@module": self.__class__.__module__,
+            "@class": self.__class__.__name__,
+            "raw_cycle_container": self.raw.as_dict(),
+            "structured_cycle_container": self.structured.as_dict() if self.structured else None,
+            "diagnostic_config": self.diagnostic.as_dict() if self.diagnostic else None,
+        }
 
     @classmethod
     def from_dataframe(
@@ -167,13 +201,18 @@ class Run:
                 df.loc[indices, "step_label"] = label_chg_state(df_sca)
 
         # Assign cycle label from diagnostic config
-        df["cycle_index"] = df["cycle_index"].astype(cls.DATA_COLUMN_DTYPES["cycle_index"])
+        df["cycle_index"] = df["cycle_index"].astype(cls.DEFAULT_DTYPES["cycle_index"])
         df["cycle_label"] = "regular"
         if diagnostic_config:
             df["cycle_label"] = df["cycle_index"].apply(
                 lambda cix: diagnostic_config.type_by_ix.get(cix, "regular")
             )    
 
-        df = df.astype(cls.DATA_COLUMN_DTYPES)
+        if "datum" not in df.columns:
+            df["datum"] = df.index
+
+        # Note this will not convert columns
+        # not listed in the default dtypes
+        df = df.astype(cls.DEFAULT_DTYPES)
         raw = CyclesContainer.from_dataframe(df, tqdm_desc_suffix="(raw)")
         return cls(raw, diagnostic_config=diagnostic_config, **kwargs)

@@ -2,12 +2,17 @@
 """Classes for representing individual cycles for battery cycler data.
 """
 from typing import Iterable, Union
+import json
 
+from monty.json import MSONable, MontyDecoder
+
+
+from beep import __version__
 from beep.structure.core.step import Step, MultiStep
 from beep.structure.core.util import DFSelectorAggregator, aggregate_nicely
 
 
-class Cycle:
+class Cycle(MSONable):
     """
     A persistent cycle object. A wrapper for many step objects.
 
@@ -21,17 +26,6 @@ class Cycle:
             Note this config may override or change step-level configuration.
         uniques (tuple): A tuple of columns that must be unique for a cycle to be instantiated.
     """
-    # Cycle level config ONLY
-    # Config mode 1: Constant n point per step within a cycle. 
-    # k steps within a cycle will result in n*k points per cycle.
-    # Config for mode 2: Constant n points per step label within a cycle, 
-    # regardless of k steps in cycle.
-    # for $i \in S$ step labels, $n_i$ points per step label, will result in $\sum_i n_i$ points per cycle.
-    # Note: for temporally disparate steps with the same steps label, strange behavior can occur. 
-    CONFIG_DEFAULT = {
-        "preaggregate_steps_by_step_label": False,
-    }
-    
     def __init__(
             self, 
             steps: Iterable[Union[Step, MultiStep]]
@@ -62,6 +56,15 @@ class Cycle:
             f"{set([s.step_label for s in self.steps])}, {self.data.shape[0]} points)"
 
     def __getattr__(self, attr):
+        """
+        Override getattr to allow for returning unique values for this Cycle.
+
+        E.g., you can do `cycle.cycle_index` to get the cycle index because the cycle
+        indices for all steps of this cycle will be the same.
+
+        But you can NOT do `cycle.step_index` because there there are multiple steps
+        with multiple step indices within a single cycle.
+        """
         if attr in self.__getattribute__("uniques"):
             uq = self.__getattribute__("data")[attr].unique()
             if len(uq) == 1:
@@ -87,3 +90,23 @@ class Cycle:
     @property
     def data(self):
         return aggregate_nicely([s.data for s in self.steps])
+    
+
+    # Serialization methods required by monty
+    def as_dict(self):
+        return {
+            "@module": self.__class__.__module__,
+            "@class": self.__class__.__name__,
+            "@version": __version__,
+            "steps": [s.as_dict() for s in self.steps],
+            "config": self.config,
+        }
+    
+    @classmethod
+    def from_dict(cls, d):
+        dcdr = MontyDecoder()
+        c = cls(
+            [dcdr.process_decoded(s) for s in d["steps"]]
+        )
+        c.config = d["config"]
+        return c

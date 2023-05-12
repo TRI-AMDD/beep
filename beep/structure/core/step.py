@@ -1,9 +1,9 @@
 """Classes for representing individual cycler steps (fundamental parts of a cycle).
 """
 import pandas as pd
+from monty.json import MSONable
 
-
-class Step:
+class Step(MSONable):
     """
     A persistent step object, basically a wrapper around a step's dataframe.
     Requires several columns to only have one unique value.
@@ -18,18 +18,6 @@ class Step:
             This config may be overriden by cycle-level configuration.
         uniques (tuple): A tuple of columns that must be unique for a step to be instantiated.
     """
-    # Step level config ONLY
-    # For a "columns" value of None, ALL columns will be interpolated except
-    # for those known to be constant (e.g., cycle label)
-    CONFIG_DEFAULT = {
-        "field_name": "voltage",
-        "field_range": None,
-        "columns": None,
-        "resolution": 1000,
-        "exclude": False,
-        "min_points": 2
-    }
-
     def __init__(self, df_step: pd.DataFrame):
         self.data = df_step
         self.config = {}
@@ -41,7 +29,7 @@ class Step:
             "step_label",
             "cycle_index",
             "cycle_label"
-            )
+        )
 
         # Ensure step cannot be instantiated while failing uniques check
         for attr in self.uniques:
@@ -64,6 +52,28 @@ class Step:
                 raise ValueError(f"Step check failed; '{attr}' has more than one unique value ({uq})!")
         else:
             return self.__getattribute__(attr)
+
+    def as_dict(self) -> dict:
+        """
+        Required by monty.
+
+        Returns:
+            dict: A dictionary representation of the step.
+        """
+        return {
+            "@module": self.__class__.__module__,
+            "@class": self.__class__.__name__,
+            "data": self.data.to_dict("list"),
+            "config": self.config,
+        }
+    
+    @classmethod
+    def from_dict(cls, d):
+        c = cls(pd.DataFrame(d["data"]))
+        c.config = d["config"]
+        return c
+        
+
 
 
 class MultiStep(Step):
