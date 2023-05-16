@@ -1,3 +1,4 @@
+import os
 from typing import Optional, Iterable, Union
 
 import dask.bag as bag
@@ -13,6 +14,7 @@ from beep.structure.diagnostic import DiagnosticConfig
 from beep.structure.core.cycles_container import CyclesContainer
 from beep.structure.core.util import label_chg_state, TQDM_STYLE_ARGS
 from beep.structure.core.interpolate import interpolate_cycle, CONTAINER_CONFIG_DEFAULT
+from beep.structure.core.validate import SimpleValidator
 
 """
 # ASSUMPTIONS
@@ -67,31 +69,71 @@ class Run(MSONable):
     # to the same used for interpolated data (for simplicity)
     DEFAULT_DTYPES = CONTAINER_CONFIG_DEFAULT["dtypes"]
 
+    # Basic LiFePO4 validation
+    DEFAULT_VALIDATION_SCHEMA = {
+        'charge_capacity': {
+            'schema': {
+                'max': 2.0,
+                'min': 0.0,
+                'type': 'float'
+            },
+            'type': 'list'
+        },
+        'cycle_index': {
+            'schema': {
+                'min': 0,
+                'max_at_least': 1,
+                'type': 'integer'
+            },
+            'type': 'list'
+        },
+        'discharge_capacity': {
+            'schema': {
+                'max': 2.0,
+                'min': 0.0,
+                'type': 'float'
+            },
+            'type': 'list'
+        },
+        'temperature': {
+            'schema': {
+                'max': 80.0,
+                'min': 20.0,
+                'type': 'float'
+            },
+            'type': 'list'
+        },
+        'test_time': {
+            'schema': {
+                'type': 'float'
+            },
+            'type': 'list'
+        },
+        'voltage': {
+            'schema': {
+                'max': 3.8,
+                'min': 0.0,
+                'type': 'float'
+            },
+            'type': 'list'
+        }
+    }
+
     def __init__(
             self,
             raw_cycle_container: CyclesContainer, 
             structured_cycle_container: Optional[CyclesContainer] = None,
-            diagnostic_config: Optional[DiagnosticConfig] = None,
+            diagnostic: Optional[DiagnosticConfig] = None,
             metadata: Optional[dict] = None,
             schema: Optional[dict] = None,
             paths: Optional[dict] = None,
         ):
         self.raw = raw_cycle_container
         self.structured = structured_cycle_container
-        self._diagnostic = diagnostic_config
-
+        self._diagnostic = diagnostic
         self.paths = paths if paths else {}
-
-
-        # # paths may include "raw", "metadata", and "structured", as well as others.
-        # if paths:
-        #     for path_ref, path in paths.items():
-        #         if path and not os.path.isabs(path):
-        #             raise ValueError(f"{path_ref}: '{path}' is not absolute! All paths must be absolute.")
-        #     self.paths = paths
-        # else:
-        #     self.paths = {"raw": None}
-
+        self.schema = schema if schema else self.DEFAULT_VALIDATION_SCHEMA
+        self.metadata = metadata if metadata else {}
     
     def __repr__(self) -> str:
         has_raw = True if self.raw else False
@@ -101,6 +143,15 @@ class Run(MSONable):
         return f"{self.__class__.__name__} (" \
             f"raw={has_raw}, structured={has_structured}, diagnostic={has_diagnostic})"\
             f" from {from_path}"
+
+    def validate(self):
+        """
+        Validate the run object against the validation schema.
+        If a validation schema is not passed to __init__, a default is used.
+        """
+        validator = SimpleValidator(self.schema)
+        is_valid, reason = validator.validate(self.raw.cycles.items)
+        return is_valid, reason
 
     def structure(self):
         pbar = ProgressBar(dt=1, width=10)
@@ -125,7 +176,7 @@ class Run(MSONable):
         return self._diagnostic
 
     @diagnostic.setter
-    def diagnostic_set(self, diagnostic_config: DiagnosticConfig):
+    def diagnostic(self, diagnostic_config: DiagnosticConfig):
 
         if not isinstance(diagnostic_config, DiagnosticConfig):
             logger.warning(
@@ -134,6 +185,16 @@ class Run(MSONable):
             )
         self._diagnostic = diagnostic_config
 
+        logger.info("Setting diagnostic: altering data cycle_labels.")
+        for cycle in self.raw.cycles:
+            for step in cycle.steps:
+                step.data["cycle_label"] = step.data["cycle_index"].apply(
+                    lambda cix: diagnostic_config.type_by_ix.get(cix, "regular")
+            )    
+
+    @diagnostic.deleter
+    def diagnostic(self):
+        del self._diagnostic
 
     # Serialization methods
     # maybe do not need to do this for this class according to monty docstrings
@@ -162,15 +223,28 @@ class Run(MSONable):
             "diagnostic_config": self.diagnostic.as_dict() if self.diagnostic else None,
         }
 
+    # Convenience methods for loading and saving
+    @classmethod
+    def load(cls, path: Union[str, os.PathLike]):
+        """
+        Load a Run object from a file or list of files.
+        """
+        return loadfn(path)
+    
+    def save(self, path: Union[str, os.PathLike]):
+        """
+        Save a Run object to a file.
+        """
+        dumpfn(self, path)
+
     @classmethod
     def from_dataframe(
         cls, 
         df: pd.DataFrame, 
-        diagnostic_config: Optional[DiagnosticConfig] = None,
         **kwargs
     ):
         """
-        Convenience method to create a Run object from a dataframe.
+        Convenience method to create an unstructured Run object from a raw dataframe.
         """
         # Assign a per-cycle step index counter
         df.loc[:, "step_counter"] = 0
@@ -201,7 +275,10 @@ class Run(MSONable):
         # Assign cycle label from diagnostic config
         df["cycle_index"] = df["cycle_index"].astype(cls.DEFAULT_DTYPES["cycle_index"])
         df["cycle_label"] = "regular"
-        if diagnostic_config:
+
+
+        diagnostic = kwargs.get("diagnostic", None)
+        if diagnostic:
             df["cycle_label"] = df["cycle_index"].apply(
                 lambda cix: diagnostic_config.type_by_ix.get(cix, "regular")
             )    
@@ -211,6 +288,8 @@ class Run(MSONable):
 
         # Note this will not convert columns
         # not listed in the default dtypes
-        df = df.astype(cls.DEFAULT_DTYPES)
+
+        dtypes = {c: dtype for c, dtype in cls.DEFAULT_DTYPES.items() if c in df.columns}
+        df = df.astype(dtypes)
         raw = CyclesContainer.from_dataframe(df, tqdm_desc_suffix="(raw)")
-        return cls(raw, diagnostic_config=diagnostic_config, **kwargs)
+        return cls(raw, **kwargs)

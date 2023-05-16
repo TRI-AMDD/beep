@@ -2,6 +2,7 @@
 """
 from typing import Iterable
 
+import pandas as pd
 from tqdm import tqdm
 import dask.bag as bag
 from monty.json import MSONable, MontyDecoder
@@ -9,6 +10,7 @@ from monty.json import MSONable, MontyDecoder
 from beep.structure.core.util import DFSelectorAggregator, aggregate_nicely, TQDM_STYLE_ARGS
 from beep.structure.core.step import Step
 from beep.structure.core.cycle import Cycle
+
 
 class CyclesContainer(MSONable):
     """
@@ -43,7 +45,12 @@ class CyclesContainer(MSONable):
             f"({n_items} cycles, {self.data.shape[0]} points)"
 
     @classmethod
-    def from_dataframe(cls, df, step_cls=Step, tqdm_desc_suffix: str = ""):
+    def from_dataframe(
+        cls, 
+        df: pd.DataFrame, 
+        step_cls: object = Step, 
+        tqdm_desc_suffix: str = ""
+        ):
         groups = df.groupby("cycle_index")
         # generator comprehension to avoid loading all cycles into memory
         cycles = (
