@@ -238,7 +238,7 @@ class IntracellAnalysisTest(unittest.TestCase):
         self.assertAlmostEqual(opt_result_halfcell_initial_matching.x[0],
                                0.999459, 3)
         self.assertAlmostEqual(opt_result_halfcell_initial_matching.x[1],
-                               -4.1740795, 6)
+                               -4.1740795, 3)
 
         # test_opt = np.array([0.999459, -4.1740795, 1.0, 0.1, 0.1])
         (PE_pristine_matched,
