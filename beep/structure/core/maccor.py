@@ -1,15 +1,12 @@
 import os
 from datetime import datetime
-from glob import glob
 
 import pandas as pd
 import numpy as np
 import pytz
-from monty.serialization import loadfn
 
-from beep import tqdm, StringIO, logger
+from beep import logger
 from beep.structure.core.run import Run
-from beep.structure.core.cycles_container import CyclesContainer
 
 
 class MaccorRun(Run):
