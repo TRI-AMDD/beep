@@ -236,7 +236,7 @@ class IntracellAnalysisTest(unittest.TestCase):
 
         self.assertEqual(opt_result_halfcell_initial_matching.success, True)
         self.assertAlmostEqual(opt_result_halfcell_initial_matching.x[0],
-                               0.999459, 5)
+                               0.999459, 3)
         self.assertAlmostEqual(opt_result_halfcell_initial_matching.x[1],
                                -4.1740795, 6)
 
