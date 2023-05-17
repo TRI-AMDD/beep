@@ -234,7 +234,12 @@ class MaccorRun(Run):
         if "schema" not in kwargs:
             kwargs["schema"] = cls.VALIDATION_SCHEMA
 
-        return cls.from_dataframe(data, metadata=metadata, paths=paths, **kwargs)
+        return cls.from_dataframe(
+            data, 
+            metadata=metadata, 
+            paths=paths, 
+            **kwargs
+        )
 
     @classmethod
     def quantity_sum(cls, data, quantity, state_type):

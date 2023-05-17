@@ -7,6 +7,7 @@ import copy
 import tqdm
 
 from monty.json import MSONable
+from monty.serialization import loadfn, dumpfn
 from dask.diagnostics import ProgressBar
 
 from beep import logger
@@ -149,8 +150,9 @@ class Run(MSONable):
         Validate the run object against the validation schema.
         If a validation schema is not passed to __init__, a default is used.
         """
+        logger.warning("Validation requires loading entire df into memory!")
         validator = SimpleValidator(self.schema)
-        is_valid, reason = validator.validate(self.raw.cycles.items)
+        is_valid, reason = validator.validate(self.raw.cycles.data)
         return is_valid, reason
 
     def structure(self):
@@ -225,6 +227,9 @@ class Run(MSONable):
             "raw_cycle_container": self.raw.as_dict(),
             "structured_cycle_container": self.structured.as_dict() if self.structured else None,
             "diagnostic_config": self.diagnostic.as_dict() if self.diagnostic else None,
+            "metadata": self.metadata,
+            "schema": self.schema,
+            "paths": self.paths
         }
 
     # Convenience methods for loading and saving
@@ -280,13 +285,11 @@ class Run(MSONable):
         df["cycle_index"] = df["cycle_index"].astype(cls.DEFAULT_DTYPES["cycle_index"])
         df["cycle_label"] = "regular"
 
-
         diagnostic = kwargs.get("diagnostic", None)
         if diagnostic:
             df["cycle_label"] = df["cycle_index"].apply(
-                lambda cix: diagnostic_config.type_by_ix.get(cix, "regular")
+                lambda cix: diagnostic.type_by_ix.get(cix, "regular")
             )    
-
         if "datum" not in df.columns:
             df["datum"] = df.index
 
