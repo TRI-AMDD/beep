@@ -185,8 +185,12 @@ class Run(MSONable):
             )
         self._diagnostic = diagnostic_config
 
-        logger.info("Setting diagnostic: altering data cycle_labels.")
-        for cycle in self.raw.cycles:
+        for cycle in tqdm.tqdm(
+            self.raw.cycles, 
+            total=self.raw.cycles.items_length,
+            desc="Updating cycle labels based on diagnostic config",
+            **TQDM_STYLE_ARGS
+        ):
             for step in cycle.steps:
                 step.data["cycle_label"] = step.data["cycle_index"].apply(
                     lambda cix: diagnostic_config.type_by_ix.get(cix, "regular")

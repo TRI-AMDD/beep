@@ -37,8 +37,6 @@ class DiagnosticConfig(MSONable):
         diagnostic_config (dict): Dict mapping cycle types (strings) to
             iterables of cycle indices (integers). Each cycle index
             should correspond with exactly one cycle type.
-        **kwargs: Parameters that can be used by downstream structuring methods.
-            May only be python primitives str, int, or float.
 
     Attributes:
         cycles (dict): Map of the diagnostic cycle type (str)
@@ -90,12 +88,6 @@ class DiagnosticConfig(MSONable):
             )
             setattr(self, f"{ix_attr_name}_ix", frozen)
 
-        allowed_kwarg_types = (int, str, float, bool)
-        for kw, arg in kwargs.items():
-            if not isinstance(arg, allowed_kwarg_types):
-                raise TypeError(f"Kwarg {kw} is type {type(arg)}; "
-                                f"allowed types are {allowed_kwarg_types}")
-        self.params = kwargs
         self.all_ix = frozenset(self.cycle_ix_to_cycle_type.keys())
 
         # Nice to have shorthand

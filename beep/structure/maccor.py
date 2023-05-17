@@ -15,6 +15,9 @@ from beep.structure.base_eis import BEEPDatapathWithEIS, EIS
 from beep.structure.validate import PROJECT_SCHEMA
 
 
+
+
+
 class MaccorDatapath(BEEPDatapathWithEIS):
     """Datapath for ingesting and structuring Maccor battery cycler data.
 
