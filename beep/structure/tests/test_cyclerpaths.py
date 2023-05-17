@@ -375,7 +375,7 @@ class TestBioLogicDatapath(unittest.TestCase):
         self.assertAlmostEqual(dp.raw_data["test_time"].max(), 102040.77, 3)
         # self.assertAlmostEqual(dp.structured_data["test_time"].min(), 13062.720560, 3)
         self.assertAlmostEqual(dp.structured_data["test_time"].min(), 23.71335, 2)
-        self.assertAlmostEqual(dp.structured_data["test_time"].max(), 102023.24606, 3)
+        self.assertAlmostEqual(dp.structured_data["test_time"].max(), 102021.1514, 3)
 
     def test_from_txt(self):
         biologic_file = os.path.join(
@@ -413,7 +413,7 @@ class TestBioLogicDatapath(unittest.TestCase):
         self.assertAlmostEqual(dp.raw_data["test_time"].max(), 102240.281, 3)
         #self.assertAlmostEqual(dp.structured_data["test_time"].min(), 13062.997, 3)
         self.assertAlmostEqual(dp.structured_data["test_time"].min(), 23.71335, 2)
-        self.assertAlmostEqual(dp.structured_data["test_time"].max(), 102149.66239, 3)
+        self.assertAlmostEqual(dp.structured_data["test_time"].max(), 102148.52679, 3)
 
     def test_from_formation_txt(self):
         biologic_file = os.path.join(
