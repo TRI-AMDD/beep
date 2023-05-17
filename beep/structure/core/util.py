@@ -109,6 +109,10 @@ class DFSelectorAggregator:
 
     def __repr__(self):
         return self.items.__repr__()
+    
+    def __len__(self):
+        # Necessary since dask bag has no length
+        return self.items_length
 
     @property
     def data(self):
