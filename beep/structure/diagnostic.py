@@ -94,6 +94,12 @@ class DiagnosticConfig(MSONable):
         self.cycles = self.cycle_type_to_cycle_ix
         self.type_by_ix = self.cycle_ix_to_cycle_type
 
+    def __repr__(self):
+        s = f"{self.__class__.__name__}("
+        for diag_type, ixs in self.cycles.items():
+            s += f"{diag_type}: {self.cycles[diag_type]},"
+        return s[:-1] + ")"
+
     @classmethod
     def from_step_numbers(
             cls,

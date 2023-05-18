@@ -320,7 +320,7 @@ class Run(MSONable):
         raw = CyclesContainer.from_dataframe(df, tqdm_desc_suffix="(raw)")
         return cls(raw, **kwargs)
 
-    def summarize_cycles(
+    def summarize_regular(
             self,
             nominal_capacity=1.1,
             full_fast_charge=0.8,
@@ -473,3 +473,71 @@ class Run(MSONable):
             return summary
         else:
             return summary.iloc[:-1]
+        
+    def summarize_diagnostic(
+            self,
+            cccv_step_location=0
+    ):
+        # todo: cccv_step_location is only one step
+        # todo: and is not generalizable to more than one cccv step
+        """
+        Gets summary statistics for data according to location of
+        diagnostic cycles in the data
+
+        Args:
+            cccv_step_location (int): Raw index of CCCV step in the
+                diagnostic. Currently limited to one step.
+
+        Returns:
+            (DataFrame) of summary statistics by cycle
+        """
+
+        print(tuple(self.diagnostic.all_ix))
+        raw = self.raw.cycles[tuple(self.diagnostic.all_ix)]
+        raw_lazy_df = raw.data_lazy
+        
+        agg = {
+            "cycle_index": "first",
+            "discharge_capacity": "max",
+            "charge_capacity": "max",
+            "discharge_energy": "max",
+            "charge_energy": "max",
+            "date_time_iso": "first",
+            "test_time": "first"
+        }
+        
+        summary = raw_lazy_df.groupby("cycle_index").agg(agg).compute()
+        summary["coulombic_efficiency"] = (
+            summary["discharge_capacity"] / summary["charge_capacity"]
+        )
+        summary["paused"] = raw_lazy_df.groupby("cycle_index").apply(
+            get_max_paused_over_threshold,
+            meta=pd.Series([], dtype=float)).compute()
+        
+        summary["cycle_type"] = [
+            self.diagnostic.type_by_ix[cix] for cix in summary["cycle_index"]
+        ]
+
+        # Find CV step data
+        cv_data = []
+        for cyc in raw:
+            cix = cyc.cycle_index
+            try:
+                cv = get_cv_stats(cyc.steps.by_raw_index(cccv_step_location).data)
+            except (CVStatsError, DFSelectorIndexError):
+                logger.debug(f"Cannot extract CV charge segment for cycle {cix}!")
+                continue
+            cv_data.append(cv)
+        cv_summary = pd.DataFrame(cv_data).set_index("cycle_index")
+        summary = summary.merge(
+            cv_summary,
+            how="outer",
+            right_index=True,
+            left_index=True
+        ).set_index("cycle_index")
+        return summary.astype(
+            {c: v for c, v in self.SUMMARY_DTYPES.items() if c in summary.columns}
+        )
+
+
+        

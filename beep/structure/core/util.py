@@ -115,6 +115,22 @@ class DFSelectorAggregator:
         # Necessary since dask bag has no length
         return self.items_length
 
+    def by_raw_index(self, ix):
+        """
+        Get a single item by its raw index in the list of items.
+        Indices can be negative as well.
+
+        """
+        # todo: this ordering is not guaranteed by dask.bag
+        # todo: and therefore it is subject to breakage in the future
+        if ix < 0:
+            ix = self.items_length - ix
+        for i, item in enumerate(self.items):
+            if i == ix:
+                return item
+        else:
+            raise DFSelectorIndexError(f"No item found at index {ix}")
+
     @property
     def data(self):
         """
