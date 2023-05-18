@@ -569,5 +569,119 @@ class Run(MSONable):
             {c: v for c, v in self.SUMMARY_DTYPES.items() if c in summary.columns}
         )
 
+    # Common, non-feature based on demand summaries for cycle life.
+    def get_cycles_to_capacities(
+        self, 
+        cycle_min=200, 
+        cycle_max=1800,
+        cycle_interval=200
+    ):
+        """
+        Get discharge capacity at constant intervals of 200 cycles
 
+        Args:
+            cycle_min (int): Cycle number to being forecasting capacity at
+            cycle_max (int): Cycle number to end forecasting capacity at
+            cycle_interval (int): Intervals for forecasts
+
+        Returns:
+            pandas.DataFrame:
+        """
         
+        if self.summary_regular is None:
+            raise ValueError(
+                "Summary has not been computed. Run.structure() "
+                "or set Run.summary_regular manually. "
+            )
+        discharge_capacities = pd.DataFrame(
+            np.zeros((1, int((cycle_max - cycle_min) / cycle_interval)))
+        )
+        counter = 0
+        cycle_indices = np.arange(cycle_min, cycle_max, cycle_interval)
+        for cycle_index in cycle_indices:
+            try:
+                discharge_capacities[counter] = \
+                    self.summary_regular.discharge_capacity.iloc[cycle_index]
+            except IndexError:
+                pass
+            counter = counter + 1
+
+        discharge_capacities = discharge_capacities.transpose()
+        discharge_capacities.columns = ["discharge_capacity"]
+        discharge_capacities["cycle"] = cycle_indices
+        return discharge_capacities
+
+    def get_capacities_to_cycles(
+            self,
+            thresh_max_cap=0.98,
+            thresh_min_cap=0.78,
+            interval_cap=0.03
+    ):
+        """
+        Get cycles to reach set threshold capacities.
+
+        Args:
+            thresh_max_cap (float): Upper bound on capacity to compute cycles at.
+            thresh_min_cap (float): Lower bound on capacity to compute cycles at.
+            interval_cap (float): Interval/step size.
+
+        Returns:
+            pandas.DataFrame:
+        """
+        threshold_list = np.around(
+            np.arange(thresh_max_cap, thresh_min_cap, -interval_cap), 2
+        )
+        counter = 0
+        cycles = pd.DataFrame(np.zeros((1, len(threshold_list))))
+        for threshold in threshold_list:
+            cycles[counter] = self.get_cycle_life(threshold=threshold)
+            counter = counter + 1
+        cycles = cycles.transpose()
+        cycles.columns = ["cycle"]
+        cycles["discharge_capacity_fraction"] = threshold_list
+        return cycles
+
+    def get_cycle_life(self, n_cycles_cutoff=40, threshold=0.8):
+        """
+        Calculate cycle life for capacity loss below a certain threshold
+
+        Args:
+            n_cycles_cutoff (int): cutoff for number of cycles to sample
+                for the cycle life in order to use median method.
+            threshold (float): fraction of capacity loss for which
+                to find the cycle index.
+
+        Returns:
+            float: cycle life.
+        """
+        if self.summary_regular is None:
+            raise ValueError(
+                "Summary has not been computed. Run.structure() "
+                "or set Run.summary_regular manually. "
+            )
+
+        # discharge_capacity has a spike and  then increases slightly between \
+        # 1-40 cycles, so let us use take median of 1st 40 cycles for max.
+
+        # If n_cycles <  n_cycles_cutoff, do not use median method
+
+        if len(self.summary_regular) > n_cycles_cutoff:
+            max_capacity = np.median(
+                self.summary_regular.discharge_capacity.iloc[0:n_cycles_cutoff]
+            )
+        else:
+            logger.warning(
+                "Cycle max capacity could not be computed with median method! "
+                "Falling back to nominal capacity of 1.1")
+            max_capacity = 1.1
+
+        # If capacity falls below 80% of initial capacity by end of run
+        if (self.summary_regular.discharge_capacity.iloc[
+                -1] / max_capacity) <= threshold:
+            cycle_life = self.summary_regular[
+                self.summary_regular.discharge_capacity < threshold * max_capacity
+                ].index[0]
+        else:
+            # Some cells do not degrade below the threshold (low degradation rate)
+            cycle_life = len(self.summary_regular) + 1
+        return cycle_life
