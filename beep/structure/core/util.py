@@ -18,7 +18,7 @@ class DFSelectorAggregator:
     """
     Class for aggregating the following from lists of Cycles/Steps:
         - individual indices
-        - tuples of indices
+        - tuples (or other iterables) of indices
         - slices of indices
         - labels on pre-defined dataframe fields
 
@@ -46,7 +46,7 @@ class DFSelectorAggregator:
     def __getitem__(self, indexer):
         if isinstance(indexer, int):
             item_selection = [i for i in self.items if getattr(i, self.index_field) == indexer]
-        elif isinstance(indexer, tuple):
+        elif isinstance(indexer, (tuple, set, list, frozenset)):
             item_selection = [i for i in self.items if getattr(i, self.tuple_field) in indexer]
         elif isinstance(indexer, slice):
             indexer = tuple(range(*indexer.indices(self.items_length)))

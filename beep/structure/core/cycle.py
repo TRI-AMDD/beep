@@ -90,7 +90,6 @@ class Cycle(MSONable):
     @property
     def data(self):
         return aggregate_nicely([s.data for s in self.steps])
-    
 
     # Serialization methods required by monty
     def as_dict(self):
