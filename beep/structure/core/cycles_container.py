@@ -1,6 +1,6 @@
 """Classes for representing sets of cycles for battery cycler data.
 """
-from typing import Iterable
+from typing import Iterable, Union
 
 import pandas as pd
 from tqdm import tqdm
@@ -27,7 +27,7 @@ class CyclesContainer(MSONable):
 
     def __init__(
             self, 
-            cycles: Iterable[Cycle],
+            cycles: Union[Iterable[Cycle], DFSelectorAggregator],
     ):
         self.cycles = DFSelectorAggregator(
             items=cycles,

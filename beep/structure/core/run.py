@@ -1,10 +1,10 @@
 import os
-from typing import Optional, Iterable, Union
+from typing import Optional, Union
 
+import tqdm
 import dask.bag as bag
 import pandas as pd
-import copy
-import tqdm
+import numpy as np
 
 from monty.json import MSONable
 from monty.serialization import loadfn, dumpfn
@@ -13,27 +13,18 @@ from dask.diagnostics import ProgressBar
 from beep import logger
 from beep.structure.diagnostic import DiagnosticConfig
 from beep.structure.core.cycles_container import CyclesContainer
-from beep.structure.core.util import label_chg_state, TQDM_STYLE_ARGS
+from beep.structure.core.util import (
+    label_chg_state,
+    get_max_paused_over_threshold,
+    get_cv_stats,
+    DFSelectorIndexError,
+    CVStatsError,
+    TQDM_STYLE_ARGS
+)
 from beep.structure.core.interpolate import interpolate_cycle, CONTAINER_CONFIG_DEFAULT
 from beep.structure.core.validate import SimpleValidator
 
 """
-# ASSUMPTIONS
-
-ASSUMES:
-- there is a step_type column
-- there is a cycle_label column
-- also should REALLY include step_counter
-- input field is monotonic??1
-
-This is why we *need to use the structured data to instantiate it later on*! But in implementation it should be put into the `__init__` when determining each of these things.
-
-
-DATA IS ONLY UPDATED IN ONE DIRECTION
-STEPS/CYCLES ARE FORMED FROM THE BIG DF, BUT EDITING THE CYCLES/STEPS DOES NOT AFFECT THE BIG DF
-RAW STEPS/CYCLES ARE USED TO FORM THE STRUCTURED BIG DF, BUT AFTER IT IS COLLATED, THEY ARE CONVERTED ONE WAY BACK TO STEPS/CYCLES
-
-
 Things assumed to make sure it all works correctly with checking:
     1. All cycles have a unique cycle index, and no cycles have more than one cycle index.
     2. All steps have a unique step index, and no steps have more than one step index.
@@ -47,6 +38,7 @@ Things assumed to make sure it all works correctly with checking:
  - validation schema (class attribute)
 
 """
+
 
 class Run(MSONable):
     """
@@ -65,12 +57,11 @@ class Run(MSONable):
             Useful for keeping track of what Run file corresponds with what cycler run
             output file.
     """
-
     # Set the default datatypes for ingestion and raw data
     # to the same used for interpolated data (for simplicity)
     DEFAULT_DTYPES = CONTAINER_CONFIG_DEFAULT["dtypes"]
 
-    # Basic LiFePO4 validation
+    # Basic LiFePO4 validation, as a backup/default
     DEFAULT_VALIDATION_SCHEMA = {
         'charge_capacity': {
             'schema': {
@@ -120,21 +111,53 @@ class Run(MSONable):
         }
     }
 
+    # Data types for all summaries (diag and regular)
+    SUMMARY_DTYPES = {
+        'cycle_index': 'int32',
+        'discharge_capacity': 'float64',
+        'charge_capacity': 'float64',
+        'discharge_energy': 'float64',
+        'charge_energy': 'float64',
+        'dc_internal_resistance': 'float32',
+        'temperature_maximum': 'float32',
+        'temperature_average': 'float32',
+        'temperature_minimum': 'float32',
+        'date_time_iso': 'object',
+        'energy_efficiency': 'float32',
+        'charge_throughput': 'float32',
+        'energy_throughput': 'float32',
+        'charge_duration': 'float32',
+        'time_temperature_integrated': 'float64',
+        'paused': 'int32',
+        'CV_time': 'float32',
+        'CV_current': 'float32',
+        'CV_capacity': 'float32',
+        "coulombic_efficiency": "float64"
+    }
+
     def __init__(
             self,
-            raw_cycle_container: CyclesContainer, 
+            raw_cycle_container: Optional[CyclesContainer] = None,
             structured_cycle_container: Optional[CyclesContainer] = None,
             diagnostic: Optional[DiagnosticConfig] = None,
             metadata: Optional[dict] = None,
             schema: Optional[dict] = None,
             paths: Optional[dict] = None,
-        ):
+            summary_cycles: Optional[pd.DataFrame] = None,
+            summary_diagnostic: Optional[pd.DataFrame] = None,
+    ):
         self.raw = raw_cycle_container
         self.structured = structured_cycle_container
-        self._diagnostic = diagnostic
+        if diagnostic:
+            # This is needed because the setter for diagnostic
+            self.diagnostic = diagnostic
+        else:
+            self._diagnostic = None
         self.paths = paths if paths else {}
         self.schema = schema if schema else self.DEFAULT_VALIDATION_SCHEMA
         self.metadata = metadata if metadata else {}
+        self.summary_cycles = summary_cycles
+        self.summary_diagnostic = summary_diagnostic
     
     def __repr__(self) -> str:
         has_raw = True if self.raw else False
@@ -217,10 +240,6 @@ class Run(MSONable):
         """
         Convert a Run object to a dictionary.
         """
-
-        #todo: need to incorportate:
-        # paths
-        # 
         return {
             "@module": self.__class__.__module__,
             "@class": self.__class__.__name__,
@@ -300,3 +319,157 @@ class Run(MSONable):
         df = df.astype(dtypes)
         raw = CyclesContainer.from_dataframe(df, tqdm_desc_suffix="(raw)")
         return cls(raw, **kwargs)
+
+    def summarize_cycles(
+            self,
+            nominal_capacity=1.1,
+            full_fast_charge=0.8,
+            cycle_complete_discharge_ratio=0.97,
+            cycle_complete_vmin=3.3,
+            cycle_complete_vmax=3.3,
+            error_threshold=1e6
+    ):
+        """
+        Gets summary statistics for data according to cycle number. Summary data
+        must be float or int type for compatibility with other methods
+
+        Note: Tries to avoid loading large dfs into memory at any given time
+        by using dask. Small dfs are permissible.
+
+        Args:
+            nominal_capacity (float): nominal capacity for summary stats
+            full_fast_charge (float): full fast charge for summary stats
+            cycle_complete_discharge_ratio (float): expected ratio
+                discharge/charge at the end of any complete cycle
+            cycle_complete_vmin (float): expected voltage minimum achieved
+                in any complete cycle
+            cycle_complete_vmax (float): expected voltage maximum achieved
+                in any complete cycle
+            error_threshold (float): threshold to consider the summary value
+                an error (applied only to specific columns that should reset
+                each cycle)
+
+        Returns:
+            (pandas.DataFrame): summary statistics by cycle.
+        """
+        agg = {
+            "cycle_index": "first",
+            "discharge_capacity": "max",
+            "charge_capacity": "max",
+            "discharge_energy": "max",
+            "charge_energy": "max",
+            "internal_resistance": "last",
+            "date_time_iso": "first",
+            "test_time": "first"
+        }
+
+        # Aggregate and format a potentially large dataframe
+        raw_lazy_df = self.raw.cycles["regular"].data_lazy
+        summary = raw_lazy_df. \
+            groupby("cycle_index").agg(agg). \
+            rename(columns={"internal_resistance": "dc_internal_resistance"})
+        summary = summary.compute()
+
+        summary["energy_efficiency"] = \
+                summary["discharge_energy"] / summary["charge_energy"]
+        summary.loc[
+            ~np.isfinite(summary["energy_efficiency"]), "energy_efficiency"
+        ] = np.NaN
+        # This code is designed to remove erroneous energy values
+        for col in ["discharge_energy", "charge_energy"]:
+            summary.loc[summary[col].abs() > error_threshold, col] = np.NaN
+        summary["charge_throughput"] = summary.charge_capacity.cumsum()
+        summary["energy_throughput"] = summary.charge_energy.cumsum()
+
+        # Computing charge durations
+        # This method for computing charge start and end times implicitly
+        # assumes that a cycle starts with a charge step and is then followed
+        # by discharge step.
+        charge_start_time = raw_lazy_df. \
+            groupby("cycle_index")["date_time_iso"]. \
+            agg("first").compute().to_frame()
+        charge_finish_time = raw_lazy_df \
+            [raw_lazy_df.charge_capacity >= nominal_capacity * full_fast_charge]. \
+            groupby("cycle_index")["date_time_iso"]. \
+            agg("first").compute().to_frame()
+
+        # Left merge, since some cells might not reach desired levels of
+        # charge_capacity and will have NaN for charge duration
+        merged = charge_start_time.merge(
+            charge_finish_time, on="cycle_index", how="left"
+        )
+
+        # Charge duration stored in seconds -
+        # note that date_time_iso is only ~1sec resolution
+        time_diff = np.subtract(
+            pd.to_datetime(merged.date_time_iso_y, utc=True, errors="coerce"),
+            pd.to_datetime(merged.date_time_iso_x, utc=True, errors="coerce"),
+        )
+        summary["charge_duration"] = np.round(
+            time_diff / np.timedelta64(1, "s"), 2)
+
+        # Compute time-temeprature integral, if available
+        if "temperature" in raw_lazy_df.columns:
+            # Compute time since start of cycle in minutes. This comes handy
+            # for featurizing time-temperature integral
+            raw_lazy_df["time_since_cycle_start"] = \
+                raw_lazy_df["date_time_iso"].apply(pd.to_datetime) - \
+                raw_lazy_df.groupby("cycle_index")["date_time_iso"].transform("first")
+
+            raw_lazy_df["time_since_cycle_start"] = \
+                (raw_lazy_df["time_since_cycle_start"] / np.timedelta64(1, "s")) / 60
+
+            # Group by cycle index and integrate time-temperature
+            summary["time_temperature_integrated"] = raw_lazy_df.groupby(
+                "cycle_index").apply(
+                lambda g: np.integrate.trapz(
+                    g.temperature,
+                    x=g.time_since_cycle_start
+                ).compute()
+            )
+            raw_lazy_df.drop(columns=["time_since_cycle_start"]).compute()
+
+        # Determine if any of the cycles has been paused
+        summary["paused"] = raw_lazy_df.groupby("cycle_index").apply(
+            get_max_paused_over_threshold,
+            meta=pd.Series([], dtype=float)).compute()
+
+        # Find CV step data
+        cv_data = []
+        for cyc in self.raw.cycles["regular"]:
+            cix = cyc.cycle_index
+            try:
+                cv = get_cv_stats(cyc.steps["charge"].data)
+            except (CVStatsError, DFSelectorIndexError):
+                logger.debug(f"Cannot extract CV charge segment for cycle {cix}!")
+                continue
+            cv_data.append(cv)
+        cv_summary = pd.DataFrame(cv_data).set_index("cycle_index")
+        summary = summary.merge(
+            cv_summary,
+            how="outer",
+            right_index=True,
+            left_index=True
+        ).set_index("cycle_index")
+
+        summary = summary.astype(
+            {c: v for c, v in self.SUMMARY_DTYPES.items() if c in summary.columns}
+        )
+
+        # Avoid returning empty summary dataframe for single cycle raw_data
+        if summary.shape[0] == 1:
+            return summary
+
+        # Ensure final cycle has actually been completed; if not, exclude it.
+        last_cycle = raw_lazy_df.cycle_index.max().compute().item()
+        last_voltages = self.raw.cycles[last_cycle].data.voltage
+        min_voltage_ok = last_voltages.min() < cycle_complete_vmin
+        max_voltage_ok = last_voltages.max() > cycle_complete_vmax
+        dchg_ratio_ok = (summary.iloc[[-1]])["discharge_capacity"].iloc[0] \
+            > cycle_complete_discharge_ratio \
+            * ((summary.iloc[[-1]])["charge_capacity"].iloc[0])
+
+        if all([min_voltage_ok, max_voltage_ok, dchg_ratio_ok]):
+            return summary
+        else:
+            return summary.iloc[:-1]

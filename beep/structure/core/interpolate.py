@@ -25,6 +25,7 @@ MINIMAL_COLUMNS = [
 CONTAINER_CONFIG_DEFAULT = {
     "dtypes": {
         'test_time': 'float64',              # Total time of the test
+        'date_time_iso': 'datetime64',       # ISO datetime
         'cycle_index': 'int32',              # Index of the cycle
         'cycle_label': 'category',           # Label of the cycle - default="regular"
         'current': 'float32',                # Current
