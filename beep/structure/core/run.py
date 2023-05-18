@@ -143,7 +143,7 @@ class Run(MSONable):
             metadata: Optional[dict] = None,
             schema: Optional[dict] = None,
             paths: Optional[dict] = None,
-            summary_cycles: Optional[pd.DataFrame] = None,
+            summary_regular: Optional[pd.DataFrame] = None,
             summary_diagnostic: Optional[pd.DataFrame] = None,
     ):
         self.raw = raw_cycle_container
@@ -156,7 +156,7 @@ class Run(MSONable):
         self.paths = paths if paths else {}
         self.schema = schema if schema else self.DEFAULT_VALIDATION_SCHEMA
         self.metadata = metadata if metadata else {}
-        self.summary_cycles = summary_cycles
+        self.summary_regular = summary_regular
         self.summary_diagnostic = summary_diagnostic
     
     def __repr__(self) -> str:
@@ -178,14 +178,34 @@ class Run(MSONable):
         is_valid, reason = validator.validate(self.raw.cycles.data)
         return is_valid, reason
 
-    def structure(self):
+    def structure(
+            self,
+            summarize_regular_kwargs: Optional[dict] = None,
+            summarize_diagnostic_kwargs: Optional[dict] = None,
+    ):
+        """
+        Interpolate cycles and steps according to their configurations
+        and generate summaries.
+
+        After structure has been run, the Run.structured CyclesContainer
+        and Run.summary_regular and Run.summary_diagnostic DataFrames
+        should be accessible.
+
+        Args:
+            summarize_regular_kwargs (dict): Dictionary of kwargs to pass
+                to summarize_regular.
+            summarize_diagnostic_kwargs (dict): Dictionary of kwargs to pass\
+                to summarize_diagnostic.
+
+        Returns:
+            None
+        """
         pbar = ProgressBar(dt=1, width=10)
         pbar.register()
         cycles_interpolated = bag.from_sequence(
             bag.map(
                 interpolate_cycle, 
                 self.raw.cycles.items,
-
                 # remaining kwargs are broadcast to all calls
                 cconfig=self.raw.config
             ).compute()
@@ -194,6 +214,14 @@ class Run(MSONable):
         cycles_interpolated.remove(lambda xdf: xdf is None)
         self.structured = CyclesContainer(cycles_interpolated)
         pbar.unregister()
+
+        if summarize_regular_kwargs is None:
+            summarize_regular_kwargs = {}
+        if summarize_diagnostic_kwargs is None:
+            summarize_diagnostic_kwargs = {}
+
+        self.summary_regular = self.summarize_regular(**summarize_regular_kwargs)
+        self.summary_diagnostic = self.summarize_diagnostic(**summarize_diagnostic_kwargs)
 
     # Diagnostic config methods
     @property
@@ -492,7 +520,6 @@ class Run(MSONable):
             (DataFrame) of summary statistics by cycle
         """
 
-        print(tuple(self.diagnostic.all_ix))
         raw = self.raw.cycles[tuple(self.diagnostic.all_ix)]
         raw_lazy_df = raw.data_lazy
         

@@ -124,7 +124,7 @@ class DFSelectorAggregator:
         # todo: this ordering is not guaranteed by dask.bag
         # todo: and therefore it is subject to breakage in the future
         if ix < 0:
-            ix = self.items_length - ix
+            ix = self.items_length + ix
         for i, item in enumerate(self.items):
             if i == ix:
                 return item
