@@ -20,20 +20,15 @@ MINIMAL_COLUMNS_INGESTION = [
 # Ensures the ingestion is working correctly
 # todo: these should really be used more widely, e.g. in Step and Cycle,
 # todo: not just CycleContainer
-MINIMUM_COLUMNS_RAW = [
-    "test_time",
-    "cycle_index",
+MINIMUM_COLUMNS_RAW = MINIMAL_COLUMNS_INGESTION + [
     "cycle_label",
-    "step_index",
     "step_label",
-    "charge_capacity",
-    "discharge_capacity",
-    "current",
-    "voltage",
     "step_counter",
     "step_counter_absolute",
     "datum"
 ]
+
+
 
 # CycleContainer level config ONLY
 CONTAINER_CONFIG_DEFAULT = {
@@ -56,6 +51,9 @@ CONTAINER_CONFIG_DEFAULT = {
         'step_label': 'category',            # Label of the step - default is automatically determined
         'datum': 'int32',                    # Data point, an index.
     },
+
+    # todo: cycle-level retain config is only used during interpolation
+    # todo: not for retaining columns during ingestion
     # If retain is None, all columns are kept, including nonstandard
     # columns. If retain is a list, only columns in the list are kept.
     "retain": None
