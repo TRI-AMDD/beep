@@ -29,14 +29,54 @@ class TestStep(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         kw = {"index_col": 0}
-        cls.df_chg = pd.read_csv(os.path.join(DIR_TESTS_STRUCTURE_CORE, "step_charge.csv"), **kw)
-        cls.df_dchg = pd.read_csv(os.path.join(DIR_TESTS_STRUCTURE_CORE, "step_discharge.csv"), **kw)
-        cls.df_rest = pd.read_csv(os.path.join(DIR_TESTS_STRUCTURE_CORE, "step_unknown.csv"), **kw)
-        cls.step_class = Step
+        cls.df_srr_chg = pd.read_csv(os.path.join(DIR_TESTS_STRUCTURE_CORE, "step_raw_regular_charge.csv"), **kw)
+        cls.df_srr_dchg = pd.read_csv(os.path.join(DIR_TESTS_STRUCTURE_CORE, "step_raw_regular_discharge.csv"), **kw)
+        cls.df_srr_rest = pd.read_csv(os.path.join(DIR_TESTS_STRUCTURE_CORE, "step_raw_regular_unknown.csv"), **kw)
+        cls.df_srd_chg = pd.read_csv(os.path.join(DIR_TESTS_STRUCTURE_CORE, "step_raw_diagnostic_charge.csv"), **kw)
+        cls.df_srd_dchg = pd.read_csv(os.path.join(DIR_TESTS_STRUCTURE_CORE, "step_raw_diagnostic_discharge.csv"), **kw)
+        cls.df_srd_rest = pd.read_csv(os.path.join(DIR_TESTS_STRUCTURE_CORE, "step_raw_diagnostic_unknown.csv"), **kw)
+        cls.df_ss_chg = pd.read_csv(os.path.join(DIR_TESTS_STRUCTURE_CORE, "step_structured_charge.csv"), **kw)
+        cls.df_ss_dchg = pd.read_csv(os.path.join(DIR_TESTS_STRUCTURE_CORE, "step_structured_discharge.csv"), **kw)
+        cls.df_ss_rest = pd.read_csv(os.path.join(DIR_TESTS_STRUCTURE_CORE, "step_structured_unknown.csv"), **kw)
+        cls.df_mr_chg = pd.read_csv(os.path.join(DIR_TESTS_STRUCTURE_CORE, "multistep_raw_charge.csv"), **kw)
+        cls.df_mr_dchg = pd.read_csv(os.path.join(DIR_TESTS_STRUCTURE_CORE, "multistep_raw_discharge.csv"), **kw)
+        cls.df_mr_rest = pd.read_csv(os.path.join(DIR_TESTS_STRUCTURE_CORE, "multistep_raw_unknown.csv"), **kw)
+        cls.df_ms_chg = pd.read_csv(os.path.join(DIR_TESTS_STRUCTURE_CORE, "multistep_structured_charge.csv"), **kw)
+        cls.df_ms_dchg = pd.read_csv(os.path.join(DIR_TESTS_STRUCTURE_CORE, "multistep_structured_discharge.csv"), **kw)
+        cls.df_ms_rest = pd.read_csv(os.path.join(DIR_TESTS_STRUCTURE_CORE, "multistep_structured_unknown.csv"), **kw)
+
+        cls.all_step_dfs = [
+            cls.df_srr_chg,
+            cls.df_srr_dchg,
+            cls.df_srr_rest,
+            cls.df_srd_chg,
+            cls.df_srd_dchg,
+            cls.df_srd_rest,
+            cls.df_ss_chg,
+            cls.df_ss_dchg,
+            cls.df_ss_rest
+        ]
+
+        cls.all_multistep_dfs = [
+            cls.df_mr_chg,
+            cls.df_mr_dchg,
+            cls.df_mr_rest,
+            cls.df_ms_chg,
+            cls.df_ms_dchg,
+            cls.df_ms_rest
+        ]
 
     def test_instantiation(self):
-        s = Step(self.df_chg)
+        s = Step(self.df_srr_chg)
         print(s)
+        print(s.data)
+
+        for df in self.all_step_dfs:
+            Step(df)
+
+    def test_getattr(self):
+        pass
+
 
     def test_uniqueness(self):
         pass
