@@ -6,7 +6,7 @@ import dask.bag as bag
 import pandas as pd
 import numpy as np
 
-from monty.json import MSONable, MontyDecoder
+from monty.json import MSONable, MontyDecoder, jsanitize
 from monty.serialization import loadfn, dumpfn
 from dask.diagnostics import ProgressBar
 
@@ -277,7 +277,7 @@ class Run(MSONable):
             "summary_regular": self.summary_regular.to_dict("list") if self.summary_regular is not None else None,
             "summary_diagnostic": self.summary_diagnostic.to_dict("list") if self.summary_diagnostic is not None else None,
             "diagnostic": self.diagnostic.as_dict() if self.diagnostic else None,
-            "metadata": self.metadata,
+            "metadata": jsanitize(self.metadata),
             "schema": self.schema,
             "paths": self.paths
         }
