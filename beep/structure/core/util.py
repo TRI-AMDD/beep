@@ -23,6 +23,15 @@ class DFSelectorAggregator:
         - labels on pre-defined dataframe fields
 
     ... into either a list of items (to be iterated) or a data frame (which is aggregated)
+
+    While there are many potential selections that can be returned, this
+    class should do its best to return only those that make sense.
+
+    For example:
+     - regardless of the indexing fields, if a single index is
+        passed, a single item should be returned.
+     - if an index which COULD include multiple items is passed,
+        an iterable should be returned.
     """
     def __init__(
             self,
@@ -32,6 +41,9 @@ class DFSelectorAggregator:
             slice_field,
             label_field
     ):
+        if tuple_field != slice_field:
+            raise ValueError("Tuple and slice fields use the same method for indexing.")
+
         self.index_field = index_field
         self.tuple_field = tuple_field
         self.label_field = label_field
@@ -44,22 +56,30 @@ class DFSelectorAggregator:
             self.items_length = len(self.items)
 
     def __getitem__(self, indexer):
+        item_selection = []
         if isinstance(indexer, int):
-            item_selection = [i for i in self.items if getattr(i, self.index_field) == indexer]
+            # return only the item at the index
+            for i in self.items:
+                if getattr(i, self.index_field) == indexer:
+                    return i
         elif isinstance(indexer, (tuple, set, list, frozenset)):
-            item_selection = [i for i in self.items if getattr(i, self.tuple_field) in indexer]
+            indexer = set(indexer)
+            item_selection = self.get_multitem(indexer)
         elif isinstance(indexer, slice):
-            indexer = tuple(range(*indexer.indices(self.items_length)))
-            item_selection = [i for i in self.items if getattr(i, self.slice_field) in indexer]
+            indexer = set(range(*indexer.indices(self.items_length)))
+            item_selection = self.get_multitem(indexer)
         elif isinstance(indexer, str):
-            item_selection = [i for i in self.items if getattr(i, self.label_field) == indexer]
+            if isinstance(self.items, bag.Bag):
+                item_selection = self.items.filter(lambda x: getattr(x, self.label_field) == indexer)
+            else:
+                item_selection = [i for i in self.items if getattr(i, self.label_field) == indexer]
         else:
             raise TypeError(
                 f"No indexing scheme for {self.__class__.__name__} available for type {type(indexer)}")
 
-        if len(item_selection) == 1:
-            return item_selection[0]
-        elif len(item_selection) == 0:
+        # if len(item_selection) == 1:
+        #     return item_selection[0]
+        if len(item_selection) == 0:
             raise DFSelectorIndexError(f"No items found for indexer: {indexer}")
         else:
             return DFSelectorAggregator(
@@ -109,7 +129,7 @@ class DFSelectorAggregator:
             super().__setattr__(key, value)
 
     def __repr__(self):
-        return self.items.__repr__()
+        return f"{self.__class__.__name__}({self.items.__repr__()})"
     
     def __len__(self):
         # Necessary since dask bag has no length
@@ -130,6 +150,39 @@ class DFSelectorAggregator:
                 return item
         else:
             raise DFSelectorIndexError(f"No item found at index {ix}")
+
+    def by_matching_data(self, func):
+        """
+        Get a selection from matching a function on the item(s)
+        data (dataframes).
+
+        The function "func" takes in a dataframe and returns a boolean.
+
+        Args:
+            func (callable): function to apply to each item's data.
+
+        Returns:
+        """
+        item_selection = self.items.filter(lambda item: func(item.data))
+        return DFSelectorAggregator(
+                item_selection,
+                self.index_field,
+                self.tuple_field,
+                self.slice_field,
+                self.label_field
+            )
+
+    def get_multitem(self, indexer):
+        # todo: this makes assumptions that there is only one item matching each
+        # todo: entry in the indexer, but is done for speed reasons
+        item_selection = []
+        for i in self.items:
+            if getattr(i, self.tuple_field) in indexer:
+                item_selection.append(i)
+            if len(item_selection) == len(indexer):
+                break
+        return item_selection
+
 
     @property
     def data(self):
@@ -194,6 +247,8 @@ def label_chg_state(
             False if it is confidently not, or None if the
             charge state is indeterminate.
     """
+    if step_df.shape[0] < 2:
+        return indeterminate_label
     cap = step_df[["charge_capacity", "discharge_capacity"]]
     total_cap_diffs = cap.max() - cap.min()
 
