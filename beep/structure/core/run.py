@@ -22,8 +22,9 @@ from beep.structure.core.util import (
     CVStatsError,
     TQDM_STYLE_ARGS
 )
-from beep.structure.core.interpolate import interpolate_cycle, CONTAINER_CONFIG_DEFAULT
+from beep.structure.core.interpolate import interpolate_cycle
 from beep.structure.core.validate import SimpleValidator
+from beep.structure.core.constants import CONTAINER_CONFIG_DEFAULT, TQDM_RAW_SUFFIX
 
 """
 Things assumed to make sure it all works correctly with checking:
@@ -313,11 +314,16 @@ class Run(MSONable):
         Convenience method to create an unstructured Run object from a raw dataframe.
 
         Assumes step_index is already in data.
+
+        Args:
+            df: The dataframe containing raw data. Should preferably come from a
+                .from_file for a specific cycler, as there are some data requirements
+                Run's container classes may enforce.
         """
         raw = CyclesContainer.from_dataframe(
             df,
             diagnostic=kwargs.get("diagnostic", None),
-            tqdm_desc_suffix="(raw)"
+            tqdm_desc_suffix=TQDM_RAW_SUFFIX
         )
         return cls(raw_cycle_container=raw, **kwargs)
 

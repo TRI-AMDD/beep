@@ -4,26 +4,32 @@ TQDM_RAW_SUFFIX = "(raw)"
 
 
 # the minimal set of standard columns that must be present
-# in dataframes for base classes
+# before dataframes can be converted to objects
+# designed to avoid downstream problems
 MINIMAL_COLUMNS_INGESTION = [
     "test_time",
     "cycle_index",
-    "cycle_label",
     "step_index",
-    "step_label",
-    "step_counter",
-    "step_counter_absolute",
-    "datum"
+    "charge_capacity",
+    "discharge_capacity",
+    "current",
+    "voltage",
 ]
 
 # A minimum set of columns that must be present in raw dataframes
 # Ensures the ingestion is working correctly
+# todo: these should really be used more widely, e.g. in Step and Cycle,
+# todo: not just CycleContainer
 MINIMUM_COLUMNS_RAW = [
     "test_time",
     "cycle_index",
     "cycle_label",
     "step_index",
     "step_label",
+    "charge_capacity",
+    "discharge_capacity",
+    "current",
+    "voltage",
     "step_counter",
     "step_counter_absolute",
     "datum"

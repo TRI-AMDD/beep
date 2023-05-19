@@ -55,18 +55,23 @@ def load_run_from_ProcessedCyclerRun_file(
     dfds = pd.DataFrame(d["diagnostic_summary"])
 
     diagnostic = {}
-    for i, df in dfds.groupby("cycle_index"):
-        cycle_type = df["cycle_type"].unique()[0]
-        if cycle_type in diagnostic:
-            diagnostic[cycle_type].add(i)
-        else:
-            diagnostic[cycle_type] = {i}
-    dc = DiagnosticConfig(diagnostic)
+    # typically, these files have cycle_type listed
+    if "cycle_type" in dfds.columns:
+        for i, df in dfds.groupby("cycle_index"):
+            cycle_type = df["cycle_type"].unique()[0]
+            if cycle_type in diagnostic:
+                diagnostic[cycle_type].add(i)
+            else:
+                diagnostic[cycle_type] = {i}
+    else:
+        logger.warning("No cycle type column found in diagnostic summary; could not load diagnostic.")
+    dc = DiagnosticConfig(diagnostic) if diagnostic else None
 
     df_all = pd.concat([dfi, dfdi])
 
     # Most legacy PCRs have the step_type, but
     # only sometimes the step_index counter.
+    # We can't use CycleContainer.from_dataframe for this reason
     if "step_type" in df_all.columns:
         counter = df_all["step_type"]
     else:
@@ -117,6 +122,17 @@ def load_run_from_ProcessedCyclerRun_file(
 def load_run_from_BEEPDatapath_file(
         filename: Union[str, os.PathLike]
 ) -> Run:
+    """
+    Load a Run from a legacy BEEPDatapath file.
+
+    Args:
+        filename (str, Pathlike): The name of the json or .json.gz file
+            serialized to disk by BEEPDatapath.
+
+    Returns:
+        Run: The Run converted from a BEEPDatapath.
+
+    """
     d = load_json_safe(filename)
     if "Datapath" not in d.get("@class", None) or "beep.structure" not in d.get(
             "@module", None):

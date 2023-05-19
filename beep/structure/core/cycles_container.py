@@ -16,8 +16,7 @@ from beep.structure.core.util import DFSelectorAggregator, aggregate_nicely, TQD
 from beep.structure.core.step import Step
 from beep.structure.core.cycle import Cycle
 from beep.structure.core.util import label_chg_state
-from beep.structure.core.interpolate import CONTAINER_CONFIG_DEFAULT
-from beep.structure.core.constants import TQDM_STRUCTURED_SUFFIX, TQDM_RAW_SUFFIX
+from beep.structure.core.constants import CONTAINER_CONFIG_DEFAULT, MINIMAL_COLUMNS_INGESTION, MINIMUM_COLUMNS_RAW
 
 
 
@@ -80,6 +79,13 @@ class CyclesContainer(MSONable):
         # df = dd.from_pandas(df)
 
         logger.info(f"Dataframe being read is {df.shape[0]} lines")
+
+        missing = set()
+        for col in MINIMAL_COLUMNS_INGESTION:
+            if col not in df.columns:
+                missing.add(col)
+        if missing:
+            raise ValueError(f"Missing required column '{missing}' in input dataframe")
 
         df = df.reset_index(drop=True)
 
@@ -146,6 +152,13 @@ class CyclesContainer(MSONable):
         dtypes = {c: dtype for c, dtype in cls.DEFAULT_DTYPES.items() if c in df.columns}
         df = df.astype(dtypes, errors="ignore")
 
+        missing = set()
+        for col in MINIMUM_COLUMNS_RAW:
+            if col not in df.columns:
+                missing.add(col)
+        if missing:
+            raise ValueError(f"Missing required columns '{missing}' in dataframe")
+
         # todo: this could be done in parallel as well
         # generator comprehension to avoid loading all cycles into memory
         groups = df.groupby("cycle_index")
@@ -157,15 +170,6 @@ class CyclesContainer(MSONable):
                 **TQDM_STYLE_ARGS
             )
         )
-
-        # for i, dfc in df.groupby("cycle_index"):
-        #     print(dfc)
-        #     try:
-        #         cyc = Cycle.from_dataframe(dfc, step_cls=step_cls)
-        #     except ValueError:
-        #         return dfc
-        #     # raise ValueError
-
         return cls(bag.from_sequence(cycles, npartitions=len(groups)))
 
     @property
