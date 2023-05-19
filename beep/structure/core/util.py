@@ -4,6 +4,7 @@ from typing import Iterable
 import dask.bag as bag
 import dask.dataframe as ddf
 from dask import delayed
+from dask.diagnostics import ProgressBar
 
 import numpy as np
 import pandas as pd
@@ -69,16 +70,16 @@ class DFSelectorAggregator:
             indexer = set(range(*indexer.indices(self.items_length)))
             item_selection = self.get_multitem(indexer)
         elif isinstance(indexer, str):
-            if isinstance(self.items, bag.Bag):
-                item_selection = self.items.filter(lambda x: getattr(x, self.label_field) == indexer)
-            else:
-                item_selection = [i for i in self.items if getattr(i, self.label_field) == indexer]
+            # todo: this can be done with a Bag.filter as well for bag items,
+            # todo: but @ardunn has found this very slow for some reason
+            item_selection = [i for i in self.items if getattr(i, self.label_field) == indexer]
         else:
             raise TypeError(
                 f"No indexing scheme for {self.__class__.__name__} available for type {type(indexer)}")
 
         # if len(item_selection) == 1:
         #     return item_selection[0]
+
         if len(item_selection) == 0:
             raise DFSelectorIndexError(f"No items found for indexer: {indexer}")
         else:
@@ -163,7 +164,11 @@ class DFSelectorAggregator:
 
         Returns:
         """
-        item_selection = self.items.filter(lambda item: func(item.data))
+
+        if isinstance(self.items, bag.Bag):
+            item_selection = self.items.filter(lambda item: func(item.data))
+        else:
+            item_selection = [i for i in filter(lambda item: func(item.data), self.items)]
         return DFSelectorAggregator(
                 item_selection,
                 self.index_field,
