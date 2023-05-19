@@ -2,6 +2,7 @@ import os
 from typing import Optional, Union
 
 import tqdm
+import dask.dataframe as dd
 import dask.bag as bag
 import pandas as pd
 import numpy as np
@@ -180,6 +181,8 @@ class Run(MSONable):
 
     def structure(
             self,
+            summarize_regular: bool = True,
+            summarize_diagnostic: bool = True,
             summarize_regular_kwargs: Optional[dict] = None,
             summarize_diagnostic_kwargs: Optional[dict] = None,
     ):
@@ -208,10 +211,10 @@ class Run(MSONable):
                 self.raw.cycles.items,
                 # remaining kwargs are broadcast to all calls
                 cconfig=self.raw.config
-            ).compute()
+            ).remove(lambda xdf: xdf is None).compute()
         )
-        cycles_interpolated.repartition(npartitions=cycles_interpolated.count().compute())
-        cycles_interpolated.remove(lambda xdf: xdf is None)
+        cycles_interpolated = cycles_interpolated.\
+            repartition(npartitions=cycles_interpolated.count().compute())
         self.structured = CyclesContainer(cycles_interpolated)
         pbar.unregister()
 
@@ -220,8 +223,14 @@ class Run(MSONable):
         if summarize_diagnostic_kwargs is None:
             summarize_diagnostic_kwargs = {}
 
-        self.summary_regular = self.summarize_regular(**summarize_regular_kwargs)
-        self.summary_diagnostic = self.summarize_diagnostic(**summarize_diagnostic_kwargs)
+        if summarize_regular:
+            self.summary_regular = self.summarize_regular(**summarize_regular_kwargs)
+
+        if summarize_diagnostic:
+            if self.diagnostic:
+                self.summary_diagnostic = self.summarize_diagnostic(**summarize_diagnostic_kwargs)
+            else:
+                logger.debug("No diagnostic; cannot summarize diagnostic.")
 
     # Diagnostic config methods
     @property
@@ -230,14 +239,12 @@ class Run(MSONable):
 
     @diagnostic.setter
     def diagnostic(self, diagnostic_config: DiagnosticConfig):
-
         if not isinstance(diagnostic_config, DiagnosticConfig):
             logger.warning(
                 f"Diagnostic config passed does not inherit "
                 "DiagnosticConfig, can cause downstream errors."
             )
         self._diagnostic = diagnostic_config
-
         for cycle in tqdm.tqdm(
             self.raw.cycles, 
             total=self.raw.cycles.items_length,
@@ -304,52 +311,15 @@ class Run(MSONable):
     ):
         """
         Convenience method to create an unstructured Run object from a raw dataframe.
+
+        Assumes step_index is already in data.
         """
-        # Assign a per-cycle step index counter
-        df.loc[:, "step_counter"] = 0
-        for cycle_index in tqdm.tqdm(
-            df.cycle_index.unique(),
-            desc="Assigning step counter",
-            **TQDM_STYLE_ARGS
-            ):
-            indices = df.loc[df.cycle_index == cycle_index].index
-            step_index_list = df.step_index.loc[indices]
-            shifted = step_index_list.ne(step_index_list.shift()).cumsum()
-            df.loc[indices, "step_counter"] = shifted - 1
-
-        # Assign an absolute step index counter
-        compounded_counter = df.step_counter.astype(str) + "-" + df.cycle_index.astype(str)
-        absolute_shifted = compounded_counter.ne(compounded_counter.shift()).cumsum()
-        df["step_counter_absolute"] = absolute_shifted - 1
-
-        # Assign step label if not known
-        if "step_label" not in df.columns:
-            df["step_label"] = None
-            for sca, df_sca in tqdm.tqdm(df.groupby("step_counter_absolute"),
-                                         desc="Determining charge/discharge steps",
-                                         **TQDM_STYLE_ARGS):
-                indices = df_sca.index
-                df.loc[indices, "step_label"] = label_chg_state(df_sca)
-
-        # Assign cycle label from diagnostic config
-        df["cycle_index"] = df["cycle_index"].astype(cls.DEFAULT_DTYPES["cycle_index"])
-        df["cycle_label"] = "regular"
-
-        diagnostic = kwargs.get("diagnostic", None)
-        if diagnostic:
-            df["cycle_label"] = df["cycle_index"].apply(
-                lambda cix: diagnostic.type_by_ix.get(cix, "regular")
-            )    
-        if "datum" not in df.columns:
-            df["datum"] = df.index
-
-        # Note this will not convert columns
-        # not listed in the default dtypes
-
-        dtypes = {c: dtype for c, dtype in cls.DEFAULT_DTYPES.items() if c in df.columns}
-        df = df.astype(dtypes)
-        raw = CyclesContainer.from_dataframe(df, tqdm_desc_suffix="(raw)")
-        return cls(raw, **kwargs)
+        raw = CyclesContainer.from_dataframe(
+            df,
+            diagnostic=kwargs.get("diagnostic", None),
+            tqdm_desc_suffix="(raw)"
+        )
+        return cls(raw_cycle_container=raw, **kwargs)
 
     def summarize_regular(
             self,
