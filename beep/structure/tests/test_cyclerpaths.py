@@ -90,7 +90,7 @@ class TestArbinDatapath(unittest.TestCase):
 
         diag_interp = rcycler_run.interpolate_diagnostic_cycles(time_resolution=1000, voltage_resolution=5000)
         self.assertAlmostEqual(diag_interp[(diag_interp.cycle_index == 1) &
-                                           (diag_interp.step_index == 5)].charge_capacity.max(),
+                                           (diag_interp.step_code == 5)].charge_capacity.max(),
                                3.432291071, 3)
         self.assertAlmostEqual(diag_interp[(diag_interp.cycle_type == "hppc")].charge_capacity.max(),
                                3.4919972, 3)
@@ -150,7 +150,7 @@ class TestMaccorDatapath(unittest.TestCase):
                 {
                     "data_point",
                     "cycle_index",
-                    "step_index",
+                    "step_code",
                     "voltage",
                     "current",
                     "charge_capacity",
@@ -178,11 +178,11 @@ class TestMaccorDatapath(unittest.TestCase):
         md = MaccorDatapath.from_file(self.waveform_file)
         df = md.raw_data
         self.assertTrue(df.loc[df.cycle_index == 6].
-                        groupby("step_index").apply(step_is_waveform_dchg).any())
+                        groupby("step_code").apply(step_is_waveform_dchg).any())
         self.assertFalse(df.loc[df.cycle_index == 6].
-                        groupby("step_index").apply(step_is_waveform_chg).any())
+                        groupby("step_code").apply(step_is_waveform_chg).any())
         self.assertFalse(df.loc[df.cycle_index == 3].
-                        groupby("step_index").apply(step_is_waveform_dchg).any())
+                        groupby("step_code").apply(step_is_waveform_dchg).any())
 
     # based on RCRT.test_get_interpolated_waveform_discharge_cycles
     def test_interpolate_waveform_discharge_cycles(self):
@@ -195,7 +195,7 @@ class TestMaccorDatapath(unittest.TestCase):
         df = md.raw_data
         self.assertEqual(cyc6_interp.test_time.min(),
                          df.loc[(df.cycle_index == 6) &
-                                (df.step_index == 32)].test_time.min())
+                                (df.step_code == 32)].test_time.min())
         self.assertEqual(cyc6_interp[cyc6_interp.cycle_index == 6].shape[0], 3000)
 
     # based on RCRT.test_waveform_charge_discharge_capacity
@@ -231,7 +231,7 @@ class TestMaccorDatapath(unittest.TestCase):
                              'temperature',
                              'cycle_index',
                              'step_type',
-                             'step_index'}
+                             'step_code'}
                             )
         interp2 = all_interpolated[
             (all_interpolated.cycle_index == 2)
@@ -255,7 +255,7 @@ class TestMaccorDatapath(unittest.TestCase):
 
         df = md.raw_data
         cycle_2 = df[df["cycle_index"] == 2]
-        discharge = cycle_2[cycle_2.step_index == 12]
+        discharge = cycle_2[cycle_2.step_code == 12]
         discharge = discharge.sort_values("discharge_capacity")
 
         acceptable_error = 0.01
@@ -319,7 +319,7 @@ class TestIndigoDatapath(unittest.TestCase):
             {
                 "data_point",
                 "cycle_index",
-                "step_index",
+                "step_code",
                 "voltage",
                 "temperature",
                 "current",
@@ -348,7 +348,7 @@ class TestBioLogicDatapath(unittest.TestCase):
         self.assertTrue(
             {
                 "cycle_index",
-                "step_index",
+                "step_code",
                 "voltage",
                 "current",
                 "discharge_capacity",
@@ -387,7 +387,7 @@ class TestBioLogicDatapath(unittest.TestCase):
         self.assertTrue(
             {
                 "cycle_index",
-                "step_index",
+                "step_code",
                 "voltage",
                 "current",
                 "discharge_capacity",
@@ -424,7 +424,7 @@ class TestBioLogicDatapath(unittest.TestCase):
         self.assertTrue(
             {
                 "cycle_index",
-                "step_index",
+                "step_code",
                 "voltage",
                 "current",
                 "discharge_capacity",
@@ -523,7 +523,7 @@ class TestNovonixDatapath(unittest.TestCase):
         self.assertTrue(
             {
                 'cycle_index',
-                'step_index',
+                'step_code',
                 'step_type',
                 'test_time',
                 'voltage',
@@ -537,7 +537,7 @@ class TestNovonixDatapath(unittest.TestCase):
         )
 
         self.assertTrue(dp.raw_data["test_time"].is_monotonic_increasing)
-        self.assertListEqual(list(dp.raw_data["step_index"].unique()), [0, 7, 8, 1])
+        self.assertListEqual(list(dp.raw_data["step_code"].unique()), [0, 7, 8, 1])
 
         self.assertTrue("protocol" in dp.metadata.raw)
         self.assertTrue("channel" in dp.metadata.raw)

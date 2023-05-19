@@ -105,9 +105,9 @@ class DFSelectorAggregator:
                     steps.append(s)
             return DFSelectorAggregator(
                 steps,
-                index_field="step_index",
-                slice_field="step_index",
-                tuple_field="step_index",
+                index_field="step_code",
+                slice_field="step_code",
+                tuple_field="step_code",
                 label_field="step_label"
             )
         

@@ -168,7 +168,7 @@ class DiagnosticConfig(MSONable):
             (DiagnosticConfig)
 
         """
-        target_column = "step_index"
+        target_column = "step_code"
         if target_column not in df_raw.columns:
             raise ValueError(
                 f"Required column '{target_column}' not found in raw data!"

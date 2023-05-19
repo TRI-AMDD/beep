@@ -63,7 +63,7 @@ def interpolate_cycle(
     # constant number of points per step
     else:
         steps = cycle.steps
-        constant_columns = ["step_index", "step_counter",
+        constant_columns = ["step_code", "step_counter",
                             "step_counter_absolute", "cycle_index",
                             "step_label", "cycle_label"]
         step_cls = Step

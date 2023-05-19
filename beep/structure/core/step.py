@@ -25,7 +25,7 @@ class Step(MSONable):
         self.uniques = (
             "step_counter_absolute", 
             "step_counter", 
-            "step_index", 
+            "step_code", 
             "step_label",
             "cycle_index",
             "cycle_label"
@@ -39,7 +39,7 @@ class Step(MSONable):
         return f"{self.__class__.__name__} " \
                f"(cycle_index={self.cycle_index}, "\
                f"step_counter={self.step_counter}, " \
-               f"step_index={self.step_index}, " \
+               f"step_code={self.step_code}, " \
                f"step_label={self.step_label}, " \
                f"{self.data.shape[0]} points)"
     

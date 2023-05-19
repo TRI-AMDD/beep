@@ -35,7 +35,7 @@ class MaccorRun(Run):
         'data_columns': {
             'rec#': 'data_point',
             'cyc#': 'cycle_index',
-            'step': 'step_index',
+            'step': 'step_code',
             'test (sec)': 'test_time',
             'step (sec)': 'step_time',
             'amp-hr': '_capacity',
@@ -275,9 +275,9 @@ class MaccorRun(Run):
             lambda x: cls.CONVERSION_CONFIG["end_step_code_min"] <= x <= cls.CONVERSION_CONFIG["end_step_code_max"]
         )
         # For waveform discharges, maccor seems to trigger ending_status within a step multiple times
-        # As a fix, compute the actual step change using diff() on step_index and set end_step to be
+        # As a fix, compute the actual step change using diff() on step_code and set end_step to be
         # a logical AND(step_change, end_step)
-        is_step_change = data['step_index'].diff(periods=-1).fillna(value=0) != 0
+        is_step_change = data['step_code'].diff(periods=-1).fillna(value=0) != 0
         end_step_inds = end_step.index[np.logical_and(list(end_step), list(is_step_change))]
         # If no end steps, quantity not reset, return it without modifying
         if end_step_inds.size == 0:

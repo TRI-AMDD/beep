@@ -313,7 +313,7 @@ class Run(MSONable):
         """
         Convenience method to create an unstructured Run object from a raw dataframe.
 
-        Assumes step_index is already in data.
+        Assumes step_code is already in data.
 
         Args:
             df: The dataframe containing raw data. Should preferably come from a

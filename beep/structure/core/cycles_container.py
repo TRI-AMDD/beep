@@ -98,8 +98,8 @@ class CyclesContainer(MSONable):
                 **TQDM_STYLE_ARGS
             ):
                 indices = df.loc[df.cycle_index == cycle_index].index
-                step_index_list = df.step_index.loc[indices]
-                shifted = step_index_list.ne(step_index_list.shift()).cumsum()
+                step_code_list = df.step_code.loc[indices]
+                shifted = step_code_list.ne(step_code_list.shift()).cumsum()
                 df.loc[indices, "step_counter"] = shifted - 1
         df.step_counter = df.step_counter.astype(int)
 

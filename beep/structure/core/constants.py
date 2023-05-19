@@ -9,7 +9,7 @@ TQDM_RAW_SUFFIX = "(raw)"
 MINIMAL_COLUMNS_INGESTION = [
     "test_time",
     "cycle_index",
-    "step_index",
+    "step_code",
     "charge_capacity",
     "discharge_capacity",
     "current",
@@ -45,7 +45,7 @@ CONTAINER_CONFIG_DEFAULT = {
         'discharge_capacity': 'float32',     # Discharge capacity of the cell
         'charge_energy': 'float32',          # Charge energy of the cell
         'discharge_energy': 'float32',       # Discharge energy of the cell
-        'step_index': 'int16',               # Index of the step (i.e., type), according to the cycler output
+        'step_code': 'int16',               # Index of the step (i.e., type), according to the cycler output
         'step_counter': 'int32',             # Counter of the step within cycle, according to the cycler
         'step_counter_absolute': 'int32',    # BEEP-determined step counter across all cycles
         'step_label': 'category',            # Label of the step - default is automatically determined

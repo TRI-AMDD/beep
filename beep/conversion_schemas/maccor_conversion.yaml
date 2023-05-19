@@ -13,7 +13,7 @@ metadata_fields:
 data_columns:
   rec#: data_point
   cyc#: cycle_index
-  step: step_index
+  step: step_code
   test (sec): test_time
   step (sec): step_time
   # amp-hr and watt-hr are a bit ambiguous

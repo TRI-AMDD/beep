@@ -26,14 +26,17 @@ from beep.structure.core.tests import DIR_TESTS_STRUCTURE_CORE
 
 class TestStep(unittest.TestCase):
 
+    @classmethod
     def setUpClass(cls):
-        cls.df_chg = pd.read_csv(os.path.join(DIR_TESTS_STRUCTURE_CORE, "step_charge.csv"))
-        cls.df_dchg = pd.read_csv(os.path.join(DIR_TESTS_STRUCTURE_CORE, "step_discharge.csv"))
-        cls.df_rest = pd.read_csv(os.path.join(DIR_TESTS_STRUCTURE_CORE, "step_rest.csv"))
+        kw = {"index_col": 0}
+        cls.df_chg = pd.read_csv(os.path.join(DIR_TESTS_STRUCTURE_CORE, "step_charge.csv"), **kw)
+        cls.df_dchg = pd.read_csv(os.path.join(DIR_TESTS_STRUCTURE_CORE, "step_discharge.csv"), **kw)
+        cls.df_rest = pd.read_csv(os.path.join(DIR_TESTS_STRUCTURE_CORE, "step_unknown.csv"), **kw)
         cls.step_class = Step
 
     def test_instantiation(self):
-        print(self.df_chg)
+        s = Step(self.df_chg)
+        print(s)
 
     def test_uniqueness(self):
         pass

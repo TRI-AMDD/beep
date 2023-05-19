@@ -95,9 +95,9 @@ class NovonixDatapath(BEEPDatapath):
         # ensure that there are not steps with step type numbers outside what is accounted
         # for within the schema
         STEP_NAME_IX_MAP = NOVONIX_CONFIG["step_names"]
-        available_step_indexs = data["step_index"].unique().tolist()
+        available_step_codes = data["step_code"].unique().tolist()
         unknown_step_types = []
-        for astn in available_step_indexs:
+        for astn in available_step_codes:
             if astn not in STEP_NAME_IX_MAP:
                 unknown_step_types.append(astn)
         if unknown_step_types:
@@ -108,7 +108,7 @@ class NovonixDatapath(BEEPDatapath):
         # format capacity and energy
         STEP_IS_CHG_MAP = NOVONIX_CONFIG["step_is_chg"]
 
-        data["step_type_name"] = data["step_index"].replace(STEP_NAME_IX_MAP)
+        data["step_type_name"] = data["step_code"].replace(STEP_NAME_IX_MAP)
         data["step_type"] = data["step_type_name"]. \
             replace(STEP_IS_CHG_MAP). \
             replace({True: "charge", False: "discharge"})
@@ -202,7 +202,7 @@ class NovonixDatapath(BEEPDatapath):
     # def iterate_steps_in_cycle(self, cycle_df, step_type):
     #     """
     #     A Novonix-specific method of filtering steps for interpolation
-    #     since the charge/discharge changes are known via the step_index
+    #     since the charge/discharge changes are known via the step_code
     #     specification.
     #
     #     For example, steps within a single cycle are not separated JUST
@@ -223,7 +223,7 @@ class NovonixDatapath(BEEPDatapath):
     #             for a particular step_type num if that step type num
     #             is the correct step type (chg/discharge)
     #     """
-    #     gb = cycle_df.groupby("step_index")
+    #     gb = cycle_df.groupby("step_code")
     #
     #     for _, step_df in gb:
     #         if (step_df["step_type"] == step_type).all():

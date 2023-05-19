@@ -69,13 +69,17 @@ def load_run_from_ProcessedCyclerRun_file(
 
     df_all = pd.concat([dfi, dfdi])
 
+    # Account for step_index being called step_code now
+    if "step_index" in df_all.columns:
+        df_all.rename(columns={"step_index": "step_code"}, inplace=True)
+
     # Most legacy PCRs have the step_type, but
-    # only sometimes the step_index counter.
+    # only sometimes the step_code counter.
     # We can't use CycleContainer.from_dataframe for this reason
     if "step_type" in df_all.columns:
         counter = df_all["step_type"]
     else:
-        counter = df_all["step_index"]
+        counter = df_all["step_code"]
     df_all["step_counter_absolute"] = counter.ne(counter.shift()).cumsum()
     df_all["step_counter"] = np.nan
 
@@ -145,6 +149,7 @@ def load_run_from_BEEPDatapath_file(
         if k in d:
             metadata[k] = d[k]
 
+
     paths = d.get("paths", {})
     interpolated_regular = d.get("cycles_interpolated", None)
     interpolated_diagnostic = d.get("diagnostic_interpolated", None)
@@ -168,6 +173,12 @@ def load_run_from_BEEPDatapath_file(
 
     raw_data = d.get("raw_data", None)
     raw_data = pd.DataFrame(raw_data) if raw_data else None
+
+    # Account for step_index being called step_code now
+    for df in (raw_data, all_interpolated):
+        if df is not None:
+            if "step_index" in df.columns:
+                df.rename(columns={"step_index": "step_code"}, inplace=True)
 
     raw_cc = CyclesContainer.from_dataframe(raw_data,
                                             tqdm_desc_suffix=TQDM_RAW_SUFFIX) if raw_data is not None else None

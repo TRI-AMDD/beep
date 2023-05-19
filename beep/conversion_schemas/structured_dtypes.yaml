@@ -10,7 +10,7 @@ cycles_interpolated:
   charge_energy: 'float32'
   discharge_energy: 'float32'
   step_type: 'category'
-  step_index: 'int16'
+  step_code: 'int16'
 
 summary:
   cycle_index: 'int32'
@@ -62,8 +62,8 @@ diagnostic_interpolated:
   test_time: 'float64'
   cycle_index: 'int32'
   cycle_type: 'category'
-  step_index: 'int16'
-  step_index_counter: 'int16'
+  step_code: 'int16'
+  step_code_counter: 'int16'
   step_type: 'category'
   discharge_dQdV: 'float32'
   charge_dQdV: 'float32'

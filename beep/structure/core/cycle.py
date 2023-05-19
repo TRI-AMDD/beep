@@ -31,11 +31,14 @@ class Cycle(MSONable):
             steps: Iterable[Union[Step, MultiStep]]
         ):
 
+        # todo: this was previously done with step_code
+        # todo: its not clear which should be used
+
         self.steps = DFSelectorAggregator(
             items=steps,
-            index_field="step_index",
-            slice_field="step_index",
-            tuple_field="step_index",
+            index_field="step_counter",
+            slice_field="step_counter",
+            tuple_field="step_counter",
             label_field="step_label",
         )
 
@@ -62,7 +65,7 @@ class Cycle(MSONable):
         E.g., you can do `cycle.cycle_index` to get the cycle index because the cycle
         indices for all steps of this cycle will be the same.
 
-        But you can NOT do `cycle.step_index` because there there are multiple steps
+        But you can NOT do `cycle.step_code` because there there are multiple steps
         with multiple step indices within a single cycle.
         """
         if attr in self.__getattribute__("uniques"):
