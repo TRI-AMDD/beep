@@ -26,6 +26,11 @@ class Cycle(MSONable):
             Note this config may override or change step-level configuration.
         uniques (tuple): A tuple of columns that must be unique for a cycle to be instantiated.
     """
+    uniques = (
+        "cycle_index",
+        "cycle_label"
+    )
+
     def __init__(
             self, 
             steps: Iterable[Union[Step, MultiStep]]
@@ -43,11 +48,6 @@ class Cycle(MSONable):
         )
 
         self.config = {}
-
-        self.uniques = (
-            "cycle_index",
-            "cycle_label"
-        )
 
         # Ensure cycle cannot be instantiated failing unique check
         for attr in self.uniques:

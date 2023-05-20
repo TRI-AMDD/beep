@@ -3,6 +3,7 @@
 import pandas as pd
 from monty.json import MSONable
 
+
 class Step(MSONable):
     """
     A persistent step object, basically a wrapper around a step's dataframe.
@@ -18,18 +19,18 @@ class Step(MSONable):
             This config may be overriden by cycle-level configuration.
         uniques (tuple): A tuple of columns that must be unique for a step to be instantiated.
     """
+    uniques = (
+        "step_counter_absolute",
+        "step_counter",
+        "step_code",
+        "step_label",
+        "cycle_index",
+        "cycle_label"
+    )
+
     def __init__(self, df_step: pd.DataFrame):
         self.data = df_step
         self.config = {}
-
-        self.uniques = (
-            "step_counter_absolute", 
-            "step_counter", 
-            "step_code", 
-            "step_label",
-            "cycle_index",
-            "cycle_label"
-        )
 
         # Ensure step cannot be instantiated while failing uniques check
         for attr in self.uniques:
@@ -94,18 +95,16 @@ class MultiStep(Step):
         data (pd.DataFrame): All data for this series of steps, organized in presentable format.
         mandatory_uniques (tuple): A tuple of columns that must be unique for a 
             multistep to be instantiated.
-
     """
 
     # TODO: Step indexing does not work on multisteps!
+    mandatory_uniques = (
+        "step_label",
+        "cycle_index",
+        "cycle_label"
+    )
 
     def __init__(self, df_multistep: pd.DataFrame):
-        self.mandatory_uniques = (
-            "step_label",
-            "cycle_index",
-            "cycle_label"
-        )
-
         super().__init__(df_multistep)
 
         # Ensure multistep cannot be instantiated while failing mandatory uniques
