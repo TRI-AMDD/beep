@@ -7,7 +7,7 @@ metadata_fields:
 data_columns:
   test_time: test_time
   date_time_iso: date_time_iso
-  half_cycle_count: step_index
+  half_cycle_count: step_code
   cycle_count: cycle_index
   cell_current_a: current
   cell_voltage_v: voltage

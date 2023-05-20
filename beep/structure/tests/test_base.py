@@ -298,7 +298,7 @@ class TestBEEPDatapath(unittest.TestCase):
         cycle_1 = dp.raw_data[dp.raw_data["cycle_index"] == 0]
 
         # Discharge step is 12
-        discharge = cycle_1[cycle_1.step_index == 3]
+        discharge = cycle_1[cycle_1.step_code == 3]
         discharge = discharge.sort_values("voltage")
 
         # Get an interval between which one can find the interpolated value
@@ -394,9 +394,9 @@ class TestBEEPDatapath(unittest.TestCase):
         self.assertGreaterEqual(len(d_interp.cycle_index.unique()), 1)
 
         # Ensure step indices are partitioned and processed separately
-        self.assertEqual(len(d_interp.step_index.unique()), 9)
-        first_step = d_interp[d_interp.step_index_counter == 1]
-        second_step = d_interp[d_interp.step_index_counter == 4]
+        self.assertEqual(len(d_interp.step_code.unique()), 9)
+        first_step = d_interp[d_interp.step_code_counter == 1]
+        second_step = d_interp[d_interp.step_code_counter == 4]
         self.assertLess(first_step.voltage.diff().max(), 0.0015)
         self.assertLess(second_step.voltage.diff().max(), 0.004)
 
@@ -534,7 +534,7 @@ class TestBEEPDatapath(unittest.TestCase):
         hppc_dischg1 = diag_interpolated[
             (diag_interpolated.cycle_index == 37)
             & (diag_interpolated.step_type == 2)
-            & (diag_interpolated.step_index_counter == 3)
+            & (diag_interpolated.step_code_counter == 3)
             & ~pd.isnull(diag_interpolated.current)
             ]
 
@@ -546,7 +546,7 @@ class TestBEEPDatapath(unittest.TestCase):
         hppc_dischg2 = diag_interpolated[
             (diag_interpolated.cycle_index == 37)
             & (diag_interpolated.step_type == 6)
-            # & (diag_interpolated.step_index_counter == 3)
+            # & (diag_interpolated.step_code_counter == 3)
             & ~pd.isnull(diag_interpolated.current)
             ]
         print(hppc_dischg2.step_type.unique())
@@ -638,7 +638,7 @@ class TestBEEPDatapath(unittest.TestCase):
                 self.assertEqual(len(cycle_data), 0)
             else:
                 # 100 per step
-                n_steps = len(cycle_data.step_index.unique())
+                n_steps = len(cycle_data.step_code.unique())
                 self.assertEqual(len(cycle_data), 600)
 
     # based on PCRT.test_get_cycle_life

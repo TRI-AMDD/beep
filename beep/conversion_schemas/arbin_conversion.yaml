@@ -25,7 +25,7 @@ data_columns:
   test_time: test_time
   datetime: date_time
   step_time: step_time
-  step_index: step_index
+  step_code: step_code
   cycle_index: cycle_index
   current: current
   voltage: voltage
@@ -41,7 +41,7 @@ data_types:
   test_time: 'float64'
   datetime: 'float32'
   step_time: 'float32'
-  step_index: 'int16'
+  step_code: 'int16'
   cycle_index: 'int32'
   current: 'float32'
   voltage: 'float32'

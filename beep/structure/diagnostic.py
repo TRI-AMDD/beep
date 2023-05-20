@@ -37,13 +37,11 @@ class DiagnosticConfig(MSONable):
         diagnostic_config (dict): Dict mapping cycle types (strings) to
             iterables of cycle indices (integers). Each cycle index
             should correspond with exactly one cycle type.
-        **kwargs: Parameters that can be used by downstream structuring methods.
-            May only be python primitives str, int, or float.
 
     Attributes:
         cycles (dict): Map of the diagnostic cycle type (str)
             to a list of cycle indices (set of ints).
-        by_ix (dict): Map of each cycle index (int) to the diagnostic
+        type_by_ix (dict): Map of each cycle index (int) to the diagnostic
             cycle type (str). Does not map regular cycles.
         all_ix: All diagnostic cycle indices, regardless of types.
         hppc_ix: indices of cycles that could be considered HPPC. Determined
@@ -52,14 +50,11 @@ class DiagnosticConfig(MSONable):
             automatically if "rpt" is found in the name of a cycle type.
         reset_ix: indices of cycles that could be considered RESET. Determined
             automatically if "reset" is found in the name of a cycle type.
-        params (dict): Parameters that can be used by downstream structuring
-            methods.
     """
 
     def __init__(
             self,
             diagnostic_config: Dict[str, Iterable[int]],
-            **kwargs
     ):
         if not diagnostic_config:
             raise ValueError(
@@ -93,24 +88,23 @@ class DiagnosticConfig(MSONable):
             )
             setattr(self, f"{ix_attr_name}_ix", frozen)
 
-        allowed_kwarg_types = (int, str, float, bool)
-        for kw, arg in kwargs.items():
-            if not isinstance(arg, allowed_kwarg_types):
-                raise TypeError(f"Kwarg {kw} is type {type(arg)}; "
-                                f"allowed types are {allowed_kwarg_types}")
-        self.params = kwargs
         self.all_ix = frozenset(self.cycle_ix_to_cycle_type.keys())
 
         # Nice to have shorthand
         self.cycles = self.cycle_type_to_cycle_ix
         self.type_by_ix = self.cycle_ix_to_cycle_type
 
+    def __repr__(self):
+        s = f"{self.__class__.__name__}("
+        for diag_type, ixs in self.cycles.items():
+            s += f"{diag_type}: {self.cycles[diag_type]},"
+        return s[:-1] + ")"
+
     @classmethod
     def from_step_numbers(
             cls,
             df_raw: pd.DataFrame,
             matching_criteria: Dict[str, Tuple[str, Iterable[Iterable[int]]]],
-            **kwargs
     ):
         """
         Automatically determine diagnostic cycle types and indices by
@@ -174,7 +168,7 @@ class DiagnosticConfig(MSONable):
             (DiagnosticConfig)
 
         """
-        target_column = "step_index"
+        target_column = "step_code"
         if target_column not in df_raw.columns:
             raise ValueError(
                 f"Required column '{target_column}' not found in raw data!"
@@ -200,7 +194,7 @@ class DiagnosticConfig(MSONable):
                         elif all_present and len(unique) == len(set(step_pattern)):
                             all_diag_ix[cycle_type].add(cix)
                             break
-        return cls(all_diag_ix, **kwargs)
+        return cls(all_diag_ix)
 
     @classmethod
     def from_dict(cls, d: dict):
@@ -214,7 +208,7 @@ class DiagnosticConfig(MSONable):
             (DiagnosticConfig)
 
         """
-        return cls(diagnostic_config=d["cycle_type_to_ix"], **d["params"])
+        return cls(diagnostic_config=d["cycle_type_to_ix"])
 
     def as_dict(self) -> dict:
         """
@@ -232,5 +226,4 @@ class DiagnosticConfig(MSONable):
             "@module": self.__class__.__module__,
             "@class": self.__class__.__name__,
             "cycle_type_to_ix": json_compatible_type2cix,
-            "params": self.params
         }

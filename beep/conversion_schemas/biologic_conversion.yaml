@@ -7,7 +7,7 @@ data_columns:
     beep_name: cycle_index
     data_type: int
   Ns:
-    beep_name: step_index
+    beep_name: step_code
     data_type: int
   Ecell/V:
     beep_name: voltage

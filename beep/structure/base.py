@@ -649,10 +649,10 @@ class BEEPDatapath(abc.ABC, MSONable):
                 else:
                     raise ValueError(f"Axis {axis} not a valid step interpolation axis.")
 
-                if len(step_df.step_index.unique()) > 1:
+                if len(step_df.step_code.unique()) > 1:
                     raise ValueError("Step DF has multiple step indices present!")
 
-                step_index = step_df.step_index.iloc[0]
+                step_code = step_df.step_code.iloc[0]
 
                 step_df = interpolate_df(
                     step_df,
@@ -664,9 +664,9 @@ class BEEPDatapath(abc.ABC, MSONable):
 
                 step_df["cycle_index"] = cycle_index
                 step_df["step_type"] = step_type
-                step_df["step_index"] = step_index
+                step_df["step_code"] = step_code
 
-                for c in ("step_type", "step_index"):
+                for c in ("step_type", "step_code"):
                     step_df[c] = step_df[c].astype("category")
 
                 all_dfs.append(step_df)
@@ -717,12 +717,12 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         # If any regular cycle contains a waveform step, interpolate on test_time.
         if self.raw_data[reg_mask]. \
-                groupby(["cycle_index", "step_index"]). \
+                groupby(["cycle_index", "step_code"]). \
                 apply(step_is_waveform_dchg).any():
             discharge_axis = 'test_time'
 
         if self.raw_data[reg_mask]. \
-                groupby(["cycle_index", "step_index"]). \
+                groupby(["cycle_index", "step_code"]). \
                 apply(step_is_waveform_chg).any():
             charge_axis = 'test_time'
 
@@ -930,17 +930,17 @@ class BEEPDatapath(abc.ABC, MSONable):
         diag_data = self.raw_data.loc[self.raw_data["cycle_index"].isin(self.diagnostic.all_ix)]
         # diag_types = [self.diagnostic.cycle_to_type[cix] for cix in diag_data.cycle_index.unique()]
 
-        # Counter to ensure non-contiguous repeats of step_index
+        # Counter to ensure non-contiguous repeats of step_code
         # within same cycle_index are grouped separately
-        diag_data.loc[:, "step_index_counter"] = 0
+        diag_data.loc[:, "step_code_counter"] = 0
 
         for cycle_index in self.diagnostic.all_ix:
             indices = diag_data.loc[diag_data.cycle_index == cycle_index].index
-            step_index_list = diag_data.step_index.loc[indices]
-            shifted = step_index_list.ne(step_index_list.shift()).cumsum()
-            diag_data.loc[indices, "step_index_counter"] = shifted
+            step_code_list = diag_data.step_code.loc[indices]
+            shifted = step_code_list.ne(step_code_list.shift()).cumsum()
+            diag_data.loc[indices, "step_code_counter"] = shifted
 
-        group = diag_data.groupby(["cycle_index", "step_index", "step_index_counter"])
+        group = diag_data.groupby(["cycle_index", "step_code", "step_code_counter"])
         incl_columns = [
             "current",
             "voltage",
@@ -957,14 +957,14 @@ class BEEPDatapath(abc.ABC, MSONable):
         diag_dict = {}
         for cycle in diag_data.cycle_index.unique():
             diag_dict.update({cycle: None})
-            steps = diag_data[diag_data.cycle_index == cycle].step_index.unique()
+            steps = diag_data[diag_data.cycle_index == cycle].step_code.unique()
             diag_dict[cycle] = list(steps)
 
         all_dfs = []
-        for (cycle_index, step_index, step_index_counter), df in tqdm(group, desc="Interpolating diagnostic by step"):
+        for (cycle_index, step_code, step_code_counter), df in tqdm(group, desc="Interpolating diagnostic by step"):
             if len(df.index) < 2:
-                logger.debug(f"Skipping cycle: {cycle_index}, step: {step_index_counter} with step "
-                             f"type: {step_index} as there were < 2 data points.")
+                logger.debug(f"Skipping cycle: {cycle_index}, step: {step_code_counter} with step "
+                             f"type: {step_code} as there were < 2 data points.")
             step_dv = df.voltage.max() - df.voltage.min()
             dv = [df.voltage.min(), df.voltage.max()]
             if cycle_index in self.diagnostic.hppc_ix and step_dv >= v_delta_min:
@@ -1002,15 +1002,15 @@ class BEEPDatapath(abc.ABC, MSONable):
                 )
             new_df["cycle_index"] = cycle_index
             new_df["cycle_type"] = self.diagnostic.type_by_ix[cycle_index]
-            new_df["step_index"] = step_index
-            new_df["step_index_counter"] = step_index_counter
-            new_df["step_type"] = diag_dict[cycle_index].index(step_index)
+            new_df["step_code"] = step_code
+            new_df["step_code_counter"] = step_code_counter
+            new_df["step_type"] = diag_dict[cycle_index].index(step_code)
             new_df.astype(
                 {
                     "cycle_index": "int32",
                     "cycle_type": "category",
-                    "step_index": "uint8",
-                    "step_index_counter": "int16",
+                    "step_code": "uint8",
+                    "step_code_counter": "int16",
                     "step_type": "uint8",
                 }
             )
@@ -1021,7 +1021,7 @@ class BEEPDatapath(abc.ABC, MSONable):
                 new_df.charge_capacity.diff() / new_df.voltage.diff()
             )
             if new_df.shape[0] < 2:
-                logger.debug(f"Step number {step_index_counter} with step type {step_index} has less than "
+                logger.debug(f"Step number {step_code_counter} with step type {step_code} has less than "
                              f"2 interpolated points; refusing to append to interpolated data.")
             else:
                 all_dfs.append(new_df)
@@ -1029,7 +1029,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         # Ignore the index to avoid issues with overlapping voltages
         result = pd.concat(all_dfs, ignore_index=True)
         result.sort_values(
-            by=["cycle_index", "step_index_counter", "test_time"],
+            by=["cycle_index", "step_code_counter", "test_time"],
             axis=0,
             inplace=True
         )
@@ -1074,8 +1074,8 @@ class BEEPDatapath(abc.ABC, MSONable):
         for cycle in diag_summary.cycle_index:
             raw_cycle = self.raw_data.loc[self.raw_data.cycle_index == cycle]
 
-            # Charge is the very first step_index
-            CCCV = raw_cycle.loc[raw_cycle.step_index == raw_cycle.step_index.min()]
+            # Charge is the very first step_code
+            CCCV = raw_cycle.loc[raw_cycle.step_code == raw_cycle.step_code.min()]
             CV = get_CV_segment_from_charge(CCCV)
             if CV.empty:
                 logger.debug(f"Failed to extract CV segment for diagnostic cycle {cycle}!")
@@ -1116,13 +1116,13 @@ class BEEPDatapath(abc.ABC, MSONable):
             step_filter = step_is_chg
         else:
             raise ValueError(f"'{step_type}' is not a recognized step type")
-        dfs_chgstate = cycle_df.groupby("step_index").filter(
+        dfs_chgstate = cycle_df.groupby("step_code").filter(
             lambda ldf: step_filter(
                 ldf,
                 indeterminate_step_charge=self.indeterminate_step_default_charge
             )
         )
-        for _, step_df in dfs_chgstate.groupby("step_index"):
+        for _, step_df in dfs_chgstate.groupby("step_code"):
             yield step_df
 
     @StructuringDecorators.must_be_structured

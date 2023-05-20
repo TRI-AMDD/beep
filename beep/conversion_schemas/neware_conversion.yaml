@@ -4,7 +4,7 @@ data_columns:
   test_time: test_time
   Realtime: date_time
   Time(h:min:s.ms): step_time
-  Step ID: step_index
+  Step ID: step_code
   Cycle ID: cycle_index
   Current(mA): current
   Voltage(V): voltage

@@ -75,11 +75,11 @@ class BatteryArchiveDatapath(BEEPDatapath):
         df = pd.read_csv(path)
         df.rename(str.lower, axis="columns", inplace=True)
         df.drop(columns=[c for c in cls.COLUMNS_IGNORE if c in df.columns], inplace=True)
-        df["step_index"] = 0
+        df["step_code"] = 0
 
-        df["step_index"] = df["current (a)"].apply(decide_step_index)
+        df["step_code"] = df["current (a)"].apply(decide_step_code)
 
-        step_change_ix = np.where(np.diff(df["step_index"], prepend=np.nan))[0]
+        step_change_ix = np.where(np.diff(df["step_code"], prepend=np.nan))[0]
 
         # get list of start times to subtract
         start_times = df["test_time (s)"].loc[step_change_ix]
@@ -123,7 +123,7 @@ class BatteryArchiveDatapath(BEEPDatapath):
         return cls(df, metadata, paths)
 
 
-def decide_step_index(i):
+def decide_step_code(i):
     """
     Decide a step index based on current values.
     Args:

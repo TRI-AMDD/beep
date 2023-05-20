@@ -7,7 +7,7 @@ data_columns:
     beep_name: cycle_index
     data_type: int
   Step Type:
-    beep_name: step_index
+    beep_name: step_code
     data_type: int
   Run Time (h):
     beep_name: test_time
