@@ -1303,6 +1303,8 @@ def interpolate_df(
 
     # Merge interpolated and uninterpolated DFs to use pandas interpolation
     interpolated_df = interpolated_df.merge(df, how="outer", on=field_name, sort=True)
+    # Remove duplicates
+    interpolated_df = interpolated_df[~interpolated_df[field_name].duplicated()]
     interpolated_df = interpolated_df.set_index(field_name)
     interpolated_df = interpolated_df.interpolate("slinear")
 
@@ -1315,8 +1317,6 @@ def interpolate_df(
     interpolated_df = interpolated_df.drop(["interpolated_x", "interpolated_y"],
                                            axis=1)
     interpolated_df = interpolated_df.reset_index()
-    # Remove duplicates
-    interpolated_df = interpolated_df[~interpolated_df[field_name].duplicated()]
     return interpolated_df
 
 

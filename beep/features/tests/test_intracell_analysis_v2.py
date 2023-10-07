@@ -72,7 +72,7 @@ class IntracellAnalysisV2Test(unittest.TestCase):
         self.assertAlmostEqual(loss_df['pe_voltage_FC4p2V'].iloc[0], 4.2569909388206595, 3)
         self.assertAlmostEqual(loss_df['pe_voltage_FC2p7V'].iloc[0], 3.627263943506632, 3)
         self.assertAlmostEqual(loss_df['ne_voltage_FC4p2V'].iloc[0], 0.05688501257876296, 5)
-        self.assertAlmostEqual(loss_df['ne_voltage_FC2p7V'].iloc[0], 0.7952915950646048, 5)
+        self.assertAlmostEqual(loss_df['ne_voltage_FC2p7V'].iloc[0], 0.7956665702825805, 5)
         self.assertAlmostEqual(loss_df['pe_soc_FC4p2V'].iloc[0], 0.9646302250803859, 5)
         self.assertAlmostEqual(loss_df['pe_soc_FC2p7V'].iloc[0], 0.05144694533762058, 5)
         self.assertAlmostEqual(loss_df['ne_soc_FC4p2V'].iloc[0], 0.895068205666317, 5)
