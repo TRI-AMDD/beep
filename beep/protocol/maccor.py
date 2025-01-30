@@ -1082,6 +1082,7 @@ class Procedure(DashOrderedDict):
         # Initial charge step for hppc cycle
         assert steps[start]["StepType"] == "Charge"
         assert steps[start]["StepMode"] == "Current"
+        # TODO: fix float warning - need a switch between DF and numpy representations
         steps[start]["StepValue"] = float(
             round(
                 nominal_capacity * diagnostic_params["HPPC_baseline_constant_current"],
@@ -1101,7 +1102,7 @@ class Procedure(DashOrderedDict):
         assert steps[start + 2]["Ends"]["EndEntry"][0]["EndType"] == "StepTime"
         time_s = int(round(60 * diagnostic_params["HPPC_rest_time"]))
         steps[start + 2]["Ends"]["EndEntry"][0]["Value"] = time.strftime(
-            "%H:%M:%S", time.gmtime(time_s)
+            "%H:%M:%S", time.gmtime(float(time_s))
         )
 
         # Discharge step 1 for hppc cycle
@@ -1113,7 +1114,7 @@ class Procedure(DashOrderedDict):
         assert steps[start + 3]["Ends"]["EndEntry"][0]["EndType"] == "StepTime"
         time_s = diagnostic_params["HPPC_pulse_duration_1"]
         steps[start + 3]["Ends"]["EndEntry"][0]["Value"] = time.strftime(
-            "%H:%M:%S", time.gmtime(time_s)
+            "%H:%M:%S", time.gmtime(float(time_s))
         )
         assert steps[start + 3]["Ends"]["EndEntry"][1]["EndType"] == "Voltage"
         steps[start + 3]["Ends"]["EndEntry"][1]["Value"] = float(
@@ -1137,7 +1138,7 @@ class Procedure(DashOrderedDict):
         assert steps[start + 5]["Ends"]["EndEntry"][0]["EndType"] == "StepTime"
         time_s = diagnostic_params["HPPC_pulse_duration_2"]
         steps[start + 5]["Ends"]["EndEntry"][0]["Value"] = time.strftime(
-            "%H:%M:%S", time.gmtime(time_s)
+            "%H:%M:%S", time.gmtime(float(time_s))
         )
         assert steps[start + 5]["Ends"]["EndEntry"][1]["EndType"] == "Voltage"
         steps[start + 5]["Ends"]["EndEntry"][1]["Value"] = float(
@@ -1163,7 +1164,7 @@ class Procedure(DashOrderedDict):
             )
         )
         steps[start + 6]["Ends"]["EndEntry"][0]["Value"] = time.strftime(
-            "%H:%M:%S", time.gmtime(time_s)
+            "%H:%M:%S", time.gmtime(float(time_s))
         )
         assert steps[start + 6]["Ends"]["EndEntry"][1]["EndType"] == "Voltage"
         steps[start + 6]["Ends"]["EndEntry"][1]["Value"] = float(

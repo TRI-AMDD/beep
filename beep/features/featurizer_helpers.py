@@ -189,8 +189,8 @@ def get_resistance_soc_duration_hppc(processed_cycler_run, diag_pos):
             # full name 
             f_name = name + '_' + str(j)
             df_row[f_name] = [res_calc(chosen, j, name)]
-    output = output.append(df_row, ignore_index=True)
-    return output
+    output = pd.concat([output, df_row], ignore_index=True)
+    return df_row
 
 
 def get_dr_df(processed_cycler_run, diag_pos):

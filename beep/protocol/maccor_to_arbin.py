@@ -294,7 +294,8 @@ class ProcedureToSchedule:
                 blank_step["m_szCtrlValue"] = "0"
                 blank_step["m_szExtCtrlValue1"] = str(2 ** loop_counter)
                 blank_step["m_szExtCtrlValue2"] = "0"
-                assert isinstance(step_abs["Ends"]["EndEntry"], OrderedDict)
+                # TODO: is this necessary post 3.7?
+                # assert isinstance(step_abs["Ends"]["EndEntry"], OrderedDict)
                 loop_addendum = OrderedDict(
                     [
                         ("EndType", "Loop Addendum"),
@@ -361,7 +362,7 @@ class ProcedureToSchedule:
 
         # Reports
         if step_abs["Reports"] is not None:
-            if isinstance(step_abs["Reports"]["ReportEntry"], OrderedDict):
+            if isinstance(step_abs["Reports"]["ReportEntry"], dict):
                 blank_step["m_uLimitNum"] = blank_step["m_uLimitNum"] + 1
                 report = step_abs["Reports"]["ReportEntry"]
                 report_index = 0
