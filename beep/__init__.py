@@ -8,8 +8,6 @@ import logging
 import sys
 from functools import partial
 import numpy as np
-import watchtower
-import time
 from botocore.exceptions import NoCredentialsError
 from tqdm import tqdm as _tqdm
 
