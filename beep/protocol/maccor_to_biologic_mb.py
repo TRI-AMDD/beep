@@ -241,7 +241,7 @@ class MaccorToBiologicMb:
             }
 
             step_type = step_part["StepType"]
-            assert type(step_type) == str
+            assert type(step_type) is str
 
             step_mode = step_part["StepMode"]
             step_value = step_part["StepValue"]
@@ -263,7 +263,7 @@ class MaccorToBiologicMb:
             elif step_type not in ["Charge", "Dischrge"]:
                 raise Exception("Unsupported Control StepType", step_type)
             elif step_mode == "Current":
-                assert type(step_value) == str
+                assert type(step_value) is str
                 # does this need to be formatted? e.g. 1.0 from Maccor vs 1.000 for biologic
                 ctrl1_val, ctrl1_val_unit = self._convert_amps(step_value)
                 new_seq["ctrl1_val"] = ctrl1_val
@@ -280,7 +280,7 @@ class MaccorToBiologicMb:
 
             elif step_mode == "Voltage":
                 # does this need to be formatted? e.g. 1.0 from Maccor vs 1.000 for biologic
-                assert type(step_value) == str
+                assert type(step_value) is str
 
                 ctrl1_val, ctrl1_val_unit = self._convert_volts(step_value)
                 new_seq["ctrl1_val"] = ctrl1_val
@@ -421,10 +421,10 @@ class MaccorToBiologicMb:
                 rec_num = idx + 1
 
                 report_type = report["ReportType"]
-                assert type(report_type) == str
+                assert type(report_type) is str
 
                 report_value = report["Value"]
-                assert type(report_value) == str
+                assert type(report_value) is str
 
                 if report_type == "StepTime":
                     rec_value, rec_value_unit = self._convert_time(report_value)
