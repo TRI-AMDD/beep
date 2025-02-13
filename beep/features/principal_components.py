@@ -237,8 +237,8 @@ def pivot_data(
         df = processed_run.structured_data[processed_run.structured_data.step_type == "discharge"]
 
         df = df[df.cycle_index.isin(cycles_to_pca)]
-        df_to_pca = df_to_pca.append(
-            df.pivot(index="cycle_index", columns=pivot_column, values=qty_to_pca),
-            ignore_index=True,
-        )
+        df_to_pca = pd.concat([
+                df_to_pca,
+                df.pivot(index="cycle_index", columns=pivot_column, values=qty_to_pca)
+            ], ignore_index=True)
     return df_to_pca
