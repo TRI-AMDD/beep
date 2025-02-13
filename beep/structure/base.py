@@ -1304,7 +1304,7 @@ def interpolate_df(
     # Merge interpolated and uninterpolated DFs to use pandas interpolation
     interpolated_df = interpolated_df.merge(df, how="outer", on=field_name, sort=True)
     interpolated_df = interpolated_df.set_index(field_name)
-    interpolated_df = interpolated_df.interpolate("slinear")
+    interpolated_df = interpolated_df.interpolate("index")
 
     # Filter for only interpolated values
     interpolated_df[["interpolated_x"]] = interpolated_df[
@@ -1401,7 +1401,8 @@ def step_is_waveform(step_df, chg_filter):
         return (chg_filter(step_df)) & \
                ((step_df['_wf_chg_cap'].notna().any()) |
                 (step_df['_wf_dis_cap'].notna().any()))
-    elif not np.round(step_df.voltage, voltage_resolution).is_monotonic:
+    elif not (np.round(step_df.voltage, voltage_resolution).is_monotonic_increasing or
+              np.round(step_df.voltage, voltage_resolution).is_monotonic_decreasing):
         # This is a placeholder logic for arbin waveform detection
         # This fails for some arbin files that nominally have a CC-CV step.
         # e.g. 2017-12-04_4_65C-69per_6C_CH29.csv
