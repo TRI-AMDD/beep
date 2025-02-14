@@ -833,10 +833,10 @@ class BEEPDatapath(abc.ABC, MSONable):
         # Compute time since start of cycle in minutes. This comes handy
         # for featurizing time-temperature integral
         self.raw_data["time_since_cycle_start"] = pd.to_datetime(
-            self.raw_data["date_time_iso"]
+            self.raw_data["date_time_iso"], format="mixed"
         ) - pd.to_datetime(
             self.raw_data.groupby("cycle_index")["date_time_iso"].transform(
-                "first")
+                "first"), format="mixed"
         )
         self.raw_data["time_since_cycle_start"] = (self.raw_data[
                                                        "time_since_cycle_start"] / np.timedelta64(
@@ -1438,7 +1438,7 @@ def get_max_paused_over_threshold(group, paused_threshold=3600):
         (float): number of seconds that test was paused
 
     """
-    date_time_objs = pd.to_datetime(group["date_time_iso"])
+    date_time_objs = pd.to_datetime(group["date_time_iso"], format="mixed")
     date_time_float = [
         time.mktime(t.timetuple()) if t is not pd.NaT else float("nan")
         for t in date_time_objs
