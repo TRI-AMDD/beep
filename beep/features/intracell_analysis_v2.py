@@ -3,6 +3,10 @@ import pandas as pd
 from scipy.interpolate import interp1d
 from scipy.spatial import distance
 from scipy.optimize import differential_evolution
+import warnings
+
+warnings.warn("This module's numerical tests are failing as of v2025.1.29.19, "
+              "likely due to scipy dependency updates. Use with caution")
 
 
 class IntracellAnalysisV2:

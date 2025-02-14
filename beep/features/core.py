@@ -788,7 +788,8 @@ class DiagnosticProperties(BEEPFeaturizer):
         parameters_path = self.hyperparameters["parameters_dir"]
 
         cycle_types = self.datapath.diagnostic_summary.cycle_type.unique()
-        X = pd.DataFrame()
+        # X = pd.DataFrame()
+        summary_diag_cycle_type_list = []
         for quantity in self.hyperparameters["quantities"]:
             for cycle_type in cycle_types:
                 summary_diag_cycle_type = featurizer_helpers.get_fractional_quantity_remaining_nx(
@@ -798,8 +799,9 @@ class DiagnosticProperties(BEEPFeaturizer):
 
                 summary_diag_cycle_type.loc[:, "cycle_type"] = cycle_type
                 summary_diag_cycle_type.loc[:, "metric"] = quantity
-                X = X.append(summary_diag_cycle_type)
 
+                summary_diag_cycle_type_list.append(summary_diag_cycle_type)
+        X = pd.concat(summary_diag_cycle_type_list)
         X_condensed = self.get_threshold_targets(X)
         self.features = X_condensed
 

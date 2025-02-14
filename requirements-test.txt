@@ -1,6 +1,5 @@
 # Requirements for running tests
-pytest-cov==3.0.0
-coveralls==3.3.1
-memory_profiler==0.60.0
-matplotlib==3.5.1
+pytest-cov==5.0.0
+coveralls==4.0.1
+memory_profiler==0.61.0
 requests

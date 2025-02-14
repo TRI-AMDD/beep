@@ -281,7 +281,6 @@ class BEEPLinearModelExperiment(MSONable):
 
         model_kwargs = {
             "fit_intercept": True,
-            "normalize": False,
             "max_iter": self.max_iter,
         }
         model_kwargs.update(optimal_hyperparameters)
