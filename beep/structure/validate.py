@@ -180,25 +180,21 @@ class SimpleValidator:
 
             # Check a maximum value is at least above a threshold
             if max_at_least_rule is not None:
-                comp = np.where(dataframe[column_name].max() < max_at_least_rule)
-                if comp[0].size > 0:
-                    index = comp[0][0]
-                    value = dataframe[column_name].iloc[index]
+                max_value = dataframe[column_name].max()
+                if max_value < max_at_least_rule:
                     reason = (
                         "{} needs to reach at least {} for processing, instead found:"
-                        "value={}".format(column_name, max_at_least_rule, value)
+                        "value={}".format(column_name, max_at_least_rule, max_value)
                     )
                     return False, reason
 
             # Check a minimum value is below above a threshold
             if min_is_below_rule is not None:
-                comp = np.where(dataframe[column_name].min() > min_is_below_rule)
-                if comp[0].size > 0:
-                    index = comp[0][0]
-                    value = dataframe[column_name].iloc[index]
+                min_value = dataframe[column_name].min()
+                if min_value > min_is_below_rule:
                     reason = (
                         "{} needs to reach under {} for processing, instead found:"
-                        "value={}".format(column_name, max_at_least_rule, value)
+                        "value={}".format(column_name, min_is_below_rule, min_value)
                     )
                     return False, reason
 

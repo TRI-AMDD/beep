@@ -92,8 +92,8 @@ class NewareDatapath(BEEPDatapath):
                 data["DCIR(O)"] = data["DCIR(O)"].apply(
                     lambda x: np.nan if x == "\t-" else x
                 )
-                data["DCIR(O)"] = data["DCIR(O)"].fillna(method="ffill")
-                data["DCIR(O)"] = data["DCIR(O)"].fillna(method="bfill")
+                data["DCIR(O)"] = data["DCIR(O)"].ffill()
+                data["DCIR(O)"] = data["DCIR(O)"].bfill()
 
         data["test_time"] = (
             data["Time(h:min:s.ms)"]

@@ -986,12 +986,10 @@ class ExclusionCriteria(BEEPFeaturizer):
             self.hyperparameters["EOL_conditions"]["quantity"],
             self.hyperparameters["EOL_conditions"]["cycle_type"],
             parameters_path=self.hyperparameters["parameters_dir"])
-        fractional_capacity_at_EOT = diag_fractional_quantity_remaining["fractional_metric"].fillna(
-            method='ffill').iloc[-1:]
+        fractional_capacity_at_EOT = diag_fractional_quantity_remaining["fractional_metric"].ffill().iloc[-1:]
 
         if fractional_capacity_at_EOT.iloc[0] > 1:
-            fractional_capacity_at_EOT = diag_fractional_quantity_remaining["fractional_metric"].fillna(
-                method='ffill').iloc[-2:]
+            fractional_capacity_at_EOT = diag_fractional_quantity_remaining["fractional_metric"].ffill().iloc[-2:]
 
         threshold = self.hyperparameters["EOL_conditions"]["threshold"]
         fractional_capacity_at_EOT_criteria = fractional_capacity_at_EOT.map(lambda x: x < threshold)
@@ -1022,8 +1020,7 @@ class ExclusionCriteria(BEEPFeaturizer):
 
         is_before_last_cycle = self.datapath.structured_summary['cycle_index'] <= cutoff_cycle_index
         last_regular_cycle_before_EOL = self.datapath.structured_summary[is_before_last_cycle]['cycle_index'].max()
-        equivalent_full_cycles_at_EOL = self.datapath.structured_summary.fillna(
-            method='ffill')[
+        equivalent_full_cycles_at_EOL = self.datapath.structured_summary.ffill()[
             self.datapath.structured_summary['cycle_index'] == last_regular_cycle_before_EOL]["charge_throughput"].map(
             lambda x: x/nominal_capacity)
 
@@ -1149,8 +1146,8 @@ class RawInterpolatedData(BEEPFeaturizer):
                                 # Since energy and capacity vary monotonically with voltage for a given step,
                                 # a ffill followed by bfill works as interpolation.  This would change if the axis
                                 # is time.
-                                series.fillna(method='ffill', inplace=True)
-                                series.fillna(method='bfill', inplace=True)
+                                series = series.ffill()
+                                series = series.bfill()
                             y_val_list.append(series.to_numpy())
                         elif metric == 'test_time':
                             # Reference test_time w.r.t start of the step.

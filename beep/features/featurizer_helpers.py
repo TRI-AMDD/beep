@@ -506,13 +506,13 @@ def get_fractional_quantity_remaining_nx(
         regular_summary[regular_summary.cycle_index < x['cycle_index']][normalize_qty_throughput].max(),
         axis=1
     )
-    summary_diag_cycle_type['normalized_regular_throughput'].fillna(value=0, inplace=True)
+    summary_diag_cycle_type['normalized_regular_throughput'] = summary_diag_cycle_type['normalized_regular_throughput'].fillna(value=0)
     summary_diag_cycle_type.loc[:, 'normalized_diagnostic_throughput'] = summary_diag_cycle_type.apply(
         lambda x: (1 / initial_regular_throughput) *
         diagnostic_summary[diagnostic_summary.cycle_index < x['cycle_index']][normalize_qty_throughput].max(),
         axis=1
     )
-    summary_diag_cycle_type['normalized_diagnostic_throughput'].fillna(value=0, inplace=True)
+    summary_diag_cycle_type['normalized_diagnostic_throughput'] = summary_diag_cycle_type['normalized_diagnostic_throughput'].fillna(value=0)
     # end of nx addition, calculate the fractional capacity compared to the first diagnostic cycle (reset)
     summary_diag_cycle_type.loc[:, metric] = (
         summary_diag_cycle_type[metric]

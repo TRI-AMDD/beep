@@ -971,7 +971,7 @@ class ProcedureToScheduleTest(unittest.TestCase):
 
             diag_params_df = pd.read_csv(os.path.join(PROCEDURE_TEMPLATE_DIR,
                                                       "PreDiag_parameters - DP.csv"))
-            diagnostic_params = diag_params_df[diag_params_df['diagnostic_parameter_set'] == 'A123LFP']
+            diagnostic_params = diag_params_df[diag_params_df['diagnostic_parameter_set'] == 'A123LFP'].squeeze()
 
             procedure = Procedure.generate_procedure_regcyclev3(0, protocol_params)
             procedure.generate_procedure_diagcyclev3(

@@ -201,7 +201,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             if raw_data is not None:
                 for col in self.IMPUTABLE_COLUMNS:
                     if col not in raw_data:
-                        raw_data[col] = np.NaN
+                        raw_data[col] = np.nan
 
         if not schema:
             self.schema = schema
@@ -794,10 +794,10 @@ class BEEPDatapath(abc.ABC, MSONable):
         )
         summary.loc[
             ~np.isfinite(summary["energy_efficiency"]), "energy_efficiency"
-        ] = np.NaN
+        ] = np.nan
         # This code is designed to remove erroneous energy values
         for col in ["discharge_energy", "charge_energy"]:
-            summary.loc[summary[col].abs() > error_threshold, col] = np.NaN
+            summary.loc[summary[col].abs() > error_threshold, col] = np.nan
         summary["charge_throughput"] = summary.charge_capacity.cumsum()
         summary["energy_throughput"] = summary.charge_energy.cumsum()
 
@@ -847,7 +847,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         if "temperature" in self.raw_data.columns:
             summary["time_temperature_integrated"] = self.raw_data.groupby(
                 "cycle_index").apply(
-                lambda g: integrate.trapz(g.temperature, x=g.time_since_cycle_start)
+                lambda g: integrate.trapezoid(g.temperature, x=g.time_since_cycle_start)
             )
 
         # Drop the time since cycle start column
@@ -1187,7 +1187,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             except IndexError:
                 pass
             counter = counter + 1
-        discharge_capacities.columns = np.core.defchararray.add(
+        discharge_capacities.columns = np.char.add(
             "cycle_", cycle_indices.astype(str)
         )
         return discharge_capacities
@@ -1215,7 +1215,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         for threshold in threshold_list:
             cycles[counter] = self.get_cycle_life(threshold=threshold)
             counter = counter + 1
-        cycles.columns = np.core.defchararray.add(
+        cycles.columns = np.char.add(
             "capacity_", threshold_list.astype(str)
         )
         return cycles
@@ -1304,7 +1304,9 @@ def interpolate_df(
     # Merge interpolated and uninterpolated DFs to use pandas interpolation
     interpolated_df = interpolated_df.merge(df, how="outer", on=field_name, sort=True)
     interpolated_df = interpolated_df.set_index(field_name)
-    interpolated_df = interpolated_df.interpolate("index")
+    # Only interpolate numeric columns (pandas 3.0 requires this)
+    numeric_cols = interpolated_df.select_dtypes(include='number').columns
+    interpolated_df[numeric_cols] = interpolated_df[numeric_cols].interpolate("index")
 
     # Filter for only interpolated values
     interpolated_df[["interpolated_x"]] = interpolated_df[

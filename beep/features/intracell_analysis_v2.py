@@ -227,10 +227,10 @@ class IntracellAnalysisV2:
         emulated_full_cell_with_degradation['Voltage_aligned'] = pe_out['Voltage_aligned'] - ne_out['Voltage_aligned']
 
         # Replace emulated full cell values outside of voltage range with NaN
-        emulated_full_cell_with_degradation['Voltage_aligned'].loc[
-            emulated_full_cell_with_degradation['Voltage_aligned'] < self.FC_LOWER_VOLTAGE] = np.nan
-        emulated_full_cell_with_degradation['Voltage_aligned'].loc[
-            emulated_full_cell_with_degradation['Voltage_aligned'] > self.FC_UPPER_VOLTAGE] = np.nan
+        emulated_full_cell_with_degradation.loc[
+            emulated_full_cell_with_degradation['Voltage_aligned'] < self.FC_LOWER_VOLTAGE, 'Voltage_aligned'] = np.nan
+        emulated_full_cell_with_degradation.loc[
+            emulated_full_cell_with_degradation['Voltage_aligned'] > self.FC_UPPER_VOLTAGE, 'Voltage_aligned'] = np.nan
 
         # Center the emulated full cell and half cell curves onto the same Q at which the real (degraded)
         # capacity measurement started (self.FC_LOWER_VOLTAGE)
@@ -558,10 +558,10 @@ class IntracellAnalysisV2:
         emulated_full_cell_with_degradation['Voltage_aligned'] = pe_out['Voltage_aligned'] - ne_out['Voltage_aligned']
 
         # Replace emulated full cell values outside of voltage range with NaN
-        emulated_full_cell_with_degradation['Voltage_aligned'].loc[
-            emulated_full_cell_with_degradation['Voltage_aligned'] < self.FC_LOWER_VOLTAGE] = np.nan
-        emulated_full_cell_with_degradation['Voltage_aligned'].loc[
-            emulated_full_cell_with_degradation['Voltage_aligned'] > self.FC_UPPER_VOLTAGE] = np.nan
+        emulated_full_cell_with_degradation.loc[
+            emulated_full_cell_with_degradation['Voltage_aligned'] < self.FC_LOWER_VOLTAGE, 'Voltage_aligned'] = np.nan
+        emulated_full_cell_with_degradation.loc[
+            emulated_full_cell_with_degradation['Voltage_aligned'] > self.FC_UPPER_VOLTAGE, 'Voltage_aligned'] = np.nan
 
         # Center the emulated full cell and half cell curves onto the same Q at which the real (degraded)
         # capacity measurement started (self.FC_LOWER_VOLTAGE)

@@ -39,7 +39,6 @@ def dummy(ctx, test):
 class TestCLIBase(unittest.TestCase):
     runner = CliRunner(
         echo_stdin=True,
-        mix_stderr=False
     )
 
     def setUp(self) -> None:
