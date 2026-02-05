@@ -5,8 +5,10 @@ on:
     branches:
       - master
       - main
-    branches-ignore:
-      - dependabot**
+  pull_request:
+    branches:
+      - master
+      - main
 
 jobs:
   test:
