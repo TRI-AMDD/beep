@@ -55,7 +55,7 @@ class NewareDatapath(BEEPDatapath):
                 # Read file line by line and write to the appropriate file
                 cycle_number = 0
                 step_number = 0
-                for row, line in enumerate(input):
+                for _row, line in enumerate(input):
                     if line[:2] == r',"':
                         step_file.write(line)
                         step_number = line.split(",")[1]
@@ -106,11 +106,11 @@ class NewareDatapath(BEEPDatapath):
         # print(NEWARE_CONFIG["data_types"])
         data = data.astype(NEWARE_CONFIG["data_types"])
 
-        data.rename(NEWARE_CONFIG["data_columns"], axis="columns", inplace=True)
+        data = data.rename(NEWARE_CONFIG["data_columns"], axis="columns")
         data["date_time"] = data["date_time"].apply(lambda x: x.replace("\t", ""))
         data["date_time_iso"] = data["date_time"].apply(MaccorDatapath.correct_timestamp)
 
-        metadata = dict()
+        metadata = {}
         path = filename
 
         paths = {

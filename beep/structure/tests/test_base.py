@@ -242,7 +242,7 @@ class TestBEEPDatapath(unittest.TestCase):
     # based on RCRT.test_get_interpolated_charge_step
     def test_interpolate_step(self):
         self.datapath_diag.indeterminate_step_default_charge = True
-        reg_cycles = [i for i in self.datapath_nodiag.raw_data.cycle_index.unique()]
+        reg_cycles = list(self.datapath_nodiag.raw_data.cycle_index.unique())
         v_range = [2.8, 3.5]
         resolution = 1000
 
@@ -527,7 +527,7 @@ class TestBEEPDatapath(unittest.TestCase):
 
         hppcs = diag_interpolated[
             (diag_interpolated.cycle_type == "hppc")
-            & pd.isnull(diag_interpolated.current)
+            & pd.isna(diag_interpolated.current)
             ]
         self.assertEqual(len(hppcs), 0)
 
@@ -535,7 +535,7 @@ class TestBEEPDatapath(unittest.TestCase):
             (diag_interpolated.cycle_index == 37)
             & (diag_interpolated.step_type == 2)
             & (diag_interpolated.step_index_counter == 3)
-            & ~pd.isnull(diag_interpolated.current)
+            & ~pd.isna(diag_interpolated.current)
             ]
 
         plt.figure()
@@ -547,7 +547,7 @@ class TestBEEPDatapath(unittest.TestCase):
             (diag_interpolated.cycle_index == 37)
             & (diag_interpolated.step_type == 6)
             # & (diag_interpolated.step_index_counter == 3)
-            & ~pd.isnull(diag_interpolated.current)
+            & ~pd.isna(diag_interpolated.current)
             ]
         print(hppc_dischg2.step_type.unique())
         self.assertAlmostEqual(hppc_dischg2.voltage.min(), hppc_dischg2.voltage.max(), 3)
@@ -638,7 +638,7 @@ class TestBEEPDatapath(unittest.TestCase):
                 self.assertEqual(len(cycle_data), 0)
             else:
                 # 100 per step
-                n_steps = len(cycle_data.step_index.unique())
+                len(cycle_data.step_index.unique())
                 self.assertEqual(len(cycle_data), 600)
 
     # based on PCRT.test_get_cycle_life

@@ -777,7 +777,9 @@ class MaccorToBiologicMb:
 
         return self._create_step_end_entry_filter(pred)(step, step_num)
 
-    def _apply_step_mappings(self, steps, extra_mappers=[]):
+    def _apply_step_mappings(self, steps, extra_mappers=None):
+        if extra_mappers is None:
+            extra_mappers = []
         mapped_steps = []
 
         for i, step in enumerate(steps):
@@ -839,11 +841,13 @@ class MaccorToBiologicMb:
         - seqs: list(OrderedDict)
         - mappers: optional list((int, OrderedDict, int) -> OrderedDict))
 
-    returns 
+    returns
         - list(OrderedDict)
     """
 
-    def _apply_seq_mappings(self, technique_num, seqs, extra_mappers=[]):
+    def _apply_seq_mappings(self, technique_num, seqs, extra_mappers=None):
+        if extra_mappers is None:
+            extra_mappers = []
         mapped_seqs = []
         for i, seq in enumerate(seqs):
             mapped_seq = seq
@@ -1327,8 +1331,10 @@ class CycleAdvancementRules:
         adv_cycle_on_start,
         adv_cycle_on_tech_loop,
         adv_cycle_seq_transitions,
-        debug_adv_cycle_on_step_transitions={},
+        debug_adv_cycle_on_step_transitions=None,
     ):
+        if debug_adv_cycle_on_step_transitions is None:
+            debug_adv_cycle_on_step_transitions = {}
         self.tech_num = tech_num
         self.tech_does_loop = tech_does_loop
         self.adv_cycle_on_start = adv_cycle_on_start

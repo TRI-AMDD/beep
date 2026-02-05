@@ -1635,7 +1635,7 @@ def inspect(file):
                 o = auto_load_processed(file)
             except BaseException:
                 raise ValueError(f"File format of json file {file} not "
-                                 f"recognized with beep version {__version__}")
+                                 f"recognized with beep version {__version__}") from None
 
         # Or it could be a raw file?
         else:
@@ -1643,7 +1643,7 @@ def inspect(file):
                 o = auto_load(file)
                 logger.debug(f"Loaded potential raw file {file} as Datapath.")
             except BaseException:
-                raise ValueError(f"File format of {file} not loadable with beep.")
+                raise ValueError(f"File format of {file} not loadable with beep.") from None
 
     logger.info(f"Loaded {file} as type {type(o)}.")
 

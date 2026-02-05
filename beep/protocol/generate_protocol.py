@@ -175,7 +175,7 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
                     "error": "Not Found",
                 }
                 file_generation_failures.append(failure)
-                warnings.warn(f"Unsupported file template {template}, skipping.")
+                warnings.warn(f"Unsupported file template {template}, skipping.", stacklevel=2)
                 result = "error"
                 continue
 
@@ -202,7 +202,7 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
                 "error": "Not Found",
             }
             file_generation_failures.append(failure)
-            warnings.warn(f"Unsupported file template {template}, skipping.")
+            warnings.warn(f"Unsupported file template {template}, skipping.", stacklevel=2)
             result = "error"
             continue
 

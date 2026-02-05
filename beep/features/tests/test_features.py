@@ -297,7 +297,7 @@ class TestFeaturizer(unittest.TestCase):
 
         self.assertEqual(f.features.shape, (1, 36))
 
-        for column, content in f.features.items():
+        for _column, content in f.features.items():
             self.assertEqual(len(content.tolist()[0]), 500)
         self.assertAlmostEqual(f.features.iloc[0]["diag_cycle_1_rpt_0.2C_test_time_step_0"][-1], 1.685e+04, delta=1e2)
 
@@ -559,8 +559,8 @@ class TestFeaturizerHelpers(unittest.TestCase):
                 hppc_cycle_step = hppc_cycle[(hppc_cycle.step_index == step)]
                 for step_iter in hppc_cycle_step.step_index_counter.unique():
                     hppc_cycle_step_iter = hppc_cycle_step[(hppc_cycle_step.step_index_counter == step_iter)]
-                    duration = hppc_cycle_step_iter.test_time.max() - hppc_cycle_step_iter.test_time.min()
-                    median_crate = np.round(hppc_cycle_step.current.median() /
+                    hppc_cycle_step_iter.test_time.max() - hppc_cycle_step_iter.test_time.min()
+                    np.round(hppc_cycle_step.current.median() /
                                             parameter_row["capacity_nominal"].iloc[0], 2)
                     # print(step, median_crate, duration)
 

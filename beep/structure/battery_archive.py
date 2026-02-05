@@ -73,8 +73,8 @@ class BatteryArchiveDatapath(BEEPDatapath):
             (ArbinDatapath)
         """
         df = pd.read_csv(path)
-        df.rename(str.lower, axis="columns", inplace=True)
-        df.drop(columns=[c for c in cls.COLUMNS_IGNORE if c in df.columns], inplace=True)
+        df = df.rename(str.lower, axis="columns")
+        df = df.drop(columns=[c for c in cls.COLUMNS_IGNORE if c in df.columns])
         df["step_index"] = 0
 
         df["step_index"] = df["current (a)"].apply(decide_step_index)
@@ -99,7 +99,7 @@ class BatteryArchiveDatapath(BEEPDatapath):
 
         df["step_time"] = df["test_time (s)"] - subtractor
 
-        df.rename(columns=cls.COLUMN_MAPPING, inplace=True)
+        df = df.rename(columns=cls.COLUMN_MAPPING)
         dtfmt = '%Y-%m-%d %H:%M:%S.%f'
         # convert date time string to
         dts = df["date_time"].apply(lambda x: datetime.strptime(x, dtfmt))
@@ -109,7 +109,7 @@ class BatteryArchiveDatapath(BEEPDatapath):
 
         for column, dtype in cls.DATA_TYPES.items():
             if column in df:
-                if not df[column].isnull().values.any():
+                if not df[column].isna().values.any():
                     df[column] = df[column].astype(dtype)
 
         paths = {

@@ -149,7 +149,7 @@ class Settings(DashOrderedDict):
         data = deepcopy(self)
         blocks = []
         meta_data_keys = list(data["Metadata"].keys())
-        for indx, meta_key in enumerate(meta_data_keys):
+        for _indx, meta_key in enumerate(meta_data_keys):
             if "Technique_" in meta_key:
                 blocks.append(
                     " : ".join([meta_key.split("_")[0], data["Metadata"][meta_key]])

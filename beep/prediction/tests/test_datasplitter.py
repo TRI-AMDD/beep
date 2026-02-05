@@ -13,7 +13,7 @@ class TestBEEPDataSplitter(unittest.TestCase):
         # bfm_dict = json.load(open(bfm_path,'r'))
         self.sample_feature_matrix = BEEPFeatureMatrix.from_json_file(bfm_path)
         self.features = ["::".join(c.split("::")[:2]) for c in self.sample_feature_matrix.matrix.columns if not any(
-            [feat in c for feat in ["DiagnosticProperties", "ChargingProtocol", "ExclusionCriteria"]])]
+            feat in c for feat in ["DiagnosticProperties", "ChargingProtocol", "ExclusionCriteria"])]
 
     def test_datasplitter(self):
 
@@ -32,7 +32,7 @@ class TestBEEPDataSplitter(unittest.TestCase):
         self.assertAlmostEqual(
             datasplitter.datasets[0].train_X["abs_charging_capacity::DiagnosticSummaryStats"].iloc[0], 1.2092409629538559, places=6)
 
-        self.assertTrue(all([d in self.features for d in datasplitter.datasets[0].train_X.columns]))
+        self.assertTrue(all(d in self.features for d in datasplitter.datasets[0].train_X.columns))
 
         n_cleaned_samples = 6
         for dataset in datasplitter.datasets:

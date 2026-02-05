@@ -430,7 +430,7 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         # support legacy operations
         # support loads when raw_data not available
-        if any([k not in d for k in ("raw_data", "metadata")]):
+        if any(k not in d for k in ("raw_data", "metadata")):
             raw_data = None
             metadata = {k: d.get(k) for k in ("barcode", "protocol", "channel_id")}
             is_legacy = True
@@ -1026,10 +1026,9 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         # Ignore the index to avoid issues with overlapping voltages
         result = pd.concat(all_dfs, ignore_index=True)
-        result.sort_values(
+        result = result.sort_values(
             by=["cycle_index", "step_index_counter", "test_time"],
-            axis=0,
-            inplace=True
+            axis=0
         )
         # Cycle_index gets a little weird about typing, so round it here
         result.cycle_index = result.cycle_index.round()
@@ -1059,7 +1058,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             get_max_paused_over_threshold
         )
 
-        diag_summary.reset_index(drop=True, inplace=True)
+        diag_summary = diag_summary.reset_index(drop=True)
 
         diag_summary["cycle_type"] = [
             self.diagnostic.type_by_ix[cix] for cix in diag_summary["cycle_index"]
@@ -1226,7 +1225,7 @@ class BEEPDatapath(abc.ABC, MSONable):
     @property
     def is_structured(self):
         required = [self.structured_summary, self.structured_data, self.diagnostic_summary, self.diagnostic_data]
-        if any([df is not None for df in required]):
+        if any(df is not None for df in required):
             return True
         else:
             return False
@@ -1460,7 +1459,7 @@ def get_CV_segment_from_charge(charge, dt_tol=1, dVdt_tol=1e-5, dIdt_tol=1e-4):
         charge (pd.DataFrame): charge dataframe for a single cycle
         dt_tol (float) : dt tolernace (minimum) for identifying CV
         dVdt_tol (float) : dVdt tolerance (maximum) for identifying CV
-        dIdt_tol (float) : dVdt tolerance (minimum) for identifying CV 
+        dIdt_tol (float) : dVdt tolerance (minimum) for identifying CV
 
     Returns:
         (pd.DataFrame): dataframe containing the CV segment
@@ -1480,7 +1479,7 @@ def get_CV_segment_from_charge(charge, dt_tol=1, dVdt_tol=1e-5, dIdt_tol=1e-4):
             i = i+1
 
         # Filter for CV phase
-        return charge.loc[charge.test_time >= charge.test_time.iat[i-1]]
+        return charge.loc[charge.test_time >= charge.test_time.iat[i-1]]  # noqa: PD009
 
 
 def get_CV_time(CV):
@@ -1495,7 +1494,7 @@ def get_CV_time(CV):
 
     """
     if not CV.empty:
-        return CV.test_time.iat[-1] - CV.test_time.iat[0]
+        return CV.test_time.iat[-1] - CV.test_time.iat[0]  # noqa: PD009
 
 
 def get_CV_current(CV):
@@ -1510,7 +1509,7 @@ def get_CV_current(CV):
 
     """
     if not CV.empty:
-        return CV.current.iat[-1]
+        return CV.current.iat[-1]  # noqa: PD009
 
 
 def get_CV_capacity(CV):
@@ -1525,4 +1524,4 @@ def get_CV_capacity(CV):
 
     """
     if not CV.empty:
-        return CV.charge_capacity.iat[-1] - CV.charge_capacity.iat[0]
+        return CV.charge_capacity.iat[-1] - CV.charge_capacity.iat[0]  # noqa: PD009

@@ -7,7 +7,7 @@ from scipy.optimize import differential_evolution
 from scipy.spatial import distance
 
 warnings.warn("This module's numerical tests are failing as of v2025.1.29.19, "
-              "likely due to scipy dependency updates. Use with caution")
+              "likely due to scipy dependency updates. Use with caution", stacklevel=2)
 
 
 class IntracellAnalysisV2:
@@ -90,7 +90,7 @@ class IntracellAnalysisV2:
         real_cell_candidate_charge_profile['Q'] = real_cell_candidate_charge_profile['charge_capacity']
 
         real_cell_candidate_charge_profile['Voltage'] = real_cell_candidate_charge_profile['voltage']
-        real_cell_candidate_charge_profile.drop('voltage', axis=1, inplace=True)
+        real_cell_candidate_charge_profile = real_cell_candidate_charge_profile.drop('voltage', axis=1)
 
         # interpolate voltage along evenly spaced capacity axis
         q_vec = np.linspace(0, np.max(real_cell_candidate_charge_profile['Q']), 1001)

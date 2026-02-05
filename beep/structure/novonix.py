@@ -66,7 +66,7 @@ class NovonixDatapath(BEEPDatapath):
                     raise LookupError("Unable to find the header line in first "
                                       f"{search_lines} lines of file")
         raw = pd.read_csv(path, sep='\t', header=None, encoding="utf-8")
-        raw.dropna(axis=0, how='all', inplace=True)
+        raw = raw.dropna(axis=0, how='all')
         data = raw.iloc[header_starts_line - 1:]
         data = data[0].str.split(',', expand=True)
         headers = data.iloc[0]
@@ -77,19 +77,18 @@ class NovonixDatapath(BEEPDatapath):
         type_map = {j: map[j]['data_type'] for j in map if j in data.columns}
         data = data.astype(type_map)
         name_map = {i: map[i]['beep_name'] for i in map}
-        data.rename(name_map, axis="columns", inplace=True)
+        data = data.rename(name_map, axis="columns")
 
         # Temperatures with unicode symbol do not work on windows with mapping
         data['Temperature (°C)'] = data['Temperature (°C)'].astype('float')
         data['Circuit Temperature (°C)'] = data[
             'Circuit Temperature (°C)'].astype('float')
-        data.rename(
+        data = data.rename(
             {
                 "Temperature (°C)": "temperature",
                 "Circuit Temperature (°C)": "circuit_temperature"
             },
-            axis="columns",
-            inplace=True
+            axis="columns"
         )
 
         # ensure that there are not steps with step type numbers outside what is accounted
@@ -129,7 +128,7 @@ class NovonixDatapath(BEEPDatapath):
         ):
             try:
                 data['date_time_iso'] = data['date_time'].map(
-                    lambda x: datetime.strptime(x, fmt).isoformat())
+                    lambda x, fmt=fmt: datetime.strptime(x, fmt).isoformat())
                 converted = True
             except ValueError:
                 logger.warning(f"{cls.__name__} could not load date-time in format '{fmt}'! Trying alternative...")
@@ -169,8 +168,7 @@ class NovonixDatapath(BEEPDatapath):
             discharge_data = data[target_column].loc[ix]
             data.loc[ix, target_column] = cycle_metric_max - discharge_data
 
-        data.drop(columns=["cycle_chg_max_capacity", "cycle_chg_max_energy"],
-                  inplace=True)
+        data = data.drop(columns=["cycle_chg_max_capacity", "cycle_chg_max_energy"])
 
         summary = None
         if summary_path and os.path.exists(summary_path):

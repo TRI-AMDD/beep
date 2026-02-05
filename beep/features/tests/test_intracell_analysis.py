@@ -278,9 +278,9 @@ class IntracellAnalysisTest(unittest.TestCase):
                               )
         #
         # # initializations before for loop
-        dataset_dict_of_cell_degradation_path = dict()
-        real_cell_dict_of_profiles = dict()
-        for i, cycle_index in enumerate(eol_cycle_index_list):
+        dataset_dict_of_cell_degradation_path = {}
+        real_cell_dict_of_profiles = {}
+        for _i, cycle_index in enumerate(eol_cycle_index_list):
             real_cell_candidate_charge_profile_aligned = ia.process_beep_cycle_data_for_candidate_halfcell_analysis(
                 self.cell_struct,
                 real_cell_initial_charge_profile_aligned,
@@ -347,7 +347,7 @@ class IntracellAnalysisTest(unittest.TestCase):
             real_cell_dict_of_profiles.update(
                 {cycle_index: real_cell_candidate_charge_profile_aligned})
 
-        degradation_df = pd.DataFrame(dataset_dict_of_cell_degradation_path,
+        _ = pd.DataFrame(dataset_dict_of_cell_degradation_path,
                                       index=['LLI', 'LAM_PE', 'LAM_NE',
                                              'x_NE_2', 'alpha_real',
                                              'alpha_emulated',
@@ -402,9 +402,9 @@ class IntracellAnalysisTest(unittest.TestCase):
             ].cycle_index.to_list()
 
         # # initializations before for loop
-        dataset_dict_of_cell_degradation_path = dict()
-        real_cell_dict_of_profiles = dict()
-        for i, cycle_index in enumerate(eol_cycle_index_list):
+        dataset_dict_of_cell_degradation_path = {}
+        real_cell_dict_of_profiles = {}
+        for _i, cycle_index in enumerate(eol_cycle_index_list):
             loss_dict, profiles_dict = ia.intracell_values_wrapper(cycle_index,
                                                                    self.cell_struct,
                                                                    cell_init_aligned,

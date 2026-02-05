@@ -83,9 +83,9 @@ class MaccorDatapath(BEEPDatapathWithEIS):
 
         # Parse data
         data = pd.read_csv(path, delimiter="\t", skiprows=1)
-        data.rename(str.lower, axis="columns", inplace=True)
+        data = data.rename(str.lower, axis="columns")
         data = data.astype(MACCOR_CONFIG["data_types"])
-        data.rename(MACCOR_CONFIG["data_columns"], axis="columns", inplace=True)
+        data = data.rename(MACCOR_CONFIG["data_columns"], axis="columns")
 
         # Needed for validating correctly
         data["_state"] = data["_state"].astype(str)
@@ -112,8 +112,8 @@ class MaccorDatapath(BEEPDatapathWithEIS):
             logger.warning("Could not infer channel number from path name!")
             metadata["channnel_id"] = None
 
-        metadata.rename(str.lower, axis="columns", inplace=True)
-        metadata.rename(MACCOR_CONFIG["metadata_fields"], axis="columns", inplace=True)
+        metadata = metadata.rename(str.lower, axis="columns")
+        metadata = metadata.rename(MACCOR_CONFIG["metadata_fields"], axis="columns")
         # Note the to_dict, which scrubs numpy typing
         metadata = {col: item[0] for col, item in metadata.to_dict("list").items()}
 

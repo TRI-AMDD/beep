@@ -201,7 +201,7 @@ class RapidChargeWave:
         soc_vector = np.linspace(self.soc_i, self.soc_f, self.soc_points)
         c_rate_i = np.zeros((len(mesh_points) - 1, len(soc_vector)))
 
-        for i, elem in enumerate(mesh_points[0:-1]):
+        for i, _elem in enumerate(mesh_points[0:-1]):
             soc1 = mesh_points[i]
             soc2 = mesh_points[i + 1]
             c_rate_i[i] = charging_c_rates[i] * np.heaviside(soc_vector - soc1, 0.5) * \
@@ -237,7 +237,7 @@ class RapidChargeWave:
 
         soc_vector = np.linspace(self.soc_i, self.soc_f, self.soc_points)
 
-        mesh_points_mid = list([self.soc_i]) + list(mesh_points_mid) + list([self.soc_f * 1.01])
+        mesh_points_mid = [self.soc_i] + list(mesh_points_mid) + [self.soc_f * 1.01]
         mesh_points_mid = np.array(mesh_points_mid)
 
         charging_c_rate_start = charging_c_rates[0]

@@ -9,7 +9,7 @@ from scipy.optimize import differential_evolution
 from scipy.spatial import distance
 
 warnings.warn("This module's numerical tests are failing as of v2025.1.29.19, "
-              "likely due to scipy dependency updates. Use with caution")
+              "likely due to scipy dependency updates. Use with caution", stacklevel=2)
 
 
 class IntracellAnalysis:
@@ -82,7 +82,7 @@ class IntracellAnalysis:
                    np.min(real_cell_initial_charge_profile['charge_capacity'])) * 100
                                                      )
         real_cell_candidate_charge_profile['Voltage'] = real_cell_candidate_charge_profile['voltage']
-        real_cell_candidate_charge_profile.drop('voltage', axis=1, inplace=True)
+        real_cell_candidate_charge_profile = real_cell_candidate_charge_profile.drop('voltage', axis=1)
 
         SOC_vec = np.linspace(0, np.max(real_cell_candidate_charge_profile['SOC']),
                               1001)  # 100 ; np.max(real_cell_candidate_charge_profile['SOC']
@@ -142,7 +142,7 @@ class IntracellAnalysis:
                 ) * 100
                                                    )
         real_cell_initial_charge_profile['Voltage'] = real_cell_initial_charge_profile['voltage']
-        real_cell_initial_charge_profile.drop('voltage', axis=1, inplace=True)
+        real_cell_initial_charge_profile = real_cell_initial_charge_profile.drop('voltage', axis=1)
 
         real_cell_initial_charge_profile_aligned = pd.DataFrame()
         real_cell_initial_charge_profile_aligned['SOC_aligned'] = soc_vec
@@ -441,8 +441,8 @@ class IntracellAnalysis:
         df_ne_blended_matched = ne_pristine_matched.copy()
 
         df_ne_slice_for_matched = df_ne_blended_interper(soc_vec_prematching)
-        df_ne_blended_matched.at[(df_ne_blended_matched.loc[
-            (~df_ne_blended_matched['Voltage_aligned'].isna())]).index, 'Voltage_aligned'] = df_ne_slice_for_matched
+        mask = ~df_ne_blended_matched['Voltage_aligned'].isna()
+        df_ne_blended_matched.loc[mask, 'Voltage_aligned'] = df_ne_slice_for_matched
 
         return df_ne_blended_matched
 

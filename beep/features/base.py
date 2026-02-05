@@ -213,7 +213,7 @@ class BEEPFeatureMatrix(MSONable):
             dfs_by_file = {bf.paths.get("structured", "no file found"): [] for bf in beepfeaturizers}
             # big_df_rows = {bf.__class__.__name__: [] for bf in beepfeaturizers}
             unique_features = {}
-            for i, bf in enumerate(beepfeaturizers):
+            for _i, bf in enumerate(beepfeaturizers):
                 if bf.features is None:
                     raise BEEPFeatureMatrixError(f"BEEPFeaturizer {bf} has not created features")
                 elif bf.features.shape[0] != 1:
@@ -232,7 +232,7 @@ class BEEPFeatureMatrix(MSONable):
                     # on identical files
 
                     # sort params for this featurizer obj by key
-                    params = sorted(list(bf.hyperparameters.items()), key=lambda x: x[0])
+                    params = sorted(bf.hyperparameters.items(), key=lambda x: x[0])
 
                     # Prevent identical features from identical input files
                     # create a unique operation string for the application of this featurizer
@@ -276,11 +276,11 @@ class BEEPFeatureMatrix(MSONable):
                     df.columns = consistent_column_names
 
                     df.index = [fname] * df.shape[0]
-                    df.index.rename("filename", inplace=True)
+                    df.index = df.index.rename("filename")
                     dfs_by_file[fname].append(df)
 
             rows = []
-            for filename, dfs in dfs_by_file.items():
+            for _filename, dfs in dfs_by_file.items():
                 row = pd.concat(dfs, axis=1)
                 row = row[sorted(row.columns)]
                 rows.append(row)

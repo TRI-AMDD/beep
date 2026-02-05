@@ -193,7 +193,7 @@ class DiagnosticConfig(MSONable):
                 if match_step_pattern:
                     for step_pattern in match_step_pattern:
                         unique = df_cycle[target_column].unique()
-                        all_present = all([sn in unique for sn in step_pattern])
+                        all_present = all(sn in unique for sn in step_pattern)
                         if match_type == "contains" and all_present:
                             all_diag_ix[cycle_type].add(cix)
                             break

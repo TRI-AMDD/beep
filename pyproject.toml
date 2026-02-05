@@ -108,7 +108,6 @@ ignore = [
     "E741",   # ambiguous variable name
     "B008",   # function calls in argument defaults
     "B905",   # zip without strict
-    "PD901",  # df is a bad variable name
     "PD011",  # use .to_numpy() instead of .values
 ]
 

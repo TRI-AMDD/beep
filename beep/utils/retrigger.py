@@ -71,7 +71,7 @@ def eval_args(args):
             return x
 
     return DotDict(
-        dict(zip(map(lambda x: x[2:], args.keys()), map(_parse_args, args.values())))
+        dict(zip((x[2:] for x in args.keys()), map(_parse_args, args.values())))
     )
 
 

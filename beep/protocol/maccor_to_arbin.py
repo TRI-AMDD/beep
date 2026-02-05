@@ -47,9 +47,9 @@ class ProcedureToSchedule:
 
     def create_sdu(self, sdu_input_name, sdu_output_name,
                    current_range='Range1',
-                   global_v_range=[2.5, 4.5],
-                   global_temp_range=[-100, 100],
-                   global_current_range=[-30, 30]):
+                   global_v_range=None,
+                   global_temp_range=None,
+                   global_current_range=None):
         """
         Highest level function in the class. Takes a schedule file and replaces
         all of the steps with steps from the procedure file. Then writes the
@@ -66,6 +66,12 @@ class ProcedureToSchedule:
             global_current_range (list): Global safety range for current in Amps [min, max]
 
         """
+        if global_current_range is None:
+            global_current_range = [-30, 30]
+        if global_temp_range is None:
+            global_temp_range = [-100, 100]
+        if global_v_range is None:
+            global_v_range = [2.5, 4.5]
         schedule = Schedule.from_file(sdu_input_name)
         # sdu_dict = Schedule.from_file(sdu_input_name)
 
@@ -92,7 +98,7 @@ class ProcedureToSchedule:
         if global_temp_range != [-100, 100]:
             schedule.set("Schedule.m_AuxSafetyEnabled",
                          '0^0 ; 1^1 ; 2^0 ; 3^0 ; 4^0 ; 5^0 ; 6^0 ; 7^0 ; 8^0 ; 9^0 ; 10^0 ; 11^0')
-        for step_index, step in enumerate(self.procedure_dict_steps):
+        for step_index, _step in enumerate(self.procedure_dict_steps):
 
             step_arbin = self.compile_to_arbin(
                 self.procedure_dict_steps[step_index],

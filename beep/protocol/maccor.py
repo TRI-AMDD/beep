@@ -1359,7 +1359,7 @@ def insert_driving_parametersv1(reg_params, waveform_directory=None):
 
     df = df[["time", "power"]]
     time_axis = list(df["time"]).copy()
-    for i in range(reg_params['n_repeats'] - 1):
+    for _i in range(reg_params['n_repeats'] - 1):
         time_axis = time_axis + [time_axis[-1] + el for el in df['time']]
 
     df = pd.DataFrame({'time': time_axis,
@@ -1477,7 +1477,7 @@ def generate_maccor_waveform_file(df, file_prefix, file_directory, mwf_config=No
         df["step_counter"] = df["power"].diff().fillna(0).ne(0).cumsum()
         df = df.groupby("step_counter").agg({"time": "count", "power": "first"})
 
-        df.rename(columns={"time": "duration"}, inplace=True)
+        df = df.rename(columns={"time": "duration"})
 
         df["control_mode"] = mwf_config["control_mode"]
 
@@ -1493,7 +1493,7 @@ def generate_maccor_waveform_file(df, file_prefix, file_directory, mwf_config=No
         df["step_counter"] = df["current"].diff().fillna(0).ne(0).cumsum()
         df = df.groupby("step_counter").agg({"time": "count", "current": "first"})
 
-        df.rename(columns={"time": "duration"}, inplace=True)
+        df = df.rename(columns={"time": "duration"})
 
         df["control_mode"] = mwf_config["control_mode"]
 

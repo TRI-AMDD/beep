@@ -73,7 +73,7 @@ class BiologicDatapath(BEEPDatapath):
         sep, encoding, header_line, data_starts_line = cls._get_file_type(path)
         column_map = BIOLOGIC_CONFIG["data_columns"]
 
-        raw = dict()
+        raw = {}
         i = 0
         with open(path, "rb") as f:
 
@@ -85,7 +85,7 @@ class BiologicDatapath(BEEPDatapath):
                     header = str(line.decode(encoding=encoding))
                     columns = header.split(sep)
                     for c in columns:
-                        raw[c] = list()
+                        raw[c] = []
                 if i >= data_starts_line:
                     line = line.decode(encoding=encoding)
                     if len(line) == 0:
@@ -94,10 +94,10 @@ class BiologicDatapath(BEEPDatapath):
                     items = line.split(sep)
                     for ci in range(len(items)):
                         column_name = columns[ci]
-                        data_type = column_map.get(column_name, dict()).get(
+                        data_type = column_map.get(column_name, {}).get(
                             "data_type", str
                         )
-                        scale = column_map.get(column_name, dict()).get("scale", 1.0)
+                        scale = column_map.get(column_name, {}).get("scale", 1.0)
                         item = items[ci]
                         if data_type == "int":
                             item = int(float(item))
@@ -113,7 +113,7 @@ class BiologicDatapath(BEEPDatapath):
             else:
                 raw["cycle_index"] = get_cycle_index(raw["Ns"], mapping_file)
 
-        data = dict()
+        data = {}
         for column_name in column_map.keys():
             data[column_map[column_name]["beep_name"]] = raw[column_name]
         data["data_point"] = list(range(1, len(raw["cycle number"]) + 1))
@@ -165,7 +165,7 @@ class BiologicDatapath(BEEPDatapath):
         protocol_text = ""
         max_lines = 10000
 
-        metadata = dict()
+        metadata = {}
 
         with open(metadata_path, "rb") as f:
 
@@ -262,7 +262,7 @@ def get_cycle_index(ns_list, serialized_transition_fp, loop_list=None):
             cycle_nums.append(cycle_num)
             tech_nums.append(cycle_transition_rules.tech_num)
     else:
-        for indx, ns in enumerate(ns_list):
+        for _, ns in enumerate(ns_list):
             seq_num = int(ns)
             if seq_num != prev_seq_num:
                 transition = (prev_seq_num, seq_num)
@@ -284,8 +284,10 @@ class CycleTransitionRules:
         adv_cycle_on_start,
         adv_cycle_on_tech_loop,
         adv_cycle_seq_transitions,
-        debug_adv_cycle_on_step_transitions={},
+        debug_adv_cycle_on_step_transitions=None,
     ):
+        if debug_adv_cycle_on_step_transitions is None:
+            debug_adv_cycle_on_step_transitions = {}
         self.tech_num = tech_num
         self.tech_does_loop = tech_does_loop
         self.adv_cycle_on_start = adv_cycle_on_start

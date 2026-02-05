@@ -25,11 +25,9 @@ class HPPCResistanceVoltageFeatures(BEEPFeaturizer):
             conditions = []
             conditions.append(
                 any(
-                    [
-                        "hppc" in x
+                    "hppc" in x
                         for x in
                         self.datapath.diagnostic_summary.cycle_type.unique()
-                    ]
                 )
             )
             if all(conditions):
@@ -49,7 +47,7 @@ class HPPCResistanceVoltageFeatures(BEEPFeaturizer):
         ]
         self.datapath.diagnostic_data = self.datapath.diagnostic_data.groupby(
             ["cycle_index", "step_index", "step_index_counter"]
-        ).filter(lambda x: ~x["test_time"].isnull().all())
+        ).filter(lambda x: ~x["test_time"].isna().all())
 
         # diffusion features
         diffusion_features = featurizer_helpers.get_diffusion_features(
@@ -129,7 +127,7 @@ class CycleSummaryStats(BEEPFeaturizer):
         ]
         pcycler_run_columns = self.datapath.structured_data.columns
         if not all(
-                [column in pcycler_run_columns for column in required_columns]):
+                column in pcycler_run_columns for column in required_columns):
             return False, f"Required column not present in all structured data " \
                           f"(must have all of: {required_columns})"
 
@@ -363,7 +361,7 @@ class DiagnosticSummaryStats(CycleSummaryStats):
         ]
         self.datapath.diagnostic_data = self.datapath.diagnostic_data.groupby(
             ["cycle_index", "step_index", "step_index_counter"]
-        ).filter(lambda x: ~x["test_time"].isnull().all())
+        ).filter(lambda x: ~x["test_time"].isna().all())
 
         diag_intrp = self.datapath.diagnostic_data
 
@@ -928,12 +926,12 @@ class ExclusionCriteria(BEEPFeaturizer):
 
     Hyperparameters:
         parameters_dir (str): Full path to directory of charging protocol parameters
-        EOL_conditions (dict): conditions defining EOL for a cell, should contain cycle type, quantity, and fractional 
+        EOL_conditions (dict): conditions defining EOL for a cell, should contain cycle type, quantity, and fractional
         degradation threshold
-        throughput_first_n_cycles (dict): Exclude cells with charge throughput in first n cycles below a cutoff. dict 
+        throughput_first_n_cycles (dict): Exclude cells with charge throughput in first n cycles below a cutoff. dict
         containing number of cycles and cutoff
         equivalent_full_cycles_cutoff (int): Exclude cells which have undergone fewer than (int) EFCs
-        discharge_capacity_fractional_decrease_at_EOL_cutoff (float): Exclude cells whose discharge capacity has not 
+        discharge_capacity_fractional_decrease_at_EOL_cutoff (float): Exclude cells whose discharge capacity has not
         degraded below a given fraction of initial value.
         early_CV_cutoff (float): Fraction of cycle time at which CV onset is considered early
     """
@@ -1068,7 +1066,7 @@ class ExclusionCriteria(BEEPFeaturizer):
 
         # Set overall "to_include" column
         exclusion_criteria_columns = [c for c in features.columns if c[:3] == "is_"]
-        features["to_include"] = features.apply(lambda row: all([row[c] for c in exclusion_criteria_columns]), axis=1)
+        features["to_include"] = features.apply(lambda row: all(row[c] for c in exclusion_criteria_columns), axis=1)
         self.features = features
 
 

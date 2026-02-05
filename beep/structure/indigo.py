@@ -48,7 +48,7 @@ class IndigoDatapath(BEEPDatapath):
             j = i.decode("utf-8")
             d1_string.append(j)
         data = d11.set_axis(d1_string, axis="columns")
-        metadata = dict()
+        metadata = {}
 
         if len(list(data["cell_id"].unique())) > 1:
             raise ValueError(f"More than 1 cell_id exists in {path}")
@@ -62,7 +62,7 @@ class IndigoDatapath(BEEPDatapath):
             data.reset_index().reset_index()
         )  # twice in case old index is stored in file
         data = data.drop(columns=["index"])
-        data.rename(columns={"level_0": "data_point"}, inplace=True)
+        data = data.rename(columns={"level_0": "data_point"})
         data.loc[data.half_cycle_count % 2 == 1, "charge_capacity"] = (
                 abs(data.cell_coulomb_count_c) / 3600
         )
@@ -86,7 +86,7 @@ class IndigoDatapath(BEEPDatapath):
             .isoformat()
         )
 
-        data.rename(INDIGO_CONFIG["data_columns"], axis="columns", inplace=True)
+        data = data.rename(INDIGO_CONFIG["data_columns"], axis="columns")
 
         metadata["start_datetime"] = data.sort_values(by="system_time_us")[
             "date_time_iso"

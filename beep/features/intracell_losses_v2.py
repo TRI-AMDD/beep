@@ -65,10 +65,8 @@ class IntracellCyclesV2(BEEPFeaturizer):
 
             conditions.append(
                 any(
-                    [
-                        "rpt" in x
+                    "rpt" in x
                         for x in self.datapath.diagnostic_summary.cycle_type.unique()
-                    ]
                 )
             )
 
@@ -108,9 +106,9 @@ class IntracellCyclesV2(BEEPFeaturizer):
             ].cycle_index.to_list()
 
         # initialize dicts before for loop
-        dataset_dict_of_cell_degradation_path = dict()
-        real_cell_dict_of_profiles = dict()
-        for i, cycle_index in enumerate(eol_cycle_index_list):
+        dataset_dict_of_cell_degradation_path = {}
+        real_cell_dict_of_profiles = {}
+        for _i, cycle_index in enumerate(eol_cycle_index_list):
             loss_dict, profiles_dict = ia.intracell_values_wrapper_ah(cycle_index,
                                                                       self.datapath
                                                                       )
@@ -188,9 +186,9 @@ class IntracellFeaturesV2(IntracellCyclesV2):
             ].cycle_index.to_list()
 
         # # initializations before for loop
-        dataset_dict_of_cell_degradation_path = dict()
-        real_cell_dict_of_profiles = dict()
-        for i, cycle_index in enumerate(eol_cycle_index_list[0:2]):
+        dataset_dict_of_cell_degradation_path = {}
+        real_cell_dict_of_profiles = {}
+        for _i, cycle_index in enumerate(eol_cycle_index_list[0:2]):
             loss_dict, profiles_dict = ia.intracell_values_wrapper_ah(cycle_index,
                                                                       self.datapath
                                                                       )

@@ -307,7 +307,7 @@ class TestMaccorDatapath(unittest.TestCase):
     # todo: needs testing for the entire maccor object
     def test_eis(self):
         path = os.path.join(TEST_FILE_DIR, "maccor_test_file_4267-66-6519.EDA0001.041")
-        d = MaccorDatapath.MaccorEIS.from_file(path)
+        MaccorDatapath.MaccorEIS.from_file(path)
 
 
 class TestIndigoDatapath(unittest.TestCase):

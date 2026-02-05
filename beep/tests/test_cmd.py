@@ -365,7 +365,7 @@ class TestCLIFeaturize(TestCLIBase):
         self.assertTrue(status["feature_matrix"]["created"])
         self.assertTrue(os.path.exists(status["feature_matrix"]["output"]))
 
-        for f, data in status["files"].items():
+        for _f, data in status["files"].items():
             for fresult in data["featurizers"]:
                 # check intermediate files output
                 self.assertTrue(os.path.exists(fresult["output"]))

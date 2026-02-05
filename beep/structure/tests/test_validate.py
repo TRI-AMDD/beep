@@ -44,7 +44,7 @@ class ValidationMaccorTest(unittest.TestCase):
             )
         )
         v.allow_unknown = True
-        header = pd.read_csv(path, delimiter="\t", nrows=0)
+        pd.read_csv(path, delimiter="\t", nrows=0)
         df = pd.read_csv(path, delimiter="\t", skiprows=1)
         df["State"] = df["State"].astype(str)
         df["current"] = df["Amps"]
@@ -76,7 +76,7 @@ class ValidationMaccorTest(unittest.TestCase):
         with ScratchDir(".") as scratch_dir:
             # Run validation on everything
             v = SimpleValidator()
-            validate_record = v.validate_from_paths(
+            v.validate_from_paths(
                 paths,
                 record_results=True,
                 skip_existing=False,
@@ -298,7 +298,7 @@ class SimpleValidatorTest(unittest.TestCase):
 
         # Run validation on everything
         v = SimpleValidator()
-        validate_record = v.validate_from_paths(
+        v.validate_from_paths(
             paths, record_results=True, skip_existing=True
         )
         df = pd.DataFrame(v.validation_records)

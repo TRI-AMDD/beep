@@ -68,7 +68,7 @@ class BiologicMbToMaccorTest(unittest.TestCase):
             ),
             "1.32E-6",
         )
-        self.assertRaises(
+        self.assertRaises(  # noqa: B017
             Exception,
             BiologicMbToMaccorProcedure._convert_resistance,
             "4.57",
@@ -87,7 +87,7 @@ class BiologicMbToMaccorTest(unittest.TestCase):
             "4.57E-3",
         )
         # wrong unit
-        self.assertRaises(
+        self.assertRaises(  # noqa: B017
             Exception,
             BiologicMbToMaccorProcedure._convert_voltage,
             "4.57",
@@ -125,7 +125,7 @@ class BiologicMbToMaccorTest(unittest.TestCase):
             BiologicMbToMaccorProcedure._convert_current("2.11", "pA", "lim3_unit", 1),
             "2.11E-12",
         )
-        self.assertRaises(
+        self.assertRaises(  # noqa: B017
             Exception,
             BiologicMbToMaccorProcedure._convert_current,
             "4.57",
@@ -175,7 +175,7 @@ class BiologicMbToMaccorTest(unittest.TestCase):
         )
 
         # too much specificity for maccor to handle
-        self.assertRaises(
+        self.assertRaises(  # noqa: B017
             Exception,
             BiologicMbToMaccorProcedure._convert_time,
             "1",
@@ -184,7 +184,7 @@ class BiologicMbToMaccorTest(unittest.TestCase):
             1,
         )
 
-        self.assertRaises(
+        self.assertRaises(  # noqa: B017
             Exception,
             BiologicMbToMaccorProcedure._convert_time,
             "4.57",
@@ -202,7 +202,7 @@ class BiologicMbToMaccorTest(unittest.TestCase):
         self.assertEqual(expected_step["Option3"], actual_step["Option3"])
         self.assertEqual(expected_step["StepNote"], actual_step["StepNote"])
         # self.assertEqual(actual_step["Reports"]["ReportEntry"][0], "a")
-        if type(expected_step["Reports"]) == str:
+        if isinstance(expected_step["Reports"], str):
             self.assertEqual(expected_step["Reports"], actual_step["Reports"])
         else:
             for report_num, report in enumerate(
@@ -216,7 +216,7 @@ class BiologicMbToMaccorTest(unittest.TestCase):
                         msg=f"bad ReportEntry Field: <{key}>, Value:{value}",
                     )
 
-        if type(expected_step["Ends"]) == str:
+        if isinstance(expected_step["Ends"], str):
             self.assertEqual(expected_step["Ends"], actual_step["Ends"])
         else:
             for end_num, end in enumerate(expected_step["Ends"]["EndEntry"]):

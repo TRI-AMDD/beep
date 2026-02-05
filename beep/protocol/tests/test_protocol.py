@@ -88,7 +88,7 @@ class ProcedureTest(unittest.TestCase):
             self.assertEqual(df_MWF.shape, df_MWF_ref.shape)
 
             # Check that the fourth column for charge/discharge limit is empty (default setting)
-            self.assertTrue(df_MWF.iloc[:, 3].notnull().all())
+            self.assertTrue(df_MWF.iloc[:, 3].notna().all())
 
             # Check that sum of durations equals length of the power timeseries
             self.assertEqual(df_MWF.iloc[:, 5].sum(), len(df_power))
@@ -266,8 +266,8 @@ class ProcedureTest(unittest.TestCase):
                     df_power,
                 ]
             )
-            df_power.drop(columns=["power"], inplace=True)
-            df_power.rename(columns={"power_scaled": "power"}, inplace=True)
+            df_power = df_power.drop(columns=["power"])
+            df_power = df_power.rename(columns={"power_scaled": "power"})
             df_MWF = pd.read_csv(
                 generate_maccor_waveform_file(
                     df_power, waveform_name, scratch_dir, mwf_config=mwf_config
@@ -432,7 +432,7 @@ class GenerateProcedureTest(unittest.TestCase):
 
     def test_prediag_with_waveform(self):
         maccor_waveform_file = os.path.join(TEST_FILE_DIR, "LA4_8rep_lim.MWF")
-        test_file = os.path.join(PROCEDURE_TEMPLATE_DIR, "diagnosticV3.000")
+        os.path.join(PROCEDURE_TEMPLATE_DIR, "diagnosticV3.000")
         csv_file = os.path.join(TEST_FILE_DIR, "PredictionDiagnostics_parameters.csv")
         protocol_params_df = pd.read_csv(csv_file)
         index = 1
@@ -499,7 +499,7 @@ class GenerateProcedureTest(unittest.TestCase):
             procedure["MaccorTestProcedure"]["ProcSteps"]["TestStep"][64]["StepType"],
             "FastWave",
         )
-        with ScratchDir(".") as scratch_dir:
+        with ScratchDir("."):
             driving_test_name = "Drive_test20200716.000"
             procedure.to_file(driving_test_name)
             # Uncomment line below to keep the output in the test file directory
@@ -521,8 +521,6 @@ class GenerateProcedureTest(unittest.TestCase):
         new_files = []
         names = []
         waveform_names = []
-        result = ""
-        message = {"comment": "", "error": ""}
         with ScratchDir(".") as scratch_dir:
             output_directory = scratch_dir
             os.makedirs(os.path.join(output_directory, "procedures"))
@@ -759,10 +757,7 @@ class GenerateProcedureTest(unittest.TestCase):
         protocol_params_df = pd.read_csv(csv_file)
 
         successfully_generated_files = []
-        file_generation_failures = []
         names = []
-        result = ""
-        message = {"comment": "", "error": ""}
         with ScratchDir(".") as scratch_dir:
             output_directory = scratch_dir
             os.makedirs(os.path.join(output_directory, "procedures"))
@@ -881,7 +876,6 @@ class ProcedureToScheduleTest(unittest.TestCase):
         templates = PROCEDURE_TEMPLATE_DIR
 
         test_file = "diagnosticV3.000"
-        json_file = "test.json"
 
         proc_dict = procedure.from_file(os.path.join(templates, test_file))
         test_step_dict = proc_dict["MaccorTestProcedure"]["ProcSteps"]["TestStep"]
@@ -922,7 +916,6 @@ class ProcedureToScheduleTest(unittest.TestCase):
         templates = PROCEDURE_TEMPLATE_DIR
 
         test_file = "diagnosticV3.000"
-        json_file = "test.json"
 
         proc_dict = procedure.from_file(os.path.join(templates, test_file))
 
@@ -1188,7 +1181,7 @@ class BiologicSettingsTest(unittest.TestCase):
         test_name = "test.mps"
         with ScratchDir(".") as scratch_dir:
             makedirs_p(os.path.join(scratch_dir, "settings"))
-            for index, protocol_params in protocol_params_df.iterrows():
+            for _index, protocol_params in protocol_params_df.iterrows():
                 template = protocol_params["template"]
                 filename_prefix = "_".join(
                     [

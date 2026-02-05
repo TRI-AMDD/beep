@@ -229,7 +229,7 @@ class Schedule(DashOrderedDict):
                         self.set(f"{limit_prefix}.Equation0_szRight", value)
                     else:
                         warnings.warn(
-                            f"Additional step limit at {step}.{limit}"
+                            f"Additional step limit at {step}.{limit}", stacklevel=2
                         )
         return self
 

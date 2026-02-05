@@ -125,7 +125,7 @@ class BiologicMbToMaccorProcedure:
         # biologic parser may create empty seq(s) at the end
         # we intentionally _don't_ filter because if there is
         # a blank seq at in the middle
-        seqs = list(map(lambda pair: pair[1], numbered_seqs))
+        seqs = [pair[1] for pair in numbered_seqs]
 
         if len(seqs) > 0 and seqs[-1]["Ns"] == "":
             seqs = seqs[:-1]
@@ -674,7 +674,7 @@ class BiologicMbToMaccorProcedure:
 
         # tightly coupled with the loop that constructs the seq num/step num mapping
         steps = []
-        for i, seq in enumerate(seqs):
+        for _, seq in enumerate(seqs):
             seq_num = int(seq["Ns"])
             seq_is_loop = seq["ctrl_type"] == "Loop"
             loop_to = int(seq["ctrl_seq"])

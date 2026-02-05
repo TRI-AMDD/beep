@@ -43,23 +43,22 @@ class ArbinDatapath(BEEPDatapath):
             (ArbinDatapath)
         """
         data = pd.read_csv(path, index_col=0)
-        data.rename(str.lower, axis="columns", inplace=True)
+        data = data.rename(str.lower, axis="columns")
 
         for column, dtype in cls.conversion_config["data_types"].items():
             if column in data:
-                if not data[column].isnull().values.any():
+                if not data[column].isna().values.any():
                     data[column] = data[column].astype(dtype)
 
-        data.rename(cls.conversion_config["data_columns"], axis="columns", inplace=True)
+        data = data.rename(cls.conversion_config["data_columns"], axis="columns")
 
         metadata_path = metadata_path if metadata_path else path.replace(".csv",
                                                                          "_Metadata.csv")
 
         if os.path.exists(metadata_path):
             metadata = pd.read_csv(metadata_path)
-            metadata.rename(str.lower, axis="columns", inplace=True)
-            metadata.rename(cls.conversion_config["metadata_fields"], axis="columns",
-                            inplace=True)
+            metadata = metadata.rename(str.lower, axis="columns")
+            metadata = metadata.rename(cls.conversion_config["metadata_fields"], axis="columns")
             # Note the to_dict, which scrubs numpy typing
             metadata = {col: item[0] for col, item in
                         metadata.to_dict("list").items()}

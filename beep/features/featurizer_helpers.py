@@ -49,7 +49,7 @@ def get_hppc_ocv_helper(cycle_hppc_0, step_num):
 
 def get_hppc_ocv(processed_cycler_run, diag_pos, parameters_path=PROTOCOL_PARAMETERS_DIR):
     """
-    This function calculates the variance, min, mean, skew, kurtosis, sum and sum of squares 
+    This function calculates the variance, min, mean, skew, kurtosis, sum and sum of squares
     of ocv changes between hppc cycle specified by and the first one.
 
     Argument:
@@ -57,7 +57,7 @@ def get_hppc_ocv(processed_cycler_run, diag_pos, parameters_path=PROTOCOL_PARAME
             diag_pos (int): diagnostic cycle occurence for a specific <diagnostic_cycle_type>. e.g.
             if rpt_0.2C, occurs at cycle_index = [2, 37, 142, 244 ...], <diag_pos>=0 would correspond to cycle_index 2.
     Returns:
-            a dataframe with seven entries 
+            a dataframe with seven entries
             ('var_ocv, min_ocv, mean_ocv, skew_ocv, kurtosis_ocv, sum_ocv, sum_square_ocv'):
     """
 
@@ -106,8 +106,8 @@ def res_calc(chosen, soc, r_type):
     This function calculates resistance based on different socs and differnet time scales in hppc cycles.
     Args:
         chosen(pd.DataFrame): a dataframe for a specific diagnostic cycle you are interested in.
-        soc (int): step index counter corresponding to the soc window of interest - 0, 1, 2, 3, 4 ... 
-        r_type (str): a string that indicates the time scale of the resistance you are calculating, e.g. 
+        soc (int): step index counter corresponding to the soc window of interest - 0, 1, 2, 3, 4 ...
+        r_type (str): a string that indicates the time scale of the resistance you are calculating, e.g.
         'r_c_0s', 'r_c_3s', 'r_c_end', 'r_d_0s', 'r_d_3s', 'r_d_end'
     Returns:
         charge/discharge resistance value (float) at this specific soc and time scale in hppc cycles
@@ -534,7 +534,7 @@ def get_fractional_quantity_remaining_nx(
         calendar.timegm(t.timetuple()) if t is not pd.NaT else float("nan")
         for t in date_time_objs
     ]
-    summary_diag_cycle_type.drop(columns=["date_time_iso"], inplace=True)
+    summary_diag_cycle_type = summary_diag_cycle_type.drop(columns=["date_time_iso"])
     summary_diag_cycle_type.loc[:, "epoch_time"] = date_time_float
 
     summary_diag_cycle_type.columns = ["cycle_index", "fractional_metric",
