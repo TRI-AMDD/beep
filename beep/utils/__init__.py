@@ -1,9 +1,11 @@
-import os
 import hashlib
 import json
+import os
 from collections import OrderedDict
+
+from pydash import get, merge, set_with, unset
+
 from .splice import MaccorSplice
-from pydash import get, set_with, unset, merge
 
 
 class DashOrderedDict(OrderedDict):
@@ -31,7 +33,7 @@ class DashOrderedDict(OrderedDict):
         merge(self, obj)
 
     def __str__(self):
-        return "{}:\n{}".format(self.__class__.__name__, json.dumps(self, indent=4))
+        return f"{self.__class__.__name__}:\n{json.dumps(self, indent=4)}"
 
     def __repr__(self):
         return self.__str__()
@@ -63,4 +65,4 @@ def os_format(json_string):
     if os.name == "nt":
         return '"{}"'.format(json_string.replace('"', '\\"'))
     else:
-        return "'{}'".format(json_string)
+        return f"'{json_string}'"

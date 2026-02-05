@@ -13,24 +13,23 @@
 # limitations under the License.
 """Unit tests for maccor protcol files to biologic modulo bat protcol files"""
 
-import os
-from typing import OrderedDict
-import unittest
-import xmltodict
 import copy
+import os
+import unittest
+
 import pandas as pd
+import xmltodict
 from monty.tempfile import ScratchDir
 from pydash import get
+
 from beep.protocol import (
-    PROTOCOL_SCHEMA_DIR,
-    BIOLOGIC_TEMPLATE_DIR,
     PROCEDURE_TEMPLATE_DIR,
 )
 from beep.protocol.maccor import Procedure
 from beep.protocol.maccor_to_biologic_mb import (
-    MaccorToBiologicMb,
     CycleAdvancementRules,
-    CycleAdvancementRulesSerializer
+    CycleAdvancementRulesSerializer,
+    MaccorToBiologicMb,
 )
 from beep.tests.constants import TEST_FILE_DIR
 
@@ -40,7 +39,7 @@ class ConversionTest(unittest.TestCase):
 
     def maccor_values_to_biologic_value_and_unit_test(self, func, tests):
         for value_str, expected_value_str, expected_unit in tests:
-            actual_value, actual_unit = func(value_str)            
+            actual_value, actual_unit = func(value_str)
             self.assertEqual(actual_value, expected_value_str)
             self.assertEqual(actual_unit, expected_unit)
 
@@ -56,7 +55,7 @@ class ConversionTest(unittest.TestCase):
             converter._convert_volts,
             tests,
         )
-    
+
     def test_convert_amps(self):
         converter = MaccorToBiologicMb()
         tests = [
@@ -95,7 +94,7 @@ class ConversionTest(unittest.TestCase):
             converter._convert_ohms,
             tests,
         )
-    
+
     def test_convert_time(self):
         converter = MaccorToBiologicMb()
         tests = [
@@ -143,7 +142,7 @@ class ConversionTest(unittest.TestCase):
             self.assertEqual(
                 value,
                 result[key],
-                msg="Expected {0}: {1} got {0}: {2}".format(key, value, result[key]),
+                msg=f"Expected {key}: {value} got {key}: {result[key]}",
             )
 
     def test_partition_steps_into_techniques(self):
@@ -153,7 +152,7 @@ class ConversionTest(unittest.TestCase):
         )
         steps = get(ast, "MaccorTestProcedure.ProcSteps.TestStep")
         self.assertEqual(True, len(steps) > 71)
-        
+
         # existence of looped tech 2
         nested_loop_open_idx = 36
         nested_loop_open_type = get(steps[nested_loop_open_idx], 'StepType')
@@ -166,7 +165,7 @@ class ConversionTest(unittest.TestCase):
         technique_partitions = converter._partition_steps_into_techniques(steps)
         self.assertEqual(3, len(technique_partitions))
         partition1, partition2, partition3 =  technique_partitions
-        
+
         self.assertEqual(partition1.technique_num, 1)
         self.assertEqual(partition2.technique_num, 2)
         self.assertEqual(partition3.technique_num, 4)
@@ -198,7 +197,7 @@ class ConversionTest(unittest.TestCase):
             'TestStep',
         )
         converter = MaccorToBiologicMb()
-        
+
         # no limits no mappings
         unmapped_step = converter._apply_step_mappings([step])[0]
         self.assertEqual(step, unmapped_step)
@@ -210,7 +209,7 @@ class ConversionTest(unittest.TestCase):
         converter.min_current_a = -10.0
         unmapped_step = converter._apply_step_mappings([step])[0]
         self.assertEqual(step, unmapped_step)
-    
+
     def test_apply_step_mappings_global_voltage(self):
         xml = (step_with_bounds_template).format(
             voltage_v_lowerbound = 2.2,
@@ -236,7 +235,7 @@ class ConversionTest(unittest.TestCase):
         # check there was not mutation
         original_end_entries = get(step, 'Ends.EndEntry')
         self.assertEqual(4, len(original_end_entries))
-    
+
     def test_apply_step_mappings_all_global_limits(self):
         xml = (step_with_bounds_template).format(
             voltage_v_lowerbound = 2.2,

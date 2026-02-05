@@ -1,5 +1,5 @@
-import os
 import ast
+import os
 import shutil
 import unittest
 
@@ -45,7 +45,7 @@ class DocumentationTutorialTest(unittest.TestCase):
             if "plt.show()" in b:
                 block_safe = b.replace(
                     "plt.show()",
-                    "plt.savefig('{}')".format(self.png_fname)
+                    f"plt.savefig('{self.png_fname}')"
                 )
             else:
                 block_safe = b
@@ -75,7 +75,7 @@ def read_code_blocks_from_md(md_path):
         py_blocks ([str]): The blocks of python code.
 
     """
-    with open(md_path, "r") as f:
+    with open(md_path) as f:
         full_md = f.read()
 
     md_py_splits = full_md.split("```python")[1:]

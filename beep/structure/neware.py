@@ -6,9 +6,9 @@ import numpy as np
 import pandas as pd
 from monty.tempfile import ScratchDir
 
+from beep.conversion_schemas import NEWARE_CONFIG
 from beep.structure.base import BEEPDatapath
 from beep.structure.maccor import MaccorDatapath
-from beep.conversion_schemas import NEWARE_CONFIG
 
 
 class NewareDatapath(BEEPDatapath):

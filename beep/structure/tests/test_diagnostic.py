@@ -2,7 +2,7 @@ import os
 import unittest
 
 import pandas as pd
-from monty.serialization import loadfn, dumpfn
+from monty.serialization import dumpfn, loadfn
 from monty.tempfile import ScratchDir
 
 from beep.structure.diagnostic import DiagnosticConfig

@@ -5,15 +5,14 @@
 Helper functions for generating features in beep.featurize module
 All methods are currently lumped into this script.
 """
-import os
 import calendar
+import os
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
-from scipy.stats import skew, kurtosis
-
+from scipy.stats import kurtosis, skew
 
 from beep import PROTOCOL_PARAMETERS_DIR
 from beep.deprecated import parameters_lookup
@@ -117,30 +116,30 @@ def res_calc(chosen, soc, r_type):
     counters = []
     for step in steps:
         counters.append(chosen[chosen.step_index == step].step_index_counter.unique().tolist())
-    # for charge 
+    # for charge
     if r_type[2] == 'c':
-        # 40 s short rest 
+        # 40 s short rest
         step_ocv = 2
         step_cur = 3
-    # for discharge 
+    # for discharge
     if r_type[2] == 'd':
-        # one hour long rest 
+        # one hour long rest
         step_ocv = 0
         step_cur = 1
-    # if there is no dataframe for ocv or step cur, it means this step is skipped, so return None directly 
+    # if there is no dataframe for ocv or step cur, it means this step is skipped, so return None directly
     try:
         chosen_step_ocv = chosen[(chosen.step_index_counter == counters[step_ocv][soc])]
         chosen_step_cur = chosen[chosen.step_index_counter == counters[step_cur][soc]]
     except IndexError:
         return None
-    # since the data is voltage interpolated, so we want to sort the data based on time 
+    # since the data is voltage interpolated, so we want to sort the data based on time
     chosen_step_ocv = chosen_step_ocv.sort_values(by='test_time')
     chosen_step_cur = chosen_step_cur.sort_values(by='test_time')
-    # last data point of the rest is the ocv value 
+    # last data point of the rest is the ocv value
     v_ocv = chosen_step_ocv.voltage.iloc[-1]
-    # taking the average of the last 5 data points of the current 
+    # taking the average of the last 5 data points of the current
     i_ocv = chosen_step_ocv.current.tail(5).mean()
-    # now we look at the time scales   
+    # now we look at the time scales
     if r_type[4] == 'e':
         v_dis = chosen_step_cur.voltage.iloc[-1]
         i_dis = chosen_step_cur.current.iloc[-1]
@@ -151,7 +150,7 @@ def res_calc(chosen, soc, r_type):
             index = 0.001
         elif r_type[4] == '3':
             index = 3
-        # test time is in the units of s 
+        # test time is in the units of s
         chosen_step_cur_index = chosen_step_cur[(chosen_step_cur.test_time - chosen_step_cur.test_time.min()) <= index]
         v_dis = chosen_step_cur_index.voltage.iloc[-1]
         i_dis = chosen_step_cur_index.current.iloc[-1]
@@ -182,11 +181,11 @@ def get_resistance_soc_duration_hppc(processed_cycler_run, diag_pos):
     names = ['r_c_0s', 'r_c_3s', 'r_c_end', 'r_d_0s', 'r_d_3s', 'r_d_end']
     output = pd.DataFrame()
     chosen = hppc_cycle[hppc_cycle.cycle_index == cycles[diag_pos]]
-    # for each diagnostic cycle, we have a row conatins all the resistances 
+    # for each diagnostic cycle, we have a row conatins all the resistances
     df_row = pd.DataFrame()
     for name in names:
         for j in range(9):
-            # full name 
+            # full name
             f_name = name + '_' + str(j)
             df_row[f_name] = [res_calc(chosen, j, name)]
     output = pd.concat([output, df_row], ignore_index=True)
@@ -296,7 +295,7 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window, parameters_path=PROTO
         print("weird voltage")
         return None
     else:
-        result["var_v_diff"] = [np.var(v_diff)] 
+        result["var_v_diff"] = [np.var(v_diff)]
         result["min_v_diff"] = [min(v_diff)]
         result["mean_v_diff"] = [np.mean(v_diff)]
         result["skew_v_diff"] = [skew(v_diff)]
@@ -309,7 +308,7 @@ def get_v_diff(processed_cycler_run, diag_pos, soc_window, parameters_path=PROTO
 
 # TODO: this is a linear fit, we should use something
 #  from a library, e.g. numpy.polyfit
-# The equation I am using is based on the linear part of the curve 
+# The equation I am using is based on the linear part of the curve
 def d_curve_fitting(x, y):
     """
     This function fits given data x and y into a linear function.

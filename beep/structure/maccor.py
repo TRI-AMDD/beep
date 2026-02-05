@@ -4,14 +4,14 @@ import os
 from datetime import datetime
 from glob import glob
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytz
 from monty.serialization import loadfn
 
-from beep import tqdm, StringIO, VALIDATION_SCHEMA_DIR, logger
+from beep import VALIDATION_SCHEMA_DIR, StringIO, logger, tqdm
 from beep.conversion_schemas import MACCOR_CONFIG
-from beep.structure.base_eis import BEEPDatapathWithEIS, EIS
+from beep.structure.base_eis import EIS, BEEPDatapathWithEIS
 from beep.structure.validate import PROJECT_SCHEMA
 
 
@@ -186,7 +186,7 @@ class MaccorDatapath(BEEPDatapathWithEIS):
             Series: summed quantities.
 
         """
-        state_code = MACCOR_CONFIG["{}_state_code".format(state_type)]
+        state_code = MACCOR_CONFIG[f"{state_type}_state_code"]
         quantity_agg = data['_' + quantity].where(data["_state"] == state_code, other=0, axis=0)
 
         # If a waveform step is present, maccor initializes waveform-specific quantities

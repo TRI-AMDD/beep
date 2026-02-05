@@ -12,33 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests related to feature generation"""
-import unittest
 import os
+import unittest
+
 import numpy as np
-
-from beep.features.core import (
-    DeltaQFastCharge,
-    CycleSummaryStats,
-    TrajectoryFastCharge,
-    DiagnosticProperties,
-    DiagnosticSummaryStats,
-    HPPCResistanceVoltageFeatures,
-    ExclusionCriteria,
-    ChargingProtocol,
-    RawInterpolatedData
-
-)
-from beep.features.base import BEEPFeaturizationError
-
-from beep.structure.maccor import MaccorDatapath
-from beep.structure.cli import auto_load_processed, auto_load
-from beep.features import featurizer_helpers
-from beep.deprecated import parameters_lookup
 from monty.serialization import dumpfn, loadfn
 from monty.tempfile import ScratchDir
-from beep.utils.s3 import download_s3_object
-from beep.tests.constants import TEST_FILE_DIR, BIG_FILE_TESTS, SKIP_MSG
+
 from beep import PROTOCOL_PARAMETERS_DIR
+from beep.deprecated import parameters_lookup
+from beep.features import featurizer_helpers
+from beep.features.base import BEEPFeaturizationError
+from beep.features.core import (
+    ChargingProtocol,
+    CycleSummaryStats,
+    DeltaQFastCharge,
+    DiagnosticProperties,
+    DiagnosticSummaryStats,
+    ExclusionCriteria,
+    HPPCResistanceVoltageFeatures,
+    RawInterpolatedData,
+    TrajectoryFastCharge,
+)
+from beep.structure.cli import auto_load, auto_load_processed
+from beep.structure.maccor import MaccorDatapath
+from beep.tests.constants import TEST_FILE_DIR
+from beep.utils.s3 import download_s3_object
 
 
 class TestFeaturizer(unittest.TestCase):
@@ -307,7 +306,7 @@ class TestFeaturizer(unittest.TestCase):
         f.create_features()
         self.assertEqual(f.features.shape, (1, 36))
 
-    def test_ExclusionCriteria(self):        
+    def test_ExclusionCriteria(self):
         structured_datapath_loc = os.path.join(
             TEST_FILE_DIR, "PredictionDiagnostics_000170_000256_structure.json"
         )
@@ -354,7 +353,7 @@ class TestFeaturizer(unittest.TestCase):
             "throughput_first_n_cycles": {"n": 30, "cutoff": 141},
             "equivalent_full_cycles_cutoff": 30,
             "early_CV_cutoff": 0.3
-        }        
+        }
         f = ExclusionCriteria(structured_datapath, hyperparameters=fail_first_n_cycles_hyperparameters)
         self.assertTrue(f.validate()[0])
         f.create_features()
@@ -376,7 +375,7 @@ class TestFeaturizer(unittest.TestCase):
             "throughput_first_n_cycles": {"n": 30, "cutoff": 141},
             "equivalent_full_cycles_cutoff": 860,
             "early_CV_cutoff": 0.3
-        }        
+        }
         f = ExclusionCriteria(structured_datapath, hyperparameters=fail_all_criteria_hyperparameters)
         self.assertTrue(f.validate()[0])
         f.create_features()

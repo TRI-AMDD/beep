@@ -3,15 +3,14 @@ Tests for the beep CLI.
 """
 import os
 import unittest
-import shutil
 
 import click
-from monty.serialization import loadfn, dumpfn
 from click.testing import CliRunner
+from monty.serialization import dumpfn, loadfn
 
-from beep import logger, PROTOCOL_PARAMETERS_DIR
-from beep.cmd import cli, add_suffix, add_metadata_to_status_json, md5sum
-from beep.tests.constants import TEST_FILE_DIR, SKIP_MSG, BIG_FILE_TESTS
+from beep import PROTOCOL_PARAMETERS_DIR, logger
+from beep.cmd import add_metadata_to_status_json, add_suffix, cli, md5sum
+from beep.tests.constants import BIG_FILE_TESTS, SKIP_MSG, TEST_FILE_DIR
 
 
 @cli.command(
@@ -82,7 +81,7 @@ class TestCLI(TestCLIBase):
         self.assertEqual(status["example"], "status")
 
         log_msgs = []
-        with open(self.log_file, "r") as f:
+        with open(self.log_file) as f:
             for l in f.readlines():
                 if l:
                     log_msgs.append(l)

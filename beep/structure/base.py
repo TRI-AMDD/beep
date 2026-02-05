@@ -1,27 +1,25 @@
 """Base classes and assorted functions for beep structuring datapaths.
 """
 
-import os
 import abc
-import json
 import copy
+import json
+import os
 import time
 
-import pandas as pd
 import numpy as np
-from scipy import integrate
-from monty.json import MSONable
+import pandas as pd
 from monty.io import zopen
+from monty.json import MSONable
 from monty.serialization import dumpfn
+from scipy import integrate
 
-from beep import tqdm
+from beep import VALIDATION_SCHEMA_DIR, logger, tqdm
 from beep.conversion_schemas import (
     STRUCTURE_DTYPES,
 )
-
-from beep import logger, VALIDATION_SCHEMA_DIR
-from beep.structure.validate import SimpleValidator
 from beep.structure.diagnostic import DiagnosticConfig
+from beep.structure.validate import SimpleValidator
 
 
 class BEEPDatapath(abc.ABC, MSONable):

@@ -15,21 +15,21 @@
 
 import os
 import unittest
+
 import numpy as np
 import pandas as pd
-
-from monty.serialization import loadfn, dumpfn
+from monty.serialization import dumpfn, loadfn
 from monty.tempfile import ScratchDir
 
-from beep.structure.base import BEEPDatapath, step_is_waveform_dchg, step_is_waveform_chg
 from beep.structure.arbin import ArbinDatapath
+from beep.structure.base import BEEPDatapath, step_is_waveform_chg, step_is_waveform_dchg
+from beep.structure.battery_archive import BatteryArchiveDatapath
+from beep.structure.biologic import BiologicDatapath, get_cycle_index
+from beep.structure.diagnostic import DiagnosticConfig
+from beep.structure.indigo import IndigoDatapath
 from beep.structure.maccor import MaccorDatapath
 from beep.structure.neware import NewareDatapath
-from beep.structure.indigo import IndigoDatapath
-from beep.structure.biologic import BiologicDatapath, get_cycle_index
-from beep.structure.battery_archive import BatteryArchiveDatapath
 from beep.structure.novonix import NovonixDatapath
-from beep.structure.diagnostic import DiagnosticConfig
 from beep.tests.constants import TEST_FILE_DIR
 
 

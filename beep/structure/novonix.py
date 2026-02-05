@@ -3,9 +3,9 @@ from datetime import datetime
 
 import pandas as pd
 
-from beep.structure.base import BEEPDatapath
-from beep.conversion_schemas import NOVONIX_CONFIG
 from beep import VALIDATION_SCHEMA_DIR, logger
+from beep.conversion_schemas import NOVONIX_CONFIG
+from beep.structure.base import BEEPDatapath
 
 
 class NovonixDatapath(BEEPDatapath):
@@ -30,7 +30,7 @@ class NovonixDatapath(BEEPDatapath):
         """
         # format raw data
         metadata_conversion = cls.conversion_config["metadata_fields"]
-        metadata = {k: None for k in metadata_conversion.keys()}
+        metadata = dict.fromkeys(metadata_conversion.keys())
         metadata_conversion = {v: k for k, v in metadata_conversion.items()}
 
         with open(path, "rb") as f:
@@ -64,7 +64,7 @@ class NovonixDatapath(BEEPDatapath):
                 i += 1
                 if i > search_lines:
                     raise LookupError("Unable to find the header line in first "
-                                      "{} lines of file".format(search_lines))
+                                      f"{search_lines} lines of file")
         raw = pd.read_csv(path, sep='\t', header=None, encoding="utf-8")
         raw.dropna(axis=0, how='all', inplace=True)
         data = raw.iloc[header_starts_line - 1:]

@@ -15,14 +15,16 @@
 
 import json
 import os
-import unittest
 import tempfile
-import pandas as pd
-import numpy as np
+import unittest
 from pathlib import Path
+
+import numpy as np
+import pandas as pd
 from monty.tempfile import ScratchDir
-from beep.structure.validate import SimpleValidator
+
 from beep import S3_CACHE, VALIDATION_SCHEMA_DIR
+from beep.structure.validate import SimpleValidator
 from beep.tests.constants import TEST_FILE_DIR
 
 
@@ -118,7 +120,7 @@ class ValidationEisTest(unittest.TestCase):
         path = "maccor_test_file_4267-66-6519.EDA0001.041"
         path = os.path.join(TEST_FILE_DIR, path)
 
-        v = ValidatorBeep()
+        v = ValidatorBeep()  # noqa: F821 - class removed, test skipped
         v.allow_unknown = True
 
         df = pd.read_csv(path, delimiter="\t", skip_blank_lines=True, skiprows=10)
@@ -265,7 +267,7 @@ class SimpleValidatorTest(unittest.TestCase):
                 "run_list": list(range(len(paths))),
             }
             json_string = json.dumps(json_obj)
-            json_output = validate_file_list_from_json(json_string)
+            json_output = validate_file_list_from_json(json_string)  # noqa: F821 - function removed, test skipped
             loaded = json.loads(json_output)
         self.assertEqual(loaded["validity"][0], "invalid")
         self.assertEqual(loaded["validity"][1], "valid")
@@ -289,7 +291,7 @@ class SimpleValidatorTest(unittest.TestCase):
 
         cache_all_kitware_data()
         paths = os.listdir(os.path.join(S3_CACHE, "D3Batt_Data_publication"))
-        paths = [path for path in paths if not "Metadata" in path]
+        paths = [path for path in paths if "Metadata" not in path]
         paths = [
             os.path.join(S3_CACHE, "D3Batt_Data_publication", path) for path in paths
         ]
@@ -303,10 +305,7 @@ class SimpleValidatorTest(unittest.TestCase):
         df = df.transpose()
         print(df)
         print(
-            "{} valid, {} invalid".format(
-                len([x for x in df.validated if x]),
-                len([x for x in df.validated if not x]),
-            )
+            f"{len([x for x in df.validated if x])} valid, {len([x for x in df.validated if not x])} invalid"
         )
         invalid_runs = df[np.logical_not(df.validated)]
         print(invalid_runs)

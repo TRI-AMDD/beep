@@ -1,11 +1,12 @@
+import warnings
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from matplotlib import cm
 from scipy.interpolate import interp1d
-from scipy.spatial import distance
 from scipy.optimize import differential_evolution
-import warnings
+from scipy.spatial import distance
 
 warnings.warn("This module's numerical tests are failing as of v2025.1.29.19, "
               "likely due to scipy dependency updates. Use with caution")
@@ -720,9 +721,9 @@ class IntracellAnalysis:
         #  Update degradation shifts for LAM_NE
         lower_voltage_limit = self.LOWER_VOLTAGE
         ne_soc_setpoint = ne_pristine['SOC_aligned'].loc[
-            np.argmin((pe_pristine['Voltage_aligned']
+            np.argmin(pe_pristine['Voltage_aligned']
                        - ne_pristine[
-                           'Voltage_aligned'] - lower_voltage_limit))]  # SOC at which the lower voltage limit is hit
+                           'Voltage_aligned'] - lower_voltage_limit)]  # SOC at which the lower voltage limit is hit
         ne_translation += lam_ne * ne_soc_setpoint / 100  # correction for shrinkage to ensure the locking of the
         # lower voltage SOC
         ne_shrinkage += lam_ne  # shrinkage of NE capacity due to LAM_NE

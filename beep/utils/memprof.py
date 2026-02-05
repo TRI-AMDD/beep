@@ -11,17 +11,17 @@ Options:
     --version        Show version
 """
 
-import shutil
 import os
+import shutil
 
 import boto3
-
 from memory_profiler import profile
 from monty.tempfile import ScratchDir
-from beep.structure import auto_load
-from beep.run_model import DegradationModel
-from beep.featurize import DegradationPredictor
+
 from beep import S3_CACHE, tqdm
+from beep.featurize import DegradationPredictor
+from beep.run_model import DegradationModel
+from beep.structure import auto_load
 
 MEMORY_PROFILE_S3_OBJS = [
     "D3Batt_Data_publication/2017-05-12_5_4C-60per_3_6C_CH23.csv",

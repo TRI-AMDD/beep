@@ -18,12 +18,11 @@ import unittest
 
 import numpy as np
 
+from beep import MODULE_DIR, PROTOCOL_PARAMETERS_DIR
+from beep.deprecated import parameters_lookup
+from beep.tests.constants import BIG_FILE_TESTS, SKIP_MSG, TEST_FILE_DIR
 from beep.utils import MaccorSplice
 from beep.utils.s3 import download_s3_object
-from beep import MODULE_DIR
-from beep.deprecated import parameters_lookup
-from beep.tests.constants import BIG_FILE_TESTS, TEST_FILE_DIR, SKIP_MSG
-from beep import PROTOCOL_PARAMETERS_DIR
 
 
 class SpliceTest(unittest.TestCase):

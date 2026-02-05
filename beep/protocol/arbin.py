@@ -17,8 +17,9 @@ parsing and parameter insertion
 """
 import re
 import warnings
-from copy import deepcopy
 from collections import OrderedDict
+from copy import deepcopy
+
 from beep.utils import DashOrderedDict
 
 
@@ -97,7 +98,7 @@ class Schedule(DashOrderedDict):
         # Construct text
         blocks = []
         for section_title, body_data in data_tuples:
-            section_header = "[{}]".format(section_title)
+            section_header = f"[{section_title}]"
             body = linesep.join(
                 ["=".join([key, value]) for key, value in body_data.items()]
             )
@@ -127,16 +128,16 @@ class Schedule(DashOrderedDict):
         obj = cls.from_file(template_filename)
 
         obj.set_labelled_steps(
-            "CC1", "m_szCtrlValue", step_value="{0:.3f}".format(CC1).rstrip("0")
+            "CC1", "m_szCtrlValue", step_value=f"{CC1:.3f}".rstrip("0")
         )
         obj.set_labelled_limits(
             "CC1",
             "PV_CHAN_Charge_Capacity",
             comparator=">",
-            value="{0:.3f}".format(CC1_capacity).rstrip("0"),
+            value=f"{CC1_capacity:.3f}".rstrip("0"),
         )
         obj.set_labelled_steps(
-            "CC2", "m_szCtrlValue", step_value="{0:.3f}".format(CC2).rstrip("0")
+            "CC2", "m_szCtrlValue", step_value=f"{CC2:.3f}".rstrip("0")
         )
         return obj
 
@@ -155,7 +156,7 @@ class Schedule(DashOrderedDict):
         """
         # Find all step labels
         labelled_steps = filter(
-            lambda x: self.get_path("Schedule.{}.m_szLabel".format(x)) == step_label,
+            lambda x: self.get_path(f"Schedule.{x}.m_szLabel") == step_label,
             self["Schedule"].keys(),
         )
         return labelled_steps
@@ -183,7 +184,7 @@ class Schedule(DashOrderedDict):
 
         # TODO: should update happen in place or return new?
         for step in labelled_steps:
-            self.set("Schedule.{}.{}".format(step, step_key), step_value)
+            self.set(f"Schedule.{step}.{step_key}", step_value)
             if mode == "first":
                 break
 
@@ -209,7 +210,7 @@ class Schedule(DashOrderedDict):
         labelled_steps = self.get_labelled_steps(step_label)
         for step in labelled_steps:
             # Get all matching limit keys
-            step_data = self.get_path("Schedule.{}".format(step))
+            step_data = self.get_path(f"Schedule.{step}")
             limits = [
                 heading
                 for heading in _get_headings(step_data)
@@ -220,15 +221,15 @@ class Schedule(DashOrderedDict):
                 limit_data = step_data[limit]
                 if limit_data["m_bStepLimit"] == "1":  # Code corresponding to stop
                     if limit_data["Equation0_szLeft"] == limit_var:
-                        limit_prefix = "Schedule.{}.{}".format(step, limit)
+                        limit_prefix = f"Schedule.{step}.{limit}"
                         self.set(
-                            "{}.Equation0_szCompareSign".format(limit_prefix),
+                            f"{limit_prefix}.Equation0_szCompareSign",
                             comparator,
                         )
-                        self.set("{}.Equation0_szRight".format(limit_prefix), value)
+                        self.set(f"{limit_prefix}.Equation0_szRight", value)
                     else:
                         warnings.warn(
-                            "Additional step limit at {}.{}".format(step, limit)
+                            f"Additional step limit at {step}.{limit}"
                         )
         return self
 

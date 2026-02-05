@@ -1,12 +1,12 @@
 import numpy as np
 import pandas as pd
-from scipy.stats import skew, kurtosis
 from scipy.interpolate import interp1d
+from scipy.stats import kurtosis, skew
 
 from beep import PROTOCOL_PARAMETERS_DIR
-from beep.features import featurizer_helpers
-from beep.features.base import BEEPFeaturizer, BEEPFeaturizationError
 from beep.deprecated.parameters_lookup import get_protocol_parameters
+from beep.features import featurizer_helpers
+from beep.features.base import BEEPFeaturizationError, BEEPFeaturizer
 from beep.structure.base import get_CV_segment_from_charge
 
 
@@ -1045,7 +1045,7 @@ class ExclusionCriteria(BEEPFeaturizer):
         else:
             is_not_early_CV = True
             regular_cycles_pre_EOL = self.datapath.structured_summary[
-                self.datapath.structured_summary["cycle_index"] <= cutoff_cycle_index] 
+                self.datapath.structured_summary["cycle_index"] <= cutoff_cycle_index]
             for cycle in regular_cycles_pre_EOL.cycle_index:
                 cycle_data = self.datapath.structured_data[(self.datapath.structured_data.cycle_index == cycle)]
 
@@ -1134,7 +1134,7 @@ class RawInterpolatedData(BEEPFeaturizer):
                 for i_step in range(n_steps):
                     # image_list is appended with a tuple storing channel metadata.
                     for diag_pos in self.hyperparameters["diag_positions"]:
-                        image_list.append("diag_cycle_{}_{}_{}_step_{}".format(diag_pos, cycle_type, metric, i_step))
+                        image_list.append(f"diag_cycle_{diag_pos}_{cycle_type}_{metric}_step_{i_step}")
 
                         df1 = df_sub.loc[df_sub.cycle_index == cycle_indices[diag_pos]]
                         df1 = df1.loc[df1.step_index == df1.step_index.unique()[i_step]]

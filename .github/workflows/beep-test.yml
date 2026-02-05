@@ -2,49 +2,58 @@ name: Testing - main
 
 on:
   push:
+    branches:
+      - master
+      - main
     branches-ignore:
-    - dependabot**
+      - dependabot**
+
 jobs:
   test:
     strategy:
       max-parallel: 20
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.9", "3.10", "3.11"]
+        python-version: ["3.10", "3.11", "3.12"]
 
     runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-west-2
+        continue-on-error: true  # Allow tests to run without AWS credentials
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          cache: 'pip'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          pip install -r requirements.txt
-          pip install -e .[tests]
-          
+          pip install -e ".[test]"
+
       - name: pytest
         env:
           MPLBACKEND: "Agg"
           BEEP_ENV: "dev"
           BEEP_BIG_TESTS: "True"
         run: |
-          pytest beep --color=yes --cov=beep --cov-config=.coveragerc --cov-report html:coverage_reports
-      # - name: Coveralls
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   run: |
-      #     coveralls --service=github
+          pytest beep --color=yes --cov=beep --cov-report=xml --cov-report=term-missing
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          name: codecov-${{ matrix.os }}-py${{ matrix.python-version }}
+        continue-on-error: true

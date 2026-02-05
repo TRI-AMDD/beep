@@ -2,15 +2,15 @@
 """
 
 import hashlib
-import os.path
 import json
+import os.path
 from datetime import datetime
-import pytz
 
 import pandas as pd
+import pytz
 
-from beep.structure.base import BEEPDatapath
 from beep.conversion_schemas import BIOLOGIC_CONFIG
+from beep.structure.base import BEEPDatapath
 
 
 class BiologicDatapath(BEEPDatapath):
@@ -53,7 +53,7 @@ class BiologicDatapath(BEEPDatapath):
                     data_starts_line = i + 1
                 i += 1
                 if i > search_lines:
-                    raise LookupError("Unable to find the header line in first {} lines of file".format(search_lines))
+                    raise LookupError(f"Unable to find the header line in first {search_lines} lines of file")
 
         return sep, encoding, header_starts_line, data_starts_line
 
@@ -232,7 +232,7 @@ def get_cycle_index(ns_list, serialized_transition_fp, loop_list=None):
     serializer = CycleTransitionRulesSerializer()
     cycle_num = 1
 
-    with open(serialized_transition_fp, "r") as f:
+    with open(serialized_transition_fp) as f:
         data = f.read()
         cycle_transition_rules = serializer.parse_json(data)
 
@@ -296,16 +296,12 @@ class CycleTransitionRules:
     def __repr__(self):
         return (
             "{\n"
-            + "  tech_num: {},\n".format(self.tech_num)
-            + "  tech_does_loop: {},\n".format(self.tech_does_loop)
-            + "  adv_cycle_on_start: {},\n".format(self.adv_cycle_on_start)
-            + "  adv_cycle_on_tech_loop: {},\n".format(self.adv_cycle_on_tech_loop)
-            + "  adv_cycle_seq_transitions: {},\n".format(
-                self.adv_cycle_seq_transitions
-            )
-            + "  debug_adv_cycle_on_step_transitions: {},\n".format(
-                self.debug_adv_cycle_on_step_transitions
-            )
+            + f"  tech_num: {self.tech_num},\n"
+            + f"  tech_does_loop: {self.tech_does_loop},\n"
+            + f"  adv_cycle_on_start: {self.adv_cycle_on_start},\n"
+            + f"  adv_cycle_on_tech_loop: {self.adv_cycle_on_tech_loop},\n"
+            + f"  adv_cycle_seq_transitions: {self.adv_cycle_seq_transitions},\n"
+            + f"  debug_adv_cycle_on_step_transitions: {self.debug_adv_cycle_on_step_transitions},\n"
             + "}\n"
         )
 

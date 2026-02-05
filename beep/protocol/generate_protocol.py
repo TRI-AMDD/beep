@@ -49,18 +49,19 @@ $ generate_protocol '{"file_list": ["/data-share/raw/parameters/procedure_params
 }
 """
 
+import csv
+import datetime
 import os
 import warnings
-import datetime
-import csv
+
 import pandas as pd
-from monty.os import makedirs_p
 import xmltodict
+from monty.os import makedirs_p
 
 from beep import logger
-from beep.protocol import PROCEDURE_TEMPLATE_DIR, BIOLOGIC_TEMPLATE_DIR
-from beep.protocol.maccor import Procedure, insert_driving_parametersv1, insert_charging_parametersv1
+from beep.protocol import BIOLOGIC_TEMPLATE_DIR, PROCEDURE_TEMPLATE_DIR
 from beep.protocol.biologic import Settings
+from beep.protocol.maccor import Procedure, insert_charging_parametersv1, insert_driving_parametersv1
 
 
 class ProtocolException(BaseException):
@@ -174,17 +175,17 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
                     "error": "Not Found",
                 }
                 file_generation_failures.append(failure)
-                warnings.warn("Unsupported file template {}, skipping.".format(template))
+                warnings.warn(f"Unsupported file template {template}, skipping.")
                 result = "error"
                 continue
 
-            filename = "{}.000".format(filename_prefix)
+            filename = f"{filename_prefix}.000"
             filename = os.path.join(output_directory, "procedures", filename)
 
         elif ".mps" in template and template == "formationV1.mps":  # biologic settings template and formation project
             protocol = Settings.from_file(os.path.join(BIOLOGIC_TEMPLATE_DIR, template))
             protocol = protocol.formation_protocol_bcs(protocol_params)
-            filename = "{}.mps".format(filename_prefix)
+            filename = f"{filename_prefix}.mps"
             filename = os.path.join(output_directory, "settings", filename)
         elif ".sdu" in template:  # No schedule file templates implemented
             failure = {
@@ -201,7 +202,7 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
                 "error": "Not Found",
             }
             file_generation_failures.append(failure)
-            warnings.warn("Unsupported file template {}, skipping.".format(template))
+            warnings.warn(f"Unsupported file template {template}, skipping.")
             result = "error"
             continue
 
@@ -230,13 +231,13 @@ def generate_protocol_files_from_csv(csv_filename, output_directory=None):
     num_files = num_generated_files + num_generation_failures
 
     message = {
-        "comment": "Generated {} of {} protocols".format(num_generated_files, num_files),
+        "comment": f"Generated {num_generated_files} of {num_files} protocols",
         "error": ""
     }
     if not result:
         result = "success"
     else:
-        message["error"] = "Failed to generate {} of {} protocols".format(num_generation_failures, num_files)
+        message["error"] = f"Failed to generate {num_generation_failures} of {num_files} protocols"
         logger.error(message["error"])
 
     return successfully_generated_files, file_generation_failures, result, message

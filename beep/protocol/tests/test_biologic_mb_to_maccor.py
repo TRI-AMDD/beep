@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
-import os
 import json
+import os
+import unittest
+
 from beep.protocol.biologic_mb_to_maccor import BiologicMbToMaccorProcedure
 from beep.tests.constants import TEST_FILE_DIR
 
@@ -25,7 +26,7 @@ CONVERTED_OUTPUT_FILE_NAME = "test_biologic_mb_to_maccor_output_diagnostic"
 class BiologicMbToMaccorTest(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
-        with open(os.path.join(TEST_FILE_DIR, 'biologic_mb_test_sample_mb_text.json'), 'r') as jfile:
+        with open(os.path.join(TEST_FILE_DIR, 'biologic_mb_test_sample_mb_text.json')) as jfile:
             temp_json = json.load(jfile)
         self.sample_mb_text = temp_json["sample_mb_text"]
         self.expected_xml = temp_json["expected_xml"]
@@ -212,7 +213,7 @@ class BiologicMbToMaccorTest(unittest.TestCase):
                     self.assertEqual(
                         value,
                         actual_entries[report_num][key],
-                        msg="bad ReportEntry Field: <{}>, Value:{}".format(key, value),
+                        msg=f"bad ReportEntry Field: <{key}>, Value:{value}",
                     )
 
         if type(expected_step["Ends"]) == str:
@@ -224,7 +225,7 @@ class BiologicMbToMaccorTest(unittest.TestCase):
                     self.assertEqual(
                         value,
                         actual_end_entries[end_num][key],
-                        msg="bad ReportEntry Field: <{}>, Value:{}".format(key, value),
+                        msg=f"bad ReportEntry Field: <{key}>, Value:{value}",
                     )
 
     def test_convert_step_rest(self):

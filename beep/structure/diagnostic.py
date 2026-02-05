@@ -1,4 +1,4 @@
-from typing import Iterable, Tuple, Dict
+from collections.abc import Iterable
 
 import pandas as pd
 from monty.json import MSONable
@@ -58,7 +58,7 @@ class DiagnosticConfig(MSONable):
 
     def __init__(
             self,
-            diagnostic_config: Dict[str, Iterable[int]],
+            diagnostic_config: dict[str, Iterable[int]],
             **kwargs
     ):
         if not diagnostic_config:
@@ -109,7 +109,7 @@ class DiagnosticConfig(MSONable):
     def from_step_numbers(
             cls,
             df_raw: pd.DataFrame,
-            matching_criteria: Dict[str, Tuple[str, Iterable[Iterable[int]]]],
+            matching_criteria: dict[str, tuple[str, Iterable[Iterable[int]]]],
             **kwargs
     ):
         """

@@ -7,7 +7,6 @@ from beep.features import featurizer_helpers
 from beep.features.base import BEEPFeaturizer
 from beep.features.intracell_analysis import IntracellAnalysis
 
-
 DEFAULT_CELL_INFO_DIR = os.path.join(PROTOCOL_PARAMETERS_DIR, "intracell_info")
 
 

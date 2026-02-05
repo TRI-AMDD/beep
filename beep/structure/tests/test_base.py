@@ -13,25 +13,25 @@
 # limitations under the License.
 """Unit tests related to cycler run data structures"""
 
-import os
 import copy
+import os
 import unittest
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from monty.serialization import loadfn, dumpfn
+from monty.serialization import loadfn
 from monty.tempfile import ScratchDir
 
+from beep import VALIDATION_SCHEMA_DIR
 from beep.conversion_schemas import STRUCTURE_DTYPES
-from beep.utils.s3 import download_s3_object
 from beep.structure.base import BEEPDatapath
 from beep.structure.base_eis import EIS, BEEPDatapathWithEIS
-from beep.structure.maccor import MaccorDatapath
-from beep.structure.diagnostic import DiagnosticConfig
-from beep.tests.constants import TEST_FILE_DIR, BIG_FILE_TESTS, SKIP_MSG
 from beep.structure.cli import auto_load_processed
-from beep import VALIDATION_SCHEMA_DIR
+from beep.structure.diagnostic import DiagnosticConfig
+from beep.structure.maccor import MaccorDatapath
+from beep.tests.constants import BIG_FILE_TESTS, SKIP_MSG, TEST_FILE_DIR
+from beep.utils.s3 import download_s3_object
 
 
 class TestBEEPDatapath(unittest.TestCase):

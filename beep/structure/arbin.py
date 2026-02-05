@@ -4,12 +4,12 @@
 import os
 from datetime import datetime
 
+import pandas as pd
 import pytz
 from monty.serialization import loadfn
-import pandas as pd
 
+from beep import VALIDATION_SCHEMA_DIR, logger
 from beep.conversion_schemas import ARBIN_CONFIG
-from beep import logger, VALIDATION_SCHEMA_DIR
 from beep.structure.base import BEEPDatapath
 from beep.structure.validate import PROJECT_SCHEMA
 

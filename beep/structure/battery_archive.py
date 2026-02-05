@@ -4,9 +4,9 @@
 import os
 from datetime import datetime
 
-import pytz
-import pandas as pd
 import numpy as np
+import pandas as pd
+import pytz
 
 from beep.structure.base import BEEPDatapath
 

@@ -14,10 +14,11 @@
 import json
 import os
 import unittest
+
 import numpy as np
 from sklearn.decomposition import PCA
-from beep.features.principal_components import PrincipalComponents, pivot_data
 
+from beep.features.principal_components import PrincipalComponents, pivot_data
 from beep.tests.constants import TEST_FILE_DIR
 
 

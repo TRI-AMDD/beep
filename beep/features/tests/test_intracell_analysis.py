@@ -15,14 +15,14 @@
 
 import os
 import unittest
+
 import numpy as np
 import pandas as pd
 from scipy.optimize import differential_evolution
-from beep.structure.cli import auto_load_processed
-from beep.features.intracell_analysis import IntracellAnalysis, \
-    get_halfcell_voltages
-from beep.features.intracell_losses import IntracellCycles, IntracellFeatures
 
+from beep.features.intracell_analysis import IntracellAnalysis, get_halfcell_voltages
+from beep.features.intracell_losses import IntracellCycles, IntracellFeatures
+from beep.structure.cli import auto_load_processed
 from beep.tests.constants import TEST_FILE_DIR
 
 

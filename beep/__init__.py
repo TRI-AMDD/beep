@@ -3,13 +3,14 @@
 Top-level module for beep.  Put anything that should
 be available in the beep namespace here.
 """
-import os
 import logging
+import os
 import sys
+import time
 from functools import partial
+
 import numpy as np
 import watchtower
-import time
 from botocore.exceptions import NoCredentialsError
 from tqdm import tqdm as _tqdm
 

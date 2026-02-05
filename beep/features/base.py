@@ -16,17 +16,16 @@
 For creating features and organizing them into datasets.
 
 """
-import os
-import copy
 import abc
-import json
+import copy
 import hashlib
-from typing import Union, Tuple, List
+import json
+import os
 
 import pandas as pd
 from monty.io import zopen
-from monty.json import MSONable, MontyDecoder
-from monty.serialization import loadfn, dumpfn
+from monty.json import MontyDecoder, MSONable
+from monty.serialization import dumpfn, loadfn
 
 from beep.structure.base import BEEPDatapath
 
@@ -57,7 +56,7 @@ class BEEPFeaturizer(MSONable, abc.ABC):
 
     DEFAULT_HYPERPARAMETERS = {}
 
-    def __init__(self, structured_datapath: Union[BEEPDatapath, None], hyperparameters: Union[dict, None] = None):
+    def __init__(self, structured_datapath: BEEPDatapath | None, hyperparameters: dict | None = None):
         # If all required hyperparameters are specified, use those
         # If some subset of required hyperparameters are specified, throw error
         # If no hyperparameters are specified, use defaults
@@ -86,7 +85,7 @@ class BEEPFeaturizer(MSONable, abc.ABC):
         self.linked_semiunique_id = self.datapath.semiunique_id if self.datapath else None
 
     @abc.abstractmethod
-    def validate(self) -> Tuple[bool, Union[str, None]]:
+    def validate(self) -> tuple[bool, str | None]:
         """
         Validate a featurizer on it's ingested datapath.
 
@@ -208,7 +207,7 @@ class BEEPFeatureMatrix(MSONable):
 
     OP_DELIMITER = "::"
 
-    def __init__(self, beepfeaturizers: List[BEEPFeaturizer]):
+    def __init__(self, beepfeaturizers: list[BEEPFeaturizer]):
 
         if beepfeaturizers:
             dfs_by_file = {bf.paths.get("structured", "no file found"): [] for bf in beepfeaturizers}

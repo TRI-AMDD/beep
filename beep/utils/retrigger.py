@@ -18,13 +18,15 @@ Options:
 
 """
 
-import time
-import datetime
-import pytz
-import boto3
-import collections
 import ast
+import collections
+import datetime
+import time
+
+import boto3
+import pytz
 from docopt import docopt
+
 from beep.utils import KinesisEvents
 
 S3_BUCKET_IN = "beep-input-data-stage"

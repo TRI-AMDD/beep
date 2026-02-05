@@ -5,9 +5,8 @@ import pandas as pd
 from monty.serialization import loadfn
 from numpy.testing import assert_array_equal
 
+from beep.features.base import BEEPFeatureMatrix, BEEPFeaturizationError, BEEPFeaturizer
 from beep.structure.cli import auto_load_processed
-from beep.features.base import BEEPFeaturizer, BEEPFeatureMatrix, \
-    BEEPFeaturizationError
 from beep.tests.constants import TEST_FILE_DIR
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))

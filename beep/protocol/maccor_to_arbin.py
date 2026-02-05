@@ -15,11 +15,13 @@
 
 import os
 import re
-from datetime import datetime
-from copy import deepcopy
-from beep.protocol import PROTOCOL_SCHEMA_DIR
 from collections import OrderedDict
+from copy import deepcopy
+from datetime import datetime
+
 from monty.serialization import loadfn
+
+from beep.protocol import PROTOCOL_SCHEMA_DIR
 from beep.protocol.arbin import Schedule
 
 TEST_DIR = os.path.dirname(__file__)
@@ -82,11 +84,11 @@ class ProcedureToSchedule:
         schedule.set("Schedule.m_uStepNum", str(len(step_name_list)))
         # Set global safety limits
         schedule.set("Schedule.m_VoltageSafetyScope",
-                     "{:.6f}".format(global_v_range[0]) + "^" + "{:.6f}".format(global_v_range[1]))
+                     f"{global_v_range[0]:.6f}" + "^" + f"{global_v_range[1]:.6f}")
         schedule.set("Schedule.m_AuxTempSafetyScope",
-                     "{:.6f}".format(global_temp_range[0]) + '^' + "{:.6f}".format(global_temp_range[1]))
+                     f"{global_temp_range[0]:.6f}" + '^' + f"{global_temp_range[1]:.6f}")
         schedule.set("Schedule.m_CurrentSafetyScope",
-                     "{:.6f}".format(global_current_range[0]) + '^' + "{:.6f}".format(global_current_range[1]))
+                     f"{global_current_range[0]:.6f}" + '^' + f"{global_current_range[1]:.6f}")
         if global_temp_range != [-100, 100]:
             schedule.set("Schedule.m_AuxSafetyEnabled",
                          '0^0 ; 1^1 ; 2^0 ; 3^0 ; 4^0 ; 5^0 ; 6^0 ; 7^0 ; 8^0 ; 9^0 ; 10^0 ; 11^0')
@@ -99,11 +101,11 @@ class ProcedureToSchedule:
                 step_flow_ctrl,
                 current_range=current_range
             )
-            key = "Step{}".format(step_index)
+            key = f"Step{step_index}"
 
-            schedule.set("Schedule.{}".format(key), step_arbin)
+            schedule.set(f"Schedule.{key}", step_arbin)
         for indx, safety in enumerate(safety_data):
-            schedule.set("Schedule.{}".format(safety_key[indx]), safety)
+            schedule.set(f"Schedule.{safety_key[indx]}", safety)
         schedule.to_file(sdu_output_name)
 
     def create_metadata(self):
@@ -128,7 +130,7 @@ class ProcedureToSchedule:
                 while (indx - i) > 1:
                     if self.procedure_dict_steps[abs(indx - i)][
                         "StepType"
-                    ] == "Do {}".format(loop_counter):
+                    ] == f"Do {loop_counter}":
                         do_index = abs(indx - i)
                         break
                     i = i + 1
@@ -329,7 +331,7 @@ class ProcedureToSchedule:
                 blank_step["m_uLimitNum"] = 1
                 end = step_abs["Ends"]["EndEntry"]
                 end_index = 0
-                limit_key = "Limit{}".format(str(end_index))
+                limit_key = f"Limit{str(end_index)}"
                 blank_step[limit_key] = OrderedDict(
                     self.convert_end_to_limit(
                         blank_step,
@@ -343,7 +345,7 @@ class ProcedureToSchedule:
             elif isinstance(step_abs["Ends"]["EndEntry"], list):
                 blank_step["m_uLimitNum"] = len(step_abs["Ends"]["EndEntry"])
                 for end_index, end in enumerate(step_abs["Ends"]["EndEntry"]):
-                    limit_key = "Limit{}".format(str(end_index))
+                    limit_key = f"Limit{str(end_index)}"
                     blank_step[limit_key] = OrderedDict(
                         self.convert_end_to_limit(
                             blank_step,
@@ -357,7 +359,7 @@ class ProcedureToSchedule:
         elif step_abs["Ends"] is None:
             blank_step["m_uLimitNum"] = 1
             end_index = 0
-            limit_key = "Limit{}".format(str(end_index))
+            limit_key = f"Limit{str(end_index)}"
             blank_step[limit_key] = self.add_blank_limit()
 
         # Reports
@@ -367,7 +369,7 @@ class ProcedureToSchedule:
                 report = step_abs["Reports"]["ReportEntry"]
                 report_index = 0
                 limit_start = len(step_abs["Ends"]["EndEntry"])
-                limit_key = "Limit{}".format(str(report_index + limit_start))
+                limit_key = f"Limit{str(report_index + limit_start)}"
                 blank_step[limit_key] = OrderedDict(
                     self.convert_report_to_logging_limit(report)
                 )
@@ -379,7 +381,7 @@ class ProcedureToSchedule:
                     step_abs["Reports"]["ReportEntry"]
                 ):
                     limit_start = len(step_abs["Ends"]["EndEntry"])
-                    limit_key = "Limit{}".format(str(report_index + limit_start))
+                    limit_key = f"Limit{str(report_index + limit_start)}"
                     blank_step[limit_key] = OrderedDict(
                         self.convert_report_to_logging_limit(report)
                     )
@@ -499,14 +501,14 @@ class ProcedureToSchedule:
             limit["Equation0_szRight"] = str(elapsed.total_seconds())
         elif end["EndType"] == "Loop Cnt":
             loop_counter = int(re.search(r"\d+", step_type).group())
-            limit["Equation0_szLeft"] = "TC_Counter{}".format(loop_counter)
+            limit["Equation0_szLeft"] = f"TC_Counter{loop_counter}"
             limit["Equation0_szCompareSign"] = end["Oper"].replace(" ", "")
             limit["Equation0_szRight"] = end["Value"]
 
         elif end["EndType"] == "Loop Addendum":
             loop_counter = int(re.search(r"\d+", step_type).group())
             limit["m_szGotoStep"] = step_flow_ctrl[step_index]
-            limit["Equation0_szLeft"] = "TC_Counter{}".format(loop_counter)
+            limit["Equation0_szLeft"] = f"TC_Counter{loop_counter}"
             limit["Equation0_szCompareSign"] = "<"
             limit["Equation0_szRight"] = end["Value"]
 

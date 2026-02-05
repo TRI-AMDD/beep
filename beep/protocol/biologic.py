@@ -93,11 +93,11 @@ class Settings(DashOrderedDict):
                 else:
                     metadata.append(split_text[line_num].split(" : ", 1))
             elif split_text[line_num] == "":
-                metadata.append(["line{}".format(line_num), "blank"])
+                metadata.append([f"line{line_num}", "blank"])
             else:
                 metadata.append([split_text[line_num], None])
         meta = OrderedDict(metadata)
-        obj.set("{}".format(section), meta)
+        obj.set(f"{section}", meta)
 
         section = "Technique"
         for technique in technique_pos:

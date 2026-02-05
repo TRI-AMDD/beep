@@ -14,14 +14,15 @@
 """ Parsing and conversion of biologic Modulo Bat files to Maccor Procedure Files"""
 import os
 import re
-from copy import deepcopy
 from collections import OrderedDict
+from copy import deepcopy
+
 import xmltodict
 from monty.serialization import loadfn
+
+from beep.protocol import PROCEDURE_TEMPLATE_DIR
 from beep.protocol.biologic import Settings
 from beep.protocol.maccor import Procedure
-from beep.protocol import PROCEDURE_TEMPLATE_DIR
-
 
 MACCOR_TEMPLATE = loadfn(os.path.join(PROCEDURE_TEMPLATE_DIR, "maccor_schemas.yaml"))
 
@@ -56,7 +57,7 @@ class BiologicMbToMaccorProcedure:
         """
         if not os.path.isfile(mps_filepath):
             raise Exception(
-                "Could not load {}, filepath does not exist".format(mps_filepath)
+                f"Could not load {mps_filepath}, filepath does not exist"
             )
 
         with open(mps_filepath, "rb") as mps_file:
@@ -133,7 +134,7 @@ class BiologicMbToMaccorProcedure:
 
     @classmethod
     def _stringify_step_num(cls, step_num):
-        return "{0:0=3d}".format(step_num)
+        return f"{step_num:0=3d}"
 
     # Maccor time can be implemented in
     # [hours]:[minutes]:[seconds]
@@ -152,11 +153,11 @@ class BiologicMbToMaccorProcedure:
     @staticmethod
     def _convert_time(str_val, unit, field, seq_num):
         if unit == "h":
-            return "{}:00:00".format(str_val)
+            return f"{str_val}:00:00"
         elif unit == "mn":
-            return "00:{}:00".format(str_val)
+            return f"00:{str_val}:00"
         elif unit == "s":
-            return "00:00:{}".format(str_val)
+            return f"00:00:{str_val}"
         elif unit == "ms":
             milliseconds = float(str_val)
             if 0.1 <= milliseconds % 10 <= 9.9:
@@ -165,77 +166,69 @@ class BiologicMbToMaccorProcedure:
                     + "\nMaccor can only specify up to centiseconds."
                 )
             seconds = milliseconds / 1000
-            return "00:00:{:.2f}".format(seconds)
+            return f"00:00:{seconds:.2f}"
         else:
             raise Exception(
-                "Unexpected time unit {} for {}, at seq {}".format(unit, field, seq_num)
+                f"Unexpected time unit {unit} for {field}, at seq {seq_num}"
             )
 
     # maccor measures only in amps
     @staticmethod
     def _convert_current(str_val, unit, field, seq_num):
         if unit == "A":
-            return "{}".format(str_val)
+            return f"{str_val}"
         elif unit == "mA":
-            return "{}E-3".format(str_val)
+            return f"{str_val}E-3"
         elif unit in ("\N{Greek Small Letter Mu}A", "\N{Micro Sign}A"):
-            return "{}E-6".format(str_val)
+            return f"{str_val}E-6"
         elif unit == "nA":
-            return "{}E-9".format(str_val)
+            return f"{str_val}E-9"
         elif unit == "pA":
-            return "{}E-12".format(str_val)
+            return f"{str_val}E-12"
         else:
             raise Exception(
-                "Unsupported current unit: {} for {}, at seq {}".format(
-                    unit, field, seq_num
-                )
+                f"Unsupported current unit: {unit} for {field}, at seq {seq_num}"
             )
 
     @staticmethod
     def _convert_voltage(str_val, unit, field, seq_num):
         if unit == "V":
-            return "{}".format(str_val)
+            return f"{str_val}"
         elif unit == "mV":
-            return "{}E-3".format(str_val)
+            return f"{str_val}E-3"
         else:
             raise Exception(
-                "Unsupported voltage unit: {} for {}, at seq {}".format(
-                    unit, field, seq_num
-                )
+                f"Unsupported voltage unit: {unit} for {field}, at seq {seq_num}"
             )
 
     @staticmethod
     def _convert_resistance(str_val, unit, field, seq_num):
         if unit == "MOhm":
-            return "{}E6".format(str_val)
+            return f"{str_val}E6"
         elif unit == "kOhm":
-            return "{}E3".format(str_val)
+            return f"{str_val}E3"
         elif unit == "Ohm":
-            return "{}".format(str_val)
+            return f"{str_val}"
         elif unit == "mOhm":
-            return "{}E-3".format(str_val)
+            return f"{str_val}E-3"
         elif unit in ("\N{Greek Small Letter Mu}Ohm", "\N{Micro Sign}Ohm"):
-            return "{}E-6".format(str_val)
+            return f"{str_val}E-6"
         else:
             raise Exception(
-                "Unsupported resistance unit: {} for {}, at seq {}".format(
-                    unit, field, seq_num
-                )
+                f"Unsupported resistance unit: {unit} for {field}, at seq {seq_num}"
             )
 
     @staticmethod
     def _convert_power(str_val, unit, field, seq_num):
         if unit == "W":
-            return "{}".format(str_val)
+            return f"{str_val}"
         elif unit == "mW":
-            return "{}E-3".format(str_val)
+            return f"{str_val}E-3"
         elif unit in ("\N{Greek Small Letter Mu}W", "\N{Micro Sign}W"):
-            return "{}E-6".format(str_val)
+            return f"{str_val}E-6"
         else:
             raise Exception(
-                "Unsupported power unit: {} for {}, at seq {}".format(
-                    unit, field, seq_num
-                )
+                f"Unsupported power unit: {unit} for {field}, at seq {seq_num}"
             )
 
     @classmethod
@@ -256,7 +249,7 @@ class BiologicMbToMaccorProcedure:
 
         loop_end_entry["EndType"] = "Loop Cnt"
         loop_end_entry["Oper"] = " = "
-        loop_end_entry["StepValue"] = "{}".format(loop_count)
+        loop_end_entry["StepValue"] = f"{loop_count}"
         loop_end_entry["Step"] = cls._stringify_step_num(loop_to_step)
         assert len(loop_end_entry["Step"]) == 3
 
@@ -298,9 +291,7 @@ class BiologicMbToMaccorProcedure:
         step_num = step_num_by_seq_num[seq_num]
         if not isinstance(step_num, int):
             raise Exception(
-                "Internal error, could not find step num for seq: {}, this is a bug".format(
-                    seq_num
-                )
+                f"Internal error, could not find step num for seq: {seq_num}, this is a bug"
             )
 
         # all steps except AdvCycle, Do, and Loop seem to have these values
@@ -312,9 +303,7 @@ class BiologicMbToMaccorProcedure:
         charge_or_discharge = seq["charge/discharge"]
         if charge_or_discharge != "Charge" and charge_or_discharge != "Discharge":
             raise Exception(
-                "unsupported value in charge/discharge field: {}, in seq {}".format(
-                    charge_or_discharge, seq_num
-                )
+                f"unsupported value in charge/discharge field: {charge_or_discharge}, in seq {seq_num}"
             )
         # Dischrge mispelling intentional
         maccor_charge_or_discharge = (
@@ -335,9 +324,7 @@ class BiologicMbToMaccorProcedure:
             )
         elif seq_type == "CV":
             raise Exception(
-                "Unsupported constant voltage type, ctrl1_val_vs: {} at seq {}".format(
-                    seq_val_vs, seq_num
-                )
+                f"Unsupported constant voltage type, ctrl1_val_vs: {seq_val_vs} at seq {seq_num}"
             )
         elif seq_type == "CR":
             step["StepMode"] = "Resistance "
@@ -356,15 +343,13 @@ class BiologicMbToMaccorProcedure:
             step["StepMode"] = "        "
         else:
             raise Exception(
-                "Unspported ctrl_type: {} at seq_num {}".format(seq_type, seq_num)
+                f"Unspported ctrl_type: {seq_type} at seq_num {seq_num}"
             )
 
         num_limits = int(seq["lim_nb"])
         if num_limits not in [0, 1, 2, 3]:
             raise Exception(
-                "Unsupported number of limits, lim_nb: {} at seq {}".format(
-                    num_limits, seq_num
-                )
+                f"Unsupported number of limits, lim_nb: {num_limits} at seq {seq_num}"
                 + "\nvalue must in [0, 1, 2, 3]"
             )
 
@@ -372,12 +357,12 @@ class BiologicMbToMaccorProcedure:
         for lim_num in range(1, num_limits + 1):
             end_entry = deepcopy(_blank_end_entry)
 
-            lim_type = seq["lim{}_type".format(lim_num)]
-            lim_comp = seq["lim{}_comp".format(lim_num)]
-            lim_unit = seq["lim{}_value_unit".format(lim_num)]
-            lim_action = seq["lim{}_action".format(lim_num)]
-            lim_val = float(seq["lim{}_value".format(lim_num)])
-            goto_seq = int(seq["lim{}_seq".format(lim_num)])
+            lim_type = seq[f"lim{lim_num}_type"]
+            lim_comp = seq[f"lim{lim_num}_comp"]
+            lim_unit = seq[f"lim{lim_num}_value_unit"]
+            lim_action = seq[f"lim{lim_num}_action"]
+            lim_val = float(seq[f"lim{lim_num}_value"])
+            goto_seq = int(seq[f"lim{lim_num}_seq"])
 
             if lim_comp == "<":
                 # trailing space intentional
@@ -390,34 +375,30 @@ class BiologicMbToMaccorProcedure:
                 end_entry["Oper"] = ">= "
             else:
                 raise Exception(
-                    "Unsupported comparator, lim{}_comp: {} at seq {}".format(
-                        lim_num, lim_comp, seq_num
-                    )
+                    f"Unsupported comparator, lim{lim_num}_comp: {lim_comp} at seq {seq_num}"
                 )
 
             if lim_type in ("Ece", "Ecell"):
                 # trailing space intentional
                 end_entry["EndType"] = "Voltage "
                 end_entry["Value"] = cls._convert_voltage(
-                    lim_val, lim_unit, "lim{}_value_unit".format(lim_num), seq_num
+                    lim_val, lim_unit, f"lim{lim_num}_value_unit", seq_num
                 )
             elif lim_type == "Time":
                 # no space intentional
                 end_entry["EndType"] = "StepTime"
                 end_entry["Value"] = cls._convert_time(
-                    lim_val, lim_unit, "lim{}_value_unit".format(lim_num), seq_num
+                    lim_val, lim_unit, f"lim{lim_num}_value_unit", seq_num
                 )
             elif lim_type == "I":
                 # trailing space intentional
                 end_entry["EndType"] = "Current "
                 end_entry["Value"] = cls._convert_current(
-                    lim_val, lim_unit, "lim{}_value_unit".format(lim_num), seq_num
+                    lim_val, lim_unit, f"lim{lim_num}_value_unit", seq_num
                 )
             else:
                 raise Exception(
-                    "Unsupported limit type, lim{}_type: {} at seq {}".format(
-                        lim_num, lim_type, seq_num
-                    )
+                    f"Unsupported limit type, lim{lim_num}_type: {lim_type} at seq {seq_num}"
                 )
 
             if lim_action == "End":
@@ -427,10 +408,8 @@ class BiologicMbToMaccorProcedure:
                 end_entry["Step"] = cls._stringify_step_num(next_step)
             elif lim_action == "Goto sequence" and goto_seq not in step_num_by_seq_num:
                 raise Exception(
-                    "Could not convert goto at seq {}, either lim{}_seq: {}".format(
-                        seq_num, lim_num, goto_seq
-                    )
-                    + "\n{} is not a valid goto seq, or this is a bug".format(goto_seq)
+                    f"Could not convert goto at seq {seq_num}, either lim{lim_num}_seq: {goto_seq}"
+                    + f"\n{goto_seq} is not a valid goto seq, or this is a bug"
                 )
             elif (
                 lim_action == "Goto sequence"
@@ -445,9 +424,7 @@ class BiologicMbToMaccorProcedure:
                 end_entry["Step"] = cls._stringify_step_num(goto_step)
             else:
                 raise Exception(
-                    "Unsupported goto construct, lim{}_action: {} at seq {}".format(
-                        lim_num, lim_action, seq_num
-                    )
+                    f"Unsupported goto construct, lim{lim_num}_action: {lim_action} at seq {seq_num}"
                 )
 
             ends.append(end_entry)
@@ -460,16 +437,14 @@ class BiologicMbToMaccorProcedure:
         num_records = int(seq["rec_nb"])
         if num_records not in [0, 1, 2, 3]:
             raise Exception(
-                "Unsupported number of records, rec_nb: {} value must in [0, 1, 2, 3]".format(
-                    num_records
-                )
+                f"Unsupported number of records, rec_nb: {num_records} value must in [0, 1, 2, 3]"
             )
 
         reports = []
         for rec_num in range(1, num_records + 1):
-            rec_type = seq["rec{}_type".format(rec_num)]
-            rec_unit = seq["rec{}_value_unit".format(rec_num)]
-            rec_val = float(seq["rec{}_value".format(rec_num)])
+            rec_type = seq[f"rec{rec_num}_type"]
+            rec_unit = seq[f"rec{rec_num}_value_unit"]
+            rec_val = float(seq[f"rec{rec_num}_value"])
 
             report_entry = deepcopy(_blank_report_entry)
 
@@ -477,31 +452,29 @@ class BiologicMbToMaccorProcedure:
                 # no space intentional
                 report_entry["ReportType"] = "StepTime"
                 report_entry["Value"] = cls._convert_time(
-                    rec_val, rec_unit, "rec{}_value_unit".format(rec_num), seq_num
+                    rec_val, rec_unit, f"rec{rec_num}_value_unit", seq_num
                 )
             elif rec_type in ("Ece", "Ecell"):
                 # trailing space intentional
                 report_entry["ReportType"] = "Voltage "
                 report_entry["Value"] = cls._convert_voltage(
-                    rec_val, rec_unit, "rec{}_value_unit".format(rec_num), seq_num
+                    rec_val, rec_unit, f"rec{rec_num}_value_unit", seq_num
                 )
             elif rec_type == "I":
                 # trailing space intentional
                 report_entry["ReportType"] = "Current "
                 report_entry["Value"] = cls._convert_current(
-                    rec_val, rec_unit, "rec{}_value_unit".format(rec_num), seq_num
+                    rec_val, rec_unit, f"rec{rec_num}_value_unit", seq_num
                 )
             elif rec_type == "Power":
                 # trailing space intentional
                 report_entry["ReportType"] = "Power "
                 report_entry["Value"] = cls._convert_power(
-                    rec_val, rec_unit, "rec{}_value_unit".format(rec_num), seq_num
+                    rec_val, rec_unit, f"rec{rec_num}_value_unit", seq_num
                 )
             else:
                 raise Exception(
-                    "Unsuported record type, rec{}_type: {} at seq {}".format(
-                        rec_num, rec_type, seq_num
-                    )
+                    f"Unsuported record type, rec{rec_num}_type: {rec_type} at seq {seq_num}"
                 )
 
             reports.append(report_entry)
@@ -552,9 +525,9 @@ class BiologicMbToMaccorProcedure:
                 # to handle this we're disallowing any overlapping loops
                 # empty loops that do nothing are excepted
                 raise Exception(
-                    "Illegal loop at Seq {}. Loops are not allowed to".format(seq_num)
-                    + "overlap and Seq {} overlaps with the loop from".format(seq_num)
-                    + " seqs {}-{}".format(curr_loop_start, curr_loop_end)
+                    f"Illegal loop at Seq {seq_num}. Loops are not allowed to"
+                    + f"overlap and Seq {seq_num} overlaps with the loop from"
+                    + f" seqs {curr_loop_start}-{curr_loop_end}"
                 )
             elif is_loop_seq and not loop_is_inactive:
                 curr_loop_end = seq_num
@@ -619,9 +592,7 @@ class BiologicMbToMaccorProcedure:
                 curr_step += 1
             elif is_loop and seqs[loop_to]["ctrl_type"] == "Loop":
                 raise Exception(
-                    "unhandled looping construct at seq {}, cannot loop to empty loop".format(
-                        seq_num
-                    )
+                    f"unhandled looping construct at seq {seq_num}, cannot loop to empty loop"
                     + "\nthat is not immediately followed by a cycle that loops back"
                     + "\nto it (used to force a cycle advance)"
                 )
@@ -653,12 +624,12 @@ class BiologicMbToMaccorProcedure:
             seq_belongs_to_loop = seq_num in containing_loop_range_by_seq_num
 
             for lim in range(1, num_limits + 1):
-                goto = int(seq["lim{}_seq".format(lim)])
+                goto = int(seq[f"lim{lim}_seq"])
                 if goto < last_loop_end:
                     raise Exception(
-                        "Illegal GOTO at lim{}_seq, at seq {}\n".format(lim, seq_num)
+                        f"Illegal GOTO at lim{lim}_seq, at seq {seq_num}\n"
                         + "\ncannot GOTO any seq that occurs before the end an earlier non-empty loop"
-                        + "\nthere was a loop end at seq {}".format(last_loop_end)
+                        + f"\nthere was a loop end at seq {last_loop_end}"
                     )
 
                 goto_belongs_to_loop = goto in containing_loop_range_by_seq_num
@@ -680,16 +651,10 @@ class BiologicMbToMaccorProcedure:
                         or goto_loop_end != seq_loop_end
                     ):
                         raise Exception(
-                            "Illegal GOTO at lim{}_seq: {} at seq {}".format(
-                                lim, goto, seq_num
-                            )
-                            + "\nas {} is contained in loop range {}-{}".format(
-                                goto, goto_loop_start, goto_loop_end
-                            )
+                            f"Illegal GOTO at lim{lim}_seq: {goto} at seq {seq_num}"
+                            + f"\nas {goto} is contained in loop range {goto_loop_start}-{goto_loop_end}"
                             + "\nMaccor only allows you to GOTO the interior of a loop from inside the same loop"
-                            + "\notherwise you must goto the start of the loop, seq: {}".format(
-                                goto_loop_start
-                            )
+                            + f"\notherwise you must goto the start of the loop, seq: {goto_loop_start}"
                         )
                 if (
                     not seq_belongs_to_loop
@@ -700,17 +665,11 @@ class BiologicMbToMaccorProcedure:
                         goto
                     ]
                     raise Exception(
-                        "Illegal goto at lim{}_seq: {} at seq {}".format(
-                            lim, goto, seq_num
-                        )
+                        f"Illegal goto at lim{lim}_seq: {goto} at seq {seq_num}"
                         + "\nMaccor only allows you to GOTO the interior of a loop from inside the same loop"
-                        + "\nthe loop. Seq {} is in the loop from {}-{} ".format(
-                            goto, goto_loop_start, goto_loop_end
-                        )
-                        + "\nSeq{} is not contained in a loop".format(seq)
-                        + "\nYou can only goto the start of the loop, seq {}.".format(
-                            goto_loop_start
-                        )
+                        + f"\nthe loop. Seq {goto} is in the loop from {goto_loop_start}-{goto_loop_end} "
+                        + f"\nSeq{seq} is not contained in a loop"
+                        + f"\nYou can only goto the start of the loop, seq {goto_loop_start}."
                     )
 
         # tightly coupled with the loop that constructs the seq num/step num mapping

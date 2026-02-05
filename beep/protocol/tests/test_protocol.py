@@ -13,36 +13,38 @@
 # limitations under the License.
 """Unit tests related to Generating protocol files"""
 
-import os
-import unittest
-import numpy as np
 import datetime
+import difflib
+import os
 import shutil
+import unittest
 from copy import deepcopy
 
-import difflib
+import numpy as np
 import pandas as pd
-from monty.tempfile import ScratchDir
-from monty.serialization import dumpfn
 from monty.os import makedirs_p
-
+from monty.serialization import dumpfn
+from monty.tempfile import ScratchDir
 
 from beep import PROTOCOL_PARAMETERS_DIR
 from beep.protocol import (
+    BIOLOGIC_TEMPLATE_DIR,
     PROCEDURE_TEMPLATE_DIR,
     SCHEDULE_TEMPLATE_DIR,
-    BIOLOGIC_TEMPLATE_DIR,
 )
-from beep.protocol.generate_protocol import generate_protocol_files_from_csv, template_detection
-from beep.utils.waveform import convert_velocity_to_power_waveform, RapidChargeWave
-from beep.protocol.maccor import Procedure, \
-    generate_maccor_waveform_file, insert_driving_parametersv1, insert_charging_parametersv1
 from beep.protocol.arbin import Schedule
 from beep.protocol.biologic import Settings
+from beep.protocol.generate_protocol import generate_protocol_files_from_csv, template_detection
+from beep.protocol.maccor import (
+    Procedure,
+    generate_maccor_waveform_file,
+    insert_charging_parametersv1,
+    insert_driving_parametersv1,
+)
 from beep.protocol.maccor_to_arbin import ProcedureToSchedule
-from beep.utils import os_format, hash_file
 from beep.tests.constants import TEST_FILE_DIR
-
+from beep.utils import hash_file
+from beep.utils.waveform import RapidChargeWave, convert_velocity_to_power_waveform
 
 this_dir = os.path.abspath(os.path.dirname(__file__))
 
@@ -273,7 +275,7 @@ class ProcedureTest(unittest.TestCase):
                 sep="\t",
                 header=None,
             )
-            sign = df_MWF[0].apply(lambda x: -1 if x is "D" else 1)
+            sign = df_MWF[0].apply(lambda x: -1 if x == "D" else 1)
             energy = df_MWF[2] * df_MWF[5] * sign
             self.assertLess(df_MWF[5].sum(), 10961)
             self.assertLess(energy.sum(), -20000)
@@ -551,7 +553,7 @@ class GenerateProcedureTest(unittest.TestCase):
                     protocol.generate_procedure_diagcyclev3(
                         protocol_params["capacity_nominal"], diagnostic_params
                     )
-                    filename = "{}.000".format(filename_prefix)
+                    filename = f"{filename_prefix}.000"
                     filename = os.path.join(output_directory, "procedures", filename)
                     waveform_names.append(os.path.split(waveform_name)[-1])
 
@@ -796,7 +798,7 @@ class GenerateProcedureTest(unittest.TestCase):
                     protocol.generate_procedure_diagcyclev3(
                         protocol_params["capacity_nominal"], diagnostic_params
                     )
-                    filename = "{}.000".format(filename_prefix)
+                    filename = f"{filename_prefix}.000"
                     filename = os.path.join(output_directory, "procedures", filename)
 
                 if not os.path.isfile(filename):
@@ -1160,7 +1162,7 @@ class BiologicSettingsTest(unittest.TestCase):
     def test_insertion(self):
         filename = "BCS - 171.64.160.115_Ta19_ourprotocol_gdocSEP2019_CC7.mps"
         bcs = Settings.from_file(os.path.join(BIOLOGIC_TEMPLATE_DIR, filename))
-        value = "{:.3f}".format(5)
+        value = f"{5:.3f}"
         bcs.set("Technique.1.Step.3.ctrl1_val", value)
         self.assertEqual(bcs.get_path("Technique.1.Step.3.ctrl1_val"), "5.000")
         test_name = "test.mps"
@@ -1209,12 +1211,12 @@ class BiologicSettingsTest(unittest.TestCase):
                     self.assertEqual(bcs.get_path("Technique.1.Step.8.lim1_value"), float(round(3.0, 3)))
                     self.assertEqual(bcs.get_path("Technique.1.Step.9.ctrl1_val"), float(round(0.2 * 0.5, 3)))
                     self.assertEqual(bcs.get_path("Technique.1.Step.10.lim1_value"), float(round(3.9, 3)))
-                    self.assertEqual(bcs.get_path("Technique.1.Step.11.ctrl_repeat"), int(1))
+                    self.assertEqual(bcs.get_path("Technique.1.Step.11.ctrl_repeat"), 1)
                     self.assertEqual(bcs.get_path("Technique.1.Step.12.ctrl1_val"), float(round(0.2 * 1, 3)))
                     self.assertEqual(bcs.get_path("Technique.1.Step.13.lim1_value"), float(round(3.5, 3)))
                     self.assertEqual(bcs.get_path("Technique.1.Step.14.ctrl1_val"), float(round(3.5, 3)))
 
-                test_name = "{}.mps".format(filename_prefix)
+                test_name = f"{filename_prefix}.mps"
                 test_name = os.path.join(scratch_dir, "settings", test_name)
                 bcs.to_file(test_name)
             self.assertEqual(len(os.listdir(os.path.join(scratch_dir, "settings"))), 16)

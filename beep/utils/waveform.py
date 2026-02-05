@@ -1,8 +1,8 @@
 """
 Module for computing waveforms
 """
-import pandas as pd
 import numpy as np
+import pandas as pd
 from scipy import interpolate
 from scipy.optimize import fsolve
 

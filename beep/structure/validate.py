@@ -98,27 +98,25 @@ class SimpleValidator:
                 value = df.iloc[nonint_indices[0]]
                 return (
                     False,
-                    "integer type check failed at index {} with value {}".format(
-                        nonint_indices[0], value
-                    ),
+                    f"integer type check failed at index {nonint_indices[0]} with value {value}",
                 )
         # Float: just check numpy dtyping
         elif type_rule == "float":
             if not np.issubdtype(df.dtype, np.floating):
-                return False, "float type check failed, type is {}".format(df.dtype)
+                return False, f"float type check failed, type is {df.dtype}"
 
         # Numeric: check numpy number dtyping
         elif type_rule == "numeric":
             if not np.issubdtype(df.dtype, np.number):
-                return False, "number type check failed, type is {}".format(df.dtype)
+                return False, f"number type check failed, type is {df.dtype}"
 
         # String: check string/unicode subdtype
         elif type_rule == "string":
             if not (
                 np.issubdtype(df.dtype, np.object_)
-                or np.issubdtype(df.dtype, np.unicode_)
+                or np.issubdtype(df.dtype, np.str_)
             ):
-                return False, "string type check failed, type is {}".format(df.dtype)
+                return False, f"string type check failed, type is {df.dtype}"
         return True, ""
 
     def validate(self, dataframe):
@@ -151,7 +149,7 @@ class SimpleValidator:
                     dataframe[column_name], type_rule=type_rule
                 )
                 if not validity:
-                    reason = "Column {}: {}".format(column_name, reason)
+                    reason = f"Column {column_name}: {reason}"
                     return validity, reason
 
             # Check max
@@ -161,8 +159,8 @@ class SimpleValidator:
                     index = comp[0][0]
                     value = dataframe[column_name].iloc[index]
                     reason = (
-                        "{} is higher than allowed max {} at index {}: "
-                        "value={}".format(column_name, max_rule, index, value)
+                        f"{column_name} is higher than allowed max {max_rule} at index {index}: "
+                        f"value={value}"
                     )
                     return False, reason
 
@@ -173,8 +171,8 @@ class SimpleValidator:
                     index = comp[0][0]
                     value = dataframe[column_name].iloc[index]
                     reason = (
-                        "{} is lower than allowed min {} at index {}:"
-                        "value={}".format(column_name, min_rule, index, value)
+                        f"{column_name} is lower than allowed min {min_rule} at index {index}:"
+                        f"value={value}"
                     )
                     return False, reason
 
@@ -183,8 +181,8 @@ class SimpleValidator:
                 max_value = dataframe[column_name].max()
                 if max_value < max_at_least_rule:
                     reason = (
-                        "{} needs to reach at least {} for processing, instead found:"
-                        "value={}".format(column_name, max_at_least_rule, max_value)
+                        f"{column_name} needs to reach at least {max_at_least_rule} for processing, instead found:"
+                        f"value={max_value}"
                     )
                     return False, reason
 
@@ -193,8 +191,8 @@ class SimpleValidator:
                 min_value = dataframe[column_name].min()
                 if min_value > min_is_below_rule:
                     reason = (
-                        "{} needs to reach under {} for processing, instead found:"
-                        "value={}".format(column_name, min_is_below_rule, min_value)
+                        f"{column_name} needs to reach under {min_is_below_rule} for processing, instead found:"
+                        f"value={min_value}"
                     )
                     return False, reason
 
@@ -202,7 +200,7 @@ class SimpleValidator:
                 diff_series = dataframe[column_name].diff().dropna()
                 if len(diff_series[diff_series < 0]) > 0:
                     reason = (
-                        "{} needs to be monotonically increasing for processing".format(column_name)
+                        f"{column_name} needs to be monotonically increasing for processing"
                     )
                     return False, reason
 

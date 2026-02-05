@@ -1,6 +1,7 @@
+import json
+
 import numpy as np
 import pandas as pd
-import json
 from monty.json import MSONable
 from monty.serialization import loadfn
 from sklearn.decomposition import PCA

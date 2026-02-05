@@ -13,10 +13,11 @@ Options:
 
 """
 
-from botocore.exceptions import ClientError
 import os
 import shutil
+
 import boto3
+from botocore.exceptions import ClientError
 from monty.tempfile import ScratchDir
 
 

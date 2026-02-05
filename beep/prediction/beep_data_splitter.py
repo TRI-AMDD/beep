@@ -1,15 +1,16 @@
 """
 For splitting a BEEPFeatureMatrix into train/test sets in a format usable by a BEEPPredictionModel object
 """
+from functools import reduce
+
+import numpy as np
+import pandas as pd
+from monty.json import MSONable
+from monty.serialization import dumpfn, loadfn
+from sklearn.model_selection import KFold
+
 from beep import logger
 from beep.features.base import BEEPFeatureMatrix
-from sklearn.model_selection import KFold
-from typing import List
-import numpy as np
-from monty.json import MSONable
-from monty.serialization import loadfn, dumpfn
-import pandas as pd
-from functools import reduce
 
 
 class BEEPDataSplitterError(BaseException):
@@ -96,8 +97,8 @@ class BEEPDataSplitter(MSONable):
     def __init__(
             self,
             feature_matrix: BEEPFeatureMatrix,
-            features: List[str],
-            targets: List[str],
+            features: list[str],
+            targets: list[str],
             train_feature_drop_nan_thresh: float = 0.75,
             train_sample_drop_nan_thresh: float = 0.50,
             drop_nan_training_targets: bool = True,
@@ -105,8 +106,8 @@ class BEEPDataSplitter(MSONable):
             n_splits: int = 5,
             homogenize_features: bool = True,
             random_state: int = 10,
-            split_columns: List[str] = None,
-            exclusion_columns: List[str] = None,
+            split_columns: list[str] = None,
+            exclusion_columns: list[str] = None,
             drop_split_threshold: float = 0.5,
     ):
 
@@ -119,9 +120,9 @@ class BEEPDataSplitter(MSONable):
         missing_columns = [t for t in targets+features if t not in self.feature_matrix.matrix.columns]
 
         if split_columns is not None:
-            missing_columns += [t for t in split_columns if t not in self.feature_matrix.matrix.columns] 
+            missing_columns += [t for t in split_columns if t not in self.feature_matrix.matrix.columns]
         if exclusion_columns is not None:
-            missing_columns += [t for t in exclusion_columns if t not in self.feature_matrix.matrix.columns] 
+            missing_columns += [t for t in exclusion_columns if t not in self.feature_matrix.matrix.columns]
 
         if missing_columns:
             raise BEEPDataSplitterError(
@@ -130,7 +131,7 @@ class BEEPDataSplitter(MSONable):
             )
 
         retain_columns = features + (split_columns if split_columns is not None else []) + \
-            (exclusion_columns if exclusion_columns is not None else []) 
+            (exclusion_columns if exclusion_columns is not None else [])
         X = self.feature_matrix.matrix[retain_columns]
         y = self.feature_matrix.matrix[targets]
 
@@ -234,7 +235,7 @@ class BEEPDataSplitter(MSONable):
         if self.split_columns is None:
             self.kfold = KFold(n_splits=self.n_splits, shuffle=True, random_state=self.random_state)
 
-            for train_indices, test_indices in self.kfold.split(self.X): 
+            for train_indices, test_indices in self.kfold.split(self.X):
 
                 train_X = self.X[self.feature_labels].iloc[train_indices]
                 train_y = self.y.iloc[train_indices]

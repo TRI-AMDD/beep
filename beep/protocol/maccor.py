@@ -23,10 +23,11 @@ from copy import deepcopy
 import numpy as np
 import pandas as pd
 import xmltodict
-from beep.protocol import PROCEDURE_TEMPLATE_DIR, PROTOCOL_SCHEMA_DIR
+
 from beep.conversion_schemas import MACCOR_WAVEFORM_CONFIG
+from beep.protocol import PROCEDURE_TEMPLATE_DIR, PROTOCOL_SCHEMA_DIR
 from beep.utils import DashOrderedDict
-from beep.utils.waveform import convert_velocity_to_power_waveform, RapidChargeWave
+from beep.utils.waveform import RapidChargeWave, convert_velocity_to_power_waveform
 
 
 class Procedure(DashOrderedDict):
@@ -302,31 +303,31 @@ class Procedure(DashOrderedDict):
         steps = self["MaccorTestProcedure"]["ProcSteps"]["TestStep"]
 
         self.set(
-            "MaccorTestProcedure.ProcSteps.TestStep.{}.StepType".format(waveform_idx),
+            f"MaccorTestProcedure.ProcSteps.TestStep.{waveform_idx}.StepType",
             "FastWave",
         )
         self.set(
-            "MaccorTestProcedure.ProcSteps.TestStep.{}.StepMode".format(waveform_idx),
+            f"MaccorTestProcedure.ProcSteps.TestStep.{waveform_idx}.StepMode",
             "",
         )
         self.set(
-            "MaccorTestProcedure.ProcSteps.TestStep.{}.Ends".format(waveform_idx), None
+            f"MaccorTestProcedure.ProcSteps.TestStep.{waveform_idx}.Ends", None
         )
         self.set(
-            "MaccorTestProcedure.ProcSteps.TestStep.{}.Reports".format(waveform_idx),
+            f"MaccorTestProcedure.ProcSteps.TestStep.{waveform_idx}.Reports",
             None,
         )
         self.set(
-            "MaccorTestProcedure.ProcSteps.TestStep.{}.Range".format(waveform_idx), ""
+            f"MaccorTestProcedure.ProcSteps.TestStep.{waveform_idx}.Range", ""
         )
         self.set(
-            "MaccorTestProcedure.ProcSteps.TestStep.{}.Option1".format(waveform_idx), ""
+            f"MaccorTestProcedure.ProcSteps.TestStep.{waveform_idx}.Option1", ""
         )
         self.set(
-            "MaccorTestProcedure.ProcSteps.TestStep.{}.Option2".format(waveform_idx), ""
+            f"MaccorTestProcedure.ProcSteps.TestStep.{waveform_idx}.Option2", ""
         )
         self.set(
-            "MaccorTestProcedure.ProcSteps.TestStep.{}.Option3".format(waveform_idx), ""
+            f"MaccorTestProcedure.ProcSteps.TestStep.{waveform_idx}.Option3", ""
         )
 
         assert steps[waveform_idx]["StepType"] == "FastWave"

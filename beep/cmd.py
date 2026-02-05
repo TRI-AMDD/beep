@@ -15,55 +15,45 @@ protocol generation, and running models.
 
 """
 
-import os
 import ast
-import sys
-import time
 import copy
-import pprint
+import datetime
 import fnmatch
 import hashlib
-import logging
-import datetime
-import traceback
 import importlib
+import logging
+import os
+import pprint
+import sys
+import time
+import traceback
 
 import click
 import numpy as np
 import pandas as pd
 from monty.serialization import dumpfn, loadfn
 
-from beep import (
-    logger,
-    S3_CACHE,
-    formatter_jsonl,
-    __version__
+from beep import S3_CACHE, __version__, formatter_jsonl, logger
+from beep.features.base import (
+    BEEPFeatureMatrix,
+    BEEPFeaturizationError,
+    BEEPFeaturizer,
 )
+from beep.features.core import (
+    CycleSummaryStats,
+    DeltaQFastCharge,
+    DiagnosticProperties,
+    DiagnosticSummaryStats,
+    HPPCResistanceVoltageFeatures,
+    TrajectoryFastCharge,
+)
+from beep.features.intracell_losses import IntracellCycles, IntracellFeatures
+from beep.model import BEEPLinearModelExperiment
+from beep.protocol.generate_protocol import ProtocolException, generate_protocol_files_from_csv
 from beep.structure.base import BEEPDatapath
 from beep.structure.cli import auto_load, auto_load_processed
 from beep.structure.validate import BEEPValidationError
-from beep.features.base import (
-    BEEPFeaturizer,
-    BEEPFeaturizationError,
-    BEEPFeatureMatrix,
-)
-from beep.features.core import (
-    HPPCResistanceVoltageFeatures,
-    DeltaQFastCharge,
-    TrajectoryFastCharge,
-    CycleSummaryStats,
-    DiagnosticProperties,
-    DiagnosticSummaryStats
-)
-from beep.features.intracell_losses import (
-    IntracellCycles,
-    IntracellFeatures
-)
-from beep.model import BEEPLinearModelExperiment
-from beep.utils.s3 import list_s3_objects, download_s3_object
-from beep.protocol.generate_protocol import generate_protocol_files_from_csv
-from beep.protocol.generate_protocol import ProtocolException
-
+from beep.utils.s3 import download_s3_object, list_s3_objects
 
 CLICK_FILE = click.Path(file_okay=True, dir_okay=False, writable=False, readable=True)
 CLICK_DIR = click.Path(file_okay=False, dir_okay=True, writable=True, readable=True)

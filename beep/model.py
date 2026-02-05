@@ -4,31 +4,26 @@ reading/writing static files for battery prediction given a feature set.
 """
 import copy
 import pprint
-from typing import List, Union, Iterable, Tuple
+from collections.abc import Iterable
 from math import sqrt
 
 import numpy as np
 import pandas as pd
 from monty.json import MSONable
-from monty.serialization import loadfn, dumpfn
-from sklearn.preprocessing import StandardScaler
+from monty.serialization import dumpfn, loadfn
 from sklearn.linear_model import (
+    ElasticNet,
+    ElasticNetCV,
     Lasso,
     LassoCV,
-    RidgeCV,
-    Ridge,
-    ElasticNetCV,
-    ElasticNet,
     MultiTaskElasticNet,
     MultiTaskElasticNetCV,
+    Ridge,
+    RidgeCV,
 )
+from sklearn.metrics import max_error, mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import (
-    mean_squared_error,
-    mean_absolute_error,
-    max_error,
-    r2_score
-)
+from sklearn.preprocessing import StandardScaler
 
 from beep import logger
 from beep.features.base import BEEPFeatureMatrix
@@ -91,9 +86,9 @@ class BEEPLinearModelExperiment(MSONable):
             self,
             feature_matrix: BEEPFeatureMatrix,
             target_matrix: BEEPFeatureMatrix,
-            targets: List[str],
+            targets: list[str],
             model_name: str,
-            alphas: Union[None, Iterable[float]] = None,
+            alphas: None | Iterable[float] = None,
             train_feature_drop_nan_thresh: float = 0.95,
             train_sample_drop_nan_thresh: float = 0.50,
             predict_sample_nan_thresh: float = 0.75,
@@ -103,7 +98,7 @@ class BEEPLinearModelExperiment(MSONable):
             max_iter: int = 1e6,
             tol: float = 1e-4,
             # only relevant for elasticnet
-            l1_ratio: Union[Tuple[float], List[float]] = (
+            l1_ratio: tuple[float] | list[float] = (
             0.001, 0.1, 0.5, 0.7, 0.9, 0.95, 1),
             homogenize_features: bool = True
     ):
@@ -297,8 +292,8 @@ class BEEPLinearModelExperiment(MSONable):
 
     def predict(
             self,
-            feature_matrix: Union[BEEPFeatureMatrix, pd.DataFrame],
-            homogenize_features: Union[None, bool] = None,
+            feature_matrix: BEEPFeatureMatrix | pd.DataFrame,
+            homogenize_features: None | bool = None,
     ):
         """Use the trained model to predict new degradation characteristics
         based on an incoming feature matrix.
@@ -403,8 +398,8 @@ class BEEPLinearModelExperiment(MSONable):
 
     def _score_arrays(
             self,
-            y: Union[pd.DataFrame, pd.Series],
-            y_pred: Union[pd.DataFrame, pd.Series]
+            y: pd.DataFrame | pd.Series,
+            y_pred: pd.DataFrame | pd.Series
     ) -> dict:
         """Take two numerical arrays of equal size, return various error metrics
         about them.

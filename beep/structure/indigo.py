@@ -3,13 +3,13 @@
 """
 from datetime import datetime
 
-import pytz
-import pandas as pd
 import h5py
 import numpy as np
+import pandas as pd
+import pytz
 
-from beep.structure.base import BEEPDatapath
 from beep.conversion_schemas import INDIGO_CONFIG
+from beep.structure.base import BEEPDatapath
 
 
 class IndigoDatapath(BEEPDatapath):
@@ -51,7 +51,7 @@ class IndigoDatapath(BEEPDatapath):
         metadata = dict()
 
         if len(list(data["cell_id"].unique())) > 1:
-            raise ValueError("More than 1 cell_id exists in {}".format(path))
+            raise ValueError(f"More than 1 cell_id exists in {path}")
 
         metadata["indigo_cell_id"] = int(data["cell_id"].iloc[0])
         metadata["filename"] = path

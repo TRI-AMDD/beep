@@ -1,10 +1,9 @@
-from glob import glob
 import os
+from glob import glob
 
 import pandas as pd
 
-from beep import logger
-from beep import PROTOCOL_PARAMETERS_DIR
+from beep import PROTOCOL_PARAMETERS_DIR, logger
 
 """
 Module for finding parameters for projects

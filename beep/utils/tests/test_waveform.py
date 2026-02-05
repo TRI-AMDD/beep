@@ -15,11 +15,12 @@
 
 import os
 import unittest
-import numpy as np
-from beep.utils.waveform import convert_velocity_to_power_waveform, RapidChargeWave
+
 import matplotlib.pyplot as plt
+import numpy as np
 
 from beep.tests.constants import TEST_FILE_DIR
+from beep.utils.waveform import RapidChargeWave
 
 
 class ChargeWaveformTest(unittest.TestCase):

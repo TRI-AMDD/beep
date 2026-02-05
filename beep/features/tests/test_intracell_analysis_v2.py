@@ -15,11 +15,12 @@
 
 import os
 import unittest
+
 import pandas as pd
-from beep.structure.cli import auto_load_processed
+
 from beep.features.intracell_analysis_v2 import IntracellAnalysisV2
 from beep.features.intracell_losses_v2 import IntracellCyclesV2, IntracellFeaturesV2
-
+from beep.structure.cli import auto_load_processed
 from beep.tests.constants import TEST_FILE_DIR
 
 

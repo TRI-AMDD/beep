@@ -96,7 +96,7 @@ class BEEPDatapathWithEIS(BEEPDatapath):
 
     def __init__(self, *args, **kwargs):
         self.eis = None
-        super(BEEPDatapathWithEIS, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     @abc.abstractmethod
     def load_eis(self, *args, **kwargs):

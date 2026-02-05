@@ -20,21 +20,21 @@ import re
 from monty.serialization import loadfn
 
 from beep.conversion_schemas import (
+    ARBIN_CONFIG,
+    BIOLOGIC_CONFIG,
+    INDIGO_CONFIG,
+    MACCOR_CONFIG,
+    NEWARE_CONFIG,
     FastCharge_CONFIG,
     xTesladiag_CONFIG,
-    ARBIN_CONFIG,
-    MACCOR_CONFIG,
-    INDIGO_CONFIG,
-    BIOLOGIC_CONFIG,
-    NEWARE_CONFIG
 )
 from beep.structure.arbin import ArbinDatapath
+from beep.structure.base import BEEPDatapath
+from beep.structure.battery_archive import BatteryArchiveDatapath
+from beep.structure.biologic import BiologicDatapath
+from beep.structure.indigo import IndigoDatapath
 from beep.structure.maccor import MaccorDatapath
 from beep.structure.neware import NewareDatapath
-from beep.structure.indigo import IndigoDatapath
-from beep.structure.biologic import BiologicDatapath
-from beep.structure.battery_archive import BatteryArchiveDatapath
-from beep.structure.base import BEEPDatapath
 
 
 def auto_load(filename):
@@ -71,7 +71,7 @@ def auto_load(filename):
     elif re.match(BatteryArchiveDatapath.FILE_PATTERN, filename):
         return BatteryArchiveDatapath.from_file(filename)
     else:
-        raise ValueError("{} does not match any known file pattern".format(filename))
+        raise ValueError(f"{filename} does not match any known file pattern")
 
 
 def auto_load_processed(path):

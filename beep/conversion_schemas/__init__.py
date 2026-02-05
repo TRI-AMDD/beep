@@ -2,9 +2,9 @@
 
 import os
 
-from beep import CONVERSION_SCHEMA_DIR
 from monty.serialization import loadfn
 
+from beep import CONVERSION_SCHEMA_DIR
 
 ARBIN_CONFIG = loadfn(os.path.join(CONVERSION_SCHEMA_DIR, "arbin_conversion.yaml"))
 MACCOR_CONFIG = loadfn(os.path.join(CONVERSION_SCHEMA_DIR, "maccor_conversion.yaml"))

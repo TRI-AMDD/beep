@@ -1,8 +1,9 @@
 import os
 import unittest
-from beep.tests.constants import TEST_FILE_DIR
+
 from beep.features.base import BEEPFeatureMatrix
 from beep.prediction.beep_data_splitter import BEEPDataSplitter
+from beep.tests.constants import TEST_FILE_DIR
 
 
 class TestBEEPDataSplitter(unittest.TestCase):
