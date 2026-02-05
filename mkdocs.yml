@@ -1,10 +1,12 @@
 site_name: BEEP - Battery Evaluation and Early Prediction
-site_description: Documentation for TRI-AMDD BEEP, for handling battery cycling data and predicting battery lifetines
+site_description: Documentation for TRI-AMDD BEEP, for handling battery cycling data and predicting battery lifetimes
 copyright: Toyota Research Institute
 
 docs_dir: docs_src
 site_dir: docs
 
+repo_url: https://github.com/TRI-AMDD/beep
+repo_name: TRI-AMDD/beep
 
 theme:
   name: material
@@ -14,13 +16,19 @@ theme:
     accent: orange
   logo: static/tri_cropped.png
   favicon: static/tri_cropped_favicon.png
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - search.suggest
+    - search.highlight
+    - content.code.copy
 
 plugins:
   - search
 
 markdown_extensions:
   - admonition
-  - codehilite
   - attr_list
   - footnotes
   - toc:
@@ -30,6 +38,25 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
 
-repo_url: https://github.com/tri-amdd/beep
-#docs_dir: src
+nav:
+  - Home: index.md
+  - Data Requirements: data.md
+  - CLI Tutorials:
+    - Overview: "Command Line Interface/1 - overview.md"
+    - Structuring: "Command Line Interface/2 - structuring.md"
+    - Featurize: "Command Line Interface/3 - featurize.md"
+    - Train: "Command Line Interface/4 - train.md"
+    - Predict: "Command Line Interface/5 - predict.md"
+    - Protocol: "Command Line Interface/6 - protocol.md"
+    - Inspect: "Command Line Interface/7 - inspect.md"
+  - Python Tutorials:
+    - Quickstart: "Python tutorials/1 - quickstart.md"
+    - Structuring: "Python tutorials/2 - structuring.md"
+    - Featurization: "Python tutorials/3 - featurization.md"
+    - Models: "Python tutorials/4 - models.md"
+    - Advanced Structuring: "Python tutorials/advanced_structuring.md"
+    - Advanced Structuring 2: "Python tutorials/advanced_structuring2.md"
+  - Contributing: contributing.md

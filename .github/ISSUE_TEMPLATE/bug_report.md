@@ -23,8 +23,8 @@ If applicable, add logs.
 
 **Desktop (please complete the following information):**
  - OS: [e.g. Ubuntu 20.04]
- - Python Version: [e.g. 3.7]
- - Version [e.g. v2020.7.29]
+ - Python Version: [e.g. 3.11]
+ - BEEP Version: [e.g. v2025.2.5]
 
 **Additional context**
 Add any other context about the problem here.
