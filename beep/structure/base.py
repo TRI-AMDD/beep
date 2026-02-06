@@ -188,7 +188,9 @@ class BEEPDatapath(abc.ABC, MSONable):
         # paths may include "raw", "metadata", and "structured", as well as others.
         if paths:
             for path_ref, path in paths.items():
-                if path and not os.path.isabs(path):
+                # Check for absolute paths cross-platform (Unix paths start with /,
+                # Windows paths have drive letter like C:\)
+                if path and not (os.path.isabs(path) or path.startswith("/")):
                     raise ValueError(f"{path_ref}: '{path}' is not absolute! All paths must be absolute.")
             self.paths = paths
         else:
@@ -323,7 +325,7 @@ class BEEPDatapath(abc.ABC, MSONable):
         Returns:
             None
         """
-        with zopen(filename, "r") as f:
+        with zopen(filename, "rt") as f:
             d = json.load(f)
 
         # Add this structured file path to the paths dict
@@ -716,12 +718,12 @@ class BEEPDatapath(abc.ABC, MSONable):
         # If any regular cycle contains a waveform step, interpolate on test_time.
         if self.raw_data[reg_mask]. \
                 groupby(["cycle_index", "step_index"]). \
-                apply(step_is_waveform_dchg).any():
+                apply(step_is_waveform_dchg, include_groups=False).any():
             discharge_axis = 'test_time'
 
         if self.raw_data[reg_mask]. \
                 groupby(["cycle_index", "step_index"]). \
-                apply(step_is_waveform_chg).any():
+                apply(step_is_waveform_chg, include_groups=False).any():
             charge_axis = 'test_time'
 
         interpolated_discharge = self.interpolate_step(
@@ -845,7 +847,8 @@ class BEEPDatapath(abc.ABC, MSONable):
         if "temperature" in self.raw_data.columns:
             summary["time_temperature_integrated"] = self.raw_data.groupby(
                 "cycle_index").apply(
-                lambda g: integrate.trapezoid(g.temperature, x=g.time_since_cycle_start)
+                lambda g: integrate.trapezoid(g.temperature, x=g.time_since_cycle_start),
+                include_groups=False
             )
 
         # Drop the time since cycle start column
@@ -853,7 +856,7 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         # Determine if any of the cycles has been paused
         summary["paused"] = self.raw_data.groupby("cycle_index").apply(
-            get_max_paused_over_threshold)
+            get_max_paused_over_threshold, include_groups=False)
 
         # Add CV_time, CV_current, CV_capacity summary stats
         CV_time = []
@@ -925,12 +928,12 @@ class BEEPDatapath(abc.ABC, MSONable):
 
         if not self.diagnostic:
             raise ValueError("No DiagnosticConfig is set. Cannot interpolate diagnostic cycles.")
-        diag_data = self.raw_data.loc[self.raw_data["cycle_index"].isin(self.diagnostic.all_ix)]
+        diag_data = self.raw_data.loc[self.raw_data["cycle_index"].isin(self.diagnostic.all_ix)].copy()
         # diag_types = [self.diagnostic.cycle_to_type[cix] for cix in diag_data.cycle_index.unique()]
 
         # Counter to ensure non-contiguous repeats of step_index
         # within same cycle_index are grouped separately
-        diag_data.loc[:, "step_index_counter"] = 0
+        diag_data["step_index_counter"] = 0
 
         for cycle_index in self.diagnostic.all_ix:
             indices = diag_data.loc[diag_data.cycle_index == cycle_index].index
@@ -1055,7 +1058,7 @@ class BEEPDatapath(abc.ABC, MSONable):
             diag_summary["discharge_capacity"] / diag_summary["charge_capacity"]
         )
         diag_summary["paused"] = self.raw_data.groupby("cycle_index").apply(
-            get_max_paused_over_threshold
+            get_max_paused_over_threshold, include_groups=False
         )
 
         diag_summary = diag_summary.reset_index(drop=True)
@@ -1220,7 +1223,9 @@ class BEEPDatapath(abc.ABC, MSONable):
     @property
     def paused_intervals(self):
         # a method to use get_max_paused_over_threshold
-        return self.raw_data.groupby("cycle_index").apply(get_max_paused_over_threshold)
+        return self.raw_data.groupby("cycle_index").apply(
+            get_max_paused_over_threshold, include_groups=False
+        )
 
     @property
     def is_structured(self):
@@ -1306,10 +1311,12 @@ def interpolate_df(
     interpolated_df[numeric_cols] = interpolated_df[numeric_cols].interpolate("index")
 
     # Filter for only interpolated values
-    interpolated_df[["interpolated_x"]] = interpolated_df[
-        ["interpolated_x"]].fillna(
-        False
-    )
+    # Use numpy where to avoid pandas fillna deprecation warning on object dtype
+    interpolated_df["interpolated_x"] = np.where(
+        pd.isna(interpolated_df["interpolated_x"]),
+        False,
+        interpolated_df["interpolated_x"]
+    ).astype(bool)
     interpolated_df = interpolated_df[interpolated_df["interpolated_x"]]
     interpolated_df = interpolated_df.drop(["interpolated_x", "interpolated_y"],
                                            axis=1)
