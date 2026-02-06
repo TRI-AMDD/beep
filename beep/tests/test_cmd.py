@@ -10,7 +10,7 @@ from monty.serialization import dumpfn, loadfn
 
 from beep import PROTOCOL_PARAMETERS_DIR, logger
 from beep.cmd import add_metadata_to_status_json, add_suffix, cli, md5sum
-from beep.tests.constants import BIG_FILE_TESTS, SKIP_MSG, TEST_FILE_DIR
+from beep.tests.constants import AWS_AVAILABLE, AWS_SKIP_MSG, BIG_FILE_TESTS, SKIP_MSG, TEST_FILE_DIR
 
 
 @cli.command(
@@ -261,7 +261,7 @@ class TestCLIStructure(TestCLIBase):
         self.assertTrue(
             os.path.exists(status["files"][self.input_paths[0]]["output"]))
 
-    @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
+    @unittest.skipUnless(BIG_FILE_TESTS and AWS_AVAILABLE, f"{SKIP_MSG}; {AWS_SKIP_MSG}")
     def test_s3(self):
         """Test the structuring using files from S3"""
         s3_key = "big_file_tests/PreDiag_000287_000128.092"

@@ -30,7 +30,7 @@ from beep.structure.base_eis import EIS, BEEPDatapathWithEIS
 from beep.structure.cli import auto_load_processed
 from beep.structure.diagnostic import DiagnosticConfig
 from beep.structure.maccor import MaccorDatapath
-from beep.tests.constants import BIG_FILE_TESTS, SKIP_MSG, TEST_FILE_DIR
+from beep.tests.constants import AWS_AVAILABLE, AWS_SKIP_MSG, BIG_FILE_TESTS, SKIP_MSG, TEST_FILE_DIR
 from beep.utils.s3 import download_s3_object
 
 
@@ -419,7 +419,7 @@ class TestBEEPDatapath(unittest.TestCase):
     # based on RCRT.test_get_diagnostic
     # though it is based on maccor files this test is designed to
     # check structuring of diagnostic cycles
-    @unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
+    @unittest.skipUnless(BIG_FILE_TESTS and AWS_AVAILABLE, f"{SKIP_MSG}; {AWS_SKIP_MSG}")
     def test_get_diagnostic(self):
         maccor_file_w_parameters_s3 = {
             "bucket": "beep-sync-test-stage",

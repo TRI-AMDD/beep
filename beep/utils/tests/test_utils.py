@@ -20,7 +20,7 @@ import numpy as np
 
 from beep import MODULE_DIR, PROTOCOL_PARAMETERS_DIR
 from beep.deprecated import parameters_lookup
-from beep.tests.constants import BIG_FILE_TESTS, SKIP_MSG, TEST_FILE_DIR
+from beep.tests.constants import AWS_AVAILABLE, AWS_SKIP_MSG, BIG_FILE_TESTS, SKIP_MSG, TEST_FILE_DIR
 from beep.utils import MaccorSplice
 from beep.utils.s3 import download_s3_object
 
@@ -56,7 +56,7 @@ class SpliceTest(unittest.TestCase):
         assert data_1["Rec#"].max() < data_2["Rec#"].min()
 
 
-@unittest.skipUnless(BIG_FILE_TESTS, SKIP_MSG)
+@unittest.skipUnless(BIG_FILE_TESTS and AWS_AVAILABLE, f"{SKIP_MSG}; {AWS_SKIP_MSG}")
 class S3Test(unittest.TestCase):
 
     bucket = "beep-sync-test-stage"
