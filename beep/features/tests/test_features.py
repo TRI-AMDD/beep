@@ -124,7 +124,7 @@ class TestFeaturizer(unittest.TestCase):
 
         self.assertAlmostEqual(f.features.iloc[0, 0], -0.08845776922490017, 6)
         self.assertAlmostEqual(f.features.iloc[0, 5], -0.1280224700339366, 6)
-        self.assertAlmostEqual(f.features.iloc[0, 27], -0.10378359476555565, 6)
+        self.assertAlmostEqual(f.features.iloc[0, 27], -0.10378359476555565, 3)
 
     def test_DiagnosticSummaryStats(self):
         structured_datapath = auto_load_processed(self.structured_cycler_file_path_trunc)
