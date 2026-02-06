@@ -42,7 +42,8 @@ class DocumentationTutorialTest(unittest.TestCase):
     def test_tutorial_code(self):
         blocks = read_code_blocks_from_md(self.tutorial_src_path)
         # Use a shared namespace so variables persist across code blocks
-        namespace = {}
+        # Provide __file__ since tutorial code uses it for path resolution
+        namespace = {"__file__": os.path.join(this_dir, "tutorial_test.py")}
         for b in blocks:
             if "plt.show()" in b:
                 block_safe = b.replace(
