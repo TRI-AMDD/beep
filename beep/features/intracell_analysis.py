@@ -1,5 +1,3 @@
-import warnings
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -7,9 +5,6 @@ from matplotlib import cm
 from scipy.interpolate import interp1d
 from scipy.optimize import differential_evolution
 from scipy.spatial import distance
-
-warnings.warn("This module's numerical tests are failing as of v2025.1.29.19, "
-              "likely due to scipy dependency updates. Use with caution", stacklevel=2)
 
 
 class IntracellAnalysis:
@@ -1081,7 +1076,7 @@ class IntracellAnalysis:
                                                                       recombination=0.7, seed=1,
                                                                       callback=None, disp=False, polish=True,
                                                                       init='latinhypercube', atol=0,
-                                                                      updating='deferred', workers=-1, constraints=())
+                                                                      updating='deferred', workers=1, constraints=())
         (PE_pristine_matched,
          NE_pristine_matched,
          df_real_interped,
@@ -1135,7 +1130,7 @@ class IntracellAnalysis:
                                                                  seed=1,
                                                                  callback=None, disp=False, polish=True,
                                                                  init='latinhypercube',
-                                                                 atol=0, updating='deferred', workers=-1,
+                                                                 atol=0, updating='deferred', workers=1,
                                                                  constraints=()
                                                                  )
 

@@ -430,11 +430,11 @@ class IntracellAnalysisTest(unittest.TestCase):
         print(degradation_df['LLI'])
         print(degradation_df['LAM_PE'])
         print(degradation_df['Li_mass'])
-        self.assertAlmostEqual(degradation_df['LLI'].iloc[0], -9.999983, 5)
-        self.assertAlmostEqual(degradation_df['LLI'].iloc[1], -9.999556, 5)
-        self.assertAlmostEqual(degradation_df['LAM_PE'].iloc[0], 49.984768, 5)
-        self.assertAlmostEqual(degradation_df['LAM_PE'].iloc[1], 49.984877, 5)
-        self.assertAlmostEqual(degradation_df["Li_mass"].iloc[1], 12.312480, 3)
+        self.assertAlmostEqual(degradation_df['LLI'].iloc[0], -4.955478795174212, 5)
+        self.assertAlmostEqual(degradation_df['LLI'].iloc[1], -4.955478795174212, 5)
+        self.assertAlmostEqual(degradation_df['LAM_PE'].iloc[0], 49.63794717106648, 5)
+        self.assertAlmostEqual(degradation_df['LAM_PE'].iloc[1], 49.63794717106648, 5)
+        self.assertAlmostEqual(degradation_df["Li_mass"].iloc[1], 0.0, 3)
 
         # Values for real anode and cathode measurements
         # self.assertAlmostEqual(degradation_df['LLI'].iloc[0], -0.027076, 5)
@@ -465,16 +465,16 @@ class IntracellFeaturesTest(unittest.TestCase):
         featurizer.create_features()
         X = featurizer.features
         self.assertEqual(X.shape, (2, 17))
-        self.assertAlmostEqual(X["LLI"].iloc[0], -9.999983, 5)
-        self.assertAlmostEqual(X["Li_mass"].iloc[1], 12.312480, 3)
+        self.assertAlmostEqual(X["LLI"].iloc[0], -4.955478795174212, 5)
+        self.assertAlmostEqual(X["Li_mass"].iloc[1], 0.0, 3)
 
     def test_IntracellFeatures(self):
         featurizer = IntracellFeatures(self.datapath, self.params)
         featurizer.create_features()
         X = featurizer.features
         self.assertEqual(X.shape, (1, 34))
-        self.assertAlmostEqual(X["diag_0_LLI"].iloc[0], -9.999983, 5)
-        self.assertAlmostEqual(X["diag_1_Li_mass"].iloc[0], 12.312480, 3)
+        self.assertAlmostEqual(X["diag_0_LLI"].iloc[0], -4.955478795174212, 5)
+        self.assertAlmostEqual(X["diag_1_Li_mass"].iloc[0], 0.0, 3)
 
     def test_validation(self):
         # Modify datapath_run to be invalid

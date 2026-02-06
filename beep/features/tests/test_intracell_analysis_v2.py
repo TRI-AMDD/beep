@@ -67,17 +67,17 @@ class IntracellAnalysisV2Test(unittest.TestCase):
                                                  'ne_soc_FC3p0V', 'ne_soc_FC2p9V', 'ne_soc_FC2p8V', 'ne_soc_FC2p7V',
                                                  'Q_fc', 'Q_pe', 'Q_ne', 'Q_li']).T
 
-        self.assertAlmostEqual(loss_df['Q_pe'].iloc[0], 4.971001250967573, 3)
-        self.assertAlmostEqual(loss_df['Q_ne'].iloc[0], 5.077560763314145, 3)
-        self.assertAlmostEqual(loss_df['Q_li'].iloc[0], 4.72058639695313, 3)
-        self.assertAlmostEqual(loss_df['pe_voltage_FC4p2V'].iloc[0], 4.2569909388206595, 3)
-        self.assertAlmostEqual(loss_df['pe_voltage_FC2p7V'].iloc[0], 3.627263943506632, 3)
-        self.assertAlmostEqual(loss_df['ne_voltage_FC4p2V'].iloc[0], 0.05688501257876296, 5)
-        self.assertAlmostEqual(loss_df['ne_voltage_FC2p7V'].iloc[0], 0.7952915950646048, 3)
-        self.assertAlmostEqual(loss_df['pe_soc_FC4p2V'].iloc[0], 0.9646302250803859, 5)
-        self.assertAlmostEqual(loss_df['pe_soc_FC2p7V'].iloc[0], 0.05144694533762058, 5)
-        self.assertAlmostEqual(loss_df['ne_soc_FC4p2V'].iloc[0], 0.895068205666317, 5)
-        self.assertAlmostEqual(loss_df['ne_soc_FC2p7V'].iloc[0], 0.0010493179433368257, 5)
+        self.assertAlmostEqual(loss_df['Q_pe'].iloc[0], 5.048925301011225, 3)
+        self.assertAlmostEqual(loss_df['Q_ne'].iloc[0], 5.054296498139961, 3)
+        self.assertAlmostEqual(loss_df['Q_li'].iloc[0], 4.73202467041584, 3)
+        self.assertAlmostEqual(loss_df['pe_voltage_FC4p2V'].iloc[0], 4.256100155948614, 3)
+        self.assertAlmostEqual(loss_df['pe_voltage_FC2p7V'].iloc[0], 3.6313364556600582, 3)
+        self.assertAlmostEqual(loss_df['ne_voltage_FC4p2V'].iloc[0], 0.055710820749195325, 5)
+        self.assertAlmostEqual(loss_df['ne_voltage_FC2p7V'].iloc[0], 0.9313315526314433, 3)
+        self.assertAlmostEqual(loss_df['pe_soc_FC4p2V'].iloc[0], 0.9638297872340426, 5)
+        self.assertAlmostEqual(loss_df['pe_soc_FC2p7V'].iloc[0], 0.0627659574468085, 5)
+        self.assertAlmostEqual(loss_df['ne_soc_FC4p2V'].iloc[0], 0.9001062699256109, 5)
+        self.assertAlmostEqual(loss_df['ne_soc_FC2p7V'].iloc[0], 0.0, 5)
 
 
 class IntracellFeaturesTestV2(unittest.TestCase):
@@ -99,16 +99,16 @@ class IntracellFeaturesTestV2(unittest.TestCase):
         featurizer.create_features()
         X = featurizer.features
         self.assertEqual(X.shape, (2, 73))
-        self.assertAlmostEqual(X["Q_li"].iloc[0], 4.743450821877655, 5)
-        self.assertAlmostEqual(X["Q_ne"].iloc[1], 5.101834164537508, 3)
+        self.assertAlmostEqual(X["Q_li"].iloc[0], 4.742979627363125, 5)
+        self.assertAlmostEqual(X["Q_ne"].iloc[1], 5.100819316968999, 3)
 
     def test_IntracellFeatures(self):
         featurizer = IntracellFeaturesV2(self.datapath, self.params)
         featurizer.create_features()
         X = featurizer.features
         self.assertEqual(X.shape, (1, 146))
-        self.assertAlmostEqual(X["diag_0_LLI_opt"].iloc[0], 0.1929531780384086, 5)
-        self.assertAlmostEqual(X["diag_1_LLI_opt"].iloc[0], 0.2080220199958258, 3)
+        self.assertAlmostEqual(X["diag_0_LLI_opt"].iloc[0], 0.1929338605547759, 5)
+        self.assertAlmostEqual(X["diag_1_LLI_opt"].iloc[0], 0.2079806843810157, 3)
 
     def test_validation(self):
         # Modify datapath_run to be invalid

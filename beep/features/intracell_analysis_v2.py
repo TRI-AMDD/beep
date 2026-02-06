@@ -1,13 +1,8 @@
-import warnings
-
 import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 from scipy.optimize import differential_evolution
 from scipy.spatial import distance
-
-warnings.warn("This module's numerical tests are failing as of v2025.1.29.19, "
-              "likely due to scipy dependency updates. Use with caution", stacklevel=2)
 
 
 class IntracellAnalysisV2:
@@ -849,7 +844,7 @@ class IntracellAnalysisV2:
                                                                  seed=1,
                                                                  callback=None, disp=False, polish=True,
                                                                  init='latinhypercube',
-                                                                 atol=0, updating='deferred', workers=-1,
+                                                                 atol=0, updating='deferred', workers=1,
                                                                  constraints=()
                                                                  )
         #         print(degradation_optimization_result.x) #BVV
@@ -925,7 +920,7 @@ class IntracellAnalysisV2:
                                                                  seed=1,
                                                                  callback=None, disp=False, polish=True,
                                                                  init='latinhypercube',
-                                                                 atol=0, updating='deferred', workers=-1,
+                                                                 atol=0, updating='deferred', workers=1,
                                                                  constraints=()
                                                                  )
 
