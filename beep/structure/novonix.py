@@ -108,10 +108,10 @@ class NovonixDatapath(BEEPDatapath):
         STEP_IS_CHG_MAP = NOVONIX_CONFIG["step_is_chg"]
 
         data["step_type_name"] = data["step_index"].replace(STEP_NAME_IX_MAP)
-        step_type_intermediate = data["step_type_name"].replace(STEP_IS_CHG_MAP).infer_objects(copy=False)
+        step_type_intermediate = data["step_type_name"].replace(STEP_IS_CHG_MAP)
         data["step_type"] = step_type_intermediate.replace(
             {True: "charge", False: "discharge"}
-        ).infer_objects(copy=False)
+        )
 
         chg_ix = data["step_type"] == "charge"
         dchg_ix = data["step_type"] == "discharge"
