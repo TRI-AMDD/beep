@@ -20,15 +20,15 @@ keywords = [
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering :: Chemistry",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "numpy>=2.0",
     "monty[yaml]>=2024.0",
@@ -87,7 +87,7 @@ include = ["beep*"]
 # Ruff - Fast Python linter and formatter (replaces flake8, pycodestyle, isort, black)
 # ============================================================================
 [tool.ruff]
-target-version = "py310"
+target-version = "py311"
 line-length = 120
 src = ["beep"]
 
@@ -129,7 +129,7 @@ line-ending = "auto"
 # Mypy - Static type checking
 # ============================================================================
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.11"
 warn_return_any = false
 warn_unused_configs = true
 ignore_missing_imports = true
