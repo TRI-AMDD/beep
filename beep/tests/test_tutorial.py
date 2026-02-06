@@ -41,6 +41,8 @@ class DocumentationTutorialTest(unittest.TestCase):
                      "Docs directory not found, cannot test tutorial")
     def test_tutorial_code(self):
         blocks = read_code_blocks_from_md(self.tutorial_src_path)
+        # Use a shared namespace so variables persist across code blocks
+        namespace = {}
         for b in blocks:
             if "plt.show()" in b:
                 block_safe = b.replace(
@@ -49,7 +51,7 @@ class DocumentationTutorialTest(unittest.TestCase):
                 )
             else:
                 block_safe = b
-            exec(block_safe)
+            exec(block_safe, namespace)
 
     def tearDown(self) -> None:
         if os.path.exists(self.png_fname):
