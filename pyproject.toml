@@ -114,7 +114,6 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]  # unused imports in __init__
 "tests/*" = ["B011"]       # assert False
-"beep/tests/*" = ["B011"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["beep"]
@@ -142,12 +141,12 @@ exclude = [
 # Pytest
 # ============================================================================
 [tool.pytest.ini_options]
-addopts = "--durations=30 --quiet --ignore=beep/tests/test_files/raw"
+addopts = "--durations=30 --quiet --ignore=tests/test_files/raw"
 filterwarnings = [
     "ignore::UserWarning",
     "ignore::RuntimeWarning",
 ]
-testpaths = ["beep/tests"]
+testpaths = ["tests"]
 
 # ============================================================================
 # Coverage

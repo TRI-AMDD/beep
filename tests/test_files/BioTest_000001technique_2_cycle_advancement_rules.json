@@ -1,0 +1,70 @@
+{
+  "tech_num": 2,
+  "tech_does_loop": true,
+  "adv_cycle_on_start": 1,
+  "adv_cycle_on_tech_loop": 1,
+  "adv_cycle_seq_transitions": [
+    {
+      "source": 2,
+      "target": 3,
+      "adv_cycle_count": 1
+    },
+    {
+      "source": 12,
+      "target": 13,
+      "adv_cycle_count": 1
+    },
+    {
+      "source": 15,
+      "target": 16,
+      "adv_cycle_count": 1
+    },
+    {
+      "source": 18,
+      "target": 19,
+      "adv_cycle_count": 1
+    },
+    {
+      "source": 21,
+      "target": 22,
+      "adv_cycle_count": 1
+    },
+    {
+      "source": 27,
+      "target": 22,
+      "adv_cycle_count": 1
+    }
+  ],
+  "debug_adv_cycle_on_step_transitions": [
+    {
+      "source": 39,
+      "target": 41,
+      "adv_cycle_count": 1
+    },
+    {
+      "source": 49,
+      "target": 51,
+      "adv_cycle_count": 1
+    },
+    {
+      "source": 52,
+      "target": 54,
+      "adv_cycle_count": 1
+    },
+    {
+      "source": 55,
+      "target": 57,
+      "adv_cycle_count": 1
+    },
+    {
+      "source": 58,
+      "target": 61,
+      "adv_cycle_count": 1
+    },
+    {
+      "source": 66,
+      "target": 60,
+      "adv_cycle_count": 1
+    }
+  ]
+}
