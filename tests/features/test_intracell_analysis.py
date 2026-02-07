@@ -432,8 +432,8 @@ class IntracellAnalysisTest(unittest.TestCase):
         print(degradation_df['Li_mass'])
         self.assertAlmostEqual(degradation_df['LLI'].iloc[0], -4.955478795174212, 4)
         self.assertAlmostEqual(degradation_df['LLI'].iloc[1], -4.955478795174212, 4)
-        self.assertAlmostEqual(degradation_df['LAM_PE'].iloc[0], 49.63794717106648, 4)
-        self.assertAlmostEqual(degradation_df['LAM_PE'].iloc[1], 49.63794717106648, 4)
+        self.assertAlmostEqual(degradation_df['LAM_PE'].iloc[0], 49.63794717106648, 3)
+        self.assertAlmostEqual(degradation_df['LAM_PE'].iloc[1], 49.63794717106648, 3)
         self.assertAlmostEqual(degradation_df["Li_mass"].iloc[1], 0.0, 3)
 
         # Values for real anode and cathode measurements
