@@ -167,7 +167,7 @@ class BEEPFeaturizer(MSONable, abc.ABC):
         Returns:
             None
         """
-        with zopen(filename, "r") as f:
+        with zopen(filename, "rt") as f:
             d = json.load(f)
 
         # Add this structured file path to the paths dict

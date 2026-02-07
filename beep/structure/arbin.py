@@ -69,8 +69,7 @@ class ArbinDatapath(BEEPDatapath):
 
         # standardizing time format
         data["date_time_iso"] = data["date_time"].apply(
-            lambda x: datetime.utcfromtimestamp(x).replace(
-                tzinfo=pytz.UTC).isoformat()
+            lambda x: datetime.fromtimestamp(x, tz=pytz.UTC).isoformat()
         )
 
         paths = {

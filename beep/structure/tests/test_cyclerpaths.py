@@ -178,11 +178,11 @@ class TestMaccorDatapath(unittest.TestCase):
         md = MaccorDatapath.from_file(self.waveform_file)
         df = md.raw_data
         self.assertTrue(df.loc[df.cycle_index == 6].
-                        groupby("step_index").apply(step_is_waveform_dchg).any())
+                        groupby("step_index").apply(step_is_waveform_dchg, include_groups=False).any())
         self.assertFalse(df.loc[df.cycle_index == 6].
-                        groupby("step_index").apply(step_is_waveform_chg).any())
+                        groupby("step_index").apply(step_is_waveform_chg, include_groups=False).any())
         self.assertFalse(df.loc[df.cycle_index == 3].
-                        groupby("step_index").apply(step_is_waveform_dchg).any())
+                        groupby("step_index").apply(step_is_waveform_dchg, include_groups=False).any())
 
     # based on RCRT.test_get_interpolated_waveform_discharge_cycles
     def test_interpolate_waveform_discharge_cycles(self):
