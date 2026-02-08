@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "beep"
-version = "2025.2.5"
+version = "2026.2.7"
 description = "beep is a python package supporting Battery Estimation and Early Prediction of battery cycle life."
 readme = "README.md"
 license = {text = "Apache-2.0"}
