@@ -3,7 +3,7 @@
 <h4 align="center">
 
 ![Testing - main](https://github.com/TRI-AMDD/beep/workflows/Testing%20-%20main/badge.svg)
-![Python](https://img.shields.io/badge/python-3.10%20|%203.11%20|%203.12-blue)
+![Python](https://img.shields.io/badge/python-3.11%20|%203.12%20|%203.13-blue)
 [![PyPI version](https://badge.fury.io/py/beep.svg)](https://badge.fury.io/py/beep)
 [![GitHub Repo Size](https://img.shields.io/github/repo-size/TRI-AMDD/beep?label=Repo+Size)](https://github.com/TRI-AMDD/beep/graphs/contributors)
 
