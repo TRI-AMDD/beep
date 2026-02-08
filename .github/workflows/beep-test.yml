@@ -50,7 +50,7 @@ jobs:
           BEEP_ENV: "dev"
           BEEP_BIG_TESTS: "True"
         run: |
-          pytest beep --color=yes --cov=beep --cov-report=xml --cov-report=term-missing
+          pytest tests --color=yes --cov=beep --cov-report=xml --cov-report=term-missing
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
