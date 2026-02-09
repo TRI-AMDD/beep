@@ -1,5 +1,5 @@
 # Requirements for running tests
 pytest-cov==5.0.0
-coveralls==4.0.1
+coveralls==4.0.2
 memory_profiler==0.61.0
 requests
